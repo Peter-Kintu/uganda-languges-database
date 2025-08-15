@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
-import dj_database_url
+import dj_database_url  # Import the dj_database_url library
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,8 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-(p31q0!)f868y09ivx%&d&jjc&^jenjy6p2ozj%3pijiwm_2=f')
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# Set DEBUG to False in production
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
+# Allow all hosts when deployed
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 
@@ -46,7 +48,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Add Whitenoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,7 +61,7 @@ ROOT_URLCONF = 'myuganda.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Added templates directory
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -79,11 +80,22 @@ WSGI_APPLICATION = 'myuganda.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
-    )
-}
+# Use dj_database_url to parse the DATABASE_URL environment variable for production
+# Fall back to a local SQLite database for development
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -119,69 +131,39 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# JAZZMIN Settings
+# JAZZMIN settings
 JAZZMIN_SETTINGS = {
-    # title of the window (Will change the tab title)
-    "site_title": "My Uganda My Culture",
-
-    # Title on the brand (19 chars max)
-    "site_header": "My Uganda",
-
-    # Logo to use for your site, must be a static file
-    "site_logo": "img/kintu-logo.png",
-
-    # Welcome text
-    "welcome_sign": "Welcome to the My Uganda My Culture Admin",
-
-    # Copyright on the footer
-    "copyright": "Mwene groups of companies Ltd",
-
-    # The model that is namesake of the site
-    "modeladmin_visible_only": False,
-
-    # List of models that should be excluded from the admin page
+    "site_title": "My Uganda My Culture Admin",
+    "site_header": "My Uganda My Culture",
+    "site_brand": "My Uganda",
+    "site_logo": "images/logo.png",
+    "login_logo": "images/logo.png",
+    "login_brand_text": "My Uganda",
+    "welcome_sign": "Welcome to the My Uganda My Culture Admin Portal",
+    "search_model": "languages.PhraseContribution",
+    "user_avatar": None,
     "hide_models": [],
-
-    # A list of apps and models to be displayed in a custom order
     "order_with_respect_to": ["auth", "languages"],
-    
-    # Custom icons for models
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "languages.PhraseContribution": "fas fa-language",
     },
-
-    # A list of links to be displayed in the top right of the navigation bar
-    "topmenu_links": [
-        # Link to admin homepage
-        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
-
-        # external link to homepage
-        {"name": "Website", "url": "/"},
-
-        # model list link (permissions checked against user)
-        {"model": "languages.PhraseContribution"},
-    ],
-
-    # Default icon for parent modules
     "default_icon_parents": "fas fa-chevron-circle-right",
-    
-    # Default icon for child models
     "default_icon_children": "fas fa-circle",
-    
+
     "related_modal_active": False
 }
 
@@ -206,7 +188,7 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar_nav_compact_style": False,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
-    "theme": "united", # Using a different theme
+    "theme": "united",
     "dark_mode_theme": None,
     "button_classes": {
         "primary": "btn-outline-primary",
@@ -216,5 +198,12 @@ JAZZMIN_UI_TWEAKS = {
         "danger": "btn-danger",
         "success": "btn-success"
     },
-    "actions_sticky_top": True
+    "actions_button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
 }
