@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 # This list is representative and can be expanded.
 LANGUAGES = (
     ('luganda', 'Luganda'),
+    ('lukenyi', 'Lukenyi'),
     ('acholi', 'Acholi'),
     ('lugbara', 'Lugbara'),
     ('ateso', 'Ateso'),
