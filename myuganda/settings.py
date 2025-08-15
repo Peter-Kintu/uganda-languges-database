@@ -46,8 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # Add WhiteNoise middleware for serving static files in production
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Add Whitenoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -61,7 +60,7 @@ ROOT_URLCONF = 'myuganda.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'languages/templates')], # Update with the correct path to your templates
+        'DIRS': [BASE_DIR / 'templates'], # Added templates directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -82,11 +81,9 @@ WSGI_APPLICATION = 'myuganda.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        # Use a robust way to get the DATABASE_URL, and provide a default for local dev
-        default=os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'))
+        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
     )
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -122,15 +119,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# WhiteNoise configuration
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -138,39 +130,58 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# JAZZMIN Settings - A dictionary containing all of the jazzmin configurations
+# JAZZMIN Settings
 JAZZMIN_SETTINGS = {
+    # title of the window (Will change the tab title)
     "site_title": "My Uganda My Culture",
-    "site_header": "My Uganda My Culture",
-    "site_brand": "Uganda Languages",
-    "site_icon": "fas fa-leaf",
-    # Add a login logo
-    "login_logo": None,
-    # Main menu color
-    "brand_color": "navbar-dark",
-    # The logo background color of the admin panel
-    "welcome_sign": "Welcome to the KINTU Admin Portal",
-    "show_sidebar": True,
-    "navigation_expanded": True,
-    "user_avatar": None,
-    "topmenu_links": [
-        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Support", "url": "https://github.com/Peter-Kintu/uganda-languges-database", "new_window": True},
-        {"model": "auth.User"},
-        {"app": "languages"},
-    ],
-    "hide_apps": [],
+
+    # Title on the brand (19 chars max)
+    "site_header": "My Uganda",
+
+    # Logo to use for your site, must be a static file
+    "site_logo": "img/kintu-logo.png",
+
+    # Welcome text
+    "welcome_sign": "Welcome to the My Uganda My Culture Admin",
+
+    # Copyright on the footer
+    "copyright": "Mwene groups of companies Ltd",
+
+    # The model that is namesake of the site
+    "modeladmin_visible_only": False,
+
+    # List of models that should be excluded from the admin page
     "hide_models": [],
+
+    # A list of apps and models to be displayed in a custom order
     "order_with_respect_to": ["auth", "languages"],
+    
+    # Custom icons for models
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "languages.PhraseContribution": "fas fa-language",
     },
-    "default_icon_parents": "fas fa-chevron-circle-right",
-    "default_icon_children": "fas fa-circle",
 
+    # A list of links to be displayed in the top right of the navigation bar
+    "topmenu_links": [
+        # Link to admin homepage
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+
+        # external link to homepage
+        {"name": "Website", "url": "/"},
+
+        # model list link (permissions checked against user)
+        {"model": "languages.PhraseContribution"},
+    ],
+
+    # Default icon for parent modules
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    
+    # Default icon for child models
+    "default_icon_children": "fas fa-circle",
+    
     "related_modal_active": False
 }
 
@@ -193,17 +204,17 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar_disable_expand": False,
     "sidebar_nav_child_indent": False,
     "sidebar_nav_compact_style": False,
-    "sidebar_nav_legacy_style": True,
+    "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
-    "theme": "solar", # A nice dark theme
+    "theme": "united", # Using a different theme
     "dark_mode_theme": None,
     "button_classes": {
         "primary": "btn-outline-primary",
         "secondary": "btn-outline-secondary",
-        "info": "btn-outline-info",
-        "warning": "btn-outline-warning",
-        "danger": "btn-outline-danger",
-        "success": "btn-outline-success"
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
     },
-    "actions_sticky_top": False
+    "actions_sticky_top": True
 }
