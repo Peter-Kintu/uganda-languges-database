@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-from pathlib import Path
 import os
-import dj_database_url # Import the dj_database_url library
+from pathlib import Path
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,16 +25,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-(p31q0!)f868y09ivx%&d&jjc&^jenjy6p2ozj%3pijiwm_2=f')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# Set DEBUG to False in production
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-# Allow all hosts when deployed
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    # Add jazzmin to the beginning of the list for it to take effect
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,8 +46,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # Add Whitenoise for serving static files in production
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
+    # Add WhiteNoise middleware for serving static files in production
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -61,7 +61,7 @@ ROOT_URLCONF = 'myuganda.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'languages/templates')], # Update with the correct path to your templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -79,17 +79,13 @@ WSGI_APPLICATION = 'myuganda.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-# Update the DATABASES setting to use dj_database_url
-# This will use the DATABASE_URL environment variable from Render
-# or fallback to a local SQLite database for development
+
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
+        # Use a robust way to get the DATABASE_URL, and provide a default for local dev
+        default=os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'))
     )
 }
-
-# The DATABASE_URL environment variable in Render will be set to:
-# 'postgresql://neondb_owner:npg_PouwbCJ8O1Ne@ep-fancy-king-ae3dr0ht-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
 
 
 # Password validation
@@ -126,11 +122,88 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise configuration
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# JAZZMIN Settings - A dictionary containing all of the jazzmin configurations
+JAZZMIN_SETTINGS = {
+    "site_title": "My Uganda My Culture",
+    "site_header": "My Uganda My Culture",
+    "site_brand": "Uganda Languages",
+    "site_icon": "fas fa-leaf",
+    # Add a login logo
+    "login_logo": None,
+    # Main menu color
+    "brand_color": "navbar-dark",
+    # The logo background color of the admin panel
+    "welcome_sign": "Welcome to the KINTU Admin Portal",
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "user_avatar": None,
+    "topmenu_links": [
+        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Support", "url": "https://github.com/Peter-Kintu/uganda-languges-database", "new_window": True},
+        {"model": "auth.User"},
+        {"app": "languages"},
+    ],
+    "hide_apps": [],
+    "hide_models": [],
+    "order_with_respect_to": ["auth", "languages"],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "languages.PhraseContribution": "fas fa-language",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    "related_modal_active": False
+}
+
+# JAZZMIN UI Tweaks
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": False,
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": False,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": True,
+    "sidebar_nav_flat_style": False,
+    "theme": "solar", # A nice dark theme
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-outline-primary",
+        "secondary": "btn-outline-secondary",
+        "info": "btn-outline-info",
+        "warning": "btn-outline-warning",
+        "danger": "btn-outline-danger",
+        "success": "btn-outline-success"
+    },
+    "actions_sticky_top": False
+}
