@@ -76,7 +76,8 @@ def browse_contributions(request):
         'search_query': search_query,
     }
     
-    return render(request, 'languages/browse_contributions.html', context)
+    # Revert the template path to the original, which should exist.
+    return render(request, 'contributions_list.html', context)
 
 
 def export_contributions_json(request):
