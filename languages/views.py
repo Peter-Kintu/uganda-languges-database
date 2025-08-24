@@ -12,6 +12,26 @@ from .forms import PhraseContributionForm
 from .models import PhraseContribution, LANGUAGES, INTENTS
 
 
+def get_top_contributors(month=None, year=None, limit=10):
+    """
+    A helper function to find and count top contributors.
+    It can be filtered by month and year, or used for all-time stats.
+    Returns a list of dictionaries with contributor_name and contribution_count.
+    """
+    query_set = PhraseContribution.objects.all()
+
+    # Apply date filters if provided
+    if month and year:
+        query_set = query_set.filter(timestamp__month=month, timestamp__year=year)
+
+    # Annotate and order by contribution count
+    top_contributors = query_set.values('contributor_name').annotate(
+        contribution_count=Count('contributor_name')
+    ).order_by('-contribution_count')[:limit]
+
+    return top_contributors
+
+
 def contribute(request):
     """
     Handles the contribution form, processing both GET and POST requests.
@@ -134,10 +154,8 @@ def sponsor(request):
     """
     Renders the sponsorship page and fetches top contributors.
     """
-    # Get the top 10 contributors based on their contribution count.
-    top_contributors = PhraseContribution.objects.values('contributor_name').annotate(
-        contribution_count=Count('contributor_name')
-    ).order_by('-contribution_count')[:10]
+    # Use the new helper function to get all-time top contributors
+    top_contributors = get_top_contributors(limit=10)
 
     context = {
         'top_contributors': top_contributors
@@ -149,33 +167,17 @@ def best_contributor_view(request):
     """
     Finds and displays the best contributor of the current month.
     """
-    # Get the current date to filter by the current month and year
     today = date.today()
-
-    # Query the PhraseContribution model to find the best contributor
-    best_contributor_data = (
-        PhraseContribution.objects
-        # Filter for only contributions made in the current month and year
-        .filter(timestamp__month=today.month, timestamp__year=today.year)
-        # Group by the contributor (user) and count their contributions
-        .values('contributor_name')
-        .annotate(contribution_count=Count('contributor_name'))
-        # Order the results to put the highest count first
-        .order_by('-contribution_count')
-        # Get only the top result
-        .first()
-    )
-
+    
+    # Use the new helper function to get the top contributor for the current month
+    best_contributor_data = get_top_contributors(month=today.month, year=today.year, limit=1).first()
+    
     # Prepare the context dictionary to pass to the template
     context = {}
-
-    # Check if a contributor was found
     if best_contributor_data:
-        # Extract the user's name and count from the query result
         context['contributor_name'] = best_contributor_data['contributor_name']
         context['contribution_count'] = best_contributor_data['contribution_count']
     else:
-        # If no contributions were found this month, set a message
         context['message'] = "No contributions have been made yet this month. Be the first to add one!"
 
     # Render the template with the prepared context
