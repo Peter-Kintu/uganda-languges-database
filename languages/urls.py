@@ -26,4 +26,7 @@ urlpatterns = [
 
     # This URL handles exporting contributions to a JSON file.
     path('export_json/', views.export_contributions_json, name='export_json'),
+    
+    # New URL to display the best contributor of the month.
+    path('best-contributor/', views.best_contributor_view, name='best_contributor'),
 ]

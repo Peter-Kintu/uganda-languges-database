@@ -1,10 +1,14 @@
+# languages/views.py
+
 # Django imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
-from django.db.models import F, Q, Count # Import Q and Count for queries
+from django.db.models import F, Q, Count
 from django.urls import reverse
+from django.db.models.functions import TruncMonth
 import json
+from datetime import date
 
 # Import your models and static lists from your models.py file
 from .forms import PhraseContributionForm
@@ -23,11 +27,11 @@ def contribute(request):
             # Save the new contribution to the database
             form.save()
             # Redirect to the same page with a success message
-            return redirect('contribute')
+            return redirect('languages:contribute')
     else:
         form = PhraseContributionForm()
     
-    return render(request, 'contribute.html', {'form': form})
+    return render(request, 'languages/contribute.html', {'form': form})
 
 
 def browse_contributions(request):
@@ -77,7 +81,7 @@ def browse_contributions(request):
     }
     
     # Revert the template path to the original, which should exist.
-    return render(request, 'contributions_list.html', context)
+    return render(request, 'languages/contributions_list.html', context)
 
 
 def export_contributions_json(request):
@@ -140,4 +144,47 @@ def sponsor(request):
     context = {
         'top_contributors': top_contributors
     }
-    return render(request, 'sponsor.html', context)
+    return render(request, 'languages/sponsor.html', context)
+    
+
+def best_contributor_view(request):
+    """
+    Finds and displays the best contributor of the current month.
+    """
+    # Get the current date to filter by the current month and year
+    today = date.today()
+
+    # Query the PhraseContribution model to find the best contributor
+    best_contributor_data = (
+        PhraseContribution.objects
+        # Annotate each contribution with its month and year
+        .annotate(month=TruncMonth('created_at'))
+        # Filter for only contributions made in the current month
+        .filter(month=today.replace(day=1))
+        # Group by the contributor (user) and count their contributions
+        .values('contributor_name')
+        .annotate(contribution_count=Count('contributor_name'))
+        # Order the results to put the highest count first
+        .order_by('-contribution_count')
+        # Get only the top result
+        .first()
+    )
+
+    # Check if a contributor was found
+    if best_contributor_data:
+        # Extract the user's name and count from the query result
+        contributor_name = best_contributor_data['contributor_name']
+        contribution_count = best_contributor_data['contribution_count']
+
+        context = {
+            'contributor_name': contributor_name,
+            'contribution_count': contribution_count
+        }
+    else:
+        # If no contributions were found this month, set a message
+        context = {
+            'contributor_name': None,
+            'message': "No contributions have been made yet this month. Be the first to add one!"
+        }
+
+    return render(request, 'languages/best_contributor.html', context)

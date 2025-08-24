@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Contributor of the Month</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex flex-col min-h-screen bg-gray-900 text-gray-300">
+    <!-- Navbar (assuming you have one, you can copy it from another template) -->
+    <header class="bg-gray-800 shadow-lg py-4 px-6 md:px-12 sticky top-0 z-50 rounded-b-2xl">
+        <nav class="container mx-auto flex flex-col md:flex-row items-center justify-between">
+            <div class="flex justify-between w-full md:w-auto items-center">
+                <a href="{% url 'languages:contribute' %}" class="text-2xl font-bold text-white">My language</a>
+                <!-- Mobile menu button -->
+                <button id="menu-button" class="text-gray-300 md:hidden focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+            <div id="nav-menu" class="hidden md:flex flex-col md:flex-row md:space-x-4 space-y-2 md:space-y-0 mt-4 md:mt-0 w-full md:w-auto">
+                <a href="{% url 'languages:contribute' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Contribute</a>
+                <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Contributions</a>
+                <a href="{% url 'languages:sponsor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Sponsor</a>
+                <a href="{% url 'languages:best_contributor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center active">Top Contributor</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-lg p-8 bg-gray-800 rounded-2xl shadow-xl border border-gray-700 text-center">
+            <h1 class="text-4xl font-bold text-white mb-4">Best Contributor of the Month! 🎉</h1>
+            {% if contributor_name %}
+            <p class="text-xl text-gray-400">A big thank you to...</p>
+            <h2 class="text-6xl font-extrabold text-blue-400 my-4">{{ contributor_name }}</h2>
+            <p class="text-lg text-gray-400">With <span class="text-white font-bold">{{ contribution_count }}</span> contributions this month!</p>
+            {% else %}
+            <p class="text-xl text-gray-400">{{ message }}</p>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('menu-button').addEventListener('click', function() {
+            var navMenu = document.getElementById('nav-menu');
+            navMenu.classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>
