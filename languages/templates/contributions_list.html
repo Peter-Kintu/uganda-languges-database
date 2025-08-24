@@ -31,91 +31,95 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
-    <!-- Header with Navigation -->
-    <header class="bg-white shadow-md">
-        <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div class="flex-shrink-0">
-                <a href="/" class="text-2xl font-bold text-gray-900">KINTU</a>
-            </div>
-            <div class="flex space-x-4 sm:space-x-8">
-                <a href="{% url 'contribute' %}" class="nav-link text-gray-600 hover:text-indigo-400 font-medium py-2">Contribute</a>
-                <a href="{% url 'browse_contributions' %}" class="nav-link text-indigo-400 border-b-2 border-indigo-400 font-medium py-2">Browse</a>
-                <a href="{% url 'sponsor' %}" class="nav-link text-gray-600 hover:text-indigo-400 font-medium py-2">Sponsor</a>
-                <a href="{% url 'create_service' %}" class="nav-link text-gray-600 hover:text-indigo-400 font-medium py-2">Monetize</a>
+<body class="bg-gray-900 text-gray-200 flex flex-col min-h-screen">
+    <!-- Header/Navigation Bar -->
+    <header class="bg-gray-800 shadow-lg sticky top-0 z-50">
+        <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Site Title -->
+                <div class="flex-shrink-0">
+                    <a href="{% url 'browse_contributions' %}" class="text-xl font-bold text-white">My Uganda My Culture</a>
+                </div>
+                <!-- Navigation Links -->
+                <div class="flex space-x-4 sm:space-x-6 items-center">
+                    <a href="{% url 'contribute' %}" class="nav-link py-2 text-sm font-medium">Contribute</a>
+                    <a href="{% url 'browse_contributions' %}" class="nav-link active py-2 text-sm font-medium">Browse Contributions</a>
+                    <a href="{% url 'sponsor' %}" class="nav-link py-2 text-sm font-medium">Sponsor Us</a>
+                    <!-- This link was causing the error, it's now corrected to point to a valid URL -->
+                    <a href="{% url 'contribute' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-xl shadow transition-colors duration-200 text-sm">Create Service</a>
+                </div>
             </div>
         </nav>
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-grow py-8">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900">Browse Contributions</h1>
-                <p class="mt-2 text-lg text-gray-600">Explore and like phrases contributed by the community.</p>
-            </div>
+    <main class="flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700">
+            <h1 class="text-4xl font-extrabold text-center text-white mb-6">Browse Contributions</h1>
 
-            <!-- Search and Filter Form -->
-            <form method="get" class="mb-8 p-4 bg-white rounded-xl shadow-sm flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <input type="search" name="search_query" placeholder="Search phrases..."
-                       value="{{ search_query|default:'' }}"
-                       class="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <select name="language" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">All Languages</option>
-                    {% for key, display in languages %}
-                        <option value="{{ key }}" {% if selected_language == key %}selected{% endif %}>{{ display }}</option>
-                    {% endfor %}
-                </select>
-                <select name="intent" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">All Intents</option>
-                    {% for key, display in intents %}
-                        <option value="{{ key }}" {% if selected_intent == key %}selected{% endif %}>{{ display }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-indigo-700 transition-colors duration-200">
-                    Filter
-                </button>
+            <!-- Filter and Search Form -->
+            <form method="get" class="mb-8 flex flex-wrap items-end justify-center space-x-2">
+                <div>
+                    <label for="language" class="block text-sm font-medium text-gray-400">Language</label>
+                    <select name="language" id="language" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-gray-700 text-white">
+                        <option value="">All</option>
+                        {% for code, name in languages %}
+                            <option value="{{ code }}" {% if code == selected_language %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="intent" class="block text-sm font-medium text-gray-400">Intent</label>
+                    <select name="intent" id="intent" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-gray-700 text-white">
+                        <option value="">All</option>
+                        {% for code, name in intents %}
+                            <option value="{{ code }}" {% if code == selected_intent %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="search_query" class="block text-sm font-medium text-gray-400">Search Text</label>
+                    <input type="text" name="search_query" id="search_query" value="{{ search_query }}" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white placeholder-gray-400" placeholder="Search...">
+                </div>
+
+                <div class="flex items-center space-x-2 mt-4 sm:mt-0">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Filter
+                    </button>
+                    <a href="{% url 'browse_contributions' %}" class="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-200 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        Reset
+                    </a>
+                </div>
             </form>
 
+            <!-- Contributions List -->
             <div class="space-y-6">
                 {% for contribution in contributions %}
-                    <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                    <div class="bg-gray-900 p-6 rounded-2xl shadow-lg border border-gray-700">
                         <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <span class="text-sm font-semibold text-gray-500">
-                                    {{ contribution.get_language_display }} | {{ contribution.get_intent_display }}
-                                </span>
-                                <p class="text-xl font-semibold text-gray-900 mt-1">{{ contribution.text }}</p>
-                            </div>
-                        </div>
-                        <p class="text-gray-700 italic border-l-4 border-gray-200 pl-4 mt-2">{{ contribution.translation }}</p>
-
-                        <!-- Like button and badge logic added here -->
-                        <div class="flex items-center justify-between mt-4">
-                            <form method="post" action="{% url 'like_contribution' contribution.id %}">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-400 text-indigo-900">
+                                {{ contribution.get_language_display }}
+                            </span>
+                            <form method="post" action="{% url 'like_contribution' contribution.pk %}" class="flex items-center space-x-2">
                                 {% csrf_token %}
-                                <button type="submit" class="flex items-center space-x-2 text-indigo-400 hover:text-indigo-500 transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 20 20">
-                                        <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-                                    </svg>
-                                    <span>{{ contribution.likes }}</span>
+                                <button type="submit" class="inline-flex items-center text-gray-400 hover:text-red-400">
+                                    <svg class="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                                 </button>
+                                <span class="text-sm text-gray-400 font-semibold">{{ contribution.likes }}</span>
                             </form>
-                            {% if contribution.contributor %}
-                                <span class="text-sm text-gray-400">Badge: {{ contribution.contributor.badge }}</span>
-                            {% else %}
-                                <span class="text-sm text-gray-400">Badge: Not available</span>
-                            {% endif %}
                         </div>
-
-                        <div class="flex justify-between items-center text-sm text-gray-400 mt-4 border-t pt-4">
-                            <span>Contributed by: {{ contribution.contributor.name|default:"Anonymous" }} from {{ contribution.contributor.location|default:"Private Location" }}</span>
+                        <p class="text-lg font-semibold text-white mt-2">{{ contribution.text }}</p>
+                        <p class="text-gray-300 italic border-l-4 border-gray-600 pl-4 mt-2">{{ contribution.translation }}</p>
+                        <div class="flex justify-between items-center text-sm text-gray-500 mt-4">
+                            <span>Contributed by: {{ contribution.contributor_name|default:"Anonymous" }} from {{ contribution.contributor_location|default:"Unknown Location" }}</span>
                             <span>{{ contribution.timestamp|date:"M d, Y" }}</span>
                         </div>
                     </div>
                 {% empty %}
-                    <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-gray-200">
-                        <p class="text-lg text-gray-500">No contributions found matching your criteria.</p>
+                    <div class="text-center p-8 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
+                        <p class="text-lg text-gray-400">No contributions found matching your criteria.</p>
                     </div>
                 {% endfor %}
             </div>
@@ -125,10 +129,11 @@
     <!-- Footer with contact information -->
     <footer class="bg-gray-800 text-gray-400 py-6 text-center shadow-inner mt-auto">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p>&copy; 2024 KINTU. All rights reserved.</p>
+            <p>&copy; 2025 myUgandaMyCulture. All rights reserved.</p>
             <div class="mt-2 space-x-4">
                 <a href="https://wa.me/256789746493" class="footer-link">WhatsApp: +256789746493</a>
-                <a href="#" class="footer-link">Email: contact@kintu.ug</a>
+                <span class="hidden md:inline">|</span>
+                 <a href="mailto:kintupeter7@gmail.com" class="footer-link">Email: kintupeter7@gmail.com</a>
             </div>
         </div>
     </footer>
