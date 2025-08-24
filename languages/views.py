@@ -31,7 +31,7 @@ def contribute(request):
     else:
         form = PhraseContributionForm()
     
-    return render(request, 'languages/contribute.html', {'form': form})
+    return render(request, 'contribute.html', {'form': form})
 
 
 def browse_contributions(request):
@@ -81,7 +81,7 @@ def browse_contributions(request):
     }
     
     # Revert the template path to the original, which should exist.
-    return render(request, 'languages/contributions_list.html', context)
+    return render(request, 'contributions_list.html', context)
 
 
 def export_contributions_json(request):
@@ -144,7 +144,7 @@ def sponsor(request):
     context = {
         'top_contributors': top_contributors
     }
-    return render(request, 'languages/sponsor.html', context)
+    return render(request, 'sponsor.html', context)
     
 
 def best_contributor_view(request):
@@ -187,4 +187,4 @@ def best_contributor_view(request):
             'message': "No contributions have been made yet this month. Be the first to add one!"
         }
 
-    return render(request, 'languages/best_contributor.html', context)
+    return render(request, 'best_contributor.html', context)
