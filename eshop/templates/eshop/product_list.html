@@ -3,9 +3,16 @@
 {% block title %}Sell with Pride - MyLanguage Market{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto p-6 bg-gray-800 rounded-lg shadow-lg">
+<div class="max-w-xl mx-auto p-6 bg-gray-800 rounded-lg shadow-lg mb-12">
     <h1 class="text-3xl font-bold text-indigo-400 mb-2">Share Your Craft, Speak Your Truth</h1>
     <p class="text-gray-400 mb-6">Every product here tells a story. Fill out the form below to share yours.</p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="bg-green-500 text-white p-4 rounded mb-4">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
     <form method="post" enctype="multipart/form-data" action="{% url 'eshop:product_list' %}" class="space-y-4">
         {% csrf_token %}
         {{ form.as_p }}
@@ -13,5 +20,40 @@
             List My Product
         </button>
     </form>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {% for product in products %}
+    <div class="product-card bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-transform transform hover:scale-105">
+        <a href="{% url 'eshop:product_detail' slug=product.slug %}">
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-48 object-cover">
+        </a>
+        <div class="p-4 flex flex-col items-start">
+            <h3 class="text-xl font-semibold text-white">{{ product.name }}</h3>
+            <p class="text-gray-400 text-sm mt-1">{{ product.description }}</p>
+            <span class="inline-block bg-indigo-500 text-white text-xs font-bold py-1 px-2 rounded-full mt-2">{{ product.language_tag }}</span>
+            <p class="text-lg font-bold text-gray-300 mt-2">
+                {% if product.price %}
+                    UGX {{ product.price|floatformat:0 }}
+                {% else %}
+                    Negotiable
+                {% endif %}
+            </p>
+            <a href="https://wa.me/{{ product.whatsapp_number }}?text=Hello,%20I%20saw%20your%20product%20on%20MyLanguage%20Market.%20I'm%20interested%20in%20{{ product.name }}."
+               class="mt-4 block w-full text-center bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-colors duration-200">
+                <i class="fab fa-whatsapp"></i> Chat Seller
+            </a>
+            {% if product.tiktok_url %}
+                <a href="{{ product.tiktok_url }}" target="_blank" class="mt-2 block w-full text-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors duration-200">
+                    <i class="fab fa-tiktok"></i> Watch on TikTok
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+        <div class="col-span-full text-center p-12 bg-gray-800 rounded-lg shadow-lg">
+            <p class="text-lg text-gray-400">No products are available yet. Be the first to start selling!</p>
+        </div>
+    {% endfor %}
 </div>
 {% endblock %}
