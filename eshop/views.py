@@ -3,26 +3,24 @@ from django.contrib import messages
 from .forms import ProductForm
 from .models import Product
 
-# View for the seller submission form
-def create_product(request):
+# Unified view: submit + list products
+def product_list(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            return redirect('success_page')
+            product = form.save()
+            messages.success(request, f"🎉 '{product.name}' has been listed! Sell with pride.")
+            return redirect('eshop:product_list')
+        else:
+            messages.error(request, "Oops! Something went wrong. Please check the form and try again.")
     else:
         form = ProductForm()
 
-    return render(request, 'eshop/create_product.html', {'form': form})
-
-# View for listing all products
-def product_list(request):
     products = Product.objects.all().order_by('-id')
-    return render(request, 'eshop/product_list.html', {'products': products})
-
-# View for the success page
-def success_page(request):
-    return render(request, 'eshop/success.html')
+    return render(request, 'eshop/product_list.html', {
+        'form': form,
+        'products': products
+    })
 
 # View for individual product details
 def product_detail(request, slug):
