@@ -111,7 +111,7 @@
                 </button>
             </div>
             <!-- Drawer navigation links -->
-            <div class="flex flex-col space-y-4 text-center">
+            <div id="drawer-links" class="flex flex-col space-y-4 text-center">
                 <a href="{% url 'languages:contribute' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contribute</a>
                 <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300 active">Contributions</a>
                 <a href="{% url 'languages:sponsor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sponsor Us</a>
@@ -230,17 +230,29 @@
         const drawer = document.getElementById('drawer');
         const openDrawerButton = document.getElementById('open-drawer-button');
         const closeDrawerButton = document.getElementById('close-drawer-button');
+        const drawerLinks = document.querySelectorAll('#drawer a'); // Select all links inside the drawer
 
         // Function to open the drawer
-        openDrawerButton.addEventListener('click', () => {
+        const openDrawer = () => {
             drawer.classList.remove('drawer-close');
             drawer.classList.add('drawer-open');
-        });
+        };
 
         // Function to close the drawer
-        closeDrawerButton.addEventListener('click', () => {
+        const closeDrawer = () => {
             drawer.classList.remove('drawer-open');
             drawer.classList.add('drawer-close');
+        };
+
+        // Event listener for opening the drawer
+        openDrawerButton.addEventListener('click', openDrawer);
+
+        // Event listener for closing the drawer with the close button
+        closeDrawerButton.addEventListener('click', closeDrawer);
+
+        // Event listeners for closing the drawer when a link is clicked
+        drawerLinks.forEach(link => {
+            link.addEventListener('click', closeDrawer);
         });
     </script>
 </body>
