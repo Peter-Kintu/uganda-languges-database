@@ -4,30 +4,34 @@ from django.urls import path
 # Import all view functions from your languages app
 from . import views
 
-# Set the app name for namespacing
+# Set the app name for namespacing. This is good practice
+# and helps avoid URL name clashes between different apps.
 app_name = 'languages'
 
 urlpatterns = [
-    # This new pattern routes the root URL to the 'browse_contributions' view.
+    # The root URL of the app, e.g., 'uganda-languges-database.onrender.com/'.
+    # This maps to the 'browse_contributions' view and is named 'home'.
     path('', views.browse_contributions, name='home'),
     
-    # This pattern maps the '/contribute/' URL to the 'contribute' view.
-    # It's named 'contribute' so we can reference it in templates.
+    # URL for the main contribution page, e.g., '/contribute/'.
+    # This maps to the 'contribute' view and is named 'contribute'.
     path('contribute/', views.contribute, name='contribute'),
     
-    # This pattern maps the '/browse/' URL to the 'browse_contributions' view.
-    # The name allows us to link to this page from other templates.
+    # URL for browsing all validated contributions, e.g., '/browse/'.
+    # This maps to the same 'browse_contributions' view, but has a different name.
+    # It's important to have this name for links that specifically go to '/browse/'.
     path('browse/', views.browse_contributions, name='browse_contributions'),
     
-    # This is the new URL pattern for the sponsorship page.
-    # It maps '/sponsor/' to the 'sponsor' view and is named 'sponsor'.
+    # URL for the sponsorship page, e.g., '/sponsor/'.
+    # This maps to the 'sponsor' view and is named 'sponsor'.
     path('sponsor/', views.sponsor, name='sponsor'),
 
-    # This is the new URL pattern to handle 'liking' a contribution.
+    # This is the URL pattern to handle 'liking' a contribution, e.g., '/like/5/'.
     # It expects an integer primary key (pk) in the URL to identify the contribution.
-    # The `name` parameter is crucial for the {% url %} template tag to work correctly.
+    # The name 'like_contribution' is used by the form in your template.
     path('like/<int:pk>/', views.like_contribution, name='like_contribution'),
 
-    # This is the new URL pattern for exporting contributions to a JSON file.
+    # URL for exporting contributions to a JSON file, e.g., '/export_json/'.
+    # This maps to the 'export_contributions_json' view and is named 'export_json'.
     path('export_json/', views.export_contributions_json, name='export_json'),
 ]
