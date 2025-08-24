@@ -1,4 +1,4 @@
-# Django imports
+# Django
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
@@ -156,10 +156,8 @@ def best_contributor_view(request):
     # Query the PhraseContribution model to find the best contributor
     best_contributor_data = (
         PhraseContribution.objects
-        # Annotate each contribution with its month and year
-        .annotate(month=TruncMonth('created_at'))
-        # Filter for only contributions made in the current month
-        .filter(month=today.replace(day=1))
+        # Filter for only contributions made in the current month and year
+        .filter(timestamp__month=today.month, timestamp__year=today.year)
         # Group by the contributor (user) and count their contributions
         .values('contributor_name')
         .annotate(contribution_count=Count('contributor_name'))
