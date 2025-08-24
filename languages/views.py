@@ -6,9 +6,9 @@ from django.db.models import F, Q # Import Q for complex queries
 from django.urls import reverse
 import json
 
-# Import your models and forms
+# Import your models and static lists from your models.py file
 from .forms import PhraseContributionForm
-from .models import PhraseContribution, Language, Intent # Import models instead of static lists
+from .models import PhraseContribution, LANGUAGES, INTENTS
 
 
 def contribute(request):
@@ -49,11 +49,11 @@ def browse_contributions(request):
 
     # Apply language filter if a language is selected.
     if selected_language:
-        query_filters &= Q(language__code=selected_language)
+        query_filters &= Q(language=selected_language)
 
     # Apply intent filter if an intent is selected.
     if selected_intent:
-        query_filters &= Q(intent__code=selected_intent)
+        query_filters &= Q(intent=selected_intent)
     
     # Apply search filter across both 'text' and 'translation' fields.
     if search_query:
@@ -66,16 +66,11 @@ def browse_contributions(request):
     # This promotes the most popular contributions.
     contributions = contributions.order_by('-likes', 'timestamp')
 
-    # Get all languages and intents from the database for the dropdown filters.
-    # This ensures the filter options are always in sync with your models.
-    languages = Language.objects.all().order_by('name')
-    intents = Intent.objects.all().order_by('name')
-
     # Prepare the context to pass to the template.
     context = {
         'contributions': contributions,
-        'languages': languages,
-        'intents': intents,
+        'languages': LANGUAGES, # Use the static list
+        'intents': INTENTS,     # Use the static list
         'selected_language': selected_language,
         'selected_intent': selected_intent,
         'search_query': search_query,
