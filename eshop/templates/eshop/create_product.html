@@ -7,7 +7,7 @@
         <h1 class="text-4xl font-extrabold text-indigo-400">MyLanguage Market</h1>
         <p class="mt-2 text-lg text-gray-400">"Buy with meaning. Sell with pride. Speak your language. Trade your truth."</p>
         <div class="mt-6">
-            <a href="{% url 'create_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">
+            <a href="{% url 'eshop:create_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">
                 Start Selling Now
             </a>
         </div>
@@ -44,7 +44,7 @@
         {% empty %}
             <div class="col-span-full text-center p-12 bg-gray-800 rounded-lg shadow-lg">
                 <p class="text-lg text-gray-400">No products are available yet. Be the first to start selling!</p>
-                <a href="{% url 'create_product' %}" class="mt-4 inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">
+                <a href="{% url 'eshop:create_product' %}" class="mt-4 inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">
                     Start Selling Now
                 </a>
             </div>
