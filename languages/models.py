@@ -106,6 +106,7 @@ class PhraseContribution(models.Model):
         choices=INTENTS, 
         help_text=_("The intent or category of the text.")
     )
+    # The contributor field is a foreign key to the Contributor model.
     contributor = models.ForeignKey(
         Contributor, 
         on_delete=models.SET_NULL, # If a contributor is deleted, their contributions will remain.
@@ -113,6 +114,20 @@ class PhraseContribution(models.Model):
         blank=True,
         help_text=_("The contributor associated with this phrase.")
     )
+    
+    # Add contributor name and location fields to the PhraseContribution model.
+    # This keeps the data directly accessible without needing a separate lookup.
+    contributor_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text=_("The name of the contributor.")
+    )
+    contributor_location = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text=_("The location of the contributor.")
+    )
+
     timestamp = models.DateTimeField(auto_now_add=True)
     is_validated = models.BooleanField(
         default=False, 

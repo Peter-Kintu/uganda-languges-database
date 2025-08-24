@@ -13,6 +13,8 @@ from django.urls import reverse
 def contribute(request):
     """
     Handles the contribution form, processing both GET and POST requests.
+    The form's save() method automatically handles saving the new
+    contributor_name and contributor_location fields.
     """
     if request.method == 'POST':
         form = PhraseContributionForm(request.POST)
@@ -48,7 +50,7 @@ def browse_contributions(request):
     # Apply search
     if search_query:
         contributions = contributions.filter(text__icontains=search_query) | \
-                        contributions.filter(translation__icontains=search_query)
+                         contributions.filter(translation__icontains=search_query)
 
     context = {
         'contributions': contributions,
@@ -72,8 +74,13 @@ def export_contributions_json(request):
     if not request.user.is_authenticated or not request.user.is_staff:
         return HttpResponse('Unauthorized', status=401)
         
-    # Get contributions that are validated
-    contributions = PhraseContribution.objects.filter(is_validated=True).values('text', 'translation', 'language', 'intent')
+    # Get contributions that are validated, excluding contributor fields as requested
+    contributions = PhraseContribution.objects.filter(is_validated=True).values(
+        'text', 
+        'translation', 
+        'language', 
+        'intent'
+    )
     
     # Serialize the queryset to a JSON list
     data = list(contributions)
@@ -106,4 +113,3 @@ def sponsor(request):
     Renders the sponsorship page.
     """
     return render(request, 'sponsor.html')
-
