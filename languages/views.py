@@ -1,5 +1,3 @@
-# languages/views.py
-
 # Django imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
@@ -26,7 +24,8 @@ def contribute(request):
         if form.is_valid():
             # Save the new contribution to the database
             form.save()
-            # Redirect to the same page with a success message
+            # Redirect to the same page with a success message.
+            # We use the namespaced URL 'languages:contribute' to prevent errors.
             return redirect('languages:contribute')
     else:
         form = PhraseContributionForm()
@@ -74,7 +73,7 @@ def browse_contributions(request):
     context = {
         'contributions': contributions,
         'languages': LANGUAGES, # Use the static list
-        'intents': INTENTS,     # Use the static list
+        'intents': INTENTS, # Use the static list
         'selected_language': selected_language,
         'selected_intent': selected_intent,
         'search_query': search_query,
@@ -128,7 +127,7 @@ def like_contribution(request, pk):
     # Save the change to the database. The update_fields argument is a performance optimization.
     contribution.save(update_fields=['likes'])
     # Redirect back to the browse page, preserving filters and search query
-    # This line has been corrected to use the 'languages' namespace.
+    # The 'reverse' function is used to dynamically build the URL with the correct namespace.
     return redirect(reverse('languages:browse_contributions') + '?' + request.META['QUERY_STRING'])
 
 
