@@ -1,11 +1,11 @@
 from django.db import models
+from django.db.models import Sum # Import Sum for the aggregation function
 from django.utils.translation import gettext_lazy as _
 
 # A comprehensive list of Ugandan languages based on the prompt's request.
 # This list is representative and can be expanded.
 LANGUAGES = (
     ('luganda', 'Luganda'),
-    ('lukenyi', 'Lukenyi'),
     ('acholi', 'Acholi'),
     ('lugbara', 'Lugbara'),
     ('ateso', 'Ateso'),
@@ -32,34 +32,58 @@ LANGUAGES = (
     ('sabiny', 'Sabiny'),
     ('suam', 'Suam'),
     ('chope', 'Chope'),
-    ('nyakwai', 'Nyakwai'),
-    ('soga', 'Soga'),
-    ('ndyaba', 'Ndyaba'),
-    ('ndyaba', 'Ndyaba'),
-    ('ngboko', 'Ngboko'),
-    ('kamba', 'Kamba'),
-    ('amadi', 'Amadi'),
-    ('sese', 'Sese'),
-    ('talinga', 'Talinga'),
-    ('nubi', 'Nubi'),
-    ('kuku', 'Kuku'),
-    ('kuliak', 'Kuliak'),
-    ('ng`itome', 'Ng`itome'),
-    ('ng`alimo', 'Ng`alimo'),
-    ('elgon', 'Elgon'),
 )
 
-# Common intents for linguistic contributions. This can also be expanded.
+# A comprehensive list of intents or categories for the phrases.
+# This helps in classifying the contributions.
 INTENTS = (
-    ('greeting', 'Greeting'),
-    ('health', 'Health'),
-    ('food', 'Food'),
+    ('greetings', 'Greetings & Courtesies'),
+    ('travel', 'Travel & Directions'),
+    ('food', 'Food & Dining'),
+    ('culture', 'Culture & Traditions'),
+    ('emergency', 'Emergency Phrases'),
+    ('business', 'Business & Commerce'),
+    ('medical', 'Medical & Health'),
     ('education', 'Education'),
-    ('civic_tech', 'Civic Tech'),
-    ('nature', 'Nature'),
-    ('directions', 'Directions'),
-    ('other', 'Other'),
+    ('family', 'Family & Relationships'),
+    ('technology', 'Technology & Modern Life'),
+    ('expressions', 'Common Expressions & Idioms'),
+    ('questions', 'Questions'),
+    ('statements', 'Statements'),
 )
+
+# New Contributor model to track user-specific data like badges.
+class Contributor(models.Model):
+    name = models.CharField(max_length=100, unique=True, help_text=_("The name of the contributor."))
+    location = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text=_("The location of the contributor.")
+    )
+    badge = models.CharField(
+        max_length=50,
+        default="New Contributor",
+        help_text=_("The badge earned by the contributor.")
+    )
+
+    def __str__(self):
+        return self.name
+    
+    # Custom method to update the contributor's badge based on total likes.
+    def update_badge(self):
+        # Sum the likes from all contributions associated with this contributor.
+        total_likes = self.phrasecontribution_set.aggregate(Sum('likes'))['likes__sum'] or 0
+        
+        if total_likes >= 100:
+            self.badge = "National Language Hero"
+        elif total_likes >= 50:
+            self.badge = "Regional Linguist"
+        elif total_likes >= 10:
+            self.badge = "Village Voice"
+        else:
+            self.badge = "New Contributor"
+        self.save()
+
 
 class PhraseContribution(models.Model):
     """
@@ -82,21 +106,20 @@ class PhraseContribution(models.Model):
         choices=INTENTS, 
         help_text=_("The intent or category of the text.")
     )
-    contributor_name = models.CharField(
-        max_length=100, 
-        blank=True, 
-        help_text=_("Optional name of the contributor.")
-    )
-    contributor_location = models.CharField(
-        max_length=100, 
-        blank=True, 
-        help_text=_("Optional location of the contributor.")
+    contributor = models.ForeignKey(
+        Contributor, 
+        on_delete=models.SET_NULL, # If a contributor is deleted, their contributions will remain.
+        null=True, 
+        blank=True,
+        help_text=_("The contributor associated with this phrase.")
     )
     timestamp = models.DateTimeField(auto_now_add=True)
     is_validated = models.BooleanField(
         default=False, 
         help_text=_("Marks if the contribution has been reviewed and validated.")
     )
+    # New field to track the number of likes.
+    likes = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = _("Phrase Contribution")
@@ -104,4 +127,4 @@ class PhraseContribution(models.Model):
         ordering = ['-timestamp']
 
     def __str__(self):
-        return f"{self.language} | {self.intent}: {self.text[:50]}"
+        return f"{self.text} ({self.language})"

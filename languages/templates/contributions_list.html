@@ -31,83 +31,91 @@
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col">
     <!-- Header with Navigation -->
-    <header class="bg-gray-800 shadow-lg">
+    <header class="bg-white shadow-md">
         <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-8">
-                <a href="#" class="text-2xl font-bold text-white">My language</a>
-                <div class="flex space-x-4">
-                    <a href="{% url 'contribute' %}" class="nav-link text-gray-300 font-medium px-3 py-2">Contribute</a>
-                    <a href="{% url 'browse_contributions' %}" class="nav-link text-gray-300 font-medium px-3 py-2 active">Contributions</a>
-                    <a href="{% url 'sponsor' %}" class="nav-link text-gray-300 font-medium px-3 py-2">Sponsor</a>
-                </div>
+            <div class="flex-shrink-0">
+                <a href="/" class="text-2xl font-bold text-gray-900">KINTU</a>
+            </div>
+            <div class="flex space-x-4 sm:space-x-8">
+                <a href="{% url 'contribute' %}" class="nav-link text-gray-600 hover:text-indigo-400 font-medium py-2">Contribute</a>
+                <a href="{% url 'browse_contributions' %}" class="nav-link text-indigo-400 border-b-2 border-indigo-400 font-medium py-2">Browse</a>
+                <a href="{% url 'sponsor' %}" class="nav-link text-gray-600 hover:text-indigo-400 font-medium py-2">Sponsor</a>
+                <a href="{% url 'create_service' %}" class="nav-link text-gray-600 hover:text-indigo-400 font-medium py-2">Monetize</a>
             </div>
         </nav>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow p-8">
-        <div class="w-full max-w-4xl mx-auto">
-            <h1 class="text-4xl font-bold text-white text-center mb-2">Public Contributions</h1>
-            <p class="text-lg text-gray-400 text-center mb-8">See how the community is building My UgandaMyCultue.</p>
-    
-            <!-- Filter and Search Form -->
-            <form method="get" class="flex flex-col md:flex-row gap-4 mb-8 p-4 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
-                <div class="flex-grow">
-                    <label for="search-query" class="sr-only">Search</label>
-                    <input type="text" id="search-query" name="search_query" placeholder="Search by keyword..."
-                           value="{{ search_query }}"
-                           class="w-full p-2.5 border border-gray-600 bg-gray-700 text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label for="language-select" class="sr-only">Language</label>
-                    <select id="language-select" name="language" class="w-full p-2.5 border border-gray-600 bg-gray-700 text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">All Languages</option>
-                        {% for lang_value, lang_label in languages %}
-                            <option value="{{ lang_value }}" {% if lang_value == selected_language %}selected{% endif %}>
-                                {{ lang_label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label for="intent-select" class="sr-only">Intent</label>
-                    <select id="intent-select" name="intent" class="w-full p-2.5 border border-gray-600 bg-gray-700 text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">All Intents</option>
-                        {% for intent_value, intent_label in intents %}
-                            <option value="{{ intent_value }}" {% if intent_value == selected_intent %}selected{% endif %}>
-                                {{ intent_label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl transition-colors duration-200">
+    <!-- Main Content Area -->
+    <main class="flex-grow py-8">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Browse Contributions</h1>
+                <p class="mt-2 text-lg text-gray-600">Explore and like phrases contributed by the community.</p>
+            </div>
+
+            <!-- Search and Filter Form -->
+            <form method="get" class="mb-8 p-4 bg-white rounded-xl shadow-sm flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <input type="search" name="search_query" placeholder="Search phrases..."
+                       value="{{ search_query|default:'' }}"
+                       class="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <select name="language" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Languages</option>
+                    {% for key, display in languages %}
+                        <option value="{{ key }}" {% if selected_language == key %}selected{% endif %}>{{ display }}</option>
+                    {% endfor %}
+                </select>
+                <select name="intent" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Intents</option>
+                    {% for key, display in intents %}
+                        <option value="{{ key }}" {% if selected_intent == key %}selected{% endif %}>{{ display }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-indigo-700 transition-colors duration-200">
                     Filter
                 </button>
             </form>
-    
-            <!-- Contributions List -->
+
             <div class="space-y-6">
                 {% for contribution in contributions %}
-                    <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700 hover:shadow-2xl transition-shadow">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <span class="text-sm font-semibold text-gray-400">
+                                <span class="text-sm font-semibold text-gray-500">
                                     {{ contribution.get_language_display }} | {{ contribution.get_intent_display }}
                                 </span>
-                                <p class="text-xl font-semibold text-white mt-1">{{ contribution.text }}</p>
+                                <p class="text-xl font-semibold text-gray-900 mt-1">{{ contribution.text }}</p>
                             </div>
                         </div>
-                        <p class="text-gray-300 italic border-l-4 border-gray-600 pl-4 mt-2">{{ contribution.translation }}</p>
-                        <div class="flex justify-between items-center text-sm text-gray-500 mt-4">
-                            <span>Contributed by: {{ contribution.contributor_name|default:"Anonymous" }} from {{ contribution.contributor_location|default:"Unknown Location" }}</span>
+                        <p class="text-gray-700 italic border-l-4 border-gray-200 pl-4 mt-2">{{ contribution.translation }}</p>
+
+                        <!-- Like button and badge logic added here -->
+                        <div class="flex items-center justify-between mt-4">
+                            <form method="post" action="{% url 'like_contribution' contribution.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="flex items-center space-x-2 text-indigo-400 hover:text-indigo-500 transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 20 20">
+                                        <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+                                    </svg>
+                                    <span>{{ contribution.likes }}</span>
+                                </button>
+                            </form>
+                            {% if contribution.contributor %}
+                                <span class="text-sm text-gray-400">Badge: {{ contribution.contributor.badge }}</span>
+                            {% else %}
+                                <span class="text-sm text-gray-400">Badge: Not available</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex justify-between items-center text-sm text-gray-400 mt-4 border-t pt-4">
+                            <span>Contributed by: {{ contribution.contributor.name|default:"Anonymous" }} from {{ contribution.contributor.location|default:"Private Location" }}</span>
                             <span>{{ contribution.timestamp|date:"M d, Y" }}</span>
                         </div>
                     </div>
                 {% empty %}
-                    <div class="text-center p-8 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
-                        <p class="text-lg text-gray-400">No contributions found matching your criteria.</p>
+                    <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-gray-200">
+                        <p class="text-lg text-gray-500">No contributions found matching your criteria.</p>
                     </div>
                 {% endfor %}
             </div>
@@ -117,11 +125,10 @@
     <!-- Footer with contact information -->
     <footer class="bg-gray-800 text-gray-400 py-6 text-center shadow-inner mt-auto">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p>&copy; 2025 myUgandaMyCultue. All rights reserved.</p>
+            <p>&copy; 2024 KINTU. All rights reserved.</p>
             <div class="mt-2 space-x-4">
                 <a href="https://wa.me/256789746493" class="footer-link">WhatsApp: +256789746493</a>
-                <span>|</span>
-                <a href="mailto:kintupeter@gmail.com" class="footer-link">Email: kintupeter@gmail.com</a>
+                <a href="#" class="footer-link">Email: contact@kintu.ug</a>
             </div>
         </div>
     </footer>

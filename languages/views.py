@@ -1,8 +1,14 @@
-from django.shortcuts import render, redirect
+# File: languages/views.py
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
 from .forms import PhraseContributionForm
+# Note: The original prompt removed 'LANGUAGES' and 'INTENTS' from the import. 
+# Re-adding them here as they are used in the browse_contributions view.
 from .models import PhraseContribution, LANGUAGES, INTENTS
 import json
+from django.urls import reverse
 
 def contribute(request):
     """
@@ -25,7 +31,8 @@ def browse_contributions(request):
     Displays all validated contributions, with search and filtering capabilities.
     """
     # Temporarily remove the filter for is_validated to check if any contributions appear.
-    contributions = PhraseContribution.objects.all()
+    # Reverting this to filter for only validated contributions, as per the original logic.
+    contributions = PhraseContribution.objects.filter(is_validated=True)
     
     # Get query parameters for filtering and searching
     language = request.GET.get('language')
@@ -60,6 +67,11 @@ def export_contributions_json(request):
     This view is not intended to be accessed directly by the user, but rather
     called as an admin action.
     """
+    # Check if the user is authenticated and is a staff member.
+    # This is a security measure to prevent unauthorized access.
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return HttpResponse('Unauthorized', status=401)
+        
     # Get contributions that are validated
     contributions = PhraseContribution.objects.filter(is_validated=True).values('text', 'translation', 'language', 'intent')
     
@@ -74,8 +86,24 @@ def export_contributions_json(request):
     
     return response
 
+@require_POST
+def like_contribution(request, pk):
+    """
+    Handles a like for a specific contribution.
+    This view only accepts POST requests.
+    """
+    # Get the contribution object or return a 404 error
+    contribution = get_object_or_404(PhraseContribution, pk=pk)
+    # Increment the likes count
+    contribution.likes += 1
+    # Save the change to the database
+    contribution.save()
+    # Redirect back to the browse page to show the updated like count
+    return redirect('browse_contributions')
+
 def sponsor(request):
     """
     Renders the sponsorship page.
     """
     return render(request, 'sponsor.html')
+

@@ -1,24 +1,16 @@
+# File: languages/admin.py
+
 from django.contrib import admin
 from .models import PhraseContribution
-from django.http import JsonResponse
-import json
+from django.urls import reverse
+from django.shortcuts import redirect
+from .models import PhraseContribution, Contributor
 
-# Define a custom action for the admin panel
-def export_as_json(modeladmin, request, queryset):
-    """
-    Admin action to export selected contributions as a JSON file.
-    """
-    data = list(queryset.values('text', 'translation', 'language', 'intent'))
-    response = JsonResponse(data, safe=False)
-    response['Content-Disposition'] = 'attachment; filename="selected_contributions.json"'
-    return response
 
-# Give the action a human-friendly name
-export_as_json.short_description = "Export selected contributions as JSON"
 
+admin.site.register(Contributor)
 # A custom admin class for the PhraseContribution model.
 # This enhances the admin interface to make it easier to manage contributions.
-@admin.register(PhraseContribution)
 class PhraseContributionAdmin(admin.ModelAdmin):
     # This defines the fields that will be displayed in the list view.
     list_display = (
@@ -26,7 +18,9 @@ class PhraseContributionAdmin(admin.ModelAdmin):
         'translation', 
         'language', 
         'intent', 
-        'contributor_name', 
+        'contributor_name',
+        'likes',
+        'contributor',  
         'timestamp', 
         'is_validated'
     )
@@ -38,7 +32,8 @@ class PhraseContributionAdmin(admin.ModelAdmin):
     search_fields = ('text', 'translation', 'contributor_name')
     
     # This allows for bulk actions on selected contributions.
-    actions = ['mark_validated', export_as_json]
+    # We add our new export action here.
+    actions = ['mark_validated', 'export_json']
 
     # Custom action to mark selected contributions as validated.
     # The short_description is what will appear in the action dropdown.
@@ -50,3 +45,23 @@ class PhraseContributionAdmin(admin.ModelAdmin):
             request, 
             f'{updated_count} contribution(s) were successfully marked as validated.'
         )
+
+    @admin.action(description='Reset likes for selected contributions')
+    def reset_likes(self, request, queryset):
+        # Update the 'likes' field to 0 for the selected items.
+        updated_count = queryset.update(likes=0)
+        self.message_user(
+            request,
+            f'Likes were reset for {updated_count} contribution(s).'
+        )
+    
+
+    # Custom action to export validated contributions as JSON.
+    @admin.action(description='Export validated contributions as JSON')
+    def export_json(self, request, queryset):
+        # We don't need the queryset for this action, as the view will handle it.
+        # We just need to redirect to our new view.
+        return redirect('export_contributions_json')
+    
+# Register the model with the custom admin class.
+admin.site.register(PhraseContribution, PhraseContributionAdmin)
