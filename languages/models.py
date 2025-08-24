@@ -5,33 +5,118 @@ from django.utils.translation import gettext_lazy as _
 # A comprehensive list of Ugandan languages based on the prompt's request.
 # This list is representative and can be expanded.
 LANGUAGES = (
+     # Bantu Languages
     ('luganda', 'Luganda'),
-    ('acholi', 'Acholi'),
-    ('lugbara', 'Lugbara'),
-    ('ateso', 'Ateso'),
-    ('runyankole', 'Runyankole'),
     ('lusoga', 'Lusoga'),
+    ('lugwere', 'Lugwere'),
     ('lumasaba', 'Lumasaba'),
-    ('langi', 'Langi'),
-    ('kakwa', 'Kakwa'),
-    ('aluru', 'Aluru'),
-    ('kumam', 'Kumam'),
-    ('runyoro', 'Runyoro'),
-    ('rukiga', 'Rukiga'),
     ('samia', 'Samia'),
+    ('chope', 'Chope'),
+    ('lukenye', 'Lukenye'),
+    ('runyankole', 'Runyankole'),
+    ('rukiga', 'Rukiga'),
+    ('runyoro', 'Runyoro'),
+    ('rutooro', 'Rutooro'),
+    ('runyakitara', 'Runyakitara'),  # Standardized blend of Runyankole, Rukiga, Runyoro, Rutooro
     ('kinyarwanda', 'Kinyarwanda'),
+    ('lussese', 'Lussese'),  # Ssese Islands dialect
+ # Nilotic Languages
+    ('acholi', 'Acholi'),
+    ('alur', 'Alur'),
+    ('langi', 'Langi'),
+    ('ateso', 'Ateso'),
     ('kupsapiiny', 'Kupsapiiny'),
-    ('nyangore', 'Nyangore'),
+    ('sabiny', 'Sabiny'),
+    ('sebei', 'Sebei'),
+    ('suam', 'Suam'),
     ('pokot', 'Pokot'),
     ('ik', 'Ik'),
-    ('madu', 'Madu'),
+    ('kumam', 'Kumam'),
+    ('luo', 'Luo'),
+    ('adhola', 'Adhola'),
+
+    # Central Sudanic Languages
+    ('lugbara', 'Lugbara'),
     ('madi', 'Madi'),
     ('ma\'di', 'Ma\'di'),
-    ('ng`akaramojong', 'Ng`akaramojong'),
-    ('sebei', 'Sebei'),
-    ('sabiny', 'Sabiny'),
-    ('suam', 'Suam'),
-    ('chope', 'Chope'),
+    ('madu', 'Madu'),
+    ('kakwa', 'Kakwa'),
+  # Kuliak Languages
+    ('nyangore', 'Nyangore'),  # Rare, possibly Kuliak or transitional
+
+    # Others / Cross-border
+    ('sw', 'Swahili'),  # Official national language
+    
+    # North Africa
+    ('ar', 'Arabic'),
+    ('ber', 'Berber'),
+    ('tzm', 'Tamazight'),
+
+    # East Africa
+    ('am', 'Amharic'),
+    ('om', 'Oromo'),
+    ('ti', 'Tigrinya'),
+    ('so', 'Somali'),
+    ('sw', 'Swahili'),
+    ('rw', 'Kinyarwanda'),
+    ('rn', 'Kirundi'),
+    ('ss', 'Swati'),
+    ('mg', 'Malagasy'),
+
+# Central Africa
+    ('ln', 'Lingala'),
+    ('kg', 'Kongo'),
+    ('frc', 'French (Central Africa)'),
+    ('sg', 'Sango'),
+
+    # West Africa
+    ('ha', 'Hausa'),
+    ('yo', 'Yoruba'),
+    ('ig', 'Igbo'),
+    ('ff', 'Fula'),
+    ('tw', 'Twi'),
+    ('ee', 'Ewe'),
+    ('bm', 'Bambara'),
+    ('wo', 'Wolof'),
+    ('kp', 'Kpelle'),
+    ('kr', 'Kanuri'),
+     # Southern Africa
+    ('zu', 'Zulu'),
+    ('xh', 'Xhosa'),
+    ('sn', 'Shona'),
+    ('nd', 'Ndebele'),
+    ('ts', 'Tsonga'),
+    ('tn', 'Tswana'),
+    ('ve', 'Venda'),
+    ('ss', 'Swati'),
+    ('afr', 'Afrikaans'),
+    ('nso', 'Northern Sotho'),
+    ('st', 'Southern Sotho'),
+
+    # Nile Valley & Indigenous
+    ('dib', 'Dinka'),
+    ('ach', 'Acholi'),
+    ('lug', 'Luganda'),
+    ('run', 'Runyankore'),
+    ('kin', 'Kinyankole'),
+    ('kam', 'Kamba'),
+    ('kik', 'Kikuyu'),
+    ('ny', 'Chichewa'),
+    ('bem', 'Bemba'),
+    ('loz', 'Lozi'),
+    ('tsn', 'Tswana'),
+    ('swa', 'Swahili'),
+    ('zul', 'Zulu'),
+    ('xho', 'Xhosa'),
+    ('sot', 'Sotho'),
+    ('ven', 'Venda'),
+    ('twi', 'Twi'),
+    ('ibo', 'Igbo'),
+    ('yor', 'Yoruba'),
+    ('hau', 'Hausa'),
+    ('ful', 'Fula'),
+
+
 )
 
 # A comprehensive list of intents or categories for the phrases.
