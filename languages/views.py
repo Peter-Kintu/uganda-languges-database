@@ -1,11 +1,15 @@
+# Django imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
-from django.db.models import F
+from django.db.models import F, Q # Import Q for complex queries
 from django.urls import reverse
-from .forms import PhraseContributionForm
-from .models import PhraseContribution, LANGUAGES, INTENTS
 import json
+
+# Import your models and forms
+from .forms import PhraseContributionForm
+from .models import PhraseContribution, Language, Intent # Import models instead of static lists
+
 
 def contribute(request):
     """
@@ -25,39 +29,60 @@ def contribute(request):
     
     return render(request, 'contribute.html', {'form': form})
 
+
 def browse_contributions(request):
     """
     Displays all validated contributions, with search and filtering capabilities.
+    This view has been updated to use Django's ORM more effectively.
     """
-    # Filter for only validated contributions.
+    # Start with a base queryset of all validated contributions.
     contributions = PhraseContribution.objects.filter(is_validated=True)
     
-    # Get query parameters for filtering and searching
-    language = request.GET.get('language')
-    intent = request.GET.get('intent')
+    # Get query parameters for filtering and searching.
+    selected_language = request.GET.get('language')
+    selected_intent = request.GET.get('intent')
     search_query = request.GET.get('search_query')
 
-    # Apply filters
-    if language:
-        contributions = contributions.filter(language=language)
-    if intent:
-        contributions = contributions.filter(intent=intent)
-    
-    # Apply search
-    if search_query:
-        contributions = contributions.filter(text__icontains=search_query) | \
-                        contributions.filter(translation__icontains=search_query)
+    # Build a dynamic query using a Q object.
+    # This approach is cleaner and more scalable than chained filters.
+    query_filters = Q()
 
+    # Apply language filter if a language is selected.
+    if selected_language:
+        query_filters &= Q(language__code=selected_language)
+
+    # Apply intent filter if an intent is selected.
+    if selected_intent:
+        query_filters &= Q(intent__code=selected_intent)
+    
+    # Apply search filter across both 'text' and 'translation' fields.
+    if search_query:
+        query_filters &= Q(text__icontains=search_query) | Q(translation__icontains=search_query)
+
+    # Filter the contributions using the constructed Q object.
+    contributions = contributions.filter(query_filters)
+
+    # Order the contributions by the number of likes in descending order.
+    # This promotes the most popular contributions.
+    contributions = contributions.order_by('-likes', 'timestamp')
+
+    # Get all languages and intents from the database for the dropdown filters.
+    # This ensures the filter options are always in sync with your models.
+    languages = Language.objects.all().order_by('name')
+    intents = Intent.objects.all().order_by('name')
+
+    # Prepare the context to pass to the template.
     context = {
         'contributions': contributions,
-        'languages': LANGUAGES,  
-        'intents': INTENTS,
-        'selected_language': language,
-        'selected_intent': intent,
+        'languages': languages,
+        'intents': intents,
+        'selected_language': selected_language,
+        'selected_intent': selected_intent,
         'search_query': search_query,
     }
     
-    return render(request, 'contributions_list.html', context)
+    return render(request, 'languages/browse_contributions.html', context)
+
 
 def export_contributions_json(request):
     """
@@ -89,6 +114,7 @@ def export_contributions_json(request):
     
     return response
 
+
 @require_POST
 def like_contribution(request, pk):
     """
@@ -104,9 +130,9 @@ def like_contribution(request, pk):
     # Redirect back to the browse page, preserving filters and search query
     return redirect(reverse('browse_contributions') + '?' + request.META['QUERY_STRING'])
 
+
 def sponsor(request):
     """
     Renders the sponsorship page.
     """
     return render(request, 'sponsor.html')
-
