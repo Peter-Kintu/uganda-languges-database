@@ -1,11 +1,10 @@
-# Django
+# languages/views.py
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
 from django.db.models import F, Q, Count
 from django.urls import reverse
-from django.db.models.functions import TruncMonth
-import json
 from datetime import date
 
 # Import your models and static lists from your models.py file
@@ -167,21 +166,17 @@ def best_contributor_view(request):
         .first()
     )
 
+    # Prepare the context dictionary to pass to the template
+    context = {}
+
     # Check if a contributor was found
     if best_contributor_data:
         # Extract the user's name and count from the query result
-        contributor_name = best_contributor_data['contributor_name']
-        contribution_count = best_contributor_data['contribution_count']
-
-        context = {
-            'contributor_name': contributor_name,
-            'contribution_count': contribution_count
-        }
+        context['contributor_name'] = best_contributor_data['contributor_name']
+        context['contribution_count'] = best_contributor_data['contribution_count']
     else:
         # If no contributions were found this month, set a message
-        context = {
-            'contributor_name': None,
-            'message': "No contributions have been made yet this month. Be the first to add one!"
-        }
+        context['message'] = "No contributions have been made yet this month. Be the first to add one!"
 
+    # Render the template with the prepared context
     return render(request, 'best_contributor.html', context)
