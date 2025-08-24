@@ -1,7 +1,6 @@
-# Django imports
-from django.urls import path
+# languages/urls.py
 
-# Import all view functions from your languages app
+from django.urls import path
 from . import views
 
 # Set the app name for namespacing. This is a best practice
@@ -9,16 +8,13 @@ from . import views
 app_name = 'languages'
 
 urlpatterns = [
-    # The URL for the home page of the app. It's named 'home'.
+    # The URL for the root of your application, pointing to the browse view.
     path('', views.browse_contributions, name='home'),
     
     # URL for the contribution page. This is where users can add new phrases.
     path('contribute/', views.contribute, name='contribute'),
     
-    # This is the crucial URL pattern that you were trying to reverse.
-    # It is explicitly named 'browse_contributions' and points to the
-    # correct view. The error will disappear once this file is deployed
-    # with the correct name.
+    # This URL is for browsing the contributions.
     path('browse/', views.browse_contributions, name='browse_contributions'),
     
     # URL for the sponsorship page.
