@@ -44,7 +44,7 @@
             transform: translateX(0%);
         }
         .drawer-close {
-            transform: translateX(-100%);
+            transform: translateX(100%); /* Corrected this line */
         }
         /* Custom scrollbar for a polished look */
         ::-webkit-scrollbar {
@@ -85,7 +85,7 @@
         </nav>
     </header>
 
-    <div id="drawer" class="fixed top-0 left-0 h-full w-64 drawer-glass z-40 shadow-2xl drawer-transition drawer-close md:hidden">
+    <div id="drawer" class="fixed top-0 right-0 h-full w-64 drawer-glass z-40 shadow-2xl drawer-transition drawer-close md:hidden">
         <div class="p-6 h-full flex flex-col justify-start">
             <div class="flex justify-end mb-8">
                 <button id="close-drawer-button" class="text-gray-300 focus:outline-none">
