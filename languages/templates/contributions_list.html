@@ -6,6 +6,7 @@
     <title>Public Contributions</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for 'Inter' -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -29,9 +30,24 @@
         .footer-link:hover {
             color: #818cf8;
         }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; /* bg-gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* bg-gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* bg-gray-500 */
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex flex-col min-h-screen">
+
     <!-- Header/Navigation Bar -->
     <header class="bg-gray-800 shadow-lg sticky top-0 z-50">
         <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -54,14 +70,26 @@
 
     <!-- Main Content Area -->
     <main class="flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700">
-            <h1 class="text-4xl font-extrabold text-center text-white mb-6">Browse Contributions</h1>
+
+        <!-- Django Messages Block -->
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded-xl {% if message.tags %}bg-{{ message.tags }}-500{% else %}bg-green-500{% endif %} text-white font-semibold text-center shadow-md">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="bg-gray-800 p-4 sm:p-8 rounded-2xl shadow-xl border border-gray-700">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-center text-white mb-6">Browse Contributions</h1>
 
             <!-- Filter and Search Form -->
-            <form method="get" class="mb-8 flex flex-wrap items-end justify-center space-x-2">
+            <form method="get" class="mb-8 flex flex-wrap items-end justify-center gap-4">
                 <div>
                     <label for="language" class="block text-sm font-medium text-gray-400">Language</label>
-                    <select name="language" id="language" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-gray-700 text-white">
+                    <select name="language" id="language" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white px-3 py-2">
                         <option value="">All</option>
                         {% for code, name in languages %}
                             <option value="{{ code }}" {% if code == selected_language %}selected{% endif %}>{{ name }}</option>
@@ -71,7 +99,7 @@
 
                 <div>
                     <label for="intent" class="block text-sm font-medium text-gray-400">Intent</label>
-                    <select name="intent" id="intent" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-gray-700 text-white">
+                    <select name="intent" id="intent" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white px-3 py-2">
                         <option value="">All</option>
                         {% for code, name in intents %}
                             <option value="{{ code }}" {% if code == selected_intent %}selected{% endif %}>{{ name }}</option>
@@ -81,10 +109,10 @@
 
                 <div>
                     <label for="search_query" class="block text-sm font-medium text-gray-400">Search Text</label>
-                    <input type="text" name="search_query" id="search_query" value="{{ search_query }}" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white placeholder-gray-400" placeholder="Search...">
+                    <input type="text" name="search_query" id="search_query" value="{{ search_query }}" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white placeholder-gray-400 px-3 py-2" placeholder="Search...">
                 </div>
 
-                <div class="flex items-center space-x-2 mt-4 sm:mt-0">
+                <div class="flex items-center gap-2 mt-4 sm:mt-0">
                     <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Filter
                     </button>
@@ -98,13 +126,14 @@
             <div class="space-y-6">
                 {% for contribution in contributions %}
                     <div class="bg-gray-900 p-6 rounded-2xl shadow-lg border border-gray-700">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-400 text-indigo-900">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-400 text-indigo-900 mb-2 sm:mb-0">
                                 {{ contribution.get_language_display }}
                             </span>
                             <form method="post" action="{% url 'like_contribution' contribution.pk %}" class="flex items-center space-x-2">
                                 {% csrf_token %}
-                                <button type="submit" class="inline-flex items-center text-gray-400 hover:text-red-400">
+                                <button type="submit" class="inline-flex items-center text-gray-400 hover:text-red-400 transition-colors duration-200">
+                                    <!-- Heart Icon -->
                                     <svg class="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                                 </button>
                                 <span class="text-sm text-gray-400 font-semibold">{{ contribution.likes }}</span>
@@ -112,8 +141,8 @@
                         </div>
                         <p class="text-lg font-semibold text-white mt-2">{{ contribution.text }}</p>
                         <p class="text-gray-300 italic border-l-4 border-gray-600 pl-4 mt-2">{{ contribution.translation }}</p>
-                        <div class="flex justify-between items-center text-sm text-gray-500 mt-4">
-                            <span>Contributed by: {{ contribution.contributor_name|default:"Anonymous" }} from {{ contribution.contributor_location|default:"Unknown Location" }}</span>
+                        <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-sm text-gray-500 mt-4">
+                            <span class="mb-2 sm:mb-0">Contributed by: {{ contribution.contributor_name|default:"Anonymous" }} from {{ contribution.contributor_location|default:"Unknown Location" }}</span>
                             <span>{{ contribution.timestamp|date:"M d, Y" }}</span>
                         </div>
                     </div>
@@ -131,9 +160,9 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <p>&copy; 2024 KINTU. All rights reserved.</p>
             <div class="mt-2 space-x-4">
-               <a href="https://wa.me/256789746493" class="footer-link">WhatsApp: +256789746493</a>
-               <span class="hidden md:inline">|</span>
-               <a href="mailto:kintupeter7@gmail.com" class="footer-link">Email: kintupeter7@gmail.com</a>
+                <a href="https://wa.me/256789746493" class="footer-link">WhatsApp: +256789746493</a>
+                <span class="hidden md:inline">|</span>
+                <a href="mailto:kintupeter7@gmail.com" class="footer-link">Email: kintupeter7@gmail.com</a>
             </div>
         </div>
     </footer>
