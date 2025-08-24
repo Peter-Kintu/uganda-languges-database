@@ -1,14 +1,11 @@
-# File: languages/views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
+from django.db.models import F
+from django.urls import reverse
 from .forms import PhraseContributionForm
-# Note: The original prompt removed 'LANGUAGES' and 'INTENTS' from the import. 
-# Re-adding them here as they are used in the browse_contributions view.
 from .models import PhraseContribution, LANGUAGES, INTENTS
 import json
-from django.urls import reverse
 
 def contribute(request):
     """
@@ -32,8 +29,7 @@ def browse_contributions(request):
     """
     Displays all validated contributions, with search and filtering capabilities.
     """
-    # Temporarily remove the filter for is_validated to check if any contributions appear.
-    # Reverting this to filter for only validated contributions, as per the original logic.
+    # Filter for only validated contributions.
     contributions = PhraseContribution.objects.filter(is_validated=True)
     
     # Get query parameters for filtering and searching
@@ -50,7 +46,7 @@ def browse_contributions(request):
     # Apply search
     if search_query:
         contributions = contributions.filter(text__icontains=search_query) | \
-                         contributions.filter(translation__icontains=search_query)
+                        contributions.filter(translation__icontains=search_query)
 
     context = {
         'contributions': contributions,
@@ -96,20 +92,21 @@ def export_contributions_json(request):
 @require_POST
 def like_contribution(request, pk):
     """
-    Handles a like for a specific contribution.
+    Handles incrementing the like count for a specific contribution.
     This view only accepts POST requests.
     """
     # Get the contribution object or return a 404 error
     contribution = get_object_or_404(PhraseContribution, pk=pk)
-    # Increment the likes count
-    contribution.likes += 1
-    # Save the change to the database
-    contribution.save()
-    # Redirect back to the browse page to show the updated like count
-    return redirect('browse_contributions')
+    # Atomically increment the 'likes' field to avoid race conditions
+    contribution.likes = F('likes') + 1
+    # Save the change to the database. The update_fields argument is a performance optimization.
+    contribution.save(update_fields=['likes'])
+    # Redirect back to the browse page, preserving filters and search query
+    return redirect(reverse('browse_contributions') + '?' + request.META['QUERY_STRING'])
 
 def sponsor(request):
     """
     Renders the sponsorship page.
     """
     return render(request, 'sponsor.html')
+
