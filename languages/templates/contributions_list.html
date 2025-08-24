@@ -1,20 +1,259 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Contributions</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for 'Inter' -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .nav-link {
+            transition: color 0.2s, border-bottom 0.2s;
+        }
+        .nav-link:hover {
+            color: #818cf8; /* Tailwind's indigo-400 */
+        }
+        .nav-link.active {
+            color: #818cf8;
+            border-bottom: 2px solid #818cf8;
+        }
+        .footer-link {
+            transition: color 0.2s;
+        }
+        .footer-link:hover {
+            color: #818cf8;
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; /* bg-gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* bg-gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* bg-gray-500 */
+        }
 
-{% block title %}My Language - Contribute{% endblock %}
+        /* Frosted glass effect for the drawer */
+        .drawer-glass {
+            background-color: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
 
-{% block content %}
-<div class="max-w-xl mx-auto p-6 bg-gray-800 rounded-lg shadow-lg">
-    <h1 class="text-3xl font-bold text-indigo-400 mb-2 text-center">Contribute to the Project</h1>
-    <p class="text-gray-400 mb-6 text-center">Help us grow our language database by adding new words and phrases.</p>
-    
-    <form method="post" class="space-y-4">
-        {% csrf_token %}
-        <div class="bg-gray-700 p-4 rounded-lg">
-            {{ form.as_p }}
+        /* Basic transition for the drawer */
+        .drawer-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .drawer-open {
+            transform: translateX(0%);
+        }
+
+        .drawer-close {
+            transform: translateX(-100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col min-h-screen">
+
+    <!-- Header/Navigation Bar -->
+    <header class="bg-gray-800 shadow-lg sticky top-0 z-50">
+        <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Site Title -->
+                <div class="flex-shrink-0">
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:browse_contributions' %}" class="text-xl font-bold text-white">My Uganda My Culture</a>
+                </div>
+                <!-- Desktop Navigation Links (Visible only on larger screens) -->
+                <div class="hidden md:flex space-x-4 sm:space-x-6 items-center">
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:contribute' %}" class="nav-link py-2 text-sm font-medium">Contribute</a>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:browse_contributions' %}" class="nav-link active py-2 text-sm font-medium">Contributions</a>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:sponsor' %}" class="nav-link py-2 text-sm font-medium">Sponsor Us</a>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:best_contributor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Top Contributor</a>
+                </div>
+
+                <!-- Mobile menu button to open the drawer (Visible only on small screens) -->
+                <button id="open-drawer-button" class="text-gray-300 md:hidden focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- The new off-canvas drawer for mobile -->
+    <div id="drawer" class="fixed top-0 left-0 h-full w-64 drawer-glass z-40 shadow-2xl drawer-transition drawer-close md:hidden">
+        <div class="p-6 h-full flex flex-col justify-start">
+            <!-- Close button for the drawer -->
+            <div class="flex justify-end mb-8">
+                <button id="close-drawer-button" class="text-gray-300 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <!-- Drawer navigation links -->
+            <div id="drawer-links" class="flex flex-col space-y-4 text-center">
+                <a href="{% url 'languages:contribute' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contribute</a>
+                <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300 active">Contributions</a>
+                <a href="{% url 'languages:sponsor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sponsor Us</a>
+                <a href="{% url 'languages:best_contributor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Top Contributor</a>
+            </div>
         </div>
-        <button type="submit" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition-colors duration-200">
-            Submit Contribution
-        </button>
-    </form>
-</div>
-{% endblock %}
+    </div>
+    
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Django Messages Block -->
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded-xl {% if message.tags %}bg-{{ message.tags }}-500{% else %}bg-green-500{% endif %} text-white font-semibold text-center shadow-md">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="bg-gray-800 p-4 sm:p-8 rounded-2xl shadow-xl border border-gray-700">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-center text-white mb-6">Contributions</h1>
+
+            <!-- Filter and Search Form -->
+            <!-- Updated layout with a responsive grid -->
+            <form method="get" class="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <!-- Language Select -->
+                <div class="w-full">
+                    <label for="language" class="block text-sm font-medium text-gray-400">Language</label>
+                    <select name="language" id="language" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white px-3 py-2">
+                        <option value="">All</option>
+                        {% for code, name in languages %}
+                            <option value="{{ code }}" {% if code == selected_language %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Intent Select -->
+                <div class="w-full">
+                    <label for="intent" class="block text-sm font-medium text-gray-400">Intent</label>
+                    <select name="intent" id="intent" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white px-3 py-2">
+                        <option value="">All</option>
+                        {% for code, name in intents %}
+                            <option value="{{ code }}" {% if code == selected_intent %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Search Input -->
+                <div class="w-full">
+                    <label for="search_query" class="block text-sm font-medium text-gray-400">Search Text</label>
+                    <input type="text" name="search_query" id="search_query" value="{{ search_query }}" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white placeholder-gray-400 px-3 py-2" placeholder="Search...">
+                </div>
+
+                <!-- Buttons -->
+                <!-- The buttons are now in their own column in the grid -->
+                <div class="flex items-center gap-2 w-full">
+                    <button type="submit" class="w-1/2 md:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Filter
+                    </button>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:browse_contributions' %}" class="w-1/2 md:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-200 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        Reset
+                    </a>
+                </div>
+            </form>
+
+            <!-- Contributions List -->
+            <div class="space-y-6">
+                {% for contribution in contributions %}
+                    <div class="bg-gray-900 p-6 rounded-2xl shadow-lg border border-gray-700">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-400 text-indigo-900 mb-2 sm:mb-0">
+                                {{ contribution.get_language_display }}
+                            </span>
+                            <!-- Corrected URL with namespace -->
+                            <form method="post" action="{% url 'languages:like_contribution' contribution.pk %}" class="flex items-center space-x-2">
+                                {% csrf_token %}
+                                <button type="submit" class="inline-flex items-center text-gray-400 hover:text-red-400 transition-colors duration-200">
+                                    <!-- Heart Icon -->
+                                    <svg class="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                </button>
+                                <span class="text-sm text-gray-400 font-semibold">{{ contribution.likes }}</span>
+                            </form>
+                        </div>
+                        <p class="text-lg font-semibold text-white mt-2">{{ contribution.text }}</p>
+                        <p class="text-gray-300 italic border-l-4 border-gray-600 pl-4 mt-2">{{ contribution.translation }}</p>
+                        <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-sm text-gray-500 mt-4">
+                            <span class="mb-2 sm:mb-0">Contributed by: {{ contribution.contributor_name|default:"Anonymous" }} from {{ contribution.contributor_location|default:"Unknown Location" }}</span>
+                            <span>{{ contribution.timestamp|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center p-8 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
+                        <p class="text-lg text-gray-400">No contributions found matching your criteria.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer with contact information -->
+    <footer class="bg-gray-800 text-gray-400 py-6 text-center shadow-inner mt-auto">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p>&copy; 2025 myUgandaMyCulture. All rights reserved.</p>
+            <div class="mt-2 space-x-4">
+                <a href="https://wa.me/256789746493" class="footer-link">WhatsApp: +256789746493</a>
+                <span class="hidden md:inline">|</span>
+                <a href="mailto:kintupeter7@gmail.com" class="footer-link">Email: kintupeter7@gmail.com</a>
+            </div>
+        </div>
+    </footer>
+    <script>
+        const drawer = document.getElementById('drawer');
+        const openDrawerButton = document.getElementById('open-drawer-button');
+        const closeDrawerButton = document.getElementById('close-drawer-button');
+        const drawerLinks = document.querySelectorAll('#drawer a'); // Select all links inside the drawer
+
+        // Function to open the drawer
+        const openDrawer = () => {
+            drawer.classList.remove('drawer-close');
+            drawer.classList.add('drawer-open');
+        };
+
+        // Function to close the drawer
+        const closeDrawer = () => {
+            drawer.classList.remove('drawer-open');
+            drawer.classList.add('drawer-close');
+        };
+
+        // Event listener for opening the drawer
+        openDrawerButton.addEventListener('click', openDrawer);
+
+        // Event listener for closing the drawer with the close button
+        closeDrawerButton.addEventListener('click', closeDrawer);
+
+        // Event listeners for closing the drawer when a link is clicked
+        drawerLinks.forEach(link => {
+            link.addEventListener('click', closeDrawer);
+        });
+    </script>
+</body>
+</html>
