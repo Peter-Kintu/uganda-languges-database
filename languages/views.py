@@ -6,6 +6,7 @@ from django.http import JsonResponse, HttpResponse
 from django.db.models import F, Q, Count
 from django.urls import reverse
 from datetime import date
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 # Import your models and static lists from your models.py file
 from .forms import PhraseContributionForm
@@ -65,6 +66,11 @@ def browse_contributions(request):
     selected_intent = request.GET.get('intent')
     search_query = request.GET.get('search_query')
 
+    # Add debugging print statements to confirm query parameters
+    print("Language:", selected_language)
+    print("Intent:", selected_intent)
+    print("Search:", search_query)
+
     # Build a dynamic query using a Q object.
     # This approach is cleaner and more scalable than chained filters.
     query_filters = Q()
@@ -84,13 +90,30 @@ def browse_contributions(request):
     # Filter the contributions using the constructed Q object.
     contributions = contributions.filter(query_filters)
 
+    # Add a debugging print statement to confirm the count
+    print("Filtered contributions count:", contributions.count())
+
     # Order the contributions by the number of likes in descending order.
     # This promotes the most popular contributions.
     contributions = contributions.order_by('-likes', 'timestamp')
 
+    # Add pagination for scalability
+    paginator = Paginator(contributions, 20)  # Show 20 contributions per page.
+    page_number = request.GET.get('page')
+    
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results.
+        page_obj = paginator.get_page(paginator.num_pages)
+
     # Prepare the context to pass to the template.
     context = {
-        'contributions': contributions,
+        'page_obj': page_obj, # Pass the paginated object instead of the full queryset
+        'contributions': page_obj,
         'languages': LANGUAGES, # Use the static list
         'intents': INTENTS, # Use the static list
         'selected_language': selected_language,
