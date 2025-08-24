@@ -54,15 +54,19 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo/Site Title -->
                 <div class="flex-shrink-0">
-                    <a href="{% url 'browse_contributions' %}" class="text-xl font-bold text-white">My Uganda My Culture</a>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:browse_contributions' %}" class="text-xl font-bold text-white">My Uganda My Culture</a>
                 </div>
                 <!-- Navigation Links -->
                 <div class="flex space-x-4 sm:space-x-6 items-center">
-                    <a href="{% url 'contribute' %}" class="nav-link py-2 text-sm font-medium">Contribute</a>
-                    <a href="{% url 'browse_contributions' %}" class="nav-link active py-2 text-sm font-medium">Browse Contributions</a>
-                    <a href="{% url 'sponsor' %}" class="nav-link py-2 text-sm font-medium">Sponsor Us</a>
-                    <!-- This link was causing the error, it's now corrected to point to a valid URL -->
-                    <a href="{% url 'contribute' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-xl shadow transition-colors duration-200 text-sm">Create Service</a>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:contribute' %}" class="nav-link py-2 text-sm font-medium">Contribute</a>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:browse_contributions' %}" class="nav-link active py-2 text-sm font-medium">Browse Contributions</a>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:sponsor' %}" class="nav-link py-2 text-sm font-medium">Sponsor Us</a>
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:contribute' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-xl shadow transition-colors duration-200 text-sm">Create Service</a>
                 </div>
             </div>
         </nav>
@@ -116,7 +120,8 @@
                     <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Filter
                     </button>
-                    <a href="{% url 'browse_contributions' %}" class="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-200 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    <!-- Corrected URL with namespace -->
+                    <a href="{% url 'languages:browse_contributions' %}" class="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-200 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                         Reset
                     </a>
                 </div>
@@ -130,7 +135,8 @@
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-400 text-indigo-900 mb-2 sm:mb-0">
                                 {{ contribution.get_language_display }}
                             </span>
-                            <form method="post" action="{% url 'like_contribution' contribution.pk %}" class="flex items-center space-x-2">
+                            <!-- Corrected URL with namespace -->
+                            <form method="post" action="{% url 'languages:like_contribution' contribution.pk %}" class="flex items-center space-x-2">
                                 {% csrf_token %}
                                 <button type="submit" class="inline-flex items-center text-gray-400 hover:text-red-400 transition-colors duration-200">
                                     <!-- Heart Icon -->
