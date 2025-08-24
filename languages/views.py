@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
-from django.db.models import F, Q # Import Q for complex queries
+from django.db.models import F, Q, Count # Import Q and Count for queries
 from django.urls import reverse
 import json
 
@@ -130,6 +130,14 @@ def like_contribution(request, pk):
 
 def sponsor(request):
     """
-    Renders the sponsorship page.
+    Renders the sponsorship page and fetches top contributors.
     """
-    return render(request, 'sponsor.html')
+    # Get the top 10 contributors based on their contribution count.
+    top_contributors = PhraseContribution.objects.values('contributor_name').annotate(
+        contribution_count=Count('contributor_name')
+    ).order_by('-contribution_count')[:10]
+
+    context = {
+        'top_contributors': top_contributors
+    }
+    return render(request, 'sponsor.html', context)
