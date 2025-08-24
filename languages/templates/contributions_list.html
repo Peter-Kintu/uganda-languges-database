@@ -44,6 +44,26 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #6b7280; /* bg-gray-500 */
         }
+
+        /* Frosted glass effect for the drawer */
+        .drawer-glass {
+            background-color: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* Basic transition for the drawer */
+        .drawer-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .drawer-open {
+            transform: translateX(0%);
+        }
+
+        .drawer-close {
+            transform: translateX(-100%);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex flex-col min-h-screen">
@@ -57,8 +77,8 @@
                     <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:browse_contributions' %}" class="text-xl font-bold text-white">My Uganda My Culture</a>
                 </div>
-                <!-- Navigation Links -->
-                <div class="flex space-x-4 sm:space-x-6 items-center">
+                <!-- Desktop Navigation Links (Visible only on larger screens) -->
+                <div class="hidden md:flex space-x-4 sm:space-x-6 items-center">
                     <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:contribute' %}" class="nav-link py-2 text-sm font-medium">Contribute</a>
                     <!-- Corrected URL with namespace -->
@@ -68,10 +88,38 @@
                     <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:best_contributor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center active">Top Contributor</a>
                 </div>
+
+                <!-- Mobile menu button to open the drawer (Visible only on small screens) -->
+                <button id="open-drawer-button" class="text-gray-300 md:hidden focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
             </div>
         </nav>
     </header>
 
+    <!-- The new off-canvas drawer for mobile -->
+    <div id="drawer" class="fixed top-0 left-0 h-full w-64 drawer-glass z-40 shadow-2xl drawer-transition drawer-close md:hidden">
+        <div class="p-6 h-full flex flex-col justify-start">
+            <!-- Close button for the drawer -->
+            <div class="flex justify-end mb-8">
+                <button id="close-drawer-button" class="text-gray-300 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <!-- Drawer navigation links -->
+            <div class="flex flex-col space-y-4 text-center">
+                <a href="{% url 'languages:contribute' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contribute</a>
+                <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contributions</a>
+                <a href="{% url 'languages:sponsor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sponsor Us</a>
+                <a href="{% url 'languages:best_contributor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300 active">Top Contributor</a>
+            </div>
+        </div>
+    </div>
+    
     <!-- Main Content Area -->
     <main class="flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
@@ -172,5 +220,22 @@
             </div>
         </div>
     </footer>
+    <script>
+        const drawer = document.getElementById('drawer');
+        const openDrawerButton = document.getElementById('open-drawer-button');
+        const closeDrawerButton = document.getElementById('close-drawer-button');
+
+        // Function to open the drawer
+        openDrawerButton.addEventListener('click', () => {
+            drawer.classList.remove('drawer-close');
+            drawer.classList.add('drawer-open');
+        });
+
+        // Function to close the drawer
+        closeDrawerButton.addEventListener('click', () => {
+            drawer.classList.remove('drawer-open');
+            drawer.classList.add('drawer-close');
+        });
+    </script>
 </body>
 </html>
