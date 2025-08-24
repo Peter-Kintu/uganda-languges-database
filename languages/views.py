@@ -124,7 +124,8 @@ def like_contribution(request, pk):
     # Save the change to the database. The update_fields argument is a performance optimization.
     contribution.save(update_fields=['likes'])
     # Redirect back to the browse page, preserving filters and search query
-    return redirect(reverse('browse_contributions') + '?' + request.META['QUERY_STRING'])
+    # This line has been corrected to use the 'languages' namespace.
+    return redirect(reverse('languages:browse_contributions') + '?' + request.META['QUERY_STRING'])
 
 
 def sponsor(request):
