@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'languages', # Your app
+    'eshop', # Your app
 ]
 
 MIDDLEWARE = [

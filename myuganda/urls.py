@@ -27,6 +27,7 @@ urlpatterns = [
     # It ensures that all the paths defined in languages/urls.py are
     # correctly routed and can be found by name, resolving the 'NoReverseMatch' error.
     path('', include('languages.urls')),
+    path('', include('eshop.urls')),
 ]
 
 # This block is essential for serving static files (CSS, JS, images)
