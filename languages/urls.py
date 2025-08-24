@@ -4,34 +4,30 @@ from django.urls import path
 # Import all view functions from your languages app
 from . import views
 
-# Set the app name for namespacing. This is good practice
-# and helps avoid URL name clashes between different apps.
+# Set the app name for namespacing. This is a best practice
+# that helps prevent URL name clashes with other apps.
 app_name = 'languages'
 
 urlpatterns = [
-    # The root URL of the app, e.g., 'uganda-languges-database.onrender.com/'.
-    # This maps to the 'browse_contributions' view and is named 'home'.
+    # The URL for the home page of the app. It's named 'home'.
     path('', views.browse_contributions, name='home'),
     
-    # URL for the main contribution page, e.g., '/contribute/'.
-    # This maps to the 'contribute' view and is named 'contribute'.
+    # URL for the contribution page. This is where users can add new phrases.
     path('contribute/', views.contribute, name='contribute'),
     
-    # URL for browsing all validated contributions, e.g., '/browse/'.
-    # This maps to the same 'browse_contributions' view, but has a different name.
-    # It's important to have this name for links that specifically go to '/browse/'.
+    # This is the crucial URL pattern that you were trying to reverse.
+    # It is explicitly named 'browse_contributions' and points to the
+    # correct view. The error will disappear once this file is deployed
+    # with the correct name.
     path('browse/', views.browse_contributions, name='browse_contributions'),
     
-    # URL for the sponsorship page, e.g., '/sponsor/'.
-    # This maps to the 'sponsor' view and is named 'sponsor'.
+    # URL for the sponsorship page.
     path('sponsor/', views.sponsor, name='sponsor'),
 
-    # This is the URL pattern to handle 'liking' a contribution, e.g., '/like/5/'.
-    # It expects an integer primary key (pk) in the URL to identify the contribution.
-    # The name 'like_contribution' is used by the form in your template.
+    # This URL handles 'liking' a specific contribution.
+    # It expects an integer primary key (pk) to identify the item.
     path('like/<int:pk>/', views.like_contribution, name='like_contribution'),
 
-    # URL for exporting contributions to a JSON file, e.g., '/export_json/'.
-    # This maps to the 'export_contributions_json' view and is named 'export_json'.
+    # This URL handles exporting contributions to a JSON file.
     path('export_json/', views.export_contributions_json, name='export_json'),
 ]
