@@ -87,9 +87,9 @@
                     <a href="{% url 'languages:sponsor' %}" class="nav-link py-2 text-sm font-medium">Sponsor Us</a>
                     <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:best_contributor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Top Contributor</a>
-                    <a href="{% url 'eshop:product_list' %}" class="nav-link py-2 text-sm font-medium">Contribute</a>
+                    <a href="{% url 'product_list' %}" class="nav-link py-2 text-sm font-medium">Contribute</a>
                     <!-- Corrected URL with namespace -->
-                    <a href="{% url 'eshop:create_product' %}" class="nav-link active py-2 text-sm font-medium">Contributions</a>
+                    <a href="{% url 'create_product' %}" class="nav-link active py-2 text-sm font-medium">Contributions</a>
                 </div>
 
                 <!-- Mobile menu button to open the drawer (Visible only on small screens) -->
@@ -119,8 +119,8 @@
                 <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300 active">Contributions</a>
                 <a href="{% url 'languages:sponsor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sponsor Us</a>
                 <a href="{% url 'languages:best_contributor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Top Contributor</a>
-                <a href="{% url 'eshop:product_list' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Market</a>
-                <a href="{% url 'eshop:create_product' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sell</a>
+                <a href="{% url 'product_list' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Market</a>
+                <a href="{% url 'create_product' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sell</a>
             </div>
         </div>
     </div>
