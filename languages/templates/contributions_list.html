@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Public Contributions</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for 'Inter' -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -68,31 +66,20 @@
 </head>
 <body class="bg-gray-900 text-gray-200 flex flex-col min-h-screen">
 
-    <!-- Header/Navigation Bar -->
     <header class="bg-gray-800 shadow-lg sticky top-0 z-50">
         <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo/Site Title -->
                 <div class="flex-shrink-0">
-                    <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:browse_contributions' %}" class="text-xl font-bold text-white">My Uganda My Culture</a>
                 </div>
-                <!-- Desktop Navigation Links (Visible only on larger screens) -->
                 <div class="hidden md:flex space-x-4 sm:space-x-6 items-center">
-                    <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:contribute' %}" class="nav-link py-2 text-sm font-medium">Contribute</a>
-                    <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:browse_contributions' %}" class="nav-link active py-2 text-sm font-medium">Contributions</a>
-                    <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:sponsor' %}" class="nav-link py-2 text-sm font-medium">Sponsor Us</a>
-                    <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:best_contributor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Top Contributor</a>
                     <a href="{% url 'eshop:product_list' %}" class="nav-link py-2 text-sm font-medium">Market</a>
-                    <!-- Corrected URL with namespace -->
-                   
-                </div>
+                    </div>
 
-                <!-- Mobile menu button to open the drawer (Visible only on small screens) -->
                 <button id="open-drawer-button" class="text-gray-300 md:hidden focus:outline-none">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -102,10 +89,8 @@
         </nav>
     </header>
 
-    <!-- The new off-canvas drawer for mobile -->
     <div id="drawer" class="fixed top-0 left-0 h-full w-64 drawer-glass z-40 shadow-2xl drawer-transition drawer-close md:hidden">
         <div class="p-6 h-full flex flex-col justify-start">
-            <!-- Close button for the drawer -->
             <div class="flex justify-end mb-8">
                 <button id="close-drawer-button" class="text-gray-300 focus:outline-none">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -113,7 +98,6 @@
                     </svg>
                 </button>
             </div>
-            <!-- Drawer navigation links -->
             <div id="drawer-links" class="flex flex-col space-y-4 text-center">
                 <a href="{% url 'languages:contribute' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contribute</a>
                 <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300 active">Contributions</a>
@@ -124,10 +108,8 @@
         </div>
     </div>
     
-    <!-- Main Content Area -->
     <main class="flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <!-- Django Messages Block -->
         {% if messages %}
             <div class="mb-6">
                 {% for message in messages %}
@@ -141,10 +123,7 @@
         <div class="bg-gray-800 p-4 sm:p-8 rounded-2xl shadow-xl border border-gray-700">
             <h1 class="text-3xl sm:text-4xl font-extrabold text-center text-white mb-6">Contributions</h1>
 
-            <!-- Filter and Search Form -->
-            <!-- Updated layout with a responsive grid -->
             <form method="get" class="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                <!-- Language Select -->
                 <div class="w-full">
                     <label for="language" class="block text-sm font-medium text-gray-400">Language</label>
                     <select name="language" id="language" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white px-3 py-2">
@@ -155,7 +134,6 @@
                     </select>
                 </div>
 
-                <!-- Intent Select -->
                 <div class="w-full">
                     <label for="intent" class="block text-sm font-medium text-gray-400">Intent</label>
                     <select name="intent" id="intent" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white px-3 py-2">
@@ -166,38 +144,31 @@
                     </select>
                 </div>
 
-                <!-- Search Input -->
                 <div class="w-full">
                     <label for="search_query" class="block text-sm font-medium text-gray-400">Search Text</label>
                     <input type="text" name="search_query" id="search_query" value="{{ search_query }}" class="mt-1 block w-full rounded-md border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-700 text-white placeholder-gray-400 px-3 py-2" placeholder="Search...">
                 </div>
 
-                <!-- Buttons -->
-                <!-- The buttons are now in their own column in the grid -->
                 <div class="flex items-center gap-2 w-full">
                     <button type="submit" class="w-1/2 md:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Filter
                     </button>
-                    <!-- Corrected URL with namespace -->
                     <a href="{% url 'languages:browse_contributions' %}" class="w-1/2 md:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-200 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                         Reset
                     </a>
                 </div>
             </form>
 
-            <!-- Contributions List -->
             <div class="space-y-6">
-                {% for contribution in contributions %}
+                {% for contribution in page_obj %}
                     <div class="bg-gray-900 p-6 rounded-2xl shadow-lg border border-gray-700">
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2">
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-400 text-indigo-900 mb-2 sm:mb-0">
                                 {{ contribution.get_language_display }}
                             </span>
-                            <!-- Corrected URL with namespace -->
                             <form method="post" action="{% url 'languages:like_contribution' contribution.pk %}" class="flex items-center space-x-2">
                                 {% csrf_token %}
                                 <button type="submit" class="inline-flex items-center text-gray-400 hover:text-red-400 transition-colors duration-200">
-                                    <!-- Heart Icon -->
                                     <svg class="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                                 </button>
                                 <span class="text-sm text-gray-400 font-semibold">{{ contribution.likes }}</span>
@@ -213,13 +184,44 @@
                 {% empty %}
                     <div class="text-center p-8 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
                         <p class="text-lg text-gray-400">No contributions found matching your criteria.</p>
+                        <p class="mt-2 text-sm text-gray-500 italic">Try adjusting your filters or be the first to share your voice.</p>
                     </div>
                 {% endfor %}
             </div>
+
+            {% if page_obj.has_other_pages %}
+                <div class="mt-8 flex justify-center items-center space-x-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_intent %}&intent={{ selected_intent }}{% endif %}{% if search_query %}&search_query={{ search_query }}{% endif %}" class="px-4 py-2 border rounded-md text-sm font-medium text-gray-200 bg-gray-700 hover:bg-gray-600">
+                            Previous
+                        </a>
+                    {% else %}
+                        <span class="px-4 py-2 border rounded-md text-sm font-medium text-gray-500 bg-gray-800 cursor-not-allowed">Previous</span>
+                    {% endif %}
+
+                    {% for i in page_obj.paginator.page_range %}
+                        {% if page_obj.number == i %}
+                            <span class="px-4 py-2 border rounded-md text-sm font-medium text-white bg-indigo-600">{{ i }}</span>
+                        {% else %}
+                            <a href="?page={{ i }}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_intent %}&intent={{ selected_intent }}{% endif %}{% if search_query %}&search_query={{ search_query }}{% endif %}" class="px-4 py-2 border rounded-md text-sm font-medium text-gray-200 bg-gray-700 hover:bg-gray-600">
+                                {{ i }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_intent %}&intent={{ selected_intent }}{% endif %}{% if search_query %}&search_query={{ search_query }}{% endif %}" class="px-4 py-2 border rounded-md text-sm font-medium text-gray-200 bg-gray-700 hover:bg-gray-600">
+                            Next
+                        </a>
+                    {% else %}
+                        <span class="px-4 py-2 border rounded-md text-sm font-medium text-gray-500 bg-gray-800 cursor-not-allowed">Next</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+
         </div>
     </main>
 
-    <!-- Footer with contact information -->
     <footer class="bg-gray-800 text-gray-400 py-6 text-center shadow-inner mt-auto">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <p>&copy; 2025 myUgandaMyCulture. All rights reserved.</p>
