@@ -78,7 +78,7 @@
                     <a href="{% url 'languages:sponsor' %}" class="nav-link py-2 text-sm font-medium">Sponsor Us</a>
                     <a href="{% url 'languages:best_contributor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Top Contributor</a>
                     <a href="{% url 'eshop:product_list' %}" class="nav-link py-2 text-sm font-medium">Market</a>
-                    </div>
+                </div>
 
                 <button id="open-drawer-button" class="text-gray-300 md:hidden focus:outline-none">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -104,7 +104,7 @@
                 <a href="{% url 'languages:sponsor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sponsor Us</a>
                 <a href="{% url 'languages:best_contributor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Top Contributor</a>
                 <a href="{% url 'eshop:product_list' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Market</a>
-                
+            </div>
         </div>
     </div>
     
@@ -121,8 +121,9 @@
         {% endif %}
 
         <div class="bg-gray-800 p-4 sm:p-8 rounded-2xl shadow-xl border border-gray-700">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-center text-white mb-6">Contributions</h1>
-
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-center text-white mb-2">Contributions</h1>
+            <p class="text-gray-400 text-center mb-6">A living archive of Uganda’s voices. Each phrase is a thread in our national tapestry — shared with pride, preserved with care.</p>
+            
             <form method="get" class="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div class="w-full">
                     <label for="language" class="block text-sm font-medium text-gray-400">Language</label>
@@ -177,13 +178,17 @@
                         <p class="text-lg font-semibold text-white mt-2">{{ contribution.text }}</p>
                         <p class="text-gray-300 italic border-l-4 border-gray-600 pl-4 mt-2">{{ contribution.translation }}</p>
                         <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-sm text-gray-500 mt-4">
-                            <span class="mb-2 sm:mb-0">Contributed by: {{ contribution.contributor_name|default:"Anonymous" }} from {{ contribution.contributor_location|default:"Unknown Location" }}</span>
+                            {% if contribution.contributor_name %}
+                                <span class="mb-2 sm:mb-0">Contributed by: {{ contribution.contributor_name }} from {{ contribution.contributor_location }}</span>
+                            {% else %}
+                                <span class="mb-2 sm:mb-0">Contributed by: Anonymous from Unknown Location</span>
+                            {% endif %}
                             <span>{{ contribution.timestamp|date:"M d, Y" }}</span>
                         </div>
                     </div>
                 {% empty %}
                     <div class="text-center p-8 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
-                        <p class="text-lg text-gray-400">No contributions found matching your criteria.</p>
+                        <p class="text-lg text-gray-400">No phrases found — but the silence is an invitation. Add your voice to the archive.</p>
                         <p class="mt-2 text-sm text-gray-500 italic">Try adjusting your filters or be the first to share your voice.</p>
                     </div>
                 {% endfor %}
@@ -268,7 +273,6 @@
                 closeDrawer();
             }
         });
-
     </script>
 </body>
 </html>
