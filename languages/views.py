@@ -121,10 +121,9 @@ def browse_contributions(request):
         'selected_intent': selected_intent,
         'search_query': search_query,
     }
-    return HttpResponse("✅ View is working")
-
+    
     # Revert the template path to the original, which should exist.
-    # return render(request, 'contributions_list.html', context)
+    return render(request, 'contributions_list.html', context)
 
 
 def export_contributions_json(request):
