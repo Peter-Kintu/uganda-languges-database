@@ -54,7 +54,7 @@
     <header class="bg-gray-800 shadow-lg py-4 px-6 md:px-12 sticky top-0 z-50 rounded-b-2xl">
         <nav class="container mx-auto flex flex-col md:flex-row items-center justify-between">
             <div class="flex justify-between w-full md:w-auto items-center">
-                <a href="{% url 'languages:contribute' %}" class="text-2xl font-bold text-white">My language</a>
+                <a href="{% url 'languages:best_contributor_view' %}" class="text-2xl font-bold text-white">My language</a>
                 <!-- Mobile menu button -->
                 <button id="menu-button" class="text-gray-300 md:hidden focus:outline-none">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +66,7 @@
                 <a href="{% url 'languages:contribute' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Contribute</a>
                 <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Contributions</a>
                 <a href="{% url 'languages:sponsor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Sponsor</a>
-                <a href="{% url 'languages:best_contributor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center active">Top Contributor</a>
+                <a href="{% url 'languages:best_contributor_view' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center active">Top Contributor</a>
                 <a href="{% url 'eshop:product_list' %}" class="nav-link py-2 text-sm font-medium">Market</a>
                     <!-- Corrected URL with namespace -->
                
@@ -90,7 +90,7 @@
                 <a href="{% url 'languages:contribute' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contribute</a>
                 <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contributions</a>
                 <a href="{% url 'languages:sponsor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sponsor Us</a>
-                <a href="{% url 'languages:best_contributor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300 active">Top Contributor</a>
+                <a href="{% url 'languages:best_contributor_view' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300 active">Top Contributor</a>
                 <a href="{% url 'eshop:product_list' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Market</a>
 
         </div>
