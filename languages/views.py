@@ -55,7 +55,7 @@ def contribute(request):
 
 def browse_contributions(request):
     """
-    Displays all validated contributions, with search and filtering capabilities.
+    Displays all contributions, with search and filtering capabilities.
     This view has been updated to use Django's ORM more effectively.
     """
     # Start with a base queryset of all contributions.
@@ -189,20 +189,28 @@ def sponsor(request):
 
 def best_contributor_view(request):
     """
-    Finds and displays the best contributor of the current month.
+    Finds and displays the best contributor of the current month. If none exist,
+    it displays the all-time best contributor.
     """
     today = date.today()
     
-    # Use the new helper function to get the top contributor for the current month
+    # Try to get the top contributor for the current month.
     best_contributor_data = get_top_contributors(month=today.month, year=today.year, limit=1).first()
-    
+    is_current_month = True
+
+    # If no contributions this month, get the all-time top contributor.
+    if not best_contributor_data:
+        best_contributor_data = get_top_contributors(limit=1).first()
+        is_current_month = False
+
     # Prepare the context dictionary to pass to the template
     context = {}
     if best_contributor_data:
         context['contributor_name'] = best_contributor_data['contributor_name']
         context['contribution_count'] = best_contributor_data['contribution_count']
+        context['is_current_month'] = is_current_month
     else:
-        context['message'] = "No contributions have been made yet this month. Be the first to add one!"
+        context['message'] = "No contributions have been made yet. Be the first to add one!"
 
     # Render the template with the prepared context
     return render(request, 'best_contributor.html', context)
