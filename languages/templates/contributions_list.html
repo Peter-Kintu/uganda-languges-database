@@ -260,6 +260,15 @@
         drawerLinks.forEach(link => {
             link.addEventListener('click', closeDrawer);
         });
+
+        // Add a click event listener to the document body
+        document.body.addEventListener('click', (event) => {
+            // Check if the drawer is open and if the clicked area is outside the drawer and the open button
+            if (drawer.classList.contains('drawer-open') && !drawer.contains(event.target) && !openDrawerButton.contains(event.target)) {
+                closeDrawer();
+            }
+        });
+
     </script>
 </body>
 </html>
