@@ -58,8 +58,9 @@ def browse_contributions(request):
     Displays all validated contributions, with search and filtering capabilities.
     This view has been updated to use Django's ORM more effectively.
     """
-    # Start with a base queryset of all validated contributions.
-    contributions = PhraseContribution.objects.filter(is_validated=True)
+    # Start with a base queryset of all contributions.
+    # The filter for `is_validated=True` has been removed to display all contributions.
+    contributions = PhraseContribution.objects.all()
     
     # Get query parameters for filtering and searching.
     selected_language = request.GET.get('language')
