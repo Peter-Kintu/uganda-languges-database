@@ -187,7 +187,7 @@ def sponsor(request):
     return render(request, 'sponsor.html', context)
     
 
-def best_contributor_view(request):
+def best_contributor_iew(vrequest):
     """
     Finds and displays the best contributor of the current month. If none exist,
     it displays the all-time best contributor.
