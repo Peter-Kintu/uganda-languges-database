@@ -7,6 +7,7 @@ class Product(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     is_negotiable = models.BooleanField(default=False)
+    vendor_name = models.CharField(max_length=100, default='Anonymous Seller')  # New field
     
     # Seller Contact & Media
     whatsapp_number = models.CharField(max_length=20)
