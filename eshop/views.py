@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.http import JsonResponse, HttpResponse
+from django.core.serializers import serialize
 from .forms import ProductForm
 from .models import Product
 
@@ -26,3 +28,12 @@ def product_list(request):
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug)
     return render(request, 'eshop/product_detail.html', {'product': product})
+
+# New view to export products as JSON for AI fine-tuning
+def export_products_json(request):
+    products = Product.objects.all()
+    data = serialize('json', products, fields=('name', 'description', 'price', 'is_negotiable', 'vendor_name', 'language_tag'))
+    
+    response = HttpResponse(data, content_type='application/json')
+    response['Content-Disposition'] = 'attachment; filename="products.json"'
+    return response   
