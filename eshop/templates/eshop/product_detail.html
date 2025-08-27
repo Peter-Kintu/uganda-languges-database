@@ -37,8 +37,12 @@
                     Contact on WhatsApp
                 </a>
                 
+                <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all duration-200 block">
+                    Add to Cart
+                </a>
+
                 {% if product.tiktok_url %}
-                <a href="{{ product.tiktok_url }}" target="_blank" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center">
+                <a href="{{ product.tiktok_url }}" target="_blank" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center mt-3">
                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">...</svg>
                     View on TikTok
                 </a>
