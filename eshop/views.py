@@ -71,7 +71,7 @@ def view_cart(request):
     if session_key:
         try:
             cart = Cart.objects.get(session_key=session_key)
-            cart_total = sum(item.total_price() for item in cart.items.all())
+            cart_total = sum(item.total_price for item in cart.items.all())
         except Cart.DoesNotExist:
             pass
 
