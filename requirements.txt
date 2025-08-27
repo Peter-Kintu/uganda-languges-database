@@ -6,3 +6,5 @@ whitenoise
 django-jazzmin
 Pillow
 python-dotenv
+cloudinary
+django-cloudinary-storage
