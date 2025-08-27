@@ -13,9 +13,6 @@
         <p class="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-6">
             Every product here tells a story. List your product and connect with a vibrant community.
         </p>
-        <a href="{% url 'eshop:export_products_json' %}" class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
-            Download All Products (JSON)
-        </a>
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -29,7 +26,32 @@
 
             <form method="post" enctype="multipart/form-data" action="{% url 'eshop:product_list' %}" class="space-y-6">
                 {% csrf_token %}
-                {{ form.as_p }}
+                
+                {% if form.non_field_errors %}
+                    <div class="bg-red-500 text-white p-4 rounded">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% for field in form %}
+                    <div class="mb-4">
+                        <label for="{{ field.id_for_label }}" class="block text-gray-300 font-semibold mb-2">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <ul class="text-red-400 text-sm mt-1">
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                            </ul>
+                        {% endif %}
+                        {% if field.help_text %}
+                            <p class="text-gray-500 text-sm mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md">
                     List My Product
                 </button>
@@ -41,7 +63,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {% for product in products %}
                 <div class="bg-gray-800 rounded-xl shadow-lg transform hover:scale-[1.02] transition-transform duration-300 overflow-hidden">
-                    <a href="{% url 'eshop:product_detail' product.slug %}">
+                    <a href="{% url 'eshop:product_detail' product.slug %}" class="block">
                         {% if product.image %}
                             <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-56 object-cover object-center">
                         {% else %}
@@ -49,7 +71,9 @@
                         {% endif %}
                     </a>
                     <div class="p-6">
-                        <h3 class="text-2xl font-semibold text-white mb-2">{{ product.name }}</h3>
+                        <a href="{% url 'eshop:product_detail' product.slug %}">
+                            <h3 class="text-2xl font-semibold text-white mb-2">{{ product.name }}</h3>
+                        </a>
                         <p class="text-lg text-green-400 font-bold mb-1">
                             UGX {{ product.price|floatformat:0 }}
                             {% if product.is_negotiable %}<span class="text-sm text-gray-400 ml-2">(Negotiable)</span>{% endif %}
@@ -63,8 +87,7 @@
                         <button class="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all duration-200 block">
                             Add to Cart
                         </button>
-                        
-                        </div>
+                    </div>
                 </div>
                 {% empty %}
                 <div class="md:col-span-2 text-center p-16 bg-gray-800 rounded-xl shadow-lg">
@@ -76,4 +99,4 @@
         </div>
     </div>
 </div>
-{% endblock %}   
+{% endblock %}

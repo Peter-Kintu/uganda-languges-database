@@ -11,10 +11,11 @@ def product_list(request):
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             product = form.save()
-            messages.success(request, f"🎉 '{product.name}' has been listed! Sell with pride.")
+            messages.success(request, f"🎉 Great! Your product '{product.name}' is now listed. Sell with pride.")
             return redirect('eshop:product_list')
         else:
-            messages.error(request, "Oops! Something went wrong. Please check the form and try again.")
+            messages.error(request, "Oops! Please correct the errors below and try again.")
+            
     else:
         form = ProductForm()
 
@@ -32,8 +33,8 @@ def product_detail(request, slug):
 # New view to export products as JSON for AI fine-tuning
 def export_products_json(request):
     products = Product.objects.all()
-    data = serialize('json', products, fields=('name', 'description', 'price', 'is_negotiable', 'vendor_name', 'language_tag'))
-    
+    data = serialize('json', products, fields=('name', 'description', 'price', 'vendor_name', 'language_tag'))
+
     response = HttpResponse(data, content_type='application/json')
     response['Content-Disposition'] = 'attachment; filename="products.json"'
-    return response   
+    return response
