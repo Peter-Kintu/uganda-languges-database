@@ -72,19 +72,8 @@
                 </div>
             {% endfor %}
 
-            <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-                <div class="flex-1">
-                    <label for="id_price" class="block text-gray-300 font-medium mb-2">Price (in UGX)</label>
-                    <input type="number" id="id_price" name="price" class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 shadow-sm placeholder-gray-500" placeholder="e.g., 50000" step="1">
-                    <p id="usd-conversion" class="text-sm text-gray-500 mt-2">
-                        </p>
-                </div>
-
-                <div class="flex-1">
-                    <label for="currency-select" class="block text-gray-300 font-medium mb-2">Currency</label>
-                    <select id="currency-select" name="currency" class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 shadow-sm">
-                        </select>
-                </div>
+            <div class="flex-1">
+                <p id="usd-conversion" class="text-sm text-gray-500 mt-2 text-center"></p>
             </div>
 
             <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-xl transform hover:scale-105 active:scale-95">
@@ -125,32 +114,23 @@
         const rates = await fetchRates();
         const priceInput = document.getElementById("id_price");
         const usdDisplay = document.getElementById("usd-conversion");
-        const currencySelect = document.getElementById("currency-select");
 
-        // Populate dropdown with African currencies
-        for (const [name, code] of Object.entries(AfricanCurrencies)) {
-            const option = document.createElement("option");
-            option.value = code;
-            option.textContent = `${code} - ${name}`;
-            currencySelect.appendChild(option);
-        }
+        if (priceInput) {
+            function updateConversion() {
+                const value = parseFloat(priceInput.value);
+                const ugxRate = rates["UGX"];
 
-        function updateConversion() {
-            const value = parseFloat(priceInput.value);
-            const selectedCurrency = currencySelect.value;
-            const rate = rates[selectedCurrency];
-
-            if (!isNaN(value) && rate) {
-                const usd = value / rate;
-                usdDisplay.textContent = `≈ USD ${usd.toFixed(2)}`;
-            } else {
-                usdDisplay.textContent = "";
+                if (!isNaN(value) && ugxRate) {
+                    const usd = value / ugxRate;
+                    usdDisplay.textContent = `≈ USD ${usd.toFixed(2)}`;
+                } else {
+                    usdDisplay.textContent = "";
+                }
             }
-        }
 
-        priceInput.addEventListener("input", updateConversion);
-        currencySelect.addEventListener("change", updateConversion);
-        updateConversion(); // Initial call to set the display on page load
+            priceInput.addEventListener("input", updateConversion);
+            updateConversion(); // Initial call to set the display on page load
+        }
     }
 
     window.addEventListener("load", setupConverter);
