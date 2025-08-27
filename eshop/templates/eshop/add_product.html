@@ -27,7 +27,16 @@
             {% for field in form %}
                 <div class="mb-4">
                     <label for="{{ field.id_for_label }}" class="block text-gray-300 font-semibold mb-2">{{ field.label }}</label>
-                    {{ field }}
+                    {% if field.name == 'price' %}
+                        <div class="flex items-center space-x-2">
+                            <select id="currency-select" class="w-1/3 bg-gray-700 text-white border-0 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                </select>
+                            {{ field }}
+                        </div>
+                        <p id="usd-conversion" class="text-sm text-indigo-400 mt-2"></p>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
                     {% if field.errors %}
                         <ul class="text-red-400 text-sm mt-1">
                         {% for error in field.errors %}
@@ -47,4 +56,95 @@
         </form>
     </div>
 </div>
+<script>
+    const AfricanCurrencies = {
+        'Algerian Dinar': 'DZD',
+        'Angolan Kwanza': 'AOA',
+        'Botswana Pula': 'BWP',
+        'Burundian Franc': 'BIF',
+        'Cape Verdean Escudo': 'CVE',
+        'Central African CFA Franc': 'XAF',
+        'West African CFA Franc': 'XOF',
+        'Comorian Franc': 'KMF',
+        'Congolese Franc': 'CDF',
+        'Djiboutian Franc': 'DJF',
+        'Egyptian Pound': 'EGP',
+        'Eritrean Nakfa': 'ERN',
+        'Ethiopian Birr': 'ETB',
+        'Gambian Dalasi': 'GMD',
+        'Ghanaian Cedi': 'GHS',
+        'Guinean Franc': 'GNF',
+        'Kenyan Shilling': 'KES',
+        'Lesotho Loti': 'LSL',
+        'Liberian Dollar': 'LRD',
+        'Libyan Dinar': 'LYD',
+        'Malagasy Ariary': 'MGA',
+        'Malawian Kwacha': 'MWK',
+        'Mauritanian Ouguiya': 'MRU',
+        'Mauritian Rupee': 'MUR',
+        'Moroccan Dirham': 'MAD',
+        'Mozambican Metical': 'MZN',
+        'Namibian Dollar': 'NAD',
+        'Nigerian Naira': 'NGN',
+        'Rwandan Franc': 'RWF',
+        'São Tomé and Príncipe Dobra': 'STN',
+        'Seychellois Rupee': 'SCR',
+        'Sierra Leonean Leone': 'SLL',
+        'Somali Shilling': 'SOS',
+        'South African Rand': 'ZAR',
+        'South Sudanese Pound': 'SSP',
+        'Sudanese Pound': 'SDG',
+        'Swazi Lilangeni': 'SZL',
+        'Tanzanian Shilling': 'TZS',
+        'Tunisian Dinar': 'TND',
+        'Ugandan Shilling': 'UGX',
+        'Zambian Kwacha': 'ZMW',
+        'Zimbabwean Gold': 'ZiG'
+    };
+
+    async function fetchRates() {
+        try {
+            const res = await fetch("https://open.er-api.com/v6/latest/USD");
+            const data = await res.json();
+            return data.rates;
+        } catch (error) {
+            console.error("Failed to fetch exchange rates:", error);
+            return {};
+        }
+    }
+
+    async function setupConverter() {
+        const rates = await fetchRates();
+        const priceInput = document.getElementById("id_price");
+        const usdDisplay = document.getElementById("usd-conversion");
+        const currencySelect = document.getElementById("currency-select");
+
+        // Populate dropdown with African currencies
+        for (const [name, code] of Object.entries(AfricanCurrencies)) {
+            const option = document.createElement("option");
+            option.value = code;
+            option.textContent = `${code} - ${name}`;
+            currencySelect.appendChild(option);
+        }
+
+        function updateConversion() {
+            const value = parseFloat(priceInput.value);
+            const selectedCurrency = currencySelect.value;
+            const rate = rates[selectedCurrency];
+
+            if (!isNaN(value) && rate) {
+                const usd = value / rate;
+                usdDisplay.textContent = `≈ USD ${usd.toFixed(2)}`;
+            } else {
+                usdDisplay.textContent = "";
+            }
+        }
+
+        priceInput.addEventListener("input", updateConversion);
+        currencySelect.addEventListener("change", updateConversion);
+        updateConversion(); // Initial call to set the display on page load
+    }
+
+    window.addEventListener("load", setupConverter);
+</script>
 {% endblock %}
