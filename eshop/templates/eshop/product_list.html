@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load cloudinary %}
 
 {% block title %}Sell with Pride - MyLanguage Market{% endblock %}
 
@@ -28,7 +29,7 @@
                         Your browser does not support the video tag.
                     </video>
                 {% elif product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-56 object-cover">
+                    <img src="{% cloudinary_url product.image width=400 height=300 crop='fill' %}" alt="{{ product.name }}" class="w-full h-56 object-cover">
                 {% else %}
                     <div class="w-full h-56 bg-gray-700 flex items-center justify-center text-gray-400">No Media</div>
                 {% endif %}
@@ -42,11 +43,11 @@
                     {% if product.is_negotiable %}<span class="text-sm text-gray-400 ml-2">(Negotiable)</span>{% endif %}
                 </p>
                 <p class="text-gray-400 text-sm mb-4">Vendor: {{ product.vendor_name }}</p>
-                
+
                 <a href="{% url 'eshop:product_detail' product.slug %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-all duration-200 block mb-3">
                     View Details
                 </a>
-                
+
                 <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all duration-200 block">
                     Add to Cart
                 </a>
