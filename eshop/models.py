@@ -1,5 +1,8 @@
+# models.py
+
 from django.db import models
 from django.utils.text import slugify
+from cloudinary.models import CloudinaryField  # NEW import
 
 # New imports for the cart feature
 from django.conf import settings
@@ -16,8 +19,9 @@ class Product(models.Model):
     whatsapp_number = models.CharField(max_length=20)
     tiktok_url = models.URLField(max_length=200, null=True, blank=True)
     
-    # Product Images (you'll need to install Pillow for image processing)
-    image = models.ImageField(upload_to='products/')
+    # Product Images
+    # Change this field to use CloudinaryField
+    image = CloudinaryField('image') # UPDATED FIELD
     
     # Cultural & Localization Tags
     language_tag = models.CharField(max_length=50) # e.g., 'Luganda', 'Acholi'
@@ -41,18 +45,10 @@ class Cart(models.Model):
     def __str__(self):
         return f"Cart for session: {self.session_key}"
 
-    def cart_total(self):
-        """Calculates the total price of all items in the cart."""
-        return sum(item.total_price() for item in self.items.all())
-
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
 
     def total_price(self):
-        """Calculates the total price for this cart item."""
         return self.product.price * self.quantity
-
-    def __str__(self):
-        return f"{self.quantity} x {self.product.name} in cart {self.cart.id}"
