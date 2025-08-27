@@ -1,6 +1,9 @@
 from django.db import models
 from django.utils.text import slugify
 
+# New imports for the cart feature
+from django.conf import settings
+
 class Product(models.Model):
     # Core Product Information
     name = models.CharField(max_length=200)
@@ -13,7 +16,7 @@ class Product(models.Model):
     whatsapp_number = models.CharField(max_length=20)
     tiktok_url = models.URLField(max_length=200, null=True, blank=True)
     
-    # Product Images
+    # Product Images (you'll need to install Pillow for image processing)
     image = models.ImageField(upload_to='products/')
     
     # Cultural & Localization Tags
@@ -29,3 +32,22 @@ class Product(models.Model):
         
     def __str__(self):
         return self.name
+
+# NEW MODELS FOR THE SHOPPING CART
+class Cart(models.Model):
+    session_key = models.CharField(max_length=40, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Cart for session: {self.session_key}"
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def total_price(self):
+        return self.product.price * self.quantity
+
+    def __str__(self):
+        return f"{self.quantity} of {self.product.name}"

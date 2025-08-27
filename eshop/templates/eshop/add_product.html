@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add a Product - MyLanguage Market{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-xl mx-auto p-6 bg-gray-800 rounded-xl shadow-2xl">
+        <h2 class="text-3xl font-bold text-white mb-6 border-b border-gray-700 pb-4">List Your Product</h2>
+        {% if messages %}
+        {% for message in messages %}
+        <div class="bg-green-500 text-white font-semibold p-4 rounded mb-4 animate-fade-in-down">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" action="{% url 'eshop:add_product' %}" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="bg-red-500 text-white p-4 rounded">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% for field in form %}
+                <div class="mb-4">
+                    <label for="{{ field.id_for_label }}" class="block text-gray-300 font-semibold mb-2">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <ul class="text-red-400 text-sm mt-1">
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <p class="text-gray-500 text-sm mt-1">{{ field.help_text }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md">
+                List My Product
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
