@@ -22,10 +22,15 @@
         {% for product in products %}
         <div class="bg-gray-800 rounded-xl shadow-lg transform hover:scale-[1.02] transition-transform duration-300 overflow-hidden">
             <a href="{% url 'eshop:product_detail' product.slug %}" class="block">
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-56 object-cover object-center">
+                {% if product.video %}
+                    <video class="w-full h-56 object-cover" controls>
+                        <source src="{{ product.video.url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                {% elif product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-56 object-cover">
                 {% else %}
-                    <div class="w-full h-56 bg-gray-700 flex items-center justify-center text-gray-400">No Image</div>
+                    <div class="w-full h-56 bg-gray-700 flex items-center justify-center text-gray-400">No Media</div>
                 {% endif %}
             </a>
             <div class="p-6">
@@ -33,7 +38,7 @@
                     <h3 class="text-2xl font-semibold text-white mb-2">{{ product.name }}</h3>
                 </a>
                 <p class="text-lg text-green-400 font-bold mb-1">
-                    USD {{ product.price|floatformat:2 }}
+                    UGX {{ product.price|floatformat:0 }}
                     {% if product.is_negotiable %}<span class="text-sm text-gray-400 ml-2">(Negotiable)</span>{% endif %}
                 </p>
                 <p class="text-gray-400 text-sm mb-4">Vendor: {{ product.vendor_name }}</p>
@@ -49,8 +54,13 @@
         </div>
         {% empty %}
         <div class="md:col-span-2 text-center p-16 bg-gray-800 rounded-xl shadow-lg">
-            <h3 class="text-xl text-gray-400 font-semibold mb-2">No products are available yet.</h3>
-            <p class="text-lg text-indigo-400 font-medium">Be the first to list one!</p>
+            <h3 class="text-2xl text-gray-400 font-semibold mb-2">No products found.</h3>
+            <p class="text-lg text-indigo-400 font-medium">Be the first to list a product!</p>
+            <div class="mt-6">
+                <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+                    List a Product Now
+                </a>
+            </div>
         </div>
         {% endfor %}
     </div>

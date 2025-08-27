@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 import dj_database_url # Import the dj_database_url library
+# Cloudinary imports
+import cloudinary
+import cloudinary_storage
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -45,6 +48,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'languages', # Your app
     'eshop', # Your app
+    # Add Cloudinary apps
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -136,7 +142,20 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Media files (User uploaded content)
 # These settings define where to store and serve user-uploaded files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Update the default file storage to Cloudinary
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+
+# Cloudinary Configuration
+# Use environment variables to keep your credentials secure
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+# The original MEDIA_ROOT setting is no longer needed with Cloudinary
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Default primary key field type
