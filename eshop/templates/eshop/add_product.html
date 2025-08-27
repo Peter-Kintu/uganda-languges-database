@@ -4,20 +4,39 @@
 {% block title %}Add a Product - MyLanguage Market{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-xl mx-auto p-6 bg-gray-800 rounded-xl shadow-2xl">
-        <h2 class="text-3xl font-bold text-white mb-6 border-b border-gray-700 pb-4">List Your Product</h2>
+
+<header class="relative bg-center bg-cover h-64 md:h-80" style="background-image: url('https://images.unsplash.com/photo-1542450893-a9d701dfc6a9?q=80&w=2940&auto=format&fit=crop');">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center">
+        <div class="text-center text-white">
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 animate-fade-in-up">
+                Sell Your Craft
+            </h1>
+            <p class="text-lg md:text-xl font-medium text-gray-300 animate-fade-in-up delay-150">
+                List a product and share your unique story with the world.
+            </p>
+        </div>
+    </div>
+</header>
+
+<div class="container mx-auto px-4 py-8 -mt-16 relative z-10">
+    <div class="max-w-3xl mx-auto p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 backdrop-filter backdrop-blur-md bg-opacity-80">
+        <h2 class="text-3xl font-bold text-white mb-6 text-center border-b border-gray-700 pb-4">
+            List Your Product
+        </h2>
+
         {% if messages %}
         {% for message in messages %}
-        <div class="bg-green-500 text-white font-semibold p-4 rounded mb-4 animate-fade-in-down">{{ message }}</div>
+        <div class="bg-green-600 text-white font-semibold p-4 rounded-lg mb-4 text-center animate-fade-in-down">
+            {{ message }}
+        </div>
         {% endfor %}
         {% endif %}
 
         <form method="post" enctype="multipart/form-data" action="{% url 'eshop:add_product' %}" class="space-y-6">
             {% csrf_token %}
-            
+
             {% if form.non_field_errors %}
-                <div class="bg-red-500 text-white p-4 rounded">
+                <div class="bg-red-600 text-white p-4 rounded-lg text-center">
                     {% for error in form.non_field_errors %}
                         <p>{{ error }}</p>
                     {% endfor %}
@@ -25,87 +44,76 @@
             {% endif %}
 
             {% for field in form %}
-                <div class="mb-4">
-                    <label for="{{ field.id_for_label }}" class="block text-gray-300 font-semibold mb-2">{{ field.label }}</label>
-                    {% if field.name == 'price' %}
-                        <div class="flex items-center space-x-2">
-                            <select id="currency-select" class="w-1/3 bg-gray-700 text-white border-0 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                                </select>
+                <div class="relative z-0 group">
+                    <label for="{{ field.id_for_label }}" class="block text-gray-300 font-medium mb-2 transition-transform duration-300">
+                        {{ field.label }}
+                    </label>
+                    
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                        <div class="flex items-center mt-2">
                             {{ field }}
+                            <label for="{{ field.id_for_label }}" class="ml-2 text-gray-400 font-normal cursor-pointer">{{ field.label }}</label>
                         </div>
-                        <p id="usd-conversion" class="text-sm text-indigo-400 mt-2"></p>
                     {% else %}
-                        {{ field }}
+                        {{ field.as_widget(attrs={'class': 'w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 shadow-sm placeholder-gray-500'}) }}
                     {% endif %}
+
                     {% if field.errors %}
-                        <ul class="text-red-400 text-sm mt-1">
+                        <ul class="text-red-400 text-sm mt-1 list-disc list-inside">
                         {% for error in field.errors %}
                             <li>{{ error }}</li>
                         {% endfor %}
                         </ul>
                     {% endif %}
+
                     {% if field.help_text %}
                         <p class="text-gray-500 text-sm mt-1">{{ field.help_text }}</p>
                     {% endif %}
                 </div>
             {% endfor %}
 
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-md">
+            <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
+                <div class="flex-1">
+                    <label for="id_price" class="block text-gray-300 font-medium mb-2">Price (in UGX)</label>
+                    <input type="number" id="id_price" name="price" class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 shadow-sm placeholder-gray-500" placeholder="e.g., 50000" step="1">
+                    <p id="usd-conversion" class="text-sm text-gray-500 mt-2">
+                        </p>
+                </div>
+
+                <div class="flex-1">
+                    <label for="currency-select" class="block text-gray-300 font-medium mb-2">Currency</label>
+                    <select id="currency-select" name="currency" class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 shadow-sm">
+                        </select>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-4 rounded-lg transition-colors duration-200 shadow-xl transform hover:scale-105 active:scale-95">
                 List My Product
             </button>
         </form>
     </div>
 </div>
+
 <script>
     const AfricanCurrencies = {
-        'Algerian Dinar': 'DZD',
-        'Angolan Kwanza': 'AOA',
-        'Botswana Pula': 'BWP',
-        'Burundian Franc': 'BIF',
-        'Cape Verdean Escudo': 'CVE',
-        'Central African CFA Franc': 'XAF',
-        'West African CFA Franc': 'XOF',
-        'Comorian Franc': 'KMF',
-        'Congolese Franc': 'CDF',
-        'Djiboutian Franc': 'DJF',
-        'Egyptian Pound': 'EGP',
-        'Eritrean Nakfa': 'ERN',
-        'Ethiopian Birr': 'ETB',
-        'Gambian Dalasi': 'GMD',
-        'Ghanaian Cedi': 'GHS',
-        'Guinean Franc': 'GNF',
-        'Kenyan Shilling': 'KES',
-        'Lesotho Loti': 'LSL',
-        'Liberian Dollar': 'LRD',
-        'Libyan Dinar': 'LYD',
-        'Malagasy Ariary': 'MGA',
-        'Malawian Kwacha': 'MWK',
-        'Mauritanian Ouguiya': 'MRU',
-        'Mauritian Rupee': 'MUR',
-        'Moroccan Dirham': 'MAD',
-        'Mozambican Metical': 'MZN',
-        'Namibian Dollar': 'NAD',
-        'Nigerian Naira': 'NGN',
-        'Rwandan Franc': 'RWF',
-        'São Tomé and Príncipe Dobra': 'STN',
-        'Seychellois Rupee': 'SCR',
-        'Sierra Leonean Leone': 'SLL',
-        'Somali Shilling': 'SOS',
-        'South African Rand': 'ZAR',
-        'South Sudanese Pound': 'SSP',
-        'Sudanese Pound': 'SDG',
-        'Swazi Lilangeni': 'SZL',
-        'Tanzanian Shilling': 'TZS',
-        'Tunisian Dinar': 'TND',
-        'Ugandan Shilling': 'UGX',
-        'Zambian Kwacha': 'ZMW',
-        'Zimbabwean Gold': 'ZiG'
+        "Algerian Dinar": "DZD", "Angolan Kwanza": "AOA", "Beninese Franc": "XOF", "Botswana Pula": "BWP",
+        "Burundian Franc": "BIF", "Cape Verdean Escudo": "CVE", "Comorian Franc": "KMF", "Congolese Franc": "CDF",
+        "Djiboutian Franc": "DJF", "Egyptian Pound": "EGP", "Eritrean Nakfa": "ERN", "Ethiopian Birr": "ETB",
+        "Gabonese Franc": "XAF", "Gambian Dalasi": "GMD", "Ghanaian Cedi": "GHS", "Guinean Franc": "GNF",
+        "Kenyan Shilling": "KES", "Lesotho Loti": "LSL", "Liberian Dollar": "LRD", "Libyan Dinar": "LYD",
+        "Malagasy Ariary": "MGA", "Malawian Kwacha": "MWK", "Mauritanian Ouguiya": "MRU", "Mauritian Rupee": "MUR",
+        "Moroccan Dirham": "MAD", "Mozambican Metical": "MZN", "Namibian Dollar": "NAD", "Nigerian Naira": "NGN",
+        "Rwandan Franc": "RWF", "São Tomé and Príncipe Dobra": "STN", "Senegalese Franc": "XOF", "Seychellois Rupee": "SCR",
+        "Sierra Leonean Leone": "SLL", "Somali Shilling": "SOS", "South African Rand": "ZAR", "South Sudanese Pound": "SSP",
+        "Sudanese Pound": "SDG", "Swazi Lilangeni": "SZL", "Tanzanian Shilling": "TZS", "Ugandan Shilling": "UGX",
+        "Zambian Kwacha": "ZMW", "Zimbabwean Dollar": "ZWL"
     };
 
+    // Fetches exchange rates from a mock API endpoint
     async function fetchRates() {
         try {
-            const res = await fetch("https://open.er-api.com/v6/latest/USD");
-            const data = await res.json();
+            const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+            const data = await response.json();
             return data.rates;
         } catch (error) {
             console.error("Failed to fetch exchange rates:", error);
