@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.core.serializers import serialize
 from .forms import ProductForm
-from .models import Product, Cart, CartItem # Import the new models
+from .models import Product, Cart, CartItem
 
 def product_list(request):
     """
@@ -38,15 +38,18 @@ def product_detail(request, slug):
     Displays the details of a single product.
     """
     product = get_object_or_404(Product, slug=slug)
-    return render(request, 'eshop/product_detail.html', {'product': product})
+    return render(request, 'eshop/product_detail.html', {
+        'product': product
+    })
 
-# NEW VIEW
 def add_to_cart(request, product_id):
+    """
+    Handles adding a product to the shopping cart.
+    """
     product = get_object_or_404(Product, id=product_id)
-    session_key = request.session.session_key
-    if not session_key:
+    if not request.session.session_key:
         request.session.save()
-        session_key = request.session.session_key
+    session_key = request.session.session_key
 
     cart, created = Cart.objects.get_or_create(session_key=session_key)
     
@@ -63,21 +66,18 @@ def add_to_cart(request, product_id):
     messages.success(request, f"'{product.name}' was added to your cart.")
     return redirect('eshop:product_list')
 
-# NEW VIEW
+# Corrected view to fix the Server 500 error
 def view_cart(request):
     session_key = request.session.session_key
     cart = None
-    cart_total = 0
     if session_key:
         try:
             cart = Cart.objects.get(session_key=session_key)
-            cart_total = sum(item.total_price for item in cart.items.all())
         except Cart.DoesNotExist:
             pass
 
     return render(request, 'eshop/cart.html', {
-        'cart': cart,
-        'cart_total': cart_total
+        'cart': cart
     })
 
 def export_products_json(request):
@@ -86,8 +86,7 @@ def export_products_json(request):
     This view is intended for use in the Django admin interface.
     """
     products = Product.objects.all()
-    data = serialize('json', products, fields=('name', 'description', 'price', 'is_negotiable', 'vendor_name', 'language_tag', 'tiktok_url'))
-    
+    data = serialize('json', products, fields=('name', 'description', 'price', 'is_negotiable', 'vendor_name', 'whatsapp_number', 'tiktok_url', 'language_tag'))
     response = HttpResponse(data, content_type='application/json')
-    response['Content-Disposition'] = 'attachment; filename="products.json"'
+    response['Content-Disposition'] = 'attachment; filename="products_export.json"'
     return response
