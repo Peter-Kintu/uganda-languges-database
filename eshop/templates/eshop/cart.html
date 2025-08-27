@@ -19,12 +19,27 @@
                         <p class="text-gray-400">Quantity: {{ item.quantity }}</p>
                     </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-white font-bold">USD {{ item.total_price()|floatformat:2 }}</p>
-                    <p class="text-sm text-gray-500">
-                        (USD {{ item.product.price|floatformat:2 }} each)
-                    </p>
-                </div>
+              <div class="text-right">
+    {% if item.total_price %}
+        <p class="text-white font-bold">
+            USD {{ item.total_price|floatformat:2 }}
+        </p>
+    {% else %}
+        <p class="text-white font-bold italic text-red-400">
+            Price unavailable
+        </p>
+         {% endif %}
+
+        {% if item.product.price %}
+        <p class="text-sm text-gray-500">
+            (USD {{ item.product.price|floatformat:2 }} each)
+          </p>
+          {% else %}
+           <p class="text-sm text-gray-500 italic">
+               (Unit price not set)
+            </p>
+           {% endif %}
+          </div>
             </li>
             {% endfor %}
         </ul>
