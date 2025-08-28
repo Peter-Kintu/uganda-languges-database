@@ -27,7 +27,7 @@
             <div>
                 <h1 class="text-3xl font-extrabold text-white mb-2">{{ product.name }}</h1>
                 <p class="text-lg text-green-400 font-bold mb-4">
-                    UGX {{ product.price|floatformat:0 }}
+                    USD {{ product.price|floatformat:0 }}
                     {% if product.is_negotiable %}<span class="text-sm text-gray-400 ml-2">(Negotiable)</span>{% endif %}
                 </p>
                 
