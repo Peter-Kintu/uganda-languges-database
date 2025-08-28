@@ -8,6 +8,7 @@ from .models import Product, Cart, CartItem
 from django.utils import timezone
 from datetime import timedelta
 
+
 def product_list(request):
     """
     Displays the list of products for sale.
@@ -84,6 +85,11 @@ def view_cart(request):
     return render(request, 'eshop/cart.html', {
         'cart': cart
     })
+def remove_from_cart(request, item_id):
+    item = get_object_or_404(CartItem, id=item_id)
+    if request.method == 'POST':
+        item.delete()
+    return redirect('eshop:view_cart')
 
 def checkout_view(request):
     """
