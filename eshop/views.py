@@ -80,6 +80,22 @@ def view_cart(request):
         'cart': cart
     })
 
+def checkout_view(request):
+    """
+    Displays the checkout page where users can review and confirm their order.
+    """
+    session_key = request.session.session_key
+    cart = None
+    if session_key:
+        try:
+            cart = Cart.objects.get(session_key=session_key)
+        except Cart.DoesNotExist:
+            pass
+
+    return render(request, 'eshop/checkout.html', {
+        'cart': cart
+    })
+
 def export_products_json(request):
     """
     Exports all products as a JSON file.
