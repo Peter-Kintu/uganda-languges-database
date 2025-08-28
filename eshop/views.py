@@ -5,6 +5,8 @@ from django.http import HttpResponse
 from django.core.serializers import serialize
 from .forms import ProductForm
 from .models import Product, Cart, CartItem
+from django.utils import timezone
+from datetime import timedelta
 
 def product_list(request):
     """
@@ -42,14 +44,14 @@ def product_detail(request, slug):
     return render(request, 'eshop/product_detail.html', {
         'product': product
     })
-
-def add_to_cart(request, product_id):
-    """
-    Handles adding a product to the shopping cart.
-    """
-    product = get_object_or_404(Product, id=product_id)
+def ensure_session(request):
     if not request.session.session_key:
         request.session.save()
+
+
+def add_to_cart(request, product_id):
+    ensure_session(request)
+    product = get_object_or_404(Product, id=product_id)
     session_key = request.session.session_key
 
     cart, created = Cart.objects.get_or_create(session_key=session_key)
@@ -66,6 +68,7 @@ def add_to_cart(request, product_id):
 
     messages.success(request, f"'{product.name}' was added to your cart.")
     return redirect('eshop:product_list')
+    
 
 # Corrected view to fix the Server 500 error
 def view_cart(request):
@@ -76,7 +79,8 @@ def view_cart(request):
             cart = Cart.objects.get(session_key=session_key)
         except Cart.DoesNotExist:
             pass
-
+        if not cart or not cart.items.exists():
+           messages.info(request, "🧺 Your basket is silent, waiting for treasures to speak.")
     return render(request, 'eshop/cart.html', {
         'cart': cart
     })
@@ -92,18 +96,36 @@ def checkout_view(request):
             cart = Cart.objects.get(session_key=session_key)
         except Cart.DoesNotExist:
             pass
+        
+        if cart and cart.items.exists():
+           language = cart.items.first().product.language_tag
+           messages.info(request, f"Instructions available in {language} upon request.")
 
     return render(request, 'eshop/checkout.html', {
         'cart': cart
     })
-
 
 def get_user_cart(request):
     session_key = request.session.session_key
     if not session_key:
         request.session.save()
         session_key = request.session.session_key
-    cart, _ = Cart.objects.get_or_create(session_key=session_key)
+
+    # Expire old carts first
+    Cart.objects.filter(
+        session_key=session_key,
+        updated_at__lt=timezone.now() - timedelta(days=2),
+        status='open'
+    ).update(status='expired')
+
+    Cart.objects.filter(
+    session_key=session_key,
+    updated_at__lt=timezone.now() - timedelta(days=2),
+    status='open',
+    is_active=True
+   ).update(status='expired', is_active=False)
+    # Then get or create a fresh cart
+    cart, _ = Cart.objects.get_or_create(session_key=session_key, is_active=True, status='open')
     return cart
 
 def confirm_order_view(request):
@@ -138,8 +160,10 @@ def confirm_order_view(request):
 
     # Optional: clear cart after confirmation
     cart.items.all().delete()
-
+    cart.is_active = False
+    cart.save()
     return redirect(whatsapp_url)
+
 
 def export_products_json(request):
     """
@@ -151,3 +175,4 @@ def export_products_json(request):
     response = HttpResponse(data, content_type='application/json')
     response['Content-Disposition'] = 'attachment; filename="products_export.json"'
     return response
+
