@@ -9,3 +9,4 @@ python-dotenv
 cloudinary
 django-cloudinary-storage
 phonenumbers
+django-widget-tweaks
