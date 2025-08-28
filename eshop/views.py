@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from urllib.parse import quote
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.serializers import serialize
@@ -95,6 +96,29 @@ def checkout_view(request):
     return render(request, 'eshop/checkout.html', {
         'cart': cart
     })
+
+def confirm_order_view(request):
+    order = get_user_order(request)
+    vendor = order.vendor
+
+    message = f"""
+Hello {vendor.name},
+
+🎉 New order confirmed!
+
+🛍️ Item: {order.item.name}
+💰 Price: UGX {order.total}
+👤 Buyer: {order.buyer.name}
+📞 Contact: {order.buyer.phone_number}
+
+Please prepare for delivery. Thank you!
+    """
+
+    context = {
+        "vendor": vendor,
+        "order_message": message,
+    }
+    return render(request, "confirm_order.html", context)
 
 def export_products_json(request):
     """
