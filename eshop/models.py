@@ -5,6 +5,10 @@ from django.utils.text import slugify
 from django.conf import settings
 
 class Product(models.Model):
+    
+
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
+
     # Core Product Information
     name = models.CharField(max_length=200)
     description = models.TextField()
@@ -22,8 +26,6 @@ class Product(models.Model):
     # Cultural & Localization Tags
     language_tag = models.CharField(max_length=50) # e.g., 'Luganda', 'Acholi'
     
-    # A slug for pretty URLs
-    slug = models.SlugField(max_length=200, unique=True, editable=False)
     
     def save(self, *args, **kwargs):
         if not self.slug:
