@@ -17,7 +17,7 @@ class Product(models.Model):
     tiktok_url = models.URLField(max_length=200, null=True, blank=True)
     
     # Product Images (you'll need to install Pillow for image processing)
-    image = models.ImageField(upload_to='products/')
+    image = models.ImageField(upload_to='products/', default='products/placeholder.jpg')
     
     # Cultural & Localization Tags
     language_tag = models.CharField(max_length=50) # e.g., 'Luganda', 'Acholi'
