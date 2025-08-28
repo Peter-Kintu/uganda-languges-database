@@ -188,22 +188,17 @@ def sponsor(request):
     
 
 def best_contributor_view(request):
-    """
-    Finds and displays the best contributor of the current month. If none exist,
-    it displays the all-time best contributor.
-    """
     today = date.today()
-    
-    # Try to get the top contributor for the current month.
-    best_contributor_data = get_top_contributors(month=today.month, year=today.year, limit=1).first()
+
+    monthly_contributors = get_top_contributors(month=today.month, year=today.year, limit=1)
+    best_contributor_data = monthly_contributors[0] if monthly_contributors else None
     is_current_month = True
 
-    # If no contributions this month, get the all-time top contributor.
     if not best_contributor_data:
-        best_contributor_data = get_top_contributors(limit=1).first()
+        all_time_contributors = get_top_contributors(limit=1)
+        best_contributor_data = all_time_contributors[0] if all_time_contributors else None
         is_current_month = False
 
-    # Prepare the context dictionary to pass to the template
     context = {}
     if best_contributor_data:
         context['contributor_name'] = best_contributor_data['contributor_name']
@@ -212,5 +207,4 @@ def best_contributor_view(request):
     else:
         context['message'] = "No contributions have been made yet. Be the first to add one!"
 
-    # Render the template with the prepared context
     return render(request, 'best_contributor.html', context)
