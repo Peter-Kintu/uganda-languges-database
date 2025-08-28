@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load cloudinary %}
 
 {% block title %}Your Cart{% endblock %}
 
@@ -7,19 +8,15 @@
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-4xl font-extrabold text-white text-center mb-8">Your Shopping Cart</h1>
 
-    {% if cart and cart.items.all %}
+    {% if cart %}
     <div class="bg-gray-800 rounded-xl shadow-lg p-6">
         <ul class="divide-y divide-gray-700">
             {% for item in cart.items.all %}
-            {% if cart and cart.items.all %}
-    <!-- Show cart items -->
-            {% else %}
-          <p>Your cart is empty. Start shopping with pride!</p>
-            {% endif %}
             <li class="py-4 flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                    {% if item.product.image and item.product.image.url %}
-                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="w-16 h-16 object-cover rounded-md">
+                    {% if item.product.image and item.product.image.public_id %}
+                        {% cloudinary_url item.product.image.public_id width=80 height=80 crop='fill' as thumb_url %}
+                        <img src="{{ thumb_url }}" alt="{{ item.product.name }}" class="w-16 h-16 object-cover rounded-md">
                     {% else %}
                         <div class="w-16 h-16 bg-gray-700 flex items-center justify-center text-indigo-300 italic text-sm rounded-md">
                             Awaiting a proud photo...
@@ -50,7 +47,16 @@
                             (Unit price not set)
                         </p>
                     {% endif %}
+
+                    <form method="post" action="{% url 'eshop:remove_from_cart' item.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm text-red-400 hover:text-red-600 mt-2">Remove</button>
+                    </form>
                 </div>
+            </li>
+            {% empty %}
+            <li class="py-4 text-center text-indigo-300 italic">
+                Your cart is quiet—for now. Let it echo with stories soon.
             </li>
             {% endfor %}
         </ul>
