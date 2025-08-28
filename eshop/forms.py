@@ -1,11 +1,8 @@
 import phonenumbers
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Product
-
-import phonenumbers
-from django.core.exceptions import ValidationError
 from phonenumbers.phonenumberutil import country_code_for_region, region_code_for_number
+from .models import Product
 
 def validate_african_number(value):
     """Validates an African mobile number format."""
@@ -38,11 +35,33 @@ def validate_african_number(value):
         )   
 
 class ProductForm(forms.ModelForm):
-    whatsapp_number = forms.CharField(validators=[validate_african_number])
-
+    whatsapp_number = forms.CharField(
+    validators=[validate_african_number],
+    widget=forms.TextInput(attrs={'placeholder': '+256701234567'}),
+    help_text="Include the full country code. Only African numbers are accepted."
+)
     class Meta:
         model = Product
-        fields = ['name', 'description', 'price', 'is_negotiable', 'vendor_name', 'whatsapp_number', 'tiktok_url', 'image', 'language_tag']
+        fields = ['name',
+                 'description',
+                 'price', 
+                 'is_negotiable',
+                'vendor_name', 
+                'whatsapp_number', 
+                'tiktok_url', 
+                'image', 
+                'language_tag',  
+                'slug', 
+                ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Describe your product...'}),
         }
+    def clean_whatsapp_number(self):
+       value = self.cleaned_data.get('whatsapp_number')
+       if not value:
+          return value
+       try:
+           parsed = phonenumbers.parse(value, "ZZ")
+           return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+       except phonenumbers.NumberParseException:
+           raise ValidationError("Could not format the phone number. Please check the input.")
