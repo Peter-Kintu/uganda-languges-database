@@ -29,7 +29,8 @@
                         Your browser does not support the video tag.
                     </video>
                 {% elif product.image %}
-                  <img src="{% cloudinary_url product.image.url width=400 height=300 crop='fill' %}" alt="{{ product.name }}" class="w-full h-56 object-cover">
+                  {% cloudinary_url product.image.url width=400 height=300 crop='fill' as image_url %}
+                  <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-56 object-cover">
                 {% else %}
                     <div class="w-full h-56 bg-gray-700 flex items-center justify-center text-gray-400">No Media</div>
                 {% endif %}

@@ -4,8 +4,11 @@ from django.utils.text import slugify
 # New imports for the cart feature
 from django.conf import settings
 
+from cloudinary.models import CloudinaryField
+
+
 class Product(models.Model):
-    
+    image = CloudinaryField('image', blank=True, null=True)
 
     slug = models.SlugField(max_length=100, unique=True, blank=True)
 
@@ -20,8 +23,7 @@ class Product(models.Model):
     whatsapp_number = models.CharField(max_length=20)
     tiktok_url = models.URLField(max_length=200, null=True, blank=True)
     
-    # Product Images (you'll need to install Pillow for image processing)
-    image = models.ImageField(upload_to='products/', default='products/placeholder.jpg')
+  
     
     # Cultural & Localization Tags
     language_tag = models.CharField(max_length=50) # e.g., 'Luganda', 'Acholi'
