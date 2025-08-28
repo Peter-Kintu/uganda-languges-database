@@ -37,19 +37,35 @@
             </div>
             
             <div class="mt-4">
-                <a href="https://wa.me/{{ product.whatsapp_number }}" target="_blank" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center mb-3">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12.04 2.148c-5.467 0-9.916 4.449-9.916 9.916 0 1.777.466 3.511 1.341 5.035l-1.397 5.097 5.215-1.378c1.474.808 3.14 1.258 4.757 1.258h.02c5.467 0 9.916-4.449 9.916-9.916 0-5.467-4.449-9.916-9.916-9.916zm3.332 12.396c-.198.547-1.144.97-1.636 1.059-.49.091-1.042.142-2.115-.558-1.574-.98-2.618-2.67-2.73-2.822-.111-.152-.08-.344.098-.517.168-.173.376-.411.564-.619.187-.209.25-.175.362-.435.11-.26.058-.485-.029-.683-.087-.198-.785-1.888-1.077-2.585-.292-.697-.584-.576-.803-.585-.22-.009-.47-.009-.72.009-.249.019-.64.129-.976.449-.336.321-1.282 1.251-1.282 3.056 0 1.805 1.312 3.541 1.5 3.791.187.25 2.503 4.07 6.278 5.485 3.775 1.416 3.775.945 4.445.882.67-.063 1.691-.72 1.939-1.428.249-.707.249-1.299.176-1.428-.073-.129-.271-.198-.564-.347z"/>
-                    </svg>
-                    Contact on WhatsApp
-                </a>
+               {% if product.whatsapp_number %}
+    <!-- WhatsApp Contact Button -->
+    <a href="https://wa.me/{{ product.whatsapp_number }}" target="_blank"
+       class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center mb-3">
+        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12.04 2.148c-5.467 0-9.916 4.449-9.916 9.916 0 1.777.466 3.511 1.341 5.035l-1.397 5.097 5.215-1.378c1.474.808 3.14 1.258 4.757 1.258h.02c5.467 0 9.916-4.449 9.916-9.916 0-5.467-4.449-9.916-9.916-9.916zm3.332 12.396c-.198.547-1.144.97-1.636 1.059-.49.091-1.042.142-2.115-.558-1.574-.98-2.618-2.67-2.73-2.822-.111-.152-.08-.344.098-.517.168-.173.376-.411.564-.619.187-.209.25-.175.362-.435.11-.26.058-.485-.029-.683-.087-.198-.785-1.888-1.077-2.585-.292-.697-.584-.576-.803-.585-.22-.009-.47-.009-.72.009-.249.019-.64.129-.976.449-.336.321-1.282 1.251-1.282 3.056 0 1.805 1.312 3.541 1.5 3.791.187.25 2.503 4.07 6.278 5.485 3.775 1.416 3.775.945 4.445.882.67-.063 1.691-.72 1.939-1.428.249-.707.249-1.299.176-1.428-.073-.129-.271-.198-.564-.347z"/>
+           
+        </svg>
+        Contact on WhatsApp
+    </a>
+
+    <!-- QR Code Below the Button -->
+    <div class="flex flex-col items-center mt-2">
+    <p class="text-gray-300 text-sm text-center mb-1">Scan to chat instantly on WhatsApp</p>
+    <a href="https://wa.me/{{ product.whatsapp_number }}" target="_blank" rel="noopener noreferrer">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?data={{ 'https://wa.me/'|add:product.whatsapp_number|urlencode }}&size=120x120"
+             alt="WhatsApp QR" class="rounded shadow-md">
+    </a>
+</div>
+{% else %}
+    <p class="text-red-400 text-sm text-center mb-4">No WhatsApp number available for QR code.</p>
+{% endif %}
                 
                 <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all duration-200 block">
                     Add to Cart
                 </a>
 
                 {% if product.tiktok_url %}
-                <a href="{{ product.tiktok_url }}" target="_blank" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center mt-3">
+               <a href="{{ product.tiktok_url }}" target="_blank" rel="noopener noreferrer" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center mt-3">
                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12.541 2.378c-.767.114-1.52.28-2.261.493l-1.393-.842c-.22-.132-.5-.145-.733-.031-.233.114-.383.35-.383.619v4.209c-.933.204-1.833.518-2.693.922-.249.117-.5.18-.75.207-.251.026-.502-.023-.74-.148l-1.493-.721c-.229-.111-.5-.098-.717.037-.216.136-.356.368-.356.627v5.825c0 .26.14.491.356.627.215.136.488.15.717.037l1.493-.721c.238-.125.49-.174.74-.148.25.027.501.09.75.207.86.404 1.76.718 2.693.922v4.209c0 .26.15.505.383.619.233.114.513.09.733-.031l1.393-.842c.741.213 1.494.38 2.261.493.633.094 1.25.141 1.859.141 5.922 0 10.741-4.819 10.741-10.741s-4.819-10.741-10.741-10.741c-.609 0-1.226.047-1.859.141zM15.42 12.041c0 2.222-1.802 4.024-4.024 4.024s-4.024-1.802-4.024-4.024c0-2.222 1.802-4.024 4.024-4.024s4.024 1.802 4.024 4.024z"/>
                     </svg>
