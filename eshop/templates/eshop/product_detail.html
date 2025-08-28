@@ -13,8 +13,9 @@
                     <source src="{{ product.video.url }}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
-            {% elif product.image %}
-                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="h-64 w-full object-cover md:h-full md:w-64">
+             {% elif product.image and product.image.public_id %}
+             {% cloudinary_url product.image.public_id width=400 height=300 crop='fill' as image_url %}
+             <img src="{{ image_url }}" alt="{{ product.name }}" class="h-64 w-full object-cover md:h-full md:w-64">
             {% else %}
                 <div class="h-64 w-full md:h-full md:w-64 bg-gray-700 flex items-center justify-center text-gray-400">No Media</div>
             {% endif %}
