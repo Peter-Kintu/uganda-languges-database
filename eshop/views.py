@@ -97,28 +97,49 @@ def checkout_view(request):
         'cart': cart
     })
 
+
+def get_user_cart(request):
+    session_key = request.session.session_key
+    if not session_key:
+        request.session.save()
+        session_key = request.session.session_key
+    cart, _ = Cart.objects.get_or_create(session_key=session_key)
+    return cart
+
 def confirm_order_view(request):
-    order = get_user_order(request)
-    vendor = order.vendor
+    cart = get_user_cart(request)
+    if not cart.items.exists():
+        messages.error(request, "Your cart is empty.")
+        return redirect("eshop:product_list")
 
-    message = f"""
-Hello {vendor.name},
+    # Assume one vendor per cart
+    first_item = cart.items.first()
+    vendor_name = first_item.product.vendor_name
+    vendor_phone = first_item.product.whatsapp_number
 
-🎉 New order confirmed!
+    # Build poetic WhatsApp message
+    lines = [
+        f"Hello {vendor_name},",
+        "🎉 A new order has been confirmed!",
+        "",
+        "🛍️ Items:",
+    ]
+    for item in cart.items.all():
+        lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
 
-🛍️ Item: {order.item.name}
-💰 Price: UGX {order.total}
-👤 Buyer: {order.buyer.name}
-📞 Contact: {order.buyer.phone_number}
+    lines.append("")
+    lines.append(f"💰 Total: UGX {cart.cart_total}")
+    lines.append("📞 Buyer contact: A proud customer awaits.")
+    lines.append("")
+    lines.append("Please prepare for delivery. Uganda thanks you.")
 
-Please prepare for delivery. Thank you!
-    """
+    message = "\n".join(lines)
+    whatsapp_url = f"https://wa.me/{vendor_phone}?text={quote(message)}"
 
-    context = {
-        "vendor": vendor,
-        "order_message": message,
-    }
-    return render(request, "confirm_order.html", context)
+    # Optional: clear cart after confirmation
+    cart.items.all().delete()
+
+    return redirect(whatsapp_url)
 
 def export_products_json(request):
     """
