@@ -9,6 +9,7 @@ from cloudinary.models import CloudinaryField
 
 class Product(models.Model):
     image = CloudinaryField('image', blank=True, null=True)
+    
 
     slug = models.SlugField(max_length=100, unique=True, blank=True)
 
