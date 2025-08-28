@@ -14,7 +14,9 @@
         <a href="{% url 'eshop:product_list' %}" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
             🛍️ Back to Shop
         </a>
-        <a href="#" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+        <a href="https://wa.me/{{ vendor.phone_number }}?text={{ order_message|urlencode }}"
+           target="_blank"
+           class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
             ✅ Confirm Order
         </a>
     </div>
