@@ -55,15 +55,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # NEW FIX: Add django.contrib.humanize for template tags like 'intcomma'
+    'django.contrib.humanize', 
 
     # Third-party apps
     'widget_tweaks',
     'cloudinary_storage',
     'cloudinary',
 
-    # My Apps
+    # My Apps (FIX: added 'languages' for Model lookup)
     'eshop',
-    # FIX: Add the 'languages' app to resolve the RuntimeError
     'languages', 
 ]
 
