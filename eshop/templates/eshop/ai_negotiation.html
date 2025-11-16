@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}AI Price Negotiation - MyLanguage Market{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-10 bg-gray-800 p-8 rounded-3xl shadow-xl border-t-4 border-yellow-500">
+            <h1 class="text-5xl font-extrabold text-yellow-400 mb-3 tracking-tight">
+                AI Negotiation Assistant 🤝
+            </h1>
+            <p class="text-gray-300 text-xl max-w-2xl mx-auto">
+                Discuss the price with our AI to find a fair deal. Your offer will be presented to the vendor.
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="md:col-span-1 bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
+                <h2 class="text-2xl font-bold text-white mb-4">Product: <span class="text-indigo-400">{{ product.name|default:"Artisan Mask" }}</span></h2>
+                <p class="text-lg text-green-400 font-bold mb-4">Current Price: USD {{ product.price|default:"200"|floatformat:0 }}</p>
+                
+                <p class="text-gray-400 text-sm italic mb-4">
+                    The AI considers market data, vendor price history, and item scarcity to guide negotiations.
+                </p>
+                <img src="{% static 'images/placeholder_product.jpg' %}" alt="Product Image" class="w-full h-auto object-cover rounded-xl mt-2">
+            </div>
+
+            <div class="md:col-span-2 bg-gray-900 p-8 rounded-2xl shadow-2xl flex flex-col h-[600px] border border-gray-700">
+                <div class="flex-grow overflow-y-auto space-y-4 p-4 custom-scrollbar">
+                    
+                    <div class="flex justify-start">
+                        <div class="bg-indigo-600 text-white p-4 rounded-3xl rounded-tl-none max-w-sm shadow-md">
+                            <p class="font-bold mb-1">AI Assistant</p>
+                            <p>Hello! This item is listed at **USD {{ product.price|default:"200"|floatformat:0 }}**. What is your best offer?</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <div class="bg-gray-700 text-white p-4 rounded-3xl rounded-tr-none max-w-sm shadow-md">
+                            I'd love to offer $160 for the mask.
+                        </div>
+                    </div>
+
+                    <div class="flex justify-start">
+                        <div class="bg-indigo-600 text-white p-4 rounded-3xl rounded-tl-none max-w-sm shadow-md">
+                            The vendor's minimum acceptable price is $185. Can you meet them halfway at **$175**?
+                        </div>
+                    </div>
+
+                </div>
+
+                <form action="{% url 'eshop:ai_negotiate' product.id|default:1 %}" method="post" class="mt-6 flex">
+                    {% csrf_token %}
+                    <input type="text" name="user_offer" placeholder="Type your offer or question here..." 
+                           class="flex-grow px-5 py-4 bg-gray-800 text-white border border-gray-700 rounded-l-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors duration-200" required>
+                    <button type="submit" 
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-4 rounded-r-xl transition-colors duration-200">
+                        Send
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
