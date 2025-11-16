@@ -21,94 +21,111 @@
 
 <div class="container mx-auto px-4 py-8 -mt-16 relative z-10">
     <div class="max-w-4xl mx-auto p-10 bg-gray-800 rounded-3xl shadow-2xl border border-gray-700">
-        <h2 class="text-3xl font-bold text-white mb-8 text-center border-b border-gray-700 pb-4">
-            Product Submission Form
-        </h2>
 
-        {% if messages %}
-        {% for message in messages %}
-        <div class="bg-green-600 text-white font-semibold p-4 rounded-lg mb-6 text-center animate-fade-in-down">
-            {{ message }}
-        </div>
-        {% endfor %}
-        {% endif %}
+        <h2 class="text-3xl font-bold text-white mb-8 border-b border-gray-700 pb-4">Product Listing Form</h2>
 
-        <form method="post" enctype="multipart/form-data" action="{% url 'eshop:add_product' %}" class="space-y-8">
-            {% csrf_token %}
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %} 
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Name</label>
+                    {{ form.name|attr:"class:input-field" }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.language_tag.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Language/Culture Tag (e.g., Luganda, Acholi)</label>
+                    {{ form.language_tag|attr:"class:input-field" }}
+                </div>
+            </div>
 
-            {% if form.non_field_errors %}
-                <div class="bg-red-600 text-white p-4 rounded-lg text-center">
-                    {% for error in form.non_field_errors %}
-                        <p>{{ error }}</p>
-                    {% endfor %}
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Description</label>
+                {{ form.description|attr:"class:input-field" }}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Price (in UGX)</label>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-white font-bold text-lg">UGX</span>
+                        {{ form.price|attr:"class:input-field-price" }}
+                    </div>
+                    <p id="usd-conversion" class="text-sm text-green-400 mt-1"></p>
+                </div>
+
+                <div class="flex items-center pt-8">
+                    {{ form.is_negotiable|attr:"class:h-4 w-4 text-indigo-600 border-gray-600 focus:ring-indigo-500 rounded" }}
+                    <label for="{{ form.is_negotiable.id_for_label }}" class="ml-2 text-sm text-gray-400">Negotiable?</label>
+                </div>
+                
+                <div>
+                    <label for="{{ form.vendor_name.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Your Vendor Name</label>
+                    {{ form.vendor_name|attr:"class:input-field" }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.whatsapp_number.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">WhatsApp Contact</label>
+                    {{ form.whatsapp_number|attr:"class:input-field" }}
+                    <p class="text-xs text-gray-500 mt-1">{{ form.whatsapp_number.help_text }}</p>
+                </div>
+
+                <div>
+                    <label for="{{ form.tiktok_url.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">TikTok Video URL (Optional)</label>
+                    {{ form.tiktok_url|attr:"class:input-field" }}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Image/Media</label>
+                {{ form.image|attr:"class:block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600" }}
+            </div>
+            
+            {% if form.errors %}
+                <div class="p-4 bg-red-800/50 border border-red-700 rounded-lg text-red-300">
+                    <p class="font-bold mb-2">Please correct the following errors:</p>
+                    <ul>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
             {% endif %}
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {% for field in form %}
-                    {% if field.field.widget.input_type != 'checkbox' %}
-                    <div class="relative z-0 group">
-                        <label for="{{ field.id_for_label }}" class="block text-gray-300 font-medium mb-2 transition-transform duration-300">
-                            {{ field.label }}
-                        </label>
-                        
-                        {% render_field field class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 shadow-sm placeholder-gray-500" %}
-
-                        {% if field.errors %}
-                            <ul class="text-red-400 text-sm mt-1 list-disc list-inside">
-                            {% for error in field.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                            </ul>
-                        {% endif %}
-
-                        {% if field.help_text %}
-                            <p class="text-gray-500 text-sm mt-1">{{ field.help_text }}</p>
-                        {% endif %}
-
-                        {% if field.id_for_label == 'id_price' %}
-                        <p id="usd-conversion" class="text-sm text-green-400 font-semibold mt-2 text-right"></p>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-            
-            {% for field in form %}
-                {% if field.field.widget.input_type == 'checkbox' %}
-                    <div class="flex items-center mt-6">
-                        {{ field }}
-                        <label for="{{ field.id_for_label }}" class="ml-2 text-gray-400 font-normal cursor-pointer">{{ field.label }}</label>
-                    </div>
-                    {% if field.errors %}
-                        <ul class="text-red-400 text-sm mt-1 list-disc list-inside">
-                            {% for error in field.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                {% endif %}
-            {% endfor %}
-
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-5 px-4 rounded-xl transition-colors duration-300 shadow-2xl shadow-indigo-600/50 transform hover:scale-[1.01] active:scale-99 text-xl mt-10">
-                List My Product
+            <button type="submit" 
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl text-lg transition-colors duration-300 transform hover:scale-[1.01] shadow-lg shadow-indigo-600/40">
+                List Product Now
             </button>
         </form>
+
     </div>
 </div>
 
 <script>
-    const AfricanCurrencies = {
-        "Algerian Dinar": "DZD", "Angolan Kwanza": "AOA", "Beninese Franc": "XOF", "Botswana Pula": "BWP",
-        "Burundian Franc": "BIF", "Cape Verdean Escudo": "CVE", "Comorian Franc": "KMF", "Congolese Franc": "CDF",
-        "Djiboutian Franc": "DJF", "Egyptian Pound": "EGP", "Eritrean Nakfa": "ERN", "Ethiopian Birr": "ETB",
-        "Gabonese Franc": "XAF", "Gambian Dalasi": "GMD", "Ghanaian Cedi": "GHS", "Guinean Franc": "GNF",
-        "Kenyan Shilling": "KES", "Lesotho Loti": "LSL", "Liberian Dollar": "LRD", "Libyan Dinar": "LYD",
-        "Malagasy Ariary": "MGA", "Malawian Kwacha": "MWK", "Mauritanian Ouguiya": "MRU", "Mauritian Rupee": "MUR",
-        "Moroccan Dirham": "MAD", "Mozambican Metical": "MZN", "Namibian Dollar": "NAD", "Nigerian Naira": "NGN",
-        "Rwandan Franc": "RWF", "São Tomé and Príncipe Dobra": "STN", "Senegalese Franc": "XOF", "Seychellois Rupee": "SCR",
-        "Sierra Leonean Leone": "SLL", "Somali Shilling": "SOS", "South African Rand": "ZAR", "South Sudanese Pound": "SSP",
-        "Sudanese Pound": "SDG", "Swazi Lilangeni": "SZL", "Tanzanian Shilling": "TZS", "Ugandan Shilling": "UGX",
+    // Currency conversion logic (as per original file content)
+
+    // Note: The dictionary of African currencies is included for context but not used in the USD conversion logic
+    const AFRICAN_CURRENCIES = {
+        "Algerian Dinar": "DZD", "Angolan Kwanza": "AOA", "Botswana Pula": "BWP",
+        "Burundian Franc": "BIF", "Cabo Verdean Escudo": "CVE", "Comorian Franc": "KMF",
+        "Congolese Franc": "CDF", "Djiboutian Franc": "DJF", "Egyptian Pound": "EGP",
+        "Eritrean Nakfa": "ERN", "Ethiopian Birr": "ETB", "Gambian Dalasi": "GMD",
+        "Ghanaian Cedi": "GHS", "Guinean Franc": "GNF", "Kenyan Shilling": "KES",
+        "Lesotho Loti": "LSL", "Liberian Dollar": "LRD", "Libyan Dinar": "LYD",
+        "Malagasy Ariary": "MGA", "Malawian Kwacha": "MWK", "Mauritanian Ouguiya": "MRU",
+        "Mauritian Rupee": "MUR", "Moroccan Dirham": "MAD", "Mozambican Metical": "MZN",
+        "Namibian Dollar": "NAD", "Nigerian Naira": "NGN", "Rwandan Franc": "RWF",
+        "São Tomé and Príncipe Dobra": "STD", "Seychellois Rupee": "SCR", "Sierra Leonean Leone": "SLL",
+        "Somali Shilling": "SOS", "South African Rand": "ZAR", "South Sudanese Pound": "SSP",
+        "Sudanese Pound": "SDG", "Swazi Lilangeni": "SZL", "Tanzanian Shilling": "TZS", 
+        "Ugandan Shilling": "UGX",
         "Zambian Kwacha": "ZMW", "Zimbabwean Dollar": "ZWL"
     };
 
