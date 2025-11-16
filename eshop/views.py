@@ -71,44 +71,45 @@ def add_to_cart(request, product_id):
     return redirect('eshop:product_list')
     
 
-# Corrected view to fix the Server 500 error
+# UPDATED: Use get_user_cart and ensure cart_total is in context
 def view_cart(request):
     session_key = request.session.session_key
-    cart = None
-    if session_key:
-        try:
-            cart = Cart.objects.get(session_key=session_key)
-        except Cart.DoesNotExist:
-            pass
-        if not cart or not cart.items.exists():
-           messages.info(request, "🧺 Your basket is silent, waiting for treasures to speak.")
+    cart = get_user_cart(request)
+    
+    # Calculate total safely to pass to template
+    cart_total = cart.cart_total if cart and cart.items.exists() else 0
+        
+    if not cart or not cart.items.exists():
+       messages.info(request, "🧺 Your basket is silent, waiting for treasures to speak.")
+
     return render(request, 'eshop/cart.html', {
-        'cart': cart
+        'cart': cart,
+        'cart_total': cart_total,
     })
+    
 def remove_from_cart(request, item_id):
     item = get_object_or_404(CartItem, id=item_id)
     if request.method == 'POST':
         item.delete()
     return redirect('eshop:view_cart')
 
+# UPDATED: Use get_user_cart and ensure cart_total is in context
 def checkout_view(request):
     """
     Displays the checkout page where users can review and confirm their order.
     """
-    session_key = request.session.session_key
-    cart = None
-    if session_key:
-        try:
-            cart = Cart.objects.get(session_key=session_key)
-        except Cart.DoesNotExist:
-            pass
-        
-        if cart and cart.items.exists():
-           language = cart.items.first().product.language_tag
-           messages.info(request, f"Instructions available in {language} upon request.")
+    cart = get_user_cart(request) # Use the helper function to get an active cart
+    
+    # Calculate total safely to pass to template
+    cart_total = cart.cart_total if cart and cart.items.exists() else 0
+
+    if cart and cart.items.exists():
+       language = cart.items.first().product.language_tag
+       messages.info(request, f"Instructions available in {language} upon request.")
 
     return render(request, 'eshop/checkout.html', {
-        'cart': cart
+        'cart': cart,
+        'cart_total': cart_total, # Pass total to template
     })
 
 def get_user_cart(request):
@@ -153,6 +154,7 @@ def confirm_order_view(request):
         "🛍️ Items:",
     ]
     for item in cart.items.all():
+        # NOTE: Using UGX for price unit as seen in the original code, assuming conversion is handled elsewhere or price is in UGX
         lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
 
     lines.append("")
@@ -181,4 +183,3 @@ def export_products_json(request):
     response = HttpResponse(data, content_type='application/json')
     response['Content-Disposition'] = 'attachment; filename="products_export.json"'
     return response
-
