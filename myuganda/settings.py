@@ -43,9 +43,16 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 # In Render, you would set the DJANGO_ALLOWED_HOSTS environment variable.
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
-# --- NEW FIX: CSRF Configuration for Deployment (Koyeb/Render) ---
+# --- PRODUCTION FIXES FOR CSRF & PROXY SSL ---
+
+# 1. Configure the Proxy Header
+# Koyeb uses a reverse proxy. This setting tells Django to trust the 'X-Forwarded-Proto' 
+# header, ensuring Django knows the connection is HTTPS, which is required for secure cookies 
+# and CSRF to function correctly in production.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 2. Configure trusted origins for CSRF protection
 # The primary cause of CSRF failure in production is a missing or incorrect domain in trusted origins.
-# We must include the deployed domain with its scheme (https://).
 
 # The full hostname of your Koyeb deployment
 KOYEB_HOST = 'initial-danette-africana-60541726.koyeb.app'
@@ -62,7 +69,8 @@ for host in hosts_from_env:
     if host.strip() and host.strip() != '*' and host.strip() not in TRUSTED_HOSTS:
         TRUSTED_HOSTS.append(host.strip())
 
-# Construct CSRF_TRUSTED_ORIGINS by adding the HTTPS scheme to all trusted hosts
+# Construct CSRF_TRUSTED_ORIGINS by adding the HTTPS scheme to all trusted hosts.
+# This is necessary because the browser sends the full origin.
 CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in TRUSTED_HOSTS]
 
 # Explicitly add local development origins (http)
@@ -72,7 +80,10 @@ CSRF_TRUSTED_ORIGINS.extend([
     'http://127.0.0.1',
     'http://localhost',
 ])
-# --- END NEW FIX ---
+# Note: Removed the redundant 'https://initial-danette-africana-60541726.koyeb.app/' 
+# entry since it is already covered above and the trailing slash is incorrect.
+
+# --- END PRODUCTION FIXES ---
 
 
 # Application definition
