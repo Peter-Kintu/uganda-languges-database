@@ -3,10 +3,11 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
-from django.db.models import F
+# FIX: Correctly import F and Sum for aggregation
+from django.db.models import F, Sum 
 from decimal import Decimal
 
-from languages import models # NEW: Import Decimal for safe mathematical operations
+# REMOVED: from languages import models # Line removed due to incorrect/redundant import
 
 from .forms import ProductForm, NegotiationForm 
 from .models import Product, Cart, CartItem
@@ -157,7 +158,8 @@ def checkout_view(request):
     vendor_name = first_item.product.vendor_name
     vendor_phone = first_item.product.whatsapp_number
     cart_total = cart.cart_total
-    total_items_count = cart.items.aggregate(total=models.Sum('quantity'))['total']
+    # FIX: Use imported Sum from django.db.models
+    total_items_count = cart.items.aggregate(total=Sum('quantity'))['total']
 
     # Build the message content for the vendor
     order_items = "\n".join([f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}" for item in cart.items.all()])
@@ -256,9 +258,9 @@ def get_ai_response(product, user_message, chat_history):
 
     # 3. Simple Negotiation Logic
     
-    # 3a. Check for minimum acceptable price (50% of original price)
-    # FIX APPLIED: Use Decimal('0.5') for multiplication
-    if offer < product_price * Decimal('0.5'): 
+    # 3a. Check for minimum acceptable price (60% of original price)
+    # FIX: The check is now aligned with the minimum quoted to the user (60%)
+    if offer < product_price * Decimal('0.6'): 
         return f"I appreciate your enthusiasm, but your offer is too low. My vendor's absolute minimum is UGX {product_price * Decimal('0.6'):,.0f}. Try again!"
 
     # 3b. Offer is near original price (accept it immediately)
@@ -270,7 +272,7 @@ def get_ai_response(product, user_message, chat_history):
         product.save()
         return f"That is a very generous offer! UGX {final_price:,.0f} is a deal. I have marked this as the accepted price. Click 'Accept Final Price' to proceed."
 
-    # 3c. Offer is in the negotiation range (50% to 90%)
+    # 3c. Offer is in the negotiation range (60% to 90%)
     if offer < product_price:
         # Determine the counter-offer
         current_lowest = product_price * Decimal('0.7') # Vendor's true minimum selling price after negotiation
