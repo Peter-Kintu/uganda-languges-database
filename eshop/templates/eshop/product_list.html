@@ -5,70 +5,75 @@
 {% block title %}Explore African Culture – MyLanguage Market{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-12">
+<div class="container mx-auto px-4 py-16">
 
-    <header class="text-center mb-16 p-8 bg-gray-900 rounded-3xl shadow-xl border-b-4 border-indigo-600">
-        <h1 class="text-5xl sm:text-6xl font-extrabold text-white leading-tight mb-4 tracking-tighter">
-            Discover Unique African Treasures
-        </h1>
-        <p class="text-gray-300 text-xl sm:text-2xl max-w-3xl mx-auto mb-8 font-light">
-            Every product here is a piece of **culture** and a shared **story**.
-        </p>
-        <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-xl text-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-indigo-600/40">
-            List Your Own Product →
-        </a>
+    <header class="text-center mb-20 p-12 bg-gray-900 rounded-[3rem] shadow-3xl border-b-8 border-indigo-700/50 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1517483010476-02431711831c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTY5OTh8MHwxfHNlYXJjaHw3fHdhbGxwYXBlciUyMHBhdHRlcm58ZW58MHx8fHwxNzAzMzc3NzMzfDA&ixlib=rb-4.0.3&q=80&w=1080')] bg-repeat bg-cover"></div>
+        
+        <div class="relative z-10">
+            <h1 class="text-6xl sm:text-7xl font-extrabold text-white leading-snug mb-5 tracking-tight drop-shadow-lg">
+                The Global Marketplace for <span class="text-indigo-400">African Heritage</span>
+            </h1>
+            <p class="text-gray-300 text-xl sm:text-2xl max-w-4xl mx-auto mb-10 font-light">
+                Every purchase supports a **culture**, shares a **story**, and empowers a **creator**.
+            </p>
+            <a href="{% url 'eshop:add_product' %}" class="inline-block bg-green-500 hover:bg-green-600 text-gray-900 font-black py-4 px-12 rounded-full text-xl transition-all duration-400 transform hover:scale-105 shadow-2xl shadow-green-500/50 ring-4 ring-green-500/30">
+                List Your Own Treasure →
+            </a>
+        </div>
     </header>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
         {% for product in products %}
-        <div class="bg-gray-800 rounded-2xl shadow-2xl transform hover:scale-[1.03] transition-all duration-500 overflow-hidden group border border-gray-700 hover:border-indigo-500">
+        <div class="bg-gray-800 rounded-3xl shadow-4xl transform hover:shadow-indigo-500/40 transition-all duration-500 overflow-hidden group border-2 border-gray-700 hover:border-indigo-500 relative">
             
-            <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative">
+            <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative h-72">
                 {% if product.video %}
-                    <video class="w-full h-64 object-cover" controls>
+                    <video class="w-full h-full object-cover" controls>
                         <source src="{{ product.video.url }}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 {% elif product.image %}
-                  {% cloudinary_url product.image.public_id width=500 height=400 crop='fill' as image_url %}
-                  <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-64 object-cover transition-opacity duration-300 group-hover:opacity-90">
+                  {% cloudinary_url product.image.public_id width=600 height=500 crop='fill' as image_url %}
+                  <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                 {% else %}
-                    <div class="w-full h-64 bg-gray-700 flex items-center justify-center text-gray-400">No Media</div>
+                    <div class="w-full h-full bg-gray-700 flex items-center justify-center text-gray-400 font-medium text-lg">No Visual Media</div>
                 {% endif %}
                 
-                <div class="absolute top-0 right-0 bg-green-500 text-white text-lg font-extrabold px-4 py-2 rounded-bl-xl shadow-lg">
-                    USD {{ product.price|floatformat:0 }}
+                <div class="absolute top-4 right-4 bg-indigo-600 text-white text-2xl font-black px-5 py-2 rounded-full shadow-xl transform rotate-3 group-hover:rotate-0 transition-transform duration-300">
+                    <span class="text-sm font-normal mr-1">USD</span> {{ product.price|floatformat:0 }}
                 </div>
             </a>
             
             <div class="p-6">
                 <a href="{% url 'eshop:product_detail' product.slug %}">
-                    <h3 class="text-xl font-bold text-white mb-1 group-hover:text-indigo-400 transition-colors duration-300">{{ product.name }}</h3>
+                    <h3 class="text-2xl font-bold text-white mb-2 group-hover:text-indigo-400 transition-colors duration-300 line-clamp-2">{{ product.name }}</h3>
                 </a>
                 
-                <p class="text-gray-400 text-sm mb-4 flex justify-between items-center">
-                    <span>Vendor: {{ product.vendor_name }}</span>
+                <div class="text-gray-400 text-sm mb-5 flex justify-between items-center">
+                    <span>Vendor: <span class="text-indigo-300 font-medium">{{ product.vendor_name }}</span></span>
                     {% if product.is_negotiable %}
-                        <span class="text-yellow-400 font-medium text-xs bg-gray-700 px-2 py-1 rounded-full">Negotiable</span>
+                        <span class="text-yellow-400 font-semibold text-xs bg-gray-700 px-3 py-1.5 rounded-full border border-yellow-400/50 shadow-inner">🤝 Negotiable</span>
                     {% endif %}
-                </p>
+                </div>
 
                 <div class="space-y-3">
-                    <a href="{% url 'eshop:product_detail' product.slug %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all duration-200 block">
+                    <a href="{% url 'eshop:product_detail' product.slug %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-xl transition-all duration-300 block transform hover:scale-[1.01] shadow-md shadow-indigo-600/30">
                         View Details
                     </a>
-                    <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl transition-all duration-200 block">
-                        Add to Cart
+                    <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3.5 rounded-xl transition-all duration-300 block transform hover:scale-[1.01]">
+                        + Add to Cart
                     </a>
                 </div>
             </div>
         </div>
         {% empty %}
-        <div class="col-span-full text-center p-20 bg-gray-800 rounded-3xl shadow-2xl border border-gray-700">
-            <h3 class="text-3xl text-gray-400 font-semibold mb-3">No products found.</h3>
-            <p class="text-xl text-indigo-400 font-medium mb-6">Be the first to list a product and share your culture!</p>
+        <div class="col-span-full text-center p-20 bg-gray-800 rounded-3xl shadow-2xl border-4 border-dashed border-indigo-500/50">
+            <svg class="w-20 h-20 text-indigo-400 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H7a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 011 1v1z"></path></svg>
+            <h3 class="text-4xl text-white font-extrabold mb-3">No Treasures Listed Yet.</h3>
+            <p class="text-xl text-indigo-300 font-medium mb-8">Be the first to list a product and share your culture with the world!</p>
             <div class="mt-6">
-                <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl transition-colors duration-200 transform hover:scale-105">
+                <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 px-10 rounded-full transition-colors duration-300 transform hover:scale-105 shadow-xl">
                     List a Product Now
                 </a>
             </div>
