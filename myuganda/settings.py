@@ -43,6 +43,37 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 # In Render, you would set the DJANGO_ALLOWED_HOSTS environment variable.
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
+# --- NEW FIX: CSRF Configuration for Deployment (Koyeb/Render) ---
+# The primary cause of CSRF failure in production is a missing or incorrect domain in trusted origins.
+# We must include the deployed domain with its scheme (https://).
+
+# The full hostname of your Koyeb deployment
+KOYEB_HOST = 'initial-danette-africana-60541726.koyeb.app'
+
+# List of all hosts to be trusted for CSRF
+TRUSTED_HOSTS = [
+    KOYEB_HOST,
+]
+
+# Add hosts from the ALLOWED_HOSTS environment variable
+hosts_from_env = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
+for host in hosts_from_env:
+    # Add any allowed host that is not a wildcard
+    if host.strip() and host.strip() != '*' and host.strip() not in TRUSTED_HOSTS:
+        TRUSTED_HOSTS.append(host.strip())
+
+# Construct CSRF_TRUSTED_ORIGINS by adding the HTTPS scheme to all trusted hosts
+CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in TRUSTED_HOSTS]
+
+# Explicitly add local development origins (http)
+CSRF_TRUSTED_ORIGINS.extend([
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://127.0.0.1',
+    'http://localhost',
+])
+# --- END NEW FIX ---
+
 
 # Application definition
 
