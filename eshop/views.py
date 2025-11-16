@@ -14,8 +14,15 @@ def product_list(request):
     Displays the list of products for sale.
     """
     products = Product.objects.all().order_by('-id')
+    
+    # Ensure cart context is available for base.html
+    cart = get_user_cart(request)
+    cart_total = cart.cart_total if cart and cart.items.exists() else 0
+    
     return render(request, 'eshop/product_list.html', {
-        'products': products
+        'products': products,
+        'cart': cart,
+        'cart_total': cart_total,
     })
 
 def add_product(request):
@@ -32,9 +39,15 @@ def add_product(request):
             messages.error(request, "Oops! Please correct the errors below and try again.")
     else:
         form = ProductForm()
+        
+    # Ensure cart context is available for base.html
+    cart = get_user_cart(request)
+    cart_total = cart.cart_total if cart and cart.items.exists() else 0
 
     return render(request, 'eshop/add_product.html', {
-        'form': form
+        'form': form,
+        'cart': cart,
+        'cart_total': cart_total,
     })
 
 def product_detail(request, slug):
@@ -42,9 +55,17 @@ def product_detail(request, slug):
     Displays the details of a single product.
     """
     product = get_object_or_404(Product, slug=slug)
+    
+    # Ensure cart context is available for base.html (Fix for the product detail 500)
+    cart = get_user_cart(request)
+    cart_total = cart.cart_total if cart and cart.items.exists() else 0
+    
     return render(request, 'eshop/product_detail.html', {
-        'product': product
+        'product': product,
+        'cart': cart,
+        'cart_total': cart_total,
     })
+    
 def ensure_session(request):
     if not request.session.session_key:
         request.session.save()
@@ -71,7 +92,6 @@ def add_to_cart(request, product_id):
     return redirect('eshop:product_list')
     
 
-# UPDATED: Use get_user_cart and ensure cart_total is in context
 def view_cart(request):
     session_key = request.session.session_key
     cart = get_user_cart(request)
@@ -93,23 +113,28 @@ def remove_from_cart(request, item_id):
         item.delete()
     return redirect('eshop:view_cart')
 
-# UPDATED: Use get_user_cart and ensure cart_total is in context
 def checkout_view(request):
     """
     Displays the checkout page where users can review and confirm their order.
     """
-    cart = get_user_cart(request) # Use the helper function to get an active cart
+    cart = get_user_cart(request)
     
     # Calculate total safely to pass to template
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
 
+    # FIX: Check if the cart item's product exists before accessing its properties (Fix for checkout 500)
     if cart and cart.items.exists():
-       language = cart.items.first().product.language_tag
-       messages.info(request, f"Instructions available in {language} upon request.")
-
+       first_item = cart.items.first()
+       if first_item.product:
+            language = first_item.product.language_tag
+            messages.info(request, f"Instructions available in {language} upon request.")
+       else:
+            # Handle case where the product was deleted
+            messages.warning(request, "One or more items in your cart are no longer available. Please review your cart.")
+            
     return render(request, 'eshop/checkout.html', {
         'cart': cart,
-        'cart_total': cart_total, # Pass total to template
+        'cart_total': cart_total,
     })
 
 def get_user_cart(request):
@@ -141,8 +166,12 @@ def confirm_order_view(request):
         messages.error(request, "Your cart is empty.")
         return redirect("eshop:product_list")
 
-    # Assume one vendor per cart
+    # FIX: Safety check for missing product/vendor details before proceeding
     first_item = cart.items.first()
+    if not first_item or not first_item.product or not first_item.product.whatsapp_number:
+        messages.error(request, "Cannot confirm order. Missing product or vendor contact details.")
+        return redirect("eshop:checkout")
+
     vendor_name = first_item.product.vendor_name
     vendor_phone = first_item.product.whatsapp_number
 
@@ -154,8 +183,12 @@ def confirm_order_view(request):
         "🛍️ Items:",
     ]
     for item in cart.items.all():
-        # NOTE: Using UGX for price unit as seen in the original code, assuming conversion is handled elsewhere or price is in UGX
-        lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
+        # NOTE: Added safety check here for item.product just in case
+        if item.product:
+            lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
+        else:
+             lines.append(f"- {item.quantity} x [DELETED PRODUCT] - Please check cart!")
+
 
     lines.append("")
     lines.append(f"💰 Total: UGX {cart.cart_total}")
