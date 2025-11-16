@@ -4,20 +4,19 @@
 {% block content %}
 <div class="container mx-auto px-4 py-20 text-center">
     
-    <div class="max-w-3xl mx-auto bg-gray-800 p-10 rounded-3xl shadow-2xl border-t-4 border-indigo-500 transform transition duration-500 hover:shadow-indigo-500/50">
+    <div class="max-w-3xl mx-auto bg-gray-800 p-10 rounded-3xl shadow-4xl border-t-8 border-green-500/70 transform transition duration-500 hover:shadow-green-500/50">
         
-        <svg class="w-16 h-16 text-green-400 mx-auto mb-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg class="w-16 h-16 text-green-400 mx-auto mb-6 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
 
-        <h1 class="text-5xl font-extrabold text-indigo-400 mb-4 tracking-tighter sm:text-6xl animate-fade-in-down">
-            Order Placed! Explore African Culture! 🌍
+        <h1 class="text-5xl font-extrabold text-green-400 mb-4 tracking-tighter sm:text-6xl animate-fade-in-down"> Order Confirmed! Adventure Awaits! 🌍
         </h1>
         <p class="text-gray-300 text-xl max-w-2xl mx-auto mb-10">
             Thank you! Your order is being processed. Please review the final details below.
         </p>
 
-        <div class="text-left bg-gray-700 p-6 rounded-xl mb-10 border border-gray-600">
+        <div class="text-left bg-gray-700 p-6 rounded-xl mb-10 border border-gray-600 shadow-inner">
             <h2 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Your Order Summary</h2>
             <div class="flex justify-between text-lg text-gray-300 py-1">
                 <span>Total Items:</span>
@@ -27,15 +26,13 @@
                 <span>Estimated Total:</span>
                 <span class="font-semibold text-green-400">USD {{ cart_total|default:"145.00" }}</span>
             </div>
-            <p class="text-sm text-gray-400 mt-4 italic">
-                A vendor will contact you to confirm the final price, delivery, and payment.
+            <p class="text-sm text-yellow-400 mt-4 italic font-semibold"> A vendor will contact you to confirm the final price, delivery, and payment.
             </p>
         </div>
 
         <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <a href="{% url 'eshop:delivery_location' %}" 
-               class="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 shadow-lg shadow-yellow-600/30 transform hover:scale-[1.03]">
-                 Set Delivery Location 🗺️
+               class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 px-8 rounded-xl transition-all duration-300 shadow-2xl shadow-indigo-600/50 transform hover:scale-[1.05] ring-4 ring-indigo-600/30"> Set Delivery Location Now 🗺️
             </a>
 
             <a href="https://wa.me/{{ vendor.phone_number }}?text={{ order_message|urlencode }}"

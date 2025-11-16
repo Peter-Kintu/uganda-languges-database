@@ -30,13 +30,18 @@
                     <h1 class="text-4xl font-extrabold text-white mb-3">{{ product.name }}</h1>
                     <p class="text-gray-400 text-lg mb-6">{{ product.description }}</p>
 
-                    <p class="text-3xl font-bold text-green-400 mb-6 border-t border-b border-gray-700 py-3">
-                        UGX {{ product.price|floatformat:0|intcomma }}
+                    <div class="mb-6 space-y-2 p-4 bg-gray-900 rounded-xl shadow-lg border border-indigo-500/50">
+                        <p class="text-xl font-bold text-green-400">
+                            Current Price: 
+                            <span class="text-3xl font-extrabold text-green-400 ml-1">UGX {{ product.price|floatformat:0|intcomma }}</span>
+                        </p>
                         {% if product.is_negotiable %}
-                            <span class="text-base text-yellow-400 ml-3">(Price is Negotiable 🤝)</span>
+                            <p class="text-xl font-extrabold text-yellow-400 animate-pulse bg-gray-700/50 p-2 rounded">
+                                PRICE IS NEGOTIABLE! 🤝
+                            </p>
                         {% endif %}
-                    </p>
-
+                    </div>
+                    
                     <div class="mb-6 space-y-2 text-gray-300">
                         <p><span class="font-semibold text-indigo-400">Vendor:</span> {{ product.vendor_name }}</p>
                         <p><span class="font-semibold text-indigo-400">Language Tag:</span> {{ product.language_tag }}</p>
@@ -44,17 +49,16 @@
                     </div>
                 </div>
 
-                <div class="mt-8">
+                <div class="mt-8 lg:sticky lg:top-8 lg:pt-8 lg:border-t lg:border-gray-700">
                     
                     {% if product.is_negotiable %}
                     <a href="{% url 'eshop:ai_negotiation' product.slug %}" 
-                       class="w-full text-center bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-xl transition-colors duration-200 block mb-3 shadow-lg shadow-yellow-600/30">
-                        <i class="fas fa-robot mr-2"></i> Negotiate Price with AI
+                       class="w-full text-center bg-yellow-600 hover:bg-yellow-700 text-white font-extrabold py-4 px-6 rounded-xl transition-colors duration-200 block mb-3 shadow-2xl shadow-yellow-600/50 transform hover:scale-[1.02] ring-4 ring-yellow-600/30"> <i class="fas fa-robot mr-2"></i> Negotiate Price with AI!
                     </a>
                     {% endif %}
 
                     <a href="{% url 'eshop:add_to_cart' product.id %}" 
-                       class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all duration-200 block">
+                       class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all duration-200 block shadow-lg shadow-indigo-600/30">
                         Add to Cart
                     </a>
                     
@@ -67,7 +71,7 @@
                     </a>
                     {% endif %}
                 </div>
-                </div>
+            </div>
         </div>
     </div>
 </div>

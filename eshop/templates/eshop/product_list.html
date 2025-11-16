@@ -40,8 +40,9 @@
                     <div class="w-full h-full bg-gray-700 flex items-center justify-center text-gray-400 font-medium text-lg">No Visual Media</div>
                 {% endif %}
                 
-                <div class="absolute top-4 right-4 bg-indigo-600 text-white text-2xl font-black px-5 py-2 rounded-full shadow-xl transform rotate-3 group-hover:rotate-0 transition-transform duration-300">
-                    <span class="text-sm font-normal mr-1">USD</span> {{ product.price|floatformat:0 }}
+                <div class="absolute top-4 right-4 bg-indigo-600 text-white font-extrabold px-5 py-2 rounded-full shadow-2xl transform rotate-3 group-hover:rotate-0 transition-transform duration-300 ring-2 ring-white/50">
+                    <span class="text-xs font-normal mr-1 block leading-none">Price</span>
+                    <span class="text-2xl leading-none">USD {{ product.price|floatformat:0 }}</span>
                 </div>
             </a>
             
@@ -58,7 +59,7 @@
                 </div>
 
                 <div class="space-y-3">
-                    <a href="{% url 'eshop:product_detail' product.slug %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-xl transition-all duration-300 block transform hover:scale-[1.01] shadow-md shadow-indigo-600/30">
+                    <a href="{% url 'eshop:product_detail' product.slug %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-xl transition-all duration-300 block transform hover:scale-[1.01] shadow-xl shadow-indigo-600/30">
                         View Details
                     </a>
                     <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3.5 rounded-xl transition-all duration-300 block transform hover:scale-[1.01]">

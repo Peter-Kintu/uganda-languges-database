@@ -63,6 +63,8 @@ INSTALLED_APPS = [
 
     # My Apps
     'eshop',
+    # FIX: Add the 'languages' app to resolve the RuntimeError
+    'languages', 
 ]
 
 MIDDLEWARE = [
