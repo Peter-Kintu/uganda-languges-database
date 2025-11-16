@@ -20,6 +20,7 @@ import cloudinary_storage
 # NEW: Import the library to load environment variables from .env
 from dotenv import load_dotenv
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -46,27 +47,26 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 # Application definition
 
 INSTALLED_APPS = [
-    'jazzmin', # Add jazzmin to the beginning of the list for it to take effect
+    # Jazzmin Admin Interface
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'languages', # Your app
-    'eshop', # Your app
-    # Add Cloudinary apps
-    'django.contrib.humanize',
-    'cloudinary',
-    'cloudinary_storage',
-    'widget_tweaks',
 
+    # Third-party apps
+    'widget_tweaks',
+    'cloudinary_storage',
+    'cloudinary',
+
+    # My Apps
+    'eshop',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # Added WhiteNoise middleware for static files in production
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -80,8 +80,7 @@ ROOT_URLCONF = 'myuganda.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Added your templates directory to the DIRS list
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], 
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -100,15 +99,22 @@ WSGI_APPLICATION = 'myuganda.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': dj_database_url.config(
-        # Use an environment variable for the database URL, falling back to SQLite
-        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
-    )
-}
+# Use dj_database_url to parse the DATABASE_URL environment variable
+# for easy deployment setup (e.g., on Render or Heroku)
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-# The DATABASE_URL environment variable in Render will be set to:
-# 'postgresql://neondb_owner:npg_PouwbCJ8O1Ne@ep-fancy-king-ae3dr0ht-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+    }
+else:
+    # Fallback to SQLite for local development if DATABASE_URL is not set
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -143,29 +149,17 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
+# https://docs.djangoproject.com/en/5.0/ref/settings/#staticfiles
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
-# Media files (User uploaded content)
-# These settings define where to store and serve user-uploaded files
 MEDIA_URL = '/media/'
-# Update the default file storage to Cloudinary
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-
-# Cloudinary Configuration
-# Use environment variables to keep your credentials secure
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
-
-# The original MEDIA_ROOT setting is no longer needed with Cloudinary
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# When CLOUDINARY_STORAGE is enabled, files will be uploaded there
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
 
 
 # Default primary key field type
@@ -174,30 +168,43 @@ CLOUDINARY_STORAGE = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# JAZZMIN Settings - UI for the Django Admin
+# Cloudinary Configuration
+# Ensure these are set in your .env file or environment variables
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+
+# Gemini API Key (for the AI Negotiation feature)
+# Ensure this is set in your .env file or environment variables
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+
+# JAZZMIN Settings
 JAZZMIN_SETTINGS = {
-    "site_title": "KINTU Admin",
-    "site_header": "KINTU Admin",
-    "site_brand": "KINTU",
-    "site_logo": None,
-    "login_logo": None,
-    "login_logo_dark": None,
-    "site_logo_classes": "img-circle",
-    "site_icon": None,
-    "welcome_sign": "Welcome to the KINTU Admin Portal",
-    "search_model": ["auth.User", "languages.PhraseContribution"],
+    # title of the window (Will default to current_admin_site.site_title if absent or None)
+    "site_title": "MyUganda Admin",
+
+    # Title on the brand (19 chars max) (defaults to current_admin_site.site_header if absent or None)
+    "site_header": "MyUganda",
+
+    # Welcome text on the login screen
+    "welcome_sign": "Welcome to the MyUganda Administration Dashboard",
+
+    # Copyright on the footer
+    "copyright": "MyUganda Ltd",
+
+    # The model name to use as a look-up when the user is searching
+    "search_model": "eshop.Product",
+
+    # Field name on user model that contains avatar image
     "user_avatar": None,
-    "topmenu_links": [
-        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Support", "url": "https://github.com/farkasgabor/django-jazzmin/issues", "new_window": True},
-        {"model": "auth.User"},
-        {"model": "languages.PhraseContribution"},
-    ],
-    "show_sidebar": True,
-    "navigation_expanded": True,
-    "hide_apps": [],
-    "hide_models": [],
-    "order_with_respect_to": ["auth", "languages"],
+
+    # Custom icons for the application. The default is `fontawesome` icon set.
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -236,16 +243,9 @@ JAZZMIN_UI_TWEAKS = {
     "button_classes": {
         "primary": "btn-outline-primary",
         "secondary": "btn-outline-secondary",
-        "info": "btn-outline-info",
-        "warning": "btn-outline-warning",
-        "danger": "btn-outline-danger",
-        "success": "btn-outline-success"
-    },
-    "actions_button_classes": {
-        "add": "btn-success",
-        "change": "btn-info",
-        "delete": "btn-danger",
-        "save": "btn-primary",
-        "submit": "btn-primary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
     }
 }
