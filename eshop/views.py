@@ -56,7 +56,7 @@ def product_detail(request, slug):
     """
     product = get_object_or_404(Product, slug=slug)
     
-    # Ensure cart context is available for base.html (Fix for the product detail 500)
+    # Ensure cart context is available for base.html (This helps fix crashes on every page)
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
     
@@ -93,10 +93,17 @@ def add_to_cart(request, product_id):
     
 
 def view_cart(request):
-    session_key = request.session.session_key
     cart = get_user_cart(request)
     
-    # Calculate total safely to pass to template
+    # FIX: Remove cart items whose product has been deleted from the database
+    stale_items = [item.id for item in cart.items.all() if item.product is None]
+    if stale_items:
+        CartItem.objects.filter(id__in=stale_items).delete()
+        # Optionally, reload the cart object to reflect changes
+        cart = get_user_cart(request) 
+        messages.warning(request, "Some unavailable items were removed from your cart.")
+    
+    # Calculate total safely
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
         
     if not cart or not cart.items.exists():
@@ -117,20 +124,24 @@ def checkout_view(request):
     """
     Displays the checkout page where users can review and confirm their order.
     """
-    cart = get_user_cart(request)
+    cart = get_user_cart(request) 
     
-    # Calculate total safely to pass to template
+    # FIX: Remove cart items whose product has been deleted from the database
+    stale_items = [item.id for item in cart.items.all() if item.product is None]
+    if stale_items:
+        CartItem.objects.filter(id__in=stale_items).delete()
+        # Reload cart and redirect to cart to force review
+        messages.error(request, "Some unavailable items were removed. Please review your cart before checking out.")
+        return redirect('eshop:view_cart') 
+
+    # Calculate total safely
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
 
-    # FIX: Check if the cart item's product exists before accessing its properties (Fix for checkout 500)
+    # This check now runs only on valid items
     if cart and cart.items.exists():
        first_item = cart.items.first()
-       if first_item.product:
-            language = first_item.product.language_tag
-            messages.info(request, f"Instructions available in {language} upon request.")
-       else:
-            # Handle case where the product was deleted
-            messages.warning(request, "One or more items in your cart are no longer available. Please review your cart.")
+       language = first_item.product.language_tag
+       messages.info(request, f"Instructions available in {language} upon request.")
             
     return render(request, 'eshop/checkout.html', {
         'cart': cart,
@@ -162,14 +173,23 @@ def get_user_cart(request):
 
 def confirm_order_view(request):
     cart = get_user_cart(request)
+    
+    # Re-check for stale items on order confirmation
+    stale_items = [item.id for item in cart.items.all() if item.product is None]
+    if stale_items:
+        CartItem.objects.filter(id__in=stale_items).delete()
+        messages.error(request, "Unavailable items were removed. Please review and try confirming again.")
+        return redirect("eshop:view_cart")
+        
     if not cart.items.exists():
         messages.error(request, "Your cart is empty.")
         return redirect("eshop:product_list")
 
-    # FIX: Safety check for missing product/vendor details before proceeding
     first_item = cart.items.first()
-    if not first_item or not first_item.product or not first_item.product.whatsapp_number:
-        messages.error(request, "Cannot confirm order. Missing product or vendor contact details.")
+    
+    # Final check: we know first_item.product exists, but check for critical vendor info
+    if not first_item.product.whatsapp_number:
+        messages.error(request, "Cannot confirm order. Missing vendor contact details.")
         return redirect("eshop:checkout")
 
     vendor_name = first_item.product.vendor_name
@@ -183,12 +203,7 @@ def confirm_order_view(request):
         "🛍️ Items:",
     ]
     for item in cart.items.all():
-        # NOTE: Added safety check here for item.product just in case
-        if item.product:
-            lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
-        else:
-             lines.append(f"- {item.quantity} x [DELETED PRODUCT] - Please check cart!")
-
+        lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
 
     lines.append("")
     lines.append(f"💰 Total: UGX {cart.cart_total}")
