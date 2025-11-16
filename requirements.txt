@@ -10,3 +10,6 @@ cloudinary
 django-cloudinary-storage
 phonenumbers
 django-widget-tweaks
+google-genai
+django-humanize
+python-dotenv

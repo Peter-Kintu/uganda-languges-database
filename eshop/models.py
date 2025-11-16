@@ -9,8 +9,11 @@ from cloudinary.models import CloudinaryField
 
 class Product(models.Model):
     image = CloudinaryField('image', blank=True, null=True)
+    video = CloudinaryField('video', resource_type='video', blank=True, null=True) # NEW: Added video field
     
-
+    # NEW: Added fields for AI Negotiation
+    negotiated_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
     slug = models.SlugField(max_length=100, unique=True, blank=True)
 
     # Core Product Information
@@ -38,13 +41,19 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-# NEW MODELS FOR THE SHOPPING CART
+    class Meta:
+        ordering = ['name']
+
+# --- Cart and CartItem Models ---
+
 class Cart(models.Model):
-    session_key = models.CharField(max_length=40, db_index=True)
+    # session_key is used to identify the cart for anonymous users
+    session_key = models.CharField(max_length=40, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
-
+    
+    # Cart status for potential checkout flow tracking
     STATUS_CHOICES = [
         ('open', 'Open'),
         ('confirmed', 'Confirmed'),
@@ -63,6 +72,7 @@ class Cart(models.Model):
         return f"Cart for session: {self.session_key}"
     
    
+    
     
 
 class CartItem(models.Model):
@@ -88,12 +98,4 @@ class CartItem(models.Model):
         return self.product.vendor_name
 
     def __str__(self):
-        product_name = self.product.name if self.product else "Unknown Product"
-        return f"{self.quantity} x {product_name}"
- 
-    class Meta:
-        verbose_name = "Cart Item"
-        verbose_name_plural = "Cart Items"
-        ordering = ['-added_at']
-
-
+        return f"{self.quantity} x {self.product.name} in Cart {self.cart.session_key}"

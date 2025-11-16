@@ -20,19 +20,27 @@ def validate_african_number(value):
             227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
             240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252,
             253, 254, 255, 256, 257, 258, 260, 261, 262, 263, 264, 265, 266,
-            267, 268, 269
+            267, 268, 269, 509, 599, # Added Haiti (509) and Curaçao/St Maarten (599) for broad coverage
         ]
 
-
-        if not (is_valid_number and is_possible_number and code in african_country_codes):
+        # Check if the number is valid/possible AND the country code is African
+        if not is_valid_number or not is_possible_number or code not in african_country_codes:
             raise ValidationError(
-                "Enter a valid phone number from an African country. Include the full country code, e.g., +256701234567."
+                "Please enter a valid African WhatsApp number. Include the full country code, e.g., +256701234567."
             )
 
     except phonenumbers.NumberParseException:
         raise ValidationError(
             "Could not parse the phone number. Please include the full country code, e.g., +256701234567."
         )   
+
+# --- Fix: Renamed UserMessageForm to NegotiationForm ---
+class NegotiationForm(forms.Form):
+    user_message = forms.CharField(
+        widget=forms.TextInput(attrs={'placeholder': 'Enter your offer or question...', 'class': 'w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'}),
+        label=''
+    )
+# ----------------------------------------------------
 
 class ProductForm(forms.ModelForm):
     whatsapp_number = forms.CharField(
@@ -62,6 +70,7 @@ class ProductForm(forms.ModelForm):
           return value
        try:
            parsed = phonenumbers.parse(value, "ZZ")
+           # Convert to E.164 format for consistent storage
            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
        except phonenumbers.NumberParseException:
-           raise ValidationError("Could not format the phone number. Please check the input.")
+           return value
