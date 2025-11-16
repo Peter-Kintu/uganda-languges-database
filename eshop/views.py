@@ -4,7 +4,9 @@ from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
 from django.db.models import F
-from decimal import Decimal # NEW: Import Decimal for safe mathematical operations
+from decimal import Decimal
+
+from languages import models # NEW: Import Decimal for safe mathematical operations
 
 from .forms import ProductForm, NegotiationForm 
 from .models import Product, Cart, CartItem
