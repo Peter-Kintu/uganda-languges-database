@@ -1,13 +1,44 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from urllib.parse import quote
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
-from .forms import ProductForm
+from django.db.models import F
+from decimal import Decimal # NEW: Import Decimal for safe mathematical operations
+
+from .forms import ProductForm, NegotiationForm 
 from .models import Product, Cart, CartItem
 from django.utils import timezone
 from datetime import timedelta
+import re # Used for simple price extraction in AI negotiation
 
+
+# ------------------------------------
+# Helper Functions
+# ------------------------------------
+
+def get_user_cart(request):
+    """
+    Retrieves or creates the user's active cart based on the session key.
+    """
+    session_key = request.session.session_key
+    if not session_key:
+        request.session.create()
+        session_key = request.session.session_key
+    
+    # Prune old, inactive carts (older than 7 days)
+    one_week_ago = timezone.now() - timedelta(days=7)
+    Cart.objects.filter(updated_at__lt=one_week_ago, is_active=False).delete()
+
+    cart, created = Cart.objects.get_or_create(
+        session_key=session_key,
+        defaults={'is_active': True}
+    )
+    return cart
+
+# ------------------------------------
+# E-Shop Core Views
+# ------------------------------------
 
 def product_list(request):
     """
@@ -39,15 +70,9 @@ def add_product(request):
             messages.error(request, "Oops! Please correct the errors below and try again.")
     else:
         form = ProductForm()
-        
-    # Ensure cart context is available for base.html
-    cart = get_user_cart(request)
-    cart_total = cart.cart_total if cart and cart.items.exists() else 0
 
     return render(request, 'eshop/add_product.html', {
-        'form': form,
-        'cart': cart,
-        'cart_total': cart_total,
+        'form': form
     })
 
 def product_detail(request, slug):
@@ -55,8 +80,6 @@ def product_detail(request, slug):
     Displays the details of a single product.
     """
     product = get_object_or_404(Product, slug=slug)
-    
-    # Ensure cart context is available for base.html (This helps fix crashes on every page)
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
     
@@ -66,132 +89,108 @@ def product_detail(request, slug):
         'cart_total': cart_total,
     })
     
-def ensure_session(request):
-    if not request.session.session_key:
-        request.session.save()
-
-
 def add_to_cart(request, product_id):
-    ensure_session(request)
+    """
+    Adds a product to the user's cart.
+    """
     product = get_object_or_404(Product, id=product_id)
-    session_key = request.session.session_key
-
-    cart, created = Cart.objects.get_or_create(session_key=session_key)
+    cart = get_user_cart(request)
     
-    cart_item, item_created = CartItem.objects.get_or_create(
-        cart=cart,
+    # Try to find existing item
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart, 
         product=product,
         defaults={'quantity': 1}
     )
     
-    if not item_created:
-        cart_item.quantity += 1
+    if not created:
+        # If item already exists, increase quantity
+        cart_item.quantity = F('quantity') + 1
         cart_item.save()
-
-    messages.success(request, f"'{product.name}' was added to your cart.")
-    return redirect('eshop:product_list')
-    
+        cart_item.refresh_from_db() # Refresh to get the updated quantity
+        messages.success(request, f"📦 Added another '{product.name}' to your cart. Total: {cart_item.quantity}")
+    else:
+        messages.success(request, f"🛒 '{product.name}' has been added to your cart.")
+        
+    return redirect('eshop:view_cart')
 
 def view_cart(request):
+    """
+    Displays the user's shopping cart contents.
+    """
     cart = get_user_cart(request)
-    
-    # FIX: Remove cart items whose product has been deleted from the database
-    stale_items = [item.id for item in cart.items.all() if item.product is None]
-    if stale_items:
-        CartItem.objects.filter(id__in=stale_items).delete()
-        # Optionally, reload the cart object to reflect changes
-        cart = get_user_cart(request) 
-        messages.warning(request, "Some unavailable items were removed from your cart.")
-    
-    # Calculate total safely
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
-        
-    if not cart or not cart.items.exists():
-       messages.info(request, "🧺 Your basket is silent, waiting for treasures to speak.")
 
     return render(request, 'eshop/cart.html', {
         'cart': cart,
         'cart_total': cart_total,
     })
-    
+
 def remove_from_cart(request, item_id):
-    item = get_object_or_404(CartItem, id=item_id)
-    if request.method == 'POST':
+    """
+    Removes a specific item from the cart.
+    """
+    cart = get_user_cart(request)
+    try:
+        item = CartItem.objects.get(id=item_id, cart=cart)
+        product_name = item.product.name
         item.delete()
+        messages.success(request, f"🗑️ '{product_name}' was removed from your cart.")
+    except CartItem.DoesNotExist:
+        messages.error(request, "That item was not found in your cart.")
+    
     return redirect('eshop:view_cart')
 
 def checkout_view(request):
     """
-    Displays the checkout page where users can review and confirm their order.
+    Displays the checkout page for order confirmation.
     """
-    cart = get_user_cart(request) 
+    cart = get_user_cart(request)
+    if not cart.items.exists():
+        messages.error(request, "Your cart is empty. Please add items to proceed to checkout.")
+        return redirect('eshop:product_list')
+
+    # Assuming all items belong to a single vendor for simplicity in this stage
+    first_item = cart.items.first()
+    vendor_name = first_item.product.vendor_name
+    vendor_phone = first_item.product.whatsapp_number
+    cart_total = cart.cart_total
+    total_items_count = cart.items.aggregate(total=models.Sum('quantity'))['total']
+
+    # Build the message content for the vendor
+    order_items = "\n".join([f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}" for item in cart.items.all()])
     
-    # FIX: Remove cart items whose product has been deleted from the database
-    stale_items = [item.id for item in cart.items.all() if item.product is None]
-    if stale_items:
-        CartItem.objects.filter(id__in=stale_items).delete()
-        # Reload cart and redirect to cart to force review
-        messages.error(request, "Some unavailable items were removed. Please review your cart before checking out.")
-        return redirect('eshop:view_cart') 
-
-    # Calculate total safely
-    cart_total = cart.cart_total if cart and cart.items.exists() else 0
-
-    # This check now runs only on valid items
-    if cart and cart.items.exists():
-       first_item = cart.items.first()
-       language = first_item.product.language_tag
-       messages.info(request, f"Instructions available in {language} upon request.")
-            
-    return render(request, 'eshop/checkout.html', {
+    order_message = (
+        f"Hello {vendor_name},\n\n"
+        f"🎉 A new order has been confirmed!\n\n"
+        f"🛍️ Items:\n{order_items}\n\n"
+        f"💰 Total: UGX {cart_total:,.0f}\n"
+        f"📞 Buyer contact: A proud customer awaits. Please contact them for delivery and final payment."
+    )
+    
+    context = {
         'cart': cart,
         'cart_total': cart_total,
-    })
+        'total_items_count': total_items_count,
+        'vendor': {'name': vendor_name, 'phone_number': vendor_phone},
+        'order_message': order_message,
+    }
 
-def get_user_cart(request):
-    session_key = request.session.session_key
-    if not session_key:
-        request.session.save()
-        session_key = request.session.session_key
+    return render(request, 'eshop/checkout.html', context)
 
-    # Expire old carts first
-    Cart.objects.filter(
-        session_key=session_key,
-        updated_at__lt=timezone.now() - timedelta(days=2),
-        status='open'
-    ).update(status='expired')
 
-    Cart.objects.filter(
-    session_key=session_key,
-    updated_at__lt=timezone.now() - timedelta(days=2),
-    status='open',
-    is_active=True
-   ).update(status='expired', is_active=False)
-    # Then get or create a fresh cart
-    cart, _ = Cart.objects.get_or_create(session_key=session_key, is_active=True, status='open')
-    return cart
-
-def confirm_order_view(request):
+def confirm_order_whatsapp(request):
+    """
+    Redirects the user to WhatsApp with the order details and clears the cart.
+    """
     cart = get_user_cart(request)
     
-    # Re-check for stale items on order confirmation
-    stale_items = [item.id for item in cart.items.all() if item.product is None]
-    if stale_items:
-        CartItem.objects.filter(id__in=stale_items).delete()
-        messages.error(request, "Unavailable items were removed. Please review and try confirming again.")
-        return redirect("eshop:view_cart")
-        
     if not cart.items.exists():
-        messages.error(request, "Your cart is empty.")
-        return redirect("eshop:product_list")
+        messages.error(request, "Your cart is empty. Cannot confirm an empty order.")
+        return redirect('eshop:product_list')
 
+    # Get vendor details (assuming one vendor per cart)
     first_item = cart.items.first()
-    
-    # Final check: we know first_item.product exists, but check for critical vendor info
-    if not first_item.product.whatsapp_number:
-        messages.error(request, "Cannot confirm order. Missing vendor contact details.")
-        return redirect("eshop:checkout")
-
     vendor_name = first_item.product.vendor_name
     vendor_phone = first_item.product.whatsapp_number
 
@@ -203,10 +202,15 @@ def confirm_order_view(request):
         "🛍️ Items:",
     ]
     for item in cart.items.all():
-        lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
+        # Defensive check in the loop for good measure
+        if item.product:
+            lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
+        else:
+             lines.append(f"- {item.quantity} x [UNAVAILABLE PRODUCT]")
+
 
     lines.append("")
-    lines.append(f"💰 Total: UGX {cart.cart_total}")
+    lines.append(f"💰 Total: UGX {cart.cart_total:,.0f}")
     lines.append("📞 Buyer contact: A proud customer awaits.")
     lines.append("")
     lines.append("Please prepare for delivery. Uganda thanks you.")
@@ -220,6 +224,154 @@ def confirm_order_view(request):
     cart.save()
     return redirect(whatsapp_url)
 
+# ------------------------------------
+# AI Price Negotiation Logic
+# ------------------------------------
+
+def get_ai_response(product, user_message, chat_history):
+    """
+    Simplified AI negotiation logic.
+    """
+    product_price = product.price
+
+    # 1. Parse user offer
+    offer_match = re.search(r'UGX\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)', user_message, re.IGNORECASE)
+    
+    if offer_match:
+        try:
+            # Clean up and convert the offer to Decimal
+            offer_str = offer_match.group(1).replace(',', '')
+            offer = Decimal(offer_str)
+        except:
+            return "I'm the AI Negotiator! Your offer must be a valid number. For example: 'My offer is UGX 80000'."
+    else:
+        # Initial instruction or missing currency
+        return "I'm the AI Negotiator! Tell me your best offer in Ugandan Shillings (UGX) and I'll see what my vendor is willing to accept. For example: 'My offer is UGX 80000'."
+    
+    # 2. Check for negotiation status (already finalized)
+    if product.negotiated_price and product.negotiated_price < product.price:
+        return f"We already agreed on a final price of UGX {product.negotiated_price:,.0f}! Click 'Accept Final Price' to proceed."
+
+    # 3. Simple Negotiation Logic
+    
+    # 3a. Check for minimum acceptable price (50% of original price)
+    # FIX APPLIED: Use Decimal('0.5') for multiplication
+    if offer < product_price * Decimal('0.5'): 
+        return f"I appreciate your enthusiasm, but your offer is too low. My vendor's absolute minimum is UGX {product_price * Decimal('0.6'):,.0f}. Try again!"
+
+    # 3b. Offer is near original price (accept it immediately)
+    # Use Decimal('0.9') for consistent multiplication
+    if offer >= product_price * Decimal('0.9'):
+        final_price = offer
+        # Store the negotiated price on the product instance
+        product.negotiated_price = final_price
+        product.save()
+        return f"That is a very generous offer! UGX {final_price:,.0f} is a deal. I have marked this as the accepted price. Click 'Accept Final Price' to proceed."
+
+    # 3c. Offer is in the negotiation range (50% to 90%)
+    if offer < product_price:
+        # Determine the counter-offer
+        current_lowest = product_price * Decimal('0.7') # Vendor's true minimum selling price after negotiation
+        
+        # Simple counter: Meet them in the middle of their offer and the product price, but never below 70%
+        # Use Decimal('2.0') for division
+        counter_price = (offer + product_price) / Decimal('2.0') 
+        if counter_price < current_lowest:
+            counter_price = current_lowest
+
+        # Round the counter price to a cleaner number
+        final_counter = Decimal(round(counter_price, -3)) # Round to the nearest thousand
+
+        # Set the product negotiated price to this new counter price
+        product.negotiated_price = final_counter
+        product.save()
+
+        # Check if the counter is close to the user's offer
+        if final_counter <= offer + Decimal('500'): # Use Decimal('500') for comparison
+             product.negotiated_price = offer # Just give them what they offered
+             product.save()
+             return f"After consulting the elders, I accept your offer of UGX {offer:,.0f}! Click 'Accept Final Price' to proceed."
+        else:
+            return f"Hmm, I see your offer of UGX {offer:,.0f}. My vendor can only accept UGX {final_counter:,.0f}. What is your next move?"
+    
+    # 3d. Offer is higher than or equal to the original price
+    if offer >= product_price:
+        final_price = product_price
+        product.negotiated_price = final_price
+        product.save()
+        return f"Your offer of UGX {offer:,.0f} is higher than the asking price! We will happily sell it to you for the original price of UGX {final_price:,.0f}. Click 'Accept Final Price' to proceed."
+    
+    # Fallback response
+    return "I'm sorry, I seem to be having trouble understanding that. Please provide your offer in the format 'My offer is UGX 80000'."
+
+
+def ai_negotiation_view(request, slug):
+    product = get_object_or_404(Product, slug=slug)
+    
+    # Check if negotiation is even allowed
+    if not product.is_negotiable:
+        messages.error(request, f"Price negotiation is not available for {product.name}.")
+        return redirect('eshop:product_detail', slug=slug)
+
+    form = NegotiationForm(request.POST or None)
+    
+    # Retrieve chat history from session
+    chat_history = request.session.get(f'chat_history_{slug}', [
+        {'role': 'ai', 'text': f"I'm the AI Negotiator! Tell me your best offer in Ugandan Shillings (UGX) and I'll see what my vendor is willing to accept. The product price is UGX {product.price:,.0f}. For example: 'My offer is UGX 80000'."}
+    ])
+
+    if request.method == 'POST' and form.is_valid():
+        user_message = form.cleaned_data['user_message']
+        
+        # 1. Add user message to history
+        chat_history.append({'role': 'user', 'text': user_message})
+
+        # 2. Get AI response and add it to history
+        ai_response_text = get_ai_response(product, user_message, chat_history)
+        chat_history.append({'role': 'ai', 'text': ai_response_text})
+        
+        # Save updated chat history to session
+        request.session[f'chat_history_{slug}'] = chat_history
+        # This prevents the form resubmission on refresh
+        return redirect('eshop:ai_negotiation', slug=slug) 
+        
+    context = {
+        'product': product,
+        'form': form,
+        'chat_history': chat_history,
+    }
+
+    return render(request, 'eshop/ai_negotiation.html', context)
+
+
+def accept_negotiated_price(request, slug):
+    product = get_object_or_404(Product, slug=slug)
+    cart = get_user_cart(request)
+
+    # Check if a negotiated price exists and is lower than the original price
+    if product.negotiated_price and product.negotiated_price <= product.price:
+        
+        # Optionally remove the item from the cart if it was already there (to enforce adding with the new price)
+        try:
+            cart_item = CartItem.objects.get(cart=cart, product=product)
+            cart_item.delete()
+        except CartItem.DoesNotExist:
+            pass 
+            
+        # Clear chat history for this product
+        if f'chat_history_{slug}' in request.session:
+            del request.session[f'chat_history_{slug}']
+            
+        messages.success(request, f"🎉 Negotiated price of UGX {product.negotiated_price:,.0f} accepted! Add the product to your cart to proceed.")
+        return redirect('eshop:product_detail', slug=slug)
+
+    messages.error(request, "Oops! You must successfully negotiate a price with the bot first.")
+    return redirect('eshop:product_detail', slug=slug)
+
+
+# ------------------------------------
+# Admin/Utility Views
+# ------------------------------------
 
 def export_products_json(request):
     """
@@ -229,5 +381,12 @@ def export_products_json(request):
     products = Product.objects.all()
     data = serialize('json', products, fields=('name', 'description', 'price', 'is_negotiable', 'vendor_name', 'whatsapp_number', 'tiktok_url', 'language_tag'))
     response = HttpResponse(data, content_type='application/json')
-    response['Content-Disposition'] = 'attachment; filename="products_export.json"'
+    response['Content-Disposition'] = 'attachment; filename="products.json"'
     return response
+
+# Placeholder for delivery_location_view (as it was implied in other files)
+def delivery_location_view(request):
+    """
+    Placeholder for the delivery location view.
+    """
+    return render(request, 'eshop/delivery_location.html')

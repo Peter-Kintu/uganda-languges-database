@@ -17,8 +17,15 @@ import dj_database_url # Import the dj_database_url library
 import cloudinary
 import cloudinary_storage
 
+# NEW: Import the library to load environment variables from .env
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# NEW: Load environment variables from the .env file
+# This must be done before any os.environ.get() calls
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
@@ -49,6 +56,7 @@ INSTALLED_APPS = [
     'languages', # Your app
     'eshop', # Your app
     # Add Cloudinary apps
+    'django.contrib.humanize',
     'cloudinary',
     'cloudinary_storage',
     'widget_tweaks',

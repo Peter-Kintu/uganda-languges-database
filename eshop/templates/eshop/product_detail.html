@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load cloudinary %}
+{% load humanize %}
 
 {% block title %}{{ product.name }} - MyLanguage Market{% endblock %}
 
@@ -20,70 +21,55 @@
                  {% cloudinary_url product.image.public_id width=700 height=700 crop='fit' as image_url %}
                  <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full max-h-[500px] object-contain rounded-2xl shadow-xl">
                 {% else %}
-                    <div class="w-full h-[500px] bg-gray-700 flex items-center justify-center text-gray-400 text-2xl font-bold rounded-2xl">No Media Available</div>
+                    <div class="w-full h-[500px] bg-gray-700 flex items-center justify-center text-gray-400">No Media</div>
                 {% endif %}
             </div>
-            
-            <div class="p-10 flex flex-col justify-between">
+
+            <div class="lg:col-span-1 p-8 flex flex-col justify-between">
                 <div>
-                    <h1 class="text-4xl sm:text-5xl font-extrabold text-white mb-2 leading-tight">{{ product.name }}</h1>
-                    
-                    <p class="text-3xl font-extrabold text-green-400 my-4 p-2 bg-gray-700 inline-block rounded-lg shadow-md">
-                        USD {{ product.price|floatformat:0 }}
-                    </p>
-                    
-                    <p class="text-gray-400 mb-8 text-lg">{{ product.description }}</p>
-                    
-                    <div class="mb-8 space-y-3 text-gray-300 border-l-4 border-indigo-500 pl-4">
-                        <p class="text-lg"><strong>Vendor:</strong> {{ product.vendor_name }}</p>
-                        <p class="text-lg"><strong>Language:</strong> {{ product.language_tag }}</p>
+                    <h1 class="text-4xl font-extrabold text-white mb-3">{{ product.name }}</h1>
+                    <p class="text-gray-400 text-lg mb-6">{{ product.description }}</p>
+
+                    <p class="text-3xl font-bold text-green-400 mb-6 border-t border-b border-gray-700 py-3">
+                        UGX {{ product.price|floatformat:0|intcomma }}
                         {% if product.is_negotiable %}
-                            <p class="text-lg text-yellow-400 font-semibold flex items-center">
-                                <span class="mr-2">✨</span> Price is **Negotiable**
-                            </p>
+                            <span class="text-base text-yellow-400 ml-3">(Price is Negotiable 🤝)</span>
                         {% endif %}
+                    </p>
+
+                    <div class="mb-6 space-y-2 text-gray-300">
+                        <p><span class="font-semibold text-indigo-400">Vendor:</span> {{ product.vendor_name }}</p>
+                        <p><span class="font-semibold text-indigo-400">Language Tag:</span> {{ product.language_tag }}</p>
+                        <p><span class="font-semibold text-indigo-400">Whatsapp:</span> <a href="https://wa.me/{{ product.whatsapp_number }}" target="_blank" class="text-green-400 hover:underline">{{ product.whatsapp_number }}</a></p>
                     </div>
                 </div>
-                
-                <div class="mt-6 space-y-4">
+
+                <div class="mt-8">
                     
-                    <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all duration-300 block text-xl shadow-lg shadow-indigo-600/40 transform hover:scale-[1.01]">
+                    {% if product.is_negotiable %}
+                    <a href="{% url 'eshop:ai_negotiation' product.slug %}" 
+                       class="w-full text-center bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-xl transition-colors duration-200 block mb-3 shadow-lg shadow-yellow-600/30">
+                        <i class="fas fa-robot mr-2"></i> Negotiate Price with AI
+                    </a>
+                    {% endif %}
+
+                    <a href="{% url 'eshop:add_to_cart' product.id %}" 
+                       class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all duration-200 block">
                         Add to Cart
                     </a>
-
-                    {% if product.is_negotiable %}
-                    <a href="{% url 'eshop:ai_negotiation' product.slug %}" class="w-full text-center bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-4 rounded-xl transition-all duration-300 block text-xl shadow-lg shadow-yellow-600/40 transform hover:scale-[1.01]">
-                        Negotiate Price with AI 🤖
-                    </a>
-                    {% endif %}
                     
-                    {% if product.whatsapp_number %}
-                    <a href="https://wa.me/{{ product.whatsapp_number }}" target="_blank"
-                       class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2.148c-5.467 0-9.916 4.449-9.916 9.916 0 1.777.466 3.511 1.341 5.035l-1.397 5.097 5.215-1.378c1.474.808 3.14 1.258 4.757 1.258h.02c5.467 0 9.916-4.449 9.916-9.916 0-5.467-4.449-9.916-9.916-9.916zm3.332 12.396c-.198.547-1.144.97-1.636 1.059-.49.091-1.042.142-2.115-.558-1.574-.98-2.618-2.67-2.73-2.822-.111-.152-.08-.344.098-.517.168-.173.376-.411.564-.619.187-.209.25-.175.362-.435.11-.26.058-.485-.029-.683-.087-.198-.785-1.888-1.077-2.585-.292-.697-.584-.576-.803-.585-.22-.009-.47-.009-.72.009-.249.019-.64.129-.976.449-.336.321-1.282 1.251-1.282 3.056 0 1.805 1.312 3.541 1.5 3.791.187.25 2.503 4.07 6.278 5.485 3.775 1.416 3.775.945 4.445.882.67-.063 1.691-.72 1.939-1.428.249-.707.249-1.299.176-1.428-.073-.129-.271-.198-.564-.347z"/></svg>
-                        Contact Vendor on WhatsApp
-                    </a>
-                    {% endif %}
-
                     {% if product.tiktok_url %}
-                    <a href="{{ product.tiktok_url }}" target="_blank" rel="noopener noreferrer" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center">
-                         <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12.541 2.378c-.767.114-1.52.28-2.261.493l-1.393-.842c-.22-.132-.5-.145-.733-.031-.233.114-.383.35-.383.619v4.209c-.933.204-1.833.518-2.693.922-.249.117-.5.18-.75.207-.251.026-.502-.023-.74-.148l-1.493-.721c-.229-.111-.5-.098-.717.037-.216.136-.356.368-.356.627v5.825c0 .26.14.491.356.627.215.136.488.15.717.037l1.493-.721c.238-.125.49-.174.74-.148.25.027.501.09.75.207.86.404 1.76.718 2.693.922v4.209c0 .26.15.505.383.619.233.114.513.09.733-.031l1.393-.842c.741.213 1.494.38 2.261.493.633.094 1.25.141 1.859.141 5.922 0 10.741-4.819 10.741-10.741s-4.819-10.741-10.741-10.741c-.609 0-1.226.047-1.859.141zM15.42 12.041c0 2.222-1.802 4.024-4.024 4.024s-4.024-1.802-4.024-4.024c0-2.222 1.802-4.024 4.024-4.024s4.024 1.802 4.024 4.024z"/></svg>
-                        View on TikTok
+                    <a href="{{ product.tiktok_url }}" target="_blank" rel="noopener noreferrer" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center mt-3">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12.541 2.378c-.767.114-1.52.28-2.261.493l-1.393-.842c-.22-.132-.5-.145-.733-.031-.233.114-.383.35-.383.619v4.209c-.933.204-1.833.518-2.693.922-.249.117-.5.18-.75.207-.251.026-.502-.023-.74-.148l-1.493-.721c-.229-.111-.5-.098-.717.037-.216.136-.356.368-.356.627v5.825c0 .26.14.491.356.627.215.136.488.15.717.037l1.493-.721c.238-.125.49-.174.74-.148.25.027.501.09.75.207.86.404 1.76.718 2.693.922v4.209c0 .26.15.505.383.619.233.114.513.09.733-.031l1.393-.842c.741.213 1.494.38 2.261.493.633.094 1.25.141 1.859.141 5.922 0 10.741-4.819 10.741-10.741s-4.819-10.741-10.741-10.741c-.609 0-1.226.047-1.859.141z"/>
+                        </svg>
+                        See Product Video on TikTok
                     </a>
-                    {% endif %}
-                    
-                    {% if product.whatsapp_number %}
-                    <div class="flex flex-col items-center mt-4">
-                        <p class="text-gray-400 text-sm text-center mb-2">Scan to chat instantly</p>
-                        <a href="https://wa.me/{{ product.whatsapp_number }}" target="_blank" rel="noopener noreferrer">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?data={{ 'https://wa.me/'|add:product.whatsapp_number|urlencode }}&size=100x100"
-                                 alt="WhatsApp QR" class="rounded-lg shadow-lg border-4 border-gray-700">
-                        </a>
-                    </div>
                     {% endif %}
                 </div>
-            </div>
+                </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
