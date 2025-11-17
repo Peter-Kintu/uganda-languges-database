@@ -7,14 +7,14 @@ class StaticViewSitemap(Sitemap):
 
     def items(self):
         return [
-            # Languages app (namespaced as 'languages')
+            # Languages app
             'languages:home',
             'languages:contribute',
             'languages:browse_contributions',
             'languages:sponsor',
             'languages:best_contributor',
 
-            # Eshop app (namespaced as 'eshop')
+            # Eshop app
             'eshop:product_list',
             'eshop:add_product',
             'eshop:view_cart',

@@ -97,6 +97,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
+    'django.contrib.sites',  # required for sitemaps
+
     
     # NEW FIX: Add django.contrib.humanize for template tags like 'intcomma'
     'django.contrib.humanize', 
