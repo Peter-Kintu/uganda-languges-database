@@ -17,6 +17,17 @@ def google_verification(request):
     return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
 
 
+from django.http import HttpResponse
+
+def robots_txt(request):
+    lines = [
+        "User-agent: *",
+        "allow:",
+        "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")    
+
+
 def get_top_contributors(month=None, year=None, limit=10):
     """
     A helper function to find and count top contributors.

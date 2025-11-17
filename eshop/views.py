@@ -14,6 +14,7 @@ from .models import Product, Cart, CartItem
 from django.utils import timezone
 from datetime import timedelta
 import re # Used for simple price extraction in AI negotiation
+from django.http import HttpResponse
 
 
 # ------------------------------------
@@ -23,6 +24,15 @@ import re # Used for simple price extraction in AI negotiation
 
 def google_verification(request):
     return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
+
+
+def robots_txt(request):
+    lines = [
+        "User-agent: *",
+        "Disallow:",
+        "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
 
 def get_user_cart(request):
     """
