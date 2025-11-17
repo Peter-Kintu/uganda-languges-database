@@ -6,7 +6,22 @@ class StaticViewSitemap(Sitemap):
     changefreq = 'weekly'
 
     def items(self):
-        return ['home', 'browse', 'contribute', 'sponsor', 'best_contributor', 'eshop']
+        return [
+            # Languages app (namespaced as 'languages')
+            'languages:home',
+            'languages:contribute',
+            'languages:browse_contributions',
+            'languages:sponsor',
+            'languages:best_contributor',
+
+            # Eshop app (namespaced as 'eshop')
+            'eshop:product_list',
+            'eshop:add_product',
+            'eshop:view_cart',
+            'eshop:checkout',
+            'eshop:delivery_location',
+            'eshop:confirm_order_whatsapp',
+        ]
 
     def location(self, item):
         return reverse(item)
