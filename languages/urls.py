@@ -2,12 +2,16 @@
 
 from django.urls import path
 from . import views
+from .views import google_verification
+
+
 
 # Set the app name for namespacing. This is a best practice
 # that helps prevent URL name clashes with other apps.
 app_name = 'languages'
 
 urlpatterns = [
+    path('googlec0826a61eabee54e.html', google_verification),
     # The URL for the root of your application, pointing to the browse view.
     path('', views.browse_contributions, name='home'),
     

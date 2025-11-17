@@ -1,10 +1,13 @@
 from django.urls import path
 from . import views
+from .views import google_verification
+
 
 app_name = 'eshop'
 
 urlpatterns = [
     # Core Product Views
+    path('googlec0826a61eabee54e.html', google_verification),
     path('', views.product_list, name='product_list'),
     path('add/', views.add_product, name='add_product'),
     path('product/<slug:slug>/', views.product_detail, name='product_detail'),
