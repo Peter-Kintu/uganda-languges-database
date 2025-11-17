@@ -20,6 +20,10 @@ import re # Used for simple price extraction in AI negotiation
 # Helper Functions
 # ------------------------------------
 
+
+def google_verification(request):
+    return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
+
 def get_user_cart(request):
     """
     Retrieves or creates the user's active cart based on the session key.

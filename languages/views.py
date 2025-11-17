@@ -13,6 +13,10 @@ from .forms import PhraseContributionForm
 from .models import PhraseContribution, LANGUAGES, INTENTS
 
 
+def google_verification(request):
+    return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
+
+
 def get_top_contributors(month=None, year=None, limit=10):
     """
     A helper function to find and count top contributors.
