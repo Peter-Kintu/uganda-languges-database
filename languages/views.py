@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib.auth import  logout  # Make sure 'logout' is imported
 from django.contrib import messages
+from users.models import UserProfile # ASSUMPTION: Importing UserProfile for skills/location/etc.
 
 # Updated Imports: PhraseContributionForm -> JobPostForm, 
 # PhraseContribution, LANGUAGES, INTENTS -> JobPost, JOB_CATEGORIES, JOB_TYPES
@@ -173,39 +174,85 @@ def browse_job_listings(request):
     # Get filters from the request
     category_filter = request.GET.get('category')
     search_query = request.GET.get('q')
+    page = request.GET.get('page') # Get the page number
+
+    # Start with all validated posts, ordered by recency
+    all_job_posts = JobPost.objects.filter(is_validated=True).order_by('-timestamp')
     
-    # Start with all validated posts
-    job_posts = JobPost.objects.filter(is_validated=True).order_by('-timestamp')
+    # Apply category and search filters to the *entire* list before ranking
+    job_posts_filtered = all_job_posts
     
-    # Apply category filter
+    # 1. Apply category filter
     if category_filter and category_filter != 'all':
-        job_posts = job_posts.filter(job_category=category_filter)
+        job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
         
-    # Apply search filter
+    # 2. Apply search filter
     if search_query:
         # Search across post_content (job description), required_skills, and recruiter_name
-        job_posts = job_posts.filter(
+        job_posts_filtered = job_posts_filtered.filter(
             Q(post_content__icontains=search_query) |
             Q(required_skills__icontains=search_query) |
             Q(recruiter_name__icontains=search_query)
         )
 
-    # Pagination setup
-    paginator = Paginator(job_posts, 10) # Show 10 posts per page
-    page = request.GET.get('page')
+    # --- 3. Recommendation Logic (Prioritization) ---
+    recommended_jobs = JobPost.objects.none() # Initialize an empty queryset
+
+    if request.user.is_authenticated:
+        # Assuming the user profile is linked to the User model and has a 'skills' field (UserProfile model)
+        try:
+            user_profile = request.user.userprofile # Access the related profile object
+            user_skills_raw = user_profile.skills.split(',') if user_profile.skills else []
+            # Clean and lower-case the skills for matching
+            user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
+        except AttributeError:
+            # Handle case where user_profile might not exist or the 'skills' field is missing/different
+            user_skills = []
+
+        if user_skills:
+            # Build a Q object for jobs where required_skills field contains any of the user's skills
+            skill_match_query = Q()
+            for skill in user_skills:
+                # Use Q(required_skills__icontains=skill) for case-insensitive partial match
+                # NOTE: This assumes required_skills is a CharField/TextField containing a list of skills.
+                skill_match_query |= Q(required_skills__icontains=skill)
+
+            # Separate recommended jobs from the filtered set
+            recommended_jobs = job_posts_filtered.filter(skill_match_query).distinct()
+            
+            # Identify other jobs that were filtered but didn't match skills (or haven't been recommended)
+            other_jobs = job_posts_filtered.exclude(pk__in=recommended_jobs.values_list('pk', flat=True))
+            
+            # Combine the two QuerySets: Recommended first, then others, maintaining order by timestamp
+            # NOTE: list() conversion forces execution and prevents simple QuerySet union, which is necessary
+            # for the paginator to work correctly when ordering is maintained across two groups.
+            final_job_list = list(recommended_jobs.order_by('-timestamp')) + list(other_jobs.order_by('-timestamp'))
+            
+        else:
+            # User is logged in but has no skills listed in their profile
+            final_job_list = list(job_posts_filtered)
+            
+    else:
+        # User is not logged in
+        final_job_list = list(job_posts_filtered)
+        
+    # --- 4. Pagination setup ---
+    paginator = Paginator(final_job_list, 10) # Show 10 posts per page
     
     try:
         posts_on_page = paginator.page(page)
     except PageNotAnInteger:
-        # If page is not an integer, deliver first page.
         posts_on_page = paginator.page(1)
     except EmptyPage:
-        # If page is out of range (e.g., 9999), deliver last page of results.
         posts_on_page = paginator.page(paginator.num_pages)
 
     context = {
-        'job_posts': posts_on_page,
-        'job_categories': JOB_CATEGORIES, # All categories for filter dropdown
+        'job_posts': posts_on_page, # Paginated list containing recommended and other jobs
+        # Pass these for separate display in the template
+        'recommended_jobs_count': recommended_jobs.count(), 
+        'is_recommended_page': True if recommended_jobs.filter(pk__in=posts_on_page.object_list.values_list('pk', flat=True)).exists() and posts_on_page.number == 1 else False,
+        
+        'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query or '',
         'page_title': "Job Listings"
@@ -304,4 +351,4 @@ def user_logout(request):
     # Redirect to the login page or homepage
     return redirect(reverse('user_login'))
     
-# ... (user_profile view code)    
+# ... (user_profile view code)
