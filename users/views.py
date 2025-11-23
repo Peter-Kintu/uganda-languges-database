@@ -9,11 +9,10 @@ import os
 import requests
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from datetime import datetime # ADDED THIS IMPORT for current context
+from datetime import datetime 
 
 # Import the Custom Forms and Models from our new app
 from .forms import CustomUserCreationForm, ProfileEditForm
-# Ensure SocialConnection is imported for the new functionality
 from .models import CustomUser, Experience, Education, Skill, SocialConnection 
 
 
@@ -132,6 +131,8 @@ def _get_user_profile_data(user):
     """
     Gathers all relevant user profile data into a single,
     JSON-serializable dictionary for the AI.
+    
+    FIX: Use getattr for safe access to optional CustomUser fields.
     """
     profile_data = {
         "username": user.username,
@@ -139,9 +140,9 @@ def _get_user_profile_data(user):
         "full_name": user.get_full_name() or user.username, 
         "email": user.email,
         # FIX: Safely access attributes that might be missing on the CustomUser model
-        "location": getattr(user, "location", "Not provided"), 
-        "bio": getattr(user, "bio", "Not provided"),
-        "headline": getattr(user, "headline", "Not provided"),
+        "location": getattr(user, 'location', 'Not provided'),
+        "bio": getattr(user, 'bio', 'Not provided'),
+        "headline": getattr(user, 'headline', 'Not provided'),
         # Safely check for profile_image existence before accessing .url
         "profile_image_url": user.profile_image.url if getattr(user, 'profile_image', None) else None, 
         "experiences": [
@@ -179,9 +180,6 @@ def _fetch_external_content(social_connections):
     For this project, we'll simulate the successful fetch.
     """
     external_data = []
-    # In a real app, you would use os.environ to check a secret
-    # if not os.environ.get('ENABLE_EXTERNAL_FETCH', '0') == '1':
-    #     return external_data 
 
     for connection in social_connections:
         # Simulate fetching content for links
@@ -249,7 +247,8 @@ def gemini_proxy(request):
         # 1. Parse Request Body
         data = json.loads(request.body)
         contents = data.get('contents', [])
-        config = data.get('config', {}) # To allow custom configs like temperature
+        # The frontend sends 'config', we use it to populate 'generation_config'
+        config = data.get('config', {}) 
         
         # 2. Setup API Key and Model
         api_key = os.environ.get("GEMINI_API_KEY")
@@ -258,7 +257,7 @@ def gemini_proxy(request):
         
         # Use the most capable model for complex reasoning and context
         model_name = "gemini-2.5-flash" 
-        url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
 
         # 3. Gather Context
         user = request.user
@@ -266,12 +265,12 @@ def gemini_proxy(request):
         social_connections = SocialConnection.objects.filter(user=user)
         external_data = _fetch_external_content(social_connections)
 
-        # 4. Construct System Instruction
+        # 4. Construct System Instruction String
         profile_context_json = json.dumps(profile_data, indent=2)
         external_data_json = json.dumps(external_data, indent=2)
 
         # Define the generation config (defaults if not provided in POST)
-        generation_config = {
+        generation_config_params = {
             "temperature": config.get("temperature", 0.7),
             "maxOutputTokens": config.get("maxOutputTokens", 2048),
         }
@@ -296,18 +295,20 @@ def gemini_proxy(request):
         )
         
         # 5. Build the API Payload
-        # FIX: 'systemInstruction' must be a top-level object with a parts array.
-        # FIX: 'config' is renamed to 'generationConfig'.
+        # FIX: System Instruction must be the first message in the 'contents' array with role 'system'.
+        system_message = {
+            "role": "system",
+            "parts": [
+                {"text": system_instruction_content}
+            ]
+        }
+        
         payload = {
-            "contents": _clean_history(contents),
-            "systemInstruction": { 
-                "parts": [
-                    {"text": system_instruction_content}
-                ]
-            },
-            "generationConfig": { 
-                "temperature": generation_config["temperature"],
-                "maxOutputTokens": generation_config["maxOutputTokens"],
+            # FIX: Prepend the system message to the cleaned chat history
+            "contents": [system_message] + _clean_history(contents), 
+            "generationConfig": {                         
+                "temperature": generation_config_params["temperature"],
+                "maxOutputTokens": generation_config_params["maxOutputTokens"],
             }
         }
         
