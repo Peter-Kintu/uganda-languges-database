@@ -249,6 +249,12 @@
         margin-right: 0.25rem; 
     }
     
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
     #recordButton.recording {
         background-color: #10b981; 
         animation: pulse 1.5s infinite;
@@ -374,26 +380,22 @@
 </div>
 
 <script>
-    // --- New JS for Sidebar and History Management ---
+    // --- Global Variables and Constants ---
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
     const historyList = document.getElementById('historyList');
-    // ... all other existing constants
-
-    // Existing constants from original JS (repeated for context, should be in your final JS file)
     const chatLog = document.getElementById('chatLog');
     const chatInput = document.getElementById('chatInput');
     const recordButton = document.getElementById('recordButton');
     const sendChatButton = document.getElementById('sendChatButton');
     const loadingIndicator = document.getElementById('loadingIndicator');
     const stopSpeakButton = document.getElementById('stopSpeakButton');
-    
-    // MODIFIED: Use a structure for history where each item is a chat session
+
     const chatSessionsKey = 'careerCompanionChatSessions';
     let currentSessionId = 'default'; 
     let recognition; 
     let isRecording = false;
-    let responseCount = 0; 
+    let speaker = window.speechSynthesis;
     let userCurrentContext = {
         latitude: null,
         longitude: null,
@@ -401,14 +403,143 @@
         localTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     };
 
-    // --- Sidebar and History Functions ---
-    
+    // --- Utility Functions ---
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function handleKeydown(event) {
+        // Auto-resize textarea logic
+        chatInput.style.height = 'auto';
+        chatInput.style.height = chatInput.scrollHeight + 'px';
+        
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // Prevent new line
+            typeQuery();
+        }
+    }
+
+    // --- Message Display and API Functions ---
+
+    function appendMessage(role, text, isError = false) {
+        const messageDiv = document.createElement('div');
+        const roleText = role === 'user' ? 'You' : 'Ai';
+        
+        const sanitizedText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        messageDiv.className = `chat-message ${role} ${isError ? 'error' : ''}`;
+        messageDiv.innerHTML = `<strong>${roleText}:</strong> <span class="text-gray-400">${sanitizedText}</span>`;
+        
+        chatLog.appendChild(messageDiv);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        
+        // If it's an AI response, attempt to speak it.
+        if (role === 'ai' && !isError) {
+            speakText(text);
+        }
+    }
+
+    async function fetchGemini(contents) {
+        try {
+            const response = await fetch('{% url "users:gemini_proxy" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    contents: contents,
+                    config: {
+                        temperature: 0.7,
+                        maxOutputTokens: 2048
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                try {
+                    const errorBody = await response.json();
+                    throw new Error(errorBody.error || `HTTP error! Status: ${response.status}`);
+                } catch (e) {
+                    throw new Error(`Server returned status ${response.status}. Check Django proxy URL.`);
+                }
+            }
+
+            const data = await response.json();
+            const aiText = data.text || "I apologize, I received an empty response from the AI model.";
+            return aiText;
+
+        } catch (error) {
+            console.error("Gemini API Call Failed:", error);
+            throw error;
+        }
+    }
+
+    function typeQuery() {
+        const prompt = chatInput.value.trim();
+        if (prompt === "") return;
+
+        // Display user message
+        appendMessage('user', prompt);
+        chatInput.value = '';
+        chatInput.style.height = '1.5rem'; // Reset textarea height
+
+        
+        // Loader/Disabling
+        loadingIndicator.classList.remove('hidden');
+        chatInput.disabled = true;
+        sendChatButton.disabled = true;
+        recordButton.disabled = true;
+
+        // Prepare API Call
+        const history = getCurrentHistory();
+        // Push the user's message to the temporary history array for the call
+        history.push({ role: 'user', text: prompt });
+        
+        // Inject System Context for the AI to use
+        const contextMessage = `[System Context: Current Time is ${userCurrentContext.localTime}, Timezone: ${userCurrentContext.localTimeZone}. Location: ${userCurrentContext.latitude ? userCurrentContext.latitude.toFixed(2) + ', ' + userCurrentContext.longitude.toFixed(2) : 'Not Shared'}]`;
+        const contentsWithContext = [...history, { role: 'user', text: contextMessage }]; 
+
+        fetchGemini(contentsWithContext).then(aiText => {
+            appendMessage('ai', aiText);
+            
+            // Save the *actual* user message and AI response (excluding the context prompt)
+            history.push({ role: 'ai', text: aiText });
+            saveChatSession(currentSessionId, history); 
+
+        }).catch(error => {
+            appendMessage('ai', `Error: ${error.message}`, true);
+        }).finally(() => {
+            loadingIndicator.classList.add('hidden');
+            chatInput.disabled = false;
+            sendChatButton.disabled = false;
+            recordButton.disabled = false;
+            chatInput.focus();
+            updateHistorySidebar(); // Update sidebar in case this was the first message of a new session
+        });
+    }
+
+    // --- History Management Functions ---
+
     sidebarToggle.onclick = () => {
         sidebar.classList.toggle('open');
     };
 
     function getChatSessions() {
         const storedSessions = localStorage.getItem(chatSessionsKey);
+        // Ensure default session exists if storage is empty
         return storedSessions ? JSON.parse(storedSessions) : { default: [] };
     }
 
@@ -416,7 +547,7 @@
         const sessions = getChatSessions();
         sessions[sessionId] = messages;
         localStorage.setItem(chatSessionsKey, JSON.stringify(sessions));
-        updateHistorySidebar(); // Refresh sidebar after saving
+        updateHistorySidebar(); 
     }
 
     function getCurrentHistory() {
@@ -424,15 +555,43 @@
         return sessions[currentSessionId] || [];
     }
 
+    function getMessagesFromLog() {
+        // Extracts the currently visible messages for saving before a session switch
+        let messages = [];
+        chatLog.querySelectorAll('.chat-message').forEach(div => {
+            const strongTag = div.querySelector('strong');
+            const roleText = strongTag ? strongTag.textContent.toLowerCase().replace(':', '').trim() : '';
+            const textSpan = div.querySelector('span');
+            const textContent = textSpan ? textSpan.textContent.trim() : '';
+            
+            if ((roleText === 'you' || roleText === 'ai') && textContent.length > 0) {
+                // Exclude the welcome message
+                if (textContent.toLowerCase().indexOf("hello, {{ user.username }}! i am your career companion ai.") === -1) {
+                    messages.push({
+                        role: roleText === 'you' ? 'user' : 'ai',
+                        text: textContent
+                    });
+                }
+            }
+        });
+        return messages;
+    }
+
     function createNewChat() {
-        if (getCurrentHistory().length > 0 && confirm("Start a new chat session? The current session will be saved to history.")) {
-            // Generate a unique ID for the new session
+        // Check if current session is worth saving
+        if (getCurrentHistory().length > 0 && currentSessionId.startsWith('session_') || (currentSessionId === 'default' && getMessagesFromLog().length > 0)) {
+            // Save the current chat before switching
+            saveChatSession(currentSessionId, getMessagesFromLog());
+            
             const newSessionId = 'session_' + Date.now();
             currentSessionId = newSessionId;
-            loadChatHistory(true); // Load a fresh, empty log with welcome message
+            loadChatHistory(true); 
             updateHistorySidebar();
         } else if (getCurrentHistory().length === 0) {
-            alert("This chat is already empty. Start typing!");
+            // If default is empty, just reset
+            currentSessionId = 'default';
+            loadChatHistory(true);
+            updateHistorySidebar();
         }
     }
 
@@ -447,38 +606,9 @@
         updateHistorySidebar();
     }
 
-    function updateHistorySidebar() {
-        const sessions = getChatSessions();
-        historyList.innerHTML = '';
-
-        Object.keys(sessions).forEach(sessionId => {
-            const messages = sessions[sessionId];
-            
-            // Determine a title for the session
-            let title = 'New Chat';
-            if (messages.length > 0) {
-                // Use the first user message as the title
-                const firstUserMessage = messages.find(m => m.role === 'user');
-                if (firstUserMessage) {
-                    title = firstUserMessage.text.substring(0, 30).trim() + '...';
-                }
-            } else if (sessionId !== 'default') {
-                // New chat that hasn't been used yet
-                title = 'New Session (' + sessionId.split('_')[1] + ')';
-            }
-
-            const listItem = document.createElement('li');
-            listItem.className = `history-item ${sessionId === currentSessionId ? 'active' : ''}`;
-            listItem.textContent = title;
-            listItem.onclick = () => loadHistory(sessionId);
-            historyList.appendChild(listItem);
-        });
-    }
-
-    // MODIFIED: loadChatHistory now handles session context
     function loadChatHistory(isNewSession = false) {
         const history = isNewSession ? [] : getCurrentHistory();
-        chatLog.innerHTML = ''; // Clear the chat log
+        chatLog.innerHTML = ''; 
         
         if (history.length === 0) {
             // Restore initial welcome message if history is empty
@@ -502,79 +632,52 @@
 
         chatLog.scrollTop = chatLog.scrollHeight;
     }
-    
-    // MODIFIED: saveChatHistory -> getMessagesFromLog
-    function getMessagesFromLog() {
-        let messages = [];
-        chatLog.querySelectorAll('.chat-message').forEach(div => {
-            const strongTag = div.querySelector('strong');
-            const roleText = strongTag ? strongTag.textContent.toLowerCase().replace(':', '').trim() : '';
-            const textSpan = div.querySelector('span');
-            const textContent = textSpan ? textSpan.textContent.trim() : '';
+
+    function updateHistorySidebar() {
+        const sessions = getChatSessions();
+        historyList.innerHTML = '';
+        const sessionKeys = Object.keys(sessions).filter(key => sessions[key].length > 0 || key === currentSessionId);
+
+        sessionKeys.sort((a, b) => {
+             // Put 'default' first, then sort by session ID (timestamp) descending
+            if (a === 'default') return -1;
+            if (b === 'default') return 1;
+            return b.localeCompare(a); 
+        });
+
+        sessionKeys.forEach(sessionId => {
+            const messages = sessions[sessionId] || [];
             
-            if ((roleText === 'you' || roleText === 'ai') && textContent.length > 0) {
-                // Ensure the welcome message isn't saved as part of the ongoing conversation
-                if (textContent.toLowerCase().indexOf("hello, {{ user.username }}! i am your career companion ai.") === -1) {
-                    messages.push({
-                        role: roleText === 'you' ? 'user' : 'ai',
-                        text: textContent
-                    });
+            let title = 'New Chat (Unused)';
+            if (sessionId === 'default' && messages.length === 0) {
+                title = 'New Chat';
+            } else if (messages.length > 0) {
+                // Use the first user message as the title
+                const firstUserMessage = messages.find(m => m.role === 'user');
+                if (firstUserMessage) {
+                    title = firstUserMessage.text.substring(0, 30).trim() + (firstUserMessage.text.length > 30 ? '...' : '');
+                } else {
+                     title = 'Conversation Started';
                 }
             }
-        });
-        return messages;
-    }
 
-    // MODIFIED: typeQuery now uses session management
-    function typeQuery() {
-        const prompt = chatInput.value.trim();
-        if (prompt === "") return;
-
-        // Display user message
-        appendMessage('user', prompt);
-        chatInput.value = '';
-        
-        // Loader/Disabling
-        loadingIndicator.classList.remove('hidden');
-        chatInput.disabled = true;
-        sendChatButton.disabled = true;
-        recordButton.disabled = true;
-
-        // Prepare API Call
-        const history = getCurrentHistory();
-        history.push({ role: 'user', text: prompt });
-        
-        // Inject System Context
-        const contextMessage = `[System Context: Current Time is ${userCurrentContext.localTime}, Timezone: ${userCurrentContext.localTimeZone}. Location: ${userCurrentContext.latitude ? userCurrentContext.latitude.toFixed(2) + ', ' + userCurrentContext.longitude.toFixed(2) : 'Not Shared'}]`;
-        const contentsWithContext = [...history, { role: 'user', text: contextMessage }]; 
-
-        fetchGemini(contentsWithContext).then(aiText => {
-            appendMessage('ai', aiText);
-            // Save the *actual* user message and AI response
-            history.push({ role: 'ai', text: aiText });
-            saveChatSession(currentSessionId, history); 
-        }).catch(error => {
-            appendMessage('ai', `Error: ${error.message}`, true);
-        }).finally(() => {
-            loadingIndicator.classList.add('hidden');
-            chatInput.disabled = false;
-            sendChatButton.disabled = false;
-            recordButton.disabled = false;
-            // Update the sidebar after the first message for a new session
-            updateHistorySidebar(); 
+            const listItem = document.createElement('li');
+            listItem.className = `history-item ${sessionId === currentSessionId ? 'active' : ''}`;
+            listItem.textContent = title;
+            listItem.onclick = () => loadHistory(sessionId);
+            historyList.appendChild(listItem);
         });
     }
 
-    // MODIFIED: summarizeChat now works on the current session
+
+    // --- Action Button Functions (Summarize, Export, Clear) ---
+
     function summarizeChat() {
         const history = getCurrentHistory();
         if (history.length === 0) {
             alert("No chat history to summarize in this session.");
             return;
         }
-
-        // ... [Rest of the summarizeChat function remains mostly the same, 
-        // using history and calling fetchGemini] ...
         
         // 1. Add a temporary loader message
         const summaryLoader = document.createElement('div');
@@ -613,6 +716,7 @@
         })
         .then(async response => {
             if (!response.ok) {
+                 // Try to catch and display API error details
                 try {
                     const errorBody = await response.json();
                     throw new Error(errorBody.error || `HTTP error! Status: ${response.status}`);
@@ -634,40 +738,8 @@
         });
     }
 
-    // MODIFIED: clearChat now clears ALL sessions
-    function clearChat() {
-        if (confirm("Are you sure you want to clear your entire chat history? This action cannot be undone.")) {
-            localStorage.removeItem(chatSessionsKey);
-            currentSessionId = 'default'; // Reset to default session
-            loadChatHistory(true); // Load a fresh start
-            updateHistorySidebar(); // Clear sidebar
-            appendMessage('ai', "All chat history has been cleared. How can I help you start fresh with your career goals today?", false); 
-            stopSpeaking();
-        }
-    }
-    
-    // --- Initialize ---
-    window.onload = () => {
-        // ... (Existing init code) ...
-        updateAccurateLocalTime(); 
-        initSpeechRecognition(); 
-        
-        // MODIFIED: Use new load/update functions
-        loadChatHistory();
-        updateHistorySidebar();
-
-        // Check for mobile and open sidebar if no history and not already open (optional)
-        if (window.innerWidth > 768) {
-            sidebar.classList.add('open');
-        }
-    };
-
-    // --- All other original functions (getCookie, handleKeydown, initSpeechRecognition, toggleRecording, appendMessage, fetchGemini, TTS functions, Context functions) should be included here, unmodified or with minor adjustments to use getCurrentHistory/saveChatSession. ---
-    // [The rest of your original <script> block goes here, ensuring that references to chatHistoryKey and getChatHistory/saveChatHistory are replaced with the new session management functions where necessary (e.g., in `typeQuery`, `summarizeChat`, `exportChat`, and `clearChat`).]
-
-    // Example of a function needing simple update:
     function exportChat() {
-        const history = getCurrentHistory(); // Use new function
+        const history = getCurrentHistory(); 
         if (history.length === 0) {
             alert("No chat history to export.");
             return;
@@ -680,7 +752,6 @@
             exportText += `${role}: ${item.text}\n\n`;
         });
         
-        // ... (rest of export logic) ...
         const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -691,7 +762,169 @@
 
         appendMessage('ai', "Chat history exported successfully as a text file.");
     }
-    
-    // ... [Original functions must be placed here] ...
+
+    function clearChat() {
+        if (confirm("Are you sure you want to clear your entire chat history? This action cannot be undone.")) {
+            localStorage.removeItem(chatSessionsKey);
+            currentSessionId = 'default'; 
+            loadChatHistory(true); 
+            updateHistorySidebar(); 
+            appendMessage('ai', "All chat history has been cleared. How can I help you start fresh with your career goals today?", false); 
+            stopSpeaking();
+        }
+    }
+
+
+    // --- Voice Recognition and TTS Functions ---
+
+    function initSpeechRecognition() {
+        // webkitSpeechRecognition is typically supported in Chrome/Edge, but might need prefixes in other browsers
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            
+            recognition.onstart = () => {
+                isRecording = true;
+                recordButton.classList.add('recording');
+                chatInput.placeholder = "Listening... Speak now.";
+                stopSpeaking(); 
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                chatInput.value = transcript;
+                chatInput.style.height = 'auto'; 
+                chatInput.style.height = chatInput.scrollHeight + 'px';
+                setTimeout(typeQuery, 500); 
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech Recognition Error:', event.error);
+                chatInput.placeholder = "Error, try typing or press mic again.";
+                isRecording = false;
+                recordButton.classList.remove('recording');
+            };
+
+            recognition.onend = () => {
+                if (isRecording) { 
+                    isRecording = false;
+                    recordButton.classList.remove('recording');
+                    chatInput.placeholder = "Type your career question...";
+                }
+            };
+        } else {
+            recordButton.disabled = true;
+            recordButton.title = "Voice recognition not supported in this browser.";
+        }
+    }
+
+    function toggleRecording() {
+        if (isRecording) {
+            recognition.stop();
+            isRecording = false;
+        } else if (recognition) {
+            recognition.start();
+        }
+    }
+
+    function speakText(text) {
+        if (!speaker) return;
+        
+        speaker.cancel();
+        stopSpeakButton.style.display = 'block';
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Optional: Select a specific voice for better quality
+        utterance.lang = 'en-US';
+        speaker.onvoiceschanged = () => {
+            const voices = speaker.getVoices();
+            const desiredVoice = voices.find(voice => voice.name.includes('Google US English') || voice.default); 
+            if (desiredVoice) {
+                utterance.voice = desiredVoice;
+            }
+        };
+
+        utterance.onstart = () => {
+            const lastAiMessage = chatLog.querySelector('.chat-message.ai:last-child');
+            if (lastAiMessage) {
+                lastAiMessage.classList.add('speaking');
+            }
+        };
+
+        utterance.onend = () => {
+            stopSpeaking(); // Will hide the button and remove speaking class
+        };
+
+        speaker.speak(utterance);
+    }
+
+    function stopSpeaking() {
+        if (speaker) {
+            speaker.cancel();
+        }
+        stopSpeakButton.style.display = 'none';
+        const speakingMessage = chatLog.querySelector('.chat-message.ai.speaking');
+        if (speakingMessage) {
+            speakingMessage.classList.remove('speaking');
+        }
+    }
+
+
+    // --- Context Functions ---
+
+    function updateAccurateLocalTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateString = now.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        
+        userCurrentContext.localTime = `${dateString} ${timeString}`;
+        document.getElementById('localTimeDisplay').textContent = `Time: ${userCurrentContext.localTime}`;
+
+        setTimeout(updateAccurateLocalTime, 60000); 
+    }
+
+    function getUserLocation() {
+        const locationDisplay = document.getElementById('userLocationDisplay');
+        locationDisplay.textContent = "Location: Attempting to get location...";
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userCurrentContext.latitude = position.coords.latitude;
+                    userCurrentContext.longitude = position.coords.longitude;
+                    locationDisplay.textContent = `Location: Lat ${userCurrentContext.latitude.toFixed(2)}, Lon ${userCurrentContext.longitude.toFixed(2)}`;
+                },
+                (error) => {
+                    console.warn('Geolocation Error:', error.code, error.message);
+                    locationDisplay.textContent = "Location: Not shared (Access Denied or Unavailable)";
+                    userCurrentContext.latitude = null;
+                    userCurrentContext.longitude = null;
+                },
+                { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+            );
+        } else {
+            locationDisplay.textContent = "Location: Geolocation not supported.";
+        }
+    }
+
+    // --- Initialization ---
+
+    window.onload = () => {
+        // Initialize Core Features
+        initSpeechRecognition(); 
+        updateAccurateLocalTime(); 
+        getUserLocation();
+        
+        // Load UI/History
+        loadChatHistory();
+        updateHistorySidebar();
+
+        // Open sidebar by default on desktop
+        if (window.innerWidth > 768) {
+            sidebar.classList.add('open');
+        }
+    };
 </script>
 {% endblock content %}
