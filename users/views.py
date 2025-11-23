@@ -17,7 +17,7 @@ from .models import CustomUser, Experience, Education, Skill # Imported for clar
 def user_login(request):
     """Handles user login."""
     if request.user.is_authenticated:
-        return redirect('users:user_profile')
+        return redirect('languages:browse_job_listings')
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -52,7 +52,7 @@ def user_register(request):
             messages.success(request, "Registration successful! Now, complete your profile.")
             
             # Redirect to the edit page after registration for profile completion
-            return redirect('users:profile_edit') 
+            return redirect('languages:browse_job_listings') 
     else:
         form = CustomUserCreationForm()
         

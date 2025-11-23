@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
+from django.urls import reverse_lazy
 import dj_database_url # Import the dj_database_url library
 # Cloudinary imports
 import cloudinary
@@ -192,14 +193,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # 1. Use the custom user model defined in the 'users' app
 AUTH_USER_MODEL = 'users.CustomUser' 
 
-# 2. Tell Django the name of the URL pattern for the login page
-# This resolves the /accounts/login/ 404 error by pointing to the 'user_login' URL pattern.
-LOGIN_URL = 'users:user_login' 
+# The URL to redirect to after a user successfully logs in
+LOGIN_REDIRECT_URL = '/jobs/browse/'  # Use the actual URL path for the job listings page
 
-# 3. Where to redirect after a successful login (optional, but recommended)
-LOGIN_REDIRECT_URL = 'users:user_profile' 
-# ------------------------------------------------------------------
-
+# OR, if you are using Django's reverse_lazy (recommended):
+from django.urls import reverse_lazy
+LOGIN_REDIRECT_URL = reverse_lazy('languages:browse_job_listings')
 
 
 # Internationalization
