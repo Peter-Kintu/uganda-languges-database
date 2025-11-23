@@ -5,107 +5,107 @@
 {% block content %}
 <main class="max-w-4xl mx-auto px-4 py-8 sm:py-12">
     <h1 class="text-4xl sm:text-5xl font-extrabold text-indigo-400 text-center mb-8 tracking-tight drop-shadow-lg">
-        Post a New Job
+        ✨ Post a New Job ✨
     </h1>
     
     {% if success_message %}
-    <div id="success-alert" class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-400" role="alert">
-        <span class="font-medium">Success!</span> {{ success_message }}
+    <div id="success-alert" class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg dark:bg-green-700 dark:text-green-200 shadow-lg transition duration-500 ease-in-out" role="alert">
+        <span class="font-bold">Success!</span> {{ success_message }}
     </div>
     {% endif %}
 
-    <div class="bg-gray-800 p-6 sm:p-10 rounded-3xl shadow-2xl border border-indigo-700/50">
-        <form method="post" enctype="multipart/form-data" class="space-y-6">
+    <div class="bg-gray-900 p-6 sm:p-10 rounded-3xl shadow-2xl border border-indigo-600/70 transform hover:shadow-indigo-500/50 transition duration-300">
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
             {% csrf_token %}
             
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div class="space-y-1">
-                    <label for="{{ form.job_category.id_for_label }}" class="block text-sm font-medium text-gray-300">
+            <div class="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <label for="{{ form.job_category.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
                         {{ form.job_category.label }}
                     </label>
-                    {{ form.job_category }}
-                    <p class="text-xs text-gray-500 mt-1">{{ form.job_category.help_text }}</p>
+                    {{ form.job_category|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out appearance-none shadow-inner" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.job_category.help_text }}</p>
                     {% for error in form.job_category.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
                     {% endfor %}
                 </div>
 
-                <div class="space-y-1">
-                    <label for="{{ form.job_type.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                <div class="space-y-2">
+                    <label for="{{ form.job_type.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
                         {{ form.job_type.label }}
                     </label>
-                    {{ form.job_type }}
-                    <p class="text-xs text-gray-500 mt-1">{{ form.job_type.help_text }}</p>
+                    {{ form.job_type|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out appearance-none shadow-inner" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.job_type.help_text }}</p>
                     {% for error in form.job_type.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
                     {% endfor %}
                 </div>
             </div>
 
-            <div class="space-y-6">
-                <div class="space-y-1">
-                    <label for="{{ form.post_content.id_for_label }}" class="block text-sm font-medium text-gray-300">
+            <div class="space-y-8">
+                <div class="space-y-2">
+                    <label for="{{ form.post_content.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
                         {{ form.post_content.label }}
                     </label>
-                    {{ form.post_content }}
-                    <p class="text-xs text-gray-500 mt-1">{{ form.post_content.help_text }}</p>
+                    {{ form.post_content|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out shadow-inner min-h-[150px]" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.post_content.help_text }}</p>
                     {% for error in form.post_content.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
                     {% endfor %}
                 </div>
 
-                <div class="space-y-1">
-                    <label for="{{ form.required_skills.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                <div class="space-y-2">
+                    <label for="{{ form.required_skills.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
                         {{ form.required_skills.label }}
                     </label>
-                    {{ form.required_skills }}
-                    <p class="text-xs text-gray-500 mt-1">{{ form.required_skills.help_text }}</p>
+                    {{ form.required_skills|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out shadow-inner" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.required_skills.help_text }}</p>
                     {% for error in form.required_skills.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
                     {% endfor %}
                 </div>
                 
-                <div class="space-y-1">
-                    <label for="{{ form.company_logo_or_media.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                <div class="space-y-2">
+                    <label for="{{ form.company_logo_or_media.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
                         {{ form.company_logo_or_media.label }}
                     </label>
                     <div class="flex items-center space-x-4">
-                        {{ form.company_logo_or_media }}
+                        {{ form.company_logo_or_media|add_class:"block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600 file:cursor-pointer transition duration-150 ease-in-out" }}
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">{{ form.company_logo_or_media.help_text }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ form.company_logo_or_media.help_text }}</p>
                     {% for error in form.company_logo_or_media.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
                     {% endfor %}
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div class="space-y-1">
-                    <label for="{{ form.recruiter_name.id_for_label }}" class="block text-sm font-medium text-gray-300">
+            <div class="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <label for="{{ form.recruiter_name.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
                         {{ form.recruiter_name.label }}
                     </label>
-                    {{ form.recruiter_name }}
-                    <p class="text-xs text-gray-500 mt-1">{{ form.recruiter_name.help_text }}</p>
+                    {{ form.recruiter_name|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out shadow-inner" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.recruiter_name.help_text }}</p>
                     {% for error in form.recruiter_name.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
                     {% endfor %}
                 </div>
 
-                <div class="space-y-1">
-                    <label for="{{ form.recruiter_location.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                <div class="space-y-2">
+                    <label for="{{ form.recruiter_location.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
                         {{ form.recruiter_location.label }}
                     </label>
-                    {{ form.recruiter_location }}
-                    <p class="text-xs text-gray-500 mt-1">{{ form.recruiter_location.help_text }}</p>
+                    {{ form.recruiter_location|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out shadow-inner" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.recruiter_location.help_text }}</p>
                     {% for error in form.recruiter_location.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
                     {% endfor %}
                 </div>
             </div>
 
-            <div class="pt-5">
-                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-gray-900 transition duration-150 ease-in-out">
-                    Post Job
+            <div class="pt-6">
+                <button type="submit" class="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-xl text-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-gray-900 transition duration-300 ease-in-out transform hover:scale-[1.01]">
+                    🚀 Post Job Listing
                 </button>
             </div>
         </form>
