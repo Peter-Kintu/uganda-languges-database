@@ -12,8 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 
 # Import the Custom Forms and Models from our new app
+# NOTE: SocialConnection is added here for the new logic
 from .forms import CustomUserCreationForm, ProfileEditForm
-from .models import CustomUser, Experience, Education, Skill
+from .models import CustomUser, Experience, Education, Skill, SocialConnection
 
 
 # ==============================================================================
@@ -175,7 +176,7 @@ def gemini_proxy(request):
     Proxies chat requests to the Gemini API.
     CRITICAL UPDATE: Now constructs a structured JSON payload of the user's
     internal profile data and injects it into the system instruction for the AI,
-    in preparation for full OAuth-based profile reading.
+    including any linked social connections.
     """
     if request.method != 'POST':
         return JsonResponse({"error": "Only POST requests are allowed."}, status=405)
@@ -205,8 +206,7 @@ def gemini_proxy(request):
             # Experience Data
             experiences = Experience.objects.filter(user=user).order_by('-start_date')
             exp_list = [{
-                # NOTE: Changed from 'title' to 'job_title' as per model consistency
-                "job_title": e.job_title,
+                "job_title": e.title, # Correct field from models.py
                 "company_name": e.company_name,
                 "start_date": e.start_date.isoformat(),
                 "end_date": e.end_date.isoformat() if e.end_date else "Present",
@@ -215,7 +215,6 @@ def gemini_proxy(request):
 
             # Education Data
             educations = Education.objects.filter(user=user).order_by('-start_date')
-            # NOTE: Assuming 'field_of_study' exists on the Education model based on best practice
             edu_list = [{
                 "institution": e.institution,
                 "degree": e.degree,
@@ -227,18 +226,25 @@ def gemini_proxy(request):
             # Skills
             skills = Skill.objects.filter(user=user)
             skill_list = [s.name for s in skills]
+
+            # --- Social Connection Data (UPDATED LOGIC) ---
+            # Now uses the real SocialConnection model.
+            social_connections = SocialConnection.objects.filter(user=user)
+            social_links = [{
+                "type": c.platform,
+                "url": c.url,
+                # This status informs the AI that the link is saved but its content is not yet fetched/parsed
+                "data_status": "PENDING_API_INTEGRATION" 
+            } for c in social_connections]
             
             # --- Construct the Unified User Profile JSON (Internal Only) ---
             user_profile_data = {
               "fullName": user.get_full_name() or user.username,
               "headline": user.headline or "Software Developer",
               "location": user.location or "Not specified",
-              "socialLinks": [
-                  # Placeholder for future linked platforms
-                  # {"type": "linkedin", "url": "https://linkedin.com/in/..."} 
-              ],
+              "socialLinks": social_links, # <--- POPULATED FROM SocialConnection
               "parsedProfiles": {
-                # Current internal data is stored here, mimicking the external data structure
+                # Current internal data is stored here
                 "career_companion_internal": {
                     "about": user.about or "",
                     "experience": exp_list,
@@ -255,7 +261,6 @@ def gemini_proxy(request):
             }
             
             # Dump the structured data for injection into the system instruction
-            # Setting ensure_ascii=False ensures proper handling of non-ASCII characters if present
             profile_context_json = json.dumps(user_profile_data, indent=2, ensure_ascii=False)
 
             # 4. Construct the System Instruction Content
@@ -268,9 +273,9 @@ def gemini_proxy(request):
                 "**AI BEHAVIOR GUIDELINES:**\n"
                 "1. Speak in a professional, encouraging, and clear tone.\n"
                 "2. **CRUCIALLY, analyze the 'USER PROFILE JSON DATA'** (especially `parsedProfiles.career_companion_internal`) to formulate your advice. If the user asks for CV tips, use their existing experience/skills. If they ask for interview prep, tailor the questions to their job titles.\n"
-                "3. Directly address the user's career and job-related queries.\n"
-                "4. Use the provided chat history to maintain context.\n"
-                "5. If the user mentions their location, acknowledge it to provide geographically relevant advice."
+                "3. **LINK READING CAPABILITY:** If the user mentions an external link, check `socialLinks`. Acknowledge that the link is noted, but politely inform them that **live fetching of external profile data via API is the next planned feature upgrade** and currently not active. Ask them to ensure their internal profile is complete.\n"
+                "4. Directly address the user's career and job-related queries.\n"
+                "5. Use the provided chat history to maintain context."
             )
             
         else:
