@@ -17,5 +17,5 @@ COPY . /app
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Run migrations safely and start gunicorn
-CMD ["bash", "-c", "python manage.py migrate users 0001_initial --fake --noinput && python manage.py migrate --noinput && gunicorn myuganda.wsgi:application --bind 0.0.0.0:$PORT"]
+# Run migrations and start gunicorn
+CMD ["bash", "-c", "python manage.py migrate --noinput && gunicorn myuganda.wsgi:application --bind 0.0.0.0:$PORT"]
