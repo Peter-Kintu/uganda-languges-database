@@ -27,60 +27,62 @@
                         <p class="text-xl text-indigo-400 mt-1 font-medium">{{ user.headline }}</p>
                     {% endif %}
                     {% if user.location %}
-                        <p class="text-gray-400 text-sm mt-1 flex items-center">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m0 0A8 8 0 1120 12a8 8 0 01-16 0z"></path></svg>
-                            {{ user.location }}
+                        <p class="text-gray-400 mt-1 flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ user.location }}</span>
                         </p>
                     {% endif %}
                 </div>
             </div>
-            
-            <a href="{% url 'users:profile_edit' %}" class="mt-4 sm:mt-0 px-4 py-2 text-sm font-semibold bg-gray-700 text-indigo-400 rounded-lg hover:bg-gray-600 transition duration-200 border border-indigo-400/50">
-                Edit Profile
-            </a>
+
+            <div class="mt-4 sm:mt-0">
+                <a href="{% url 'users:profile_edit' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-gray-800 transition duration-150 ease-in-out">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zm-4.646 2.072l9.162 9.162-2.828 2.828-9.162-9.162 2.828-2.828z" />
+                    </svg>
+                    Edit Profile
+                </a>
+                <a href="{% url 'users:profile_ai' %}" class="mt-2 sm:mt-0 sm:ml-3 inline-flex items-center px-4 py-2 border border-indigo-600 text-sm font-medium rounded-full shadow-sm text-indigo-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-gray-800 transition duration-150 ease-in-out">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.43 12.56 13 13.5 13 14h-2c0-1.5 0-2.29.57-2.92l1.24-1.26c.37-.37.56-.84.56-1.32 0-.9-.72-1.62-1.62-1.62-.9 0-1.62.72-1.62 1.62H9c0-1.81 1.47-3.28 3.28-3.28s3.28 1.47 3.28 3.28c0 .87-.36 1.67-1.01 2.24z"/>
+                    </svg>
+                    Career AI
+                </a>
+            </div>
         </header>
 
         <section class="mb-8">
-            <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">About</h2>
-            {% if user.about %}
-                <p class="text-gray-300 whitespace-pre-wrap">{{ user.about }}</p>
-            {% else %}
-                <p class="text-gray-400 italic">No summary added yet. <a href="{% url 'users:profile_edit' %}" class="text-indigo-400 hover:underline">Add one now.</a></p>
-            {% endif %}
+            <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">Bio / Summary</h2>
+            <p class="text-gray-300 leading-relaxed">{{ user.bio|default:"No detailed biography provided yet. Click 'Edit Profile' to add one and unlock more personalized AI features." }}</p>
         </section>
 
         <section class="mb-8">
-            <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">Experience</h2>
+            <h2 class="text-2xl font-bold text-indigo-400 mb-4 border-b border-gray-700/50 pb-2">Work Experience</h2>
             <div class="space-y-6">
                 {% if experiences %}
                     {% for exp in experiences %}
-                        <div class="flex space-x-4">
-                            <div class="flex-shrink-0 w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center text-xl font-bold text-indigo-400 border border-indigo-400/30">
-                                {{ exp.company_initial }}
-                            </div>
-                            <div class="flex-grow">
-                                <h3 class="text-xl font-semibold text-white">{{ exp.title }}</h3>
-                                <p class="text-gray-400 font-medium">{{ exp.company_name }}</p>
-                                <p class="text-sm text-gray-500">
-                                    {{ exp.start_date|date:"F Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"F Y" }}{% else %}Present{% endif %}
-                                </p>
-                                {% if exp.description %}
-                                    <p class="text-gray-300 mt-2 text-sm">{{ exp.description }}</p>
-                                {% endif %}
-                            </div>
+                        <div class="pl-4 border-l-4 border-indigo-600">
+                            <h3 class="text-xl font-semibold text-white">{{ exp.job_title }}</h3>
+                            <p class="text-gray-400">{{ exp.company }}</p>
+                            <p class="text-sm text-gray-500 mb-2">
+                                {{ exp.start_date|date:"F Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"F Y" }}{% else %}Present{% endif %}
+                            </p>
+                            <p class="text-gray-300 text-sm">{{ exp.description|default:"No description provided." }}</p>
                         </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-400 italic">No work experience listed.</p>
+                    <p class="text-gray-400 italic">No work experience listed. Click 'Edit Profile' to add your professional history.</p>
                 {% endif %}
             </div>
         </section>
 
         <section class="mb-8">
-            <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">Education</h2>
-            <div class="space-y-4">
-                {% if education %}
-                    {% for edu in education %}
+            <h2 class="text-2xl font-bold text-indigo-400 mb-4 border-b border-gray-700/50 pb-2">Education</h2>
+            <div class="space-y-6">
+                {% if educations %}
+                    {% for edu in educations %}
                         <div class="pl-4 border-l-4 border-indigo-600">
                             <h3 class="text-xl font-semibold text-white">{{ edu.institution }}</h3>
                             <p class="text-gray-400">{{ edu.degree }}</p>
@@ -109,6 +111,7 @@
                 {% endif %}
             </div>
         </section>
+
     </div>
 </div>
 {% endblock content %}
