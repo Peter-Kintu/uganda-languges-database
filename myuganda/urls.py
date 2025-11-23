@@ -1,3 +1,5 @@
+# myuganda/urls.py
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -10,6 +12,9 @@ sitemaps_dict = {
 }
 
 urlpatterns = [
+    # 1. INCLUDE USER APP URLs at the root level (path('', include('users.urls')))]
+    path('', include('users.urls')), 
+    
     path('admin/', admin.site.urls),
     path('', include('languages.urls')),
     path('eshop/', include('eshop.urls', namespace='eshop')),

@@ -6,7 +6,7 @@ from django.core.serializers import serialize
 # FIX: Correctly import F and Sum for aggregation
 from django.db.models import F, Sum 
 from decimal import Decimal
-
+from django.contrib.auth.decorators import login_required
 # REMOVED: from languages import models # Line removed due to incorrect/redundant import
 
 from .forms import ProductForm, NegotiationForm 
@@ -34,6 +34,7 @@ def robots_txt(request):
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
+@login_required
 def get_user_cart(request):
     """
     Retrieves or creates the user's active cart based on the session key.
@@ -56,7 +57,7 @@ def get_user_cart(request):
 # ------------------------------------
 # E-Shop Core Views
 # ------------------------------------
-
+@login_required
 def product_list(request):
     """
     Displays the list of products for sale.
@@ -73,6 +74,7 @@ def product_list(request):
         'cart_total': cart_total,
     })
 
+@login_required
 def add_product(request):
     """
     Handles the form for adding a new product.
@@ -92,6 +94,7 @@ def add_product(request):
         'form': form
     })
 
+@login_required
 def product_detail(request, slug):
     """
     Displays the details of a single product.
@@ -106,6 +109,7 @@ def product_detail(request, slug):
         'cart_total': cart_total,
     })
     
+@login_required
 def add_to_cart(request, product_id):
     """
     Adds a product to the user's cart.
@@ -131,6 +135,7 @@ def add_to_cart(request, product_id):
         
     return redirect('eshop:view_cart')
 
+@login_required
 def view_cart(request):
     """
     Displays the user's shopping cart contents.
@@ -143,6 +148,7 @@ def view_cart(request):
         'cart_total': cart_total,
     })
 
+@login_required
 def remove_from_cart(request, item_id):
     """
     Removes a specific item from the cart.
@@ -158,6 +164,7 @@ def remove_from_cart(request, item_id):
     
     return redirect('eshop:view_cart')
 
+@login_required
 def checkout_view(request):
     """
     Displays the checkout page for order confirmation.
@@ -197,6 +204,7 @@ def checkout_view(request):
     return render(request, 'eshop/checkout.html', context)
 
 
+@login_required
 def confirm_order_whatsapp(request):
     """
     Redirects the user to WhatsApp with the order details and clears the cart.
@@ -245,7 +253,7 @@ def confirm_order_whatsapp(request):
 # ------------------------------------
 # AI Price Negotiation Logic
 # ------------------------------------
-
+@login_required
 def get_ai_response(product, user_message, chat_history):
     """
     Simplified AI negotiation logic.
@@ -322,7 +330,7 @@ def get_ai_response(product, user_message, chat_history):
     # Fallback response
     return "I'm sorry, I seem to be having trouble understanding that. Please provide your offer in the format 'My offer is UGX 80000'."
 
-
+@login_required
 def ai_negotiation_view(request, slug):
     product = get_object_or_404(Product, slug=slug)
     
@@ -361,7 +369,7 @@ def ai_negotiation_view(request, slug):
 
     return render(request, 'eshop/ai_negotiation.html', context)
 
-
+@login_required
 def accept_negotiated_price(request, slug):
     product = get_object_or_404(Product, slug=slug)
     cart = get_user_cart(request)
@@ -391,6 +399,7 @@ def accept_negotiated_price(request, slug):
 # Admin/Utility Views
 # ------------------------------------
 
+@login_required
 def export_products_json(request):
     """
     Exports all products as a JSON file.
@@ -403,6 +412,7 @@ def export_products_json(request):
     return response
 
 # Placeholder for delivery_location_view (as it was implied in other files)
+@login_required
 def delivery_location_view(request):
     """
     Placeholder for the delivery location view.

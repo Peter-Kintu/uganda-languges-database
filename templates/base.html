@@ -8,147 +8,342 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
     
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-        .nav-link {
-            transition: color 0.2s, border-bottom 0.2s;
+        /* World-Class Nav Bar Styles */
+        
+        /* Custom hover effect for desktop links - Keep it for visual flair */
+        .nav-link:after {
+            content: '';
+            position: absolute;
+            width: 0%;
+            height: 2px;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #6366f1; /* Tailwind's indigo-500 */
+            transition: width 0.3s ease-in-out;
         }
-        .nav-link:hover {
-            color: #818cf8; /* Tailwind's indigo-400 */
+        .nav-link:hover:after {
+            width: 100%;
         }
-        .nav-link.active {
-            color: #818cf8;
-            border-bottom: 2px solid #818cf8;
-        }
+
         .footer-link {
             transition: color 0.2s;
         }
         .footer-link:hover {
             color: #818cf8;
         }
-        /* Frosted glass effect for the drawer */
-        .drawer-glass {
-            background-color: rgba(31, 41, 55, 0.9);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+        /* Frosted glass effect for the header and drawer */
+        .header-glass {
+            background-color: rgba(17, 24, 39, 0.95); /* Darker backdrop with opacity */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(129, 140, 248, 0.2); /* Soft indigo line */
         }
+        .drawer-glass {
+            background-color: rgba(31, 41, 55, 0.95); /* Dark/Gray backdrop with opacity */
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
         /* Basic transition for the drawer */
         .drawer-transition {
             transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
+
         .drawer-open {
             transform: translateX(0%);
         }
+
         .drawer-close {
-            transform: translateX(100%); /* Corrected this line */
+            transform: translateX(-100%);
         }
-        /* Custom scrollbar for a polished look */
-        ::-webkit-scrollbar {
-            width: 8px;
+
+        /* Backdrop overlay for drawer */
+        #drawer-overlay {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
         }
-        ::-webkit-scrollbar-track {
-            background: #1f2937; /* Tailwind's gray-800 */
+        #drawer-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
         }
-        ::-webkit-scrollbar-thumb {
-            background-color: #4b5563; /* Tailwind's gray-600 */
-            border-radius: 10px;
-            border: 2px solid #1f2937;
+
+        /* Nav Icon Tooltip Style for Desktop */
+        .nav-icon-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            /* Ensure the icon link itself functions as the nav-link */
+            padding: 8px 4px; /* Give it a decent click area */
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background-color: #6b7280; /* Tailwind's gray-500 */
+        .nav-icon-tooltip {
+            position: absolute;
+            top: 100%; /* Position below the icon */
+            left: 50%;
+            transform: translate(-50%, 5px); /* Adjust vertical positioning */
+            white-space: nowrap;
+            background-color: #4f46e5; /* Tailwind indigo-600 */
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem; /* text-xs */
+            font-weight: 500;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+            z-index: 60;
+            pointer-events: none;
         }
+        .nav-link:hover .nav-icon-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, 0); /* Move up slightly on hover */
+        }
+        /* Triangle pointer for the tooltip */
+        .nav-icon-tooltip:after {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent #4f46e5 transparent;
+        }
+        
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
-<body class="flex flex-col min-h-screen bg-gray-900 text-gray-300">
-    <header class="bg-gray-800 shadow-lg py-4 px-6 md:px-12 sticky top-0 z-50 rounded-b-2xl">
-        <nav class="container mx-auto flex flex-col md:flex-row items-center justify-between">
-            <div class="flex justify-between w-full md:w-auto items-center">
-                <a href="{% url 'languages:contribute' %}" class="text-2xl font-bold text-white">My language</a>
-                <button id="menu-button" class="text-gray-300 md:hidden focus:outline-none">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-            </div>
-            <div id="nav-menu" class="hidden md:flex flex-col md:flex-row md:space-x-4 space-y-2 md:space-y-0 mt-4 md:mt-0 w-full md:w-auto">
-                
-                <a href="{% url 'languages:contribute' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Contribute</a>
-                <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Contributions</a>
-                <a href="{% url 'languages:sponsor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Sponsor</a>
-                <a href="{% url 'languages:best_contributor' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center active">Top Contributor</a>
-                <a href="{% url 'eshop:product_list' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Market</a>
-                <a href="{% url 'eshop:view_cart' %}" class="nav-link text-gray-300 font-medium px-3 py-2 text-center">Cart</a>
-                
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+
+    <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+    <header class="sticky top-0 z-50 header-glass">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20"> 
+                <div class="flex-shrink-0">
+                    <a href="{% url 'languages:home' %}" class="text-3xl font-extrabold text-indigo-400 hover:text-indigo-300 transition duration-150 tracking-wider">
+                        MyLanguage.<span class="text-white">africa</span>
+                    </a>
+                </div>
+
+                <div class="hidden md:flex md:space-x-8 lg:space-x-12 items-center">
+                    
+                    <a href="{% url 'languages:home' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                        <span class="nav-icon-container">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125V14.25c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v6.625c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21.75h8.25"/>
+                            </svg>
+                            <span class="nav-icon-tooltip" role="tooltip">Home</span>
+                        </span>
+                    </a>
+
+                    <a href="{% url 'users:profile' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                        <span class="nav-icon-container">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                            <span class="nav-icon-tooltip" role="tooltip">Profile</span>
+                        </span>
+                    </a>
+
+                    <a href="{% url 'languages:post_job' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                        <span class="nav-icon-container">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                            <span class="nav-icon-tooltip" role="tooltip">Post Job</span>
+                        </span>
+                    </a>
+
+                    <a href="{% url 'languages:browse_job_listings' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                        <span class="nav-icon-container">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.75v-1.5a2.25 2.25 0 0 0-2.25-2.25h-6l-3-3H6.75A2.25 2.25 0 0 0 4.5 9v1.5a2.25 2.25 0 0 0 2.25 2.25h6l3 3h1.5a2.25 2.25 0 0 0 2.25-2.25Z" />
+                            </svg>
+                            <span class="nav-icon-tooltip" role="tooltip">Job Listings</span>
+                        </span>
+                    </a>
+
+                    <a href="{% url 'languages:recruiters_page' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                        <span class="nav-icon-container">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V20.25a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25v-1.996c0-.306.125-.6.353-.828l1.378-1.378c.31-.31.724-.51 1.171-.572L7.5 15h9l1.458-.33a2.25 2.25 0 0 0 1.17-.572l.937-.936c.228-.228.353-.522.353-.828V12c0-.306-.125-.6-.353-.828l-1.378-1.378a2.25 2.25 0 0 0-2.25-2.25H12c-.828 0-1.61.328-2.182.9l-1.06 1.06a.75.75 0 0 1-1.06 0L6.182 8.718A2.25 2.25 0 0 0 4.5 8.136V7.5a2.25 2.25 0 0 1 2.25-2.25h1.5a.75.75 0 0 0 0-1.5H6.75A3.75 3.75 0 0 0 3 7.5v1.136c0 .854.341 1.667.956 2.282l1.06 1.06a.75.75 0 0 1 0 1.06l-1.06 1.06a3.75 3.75 0 0 0-.956 2.282V18.72Z" />
+                            </svg>
+                            <span class="nav-icon-tooltip" role="tooltip">Recruiters</span>
+                        </span>
+                    </a>
+
+                    <a href="{% url 'eshop:product_list' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                        <span class="nav-icon-container">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.5.856 8.528a2.25 2.25 0 0 1-.676 1.76l-.44.437c-.322.32-.744.498-1.18.498H5.986c-.436 0-.858-.178-1.18-.498l-.44-.438a2.25 2.25 0 0 1-.676-1.757l.856-8.527M12 8.25h.008v.008H12V8.25Z" />
+                            </svg>
+                            <span class="nav-icon-tooltip" role="tooltip">Market</span>
+                        </span>
+                    </a>
+                    
+                    <div class="border-l border-gray-700 h-8"></div> 
+
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'languages:user_profile' %}" 
+                        class="nav-link flex items-center text-indigo-400 hover:text-indigo-300 py-2 text-base font-medium group">
+                        <span class="nav-icon-container">
+                            <svg class="w-6 h-6 text-indigo-500 group-hover:text-indigo-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                            </svg>
+                            <span class="nav-icon-tooltip" role="tooltip">Dashboard</span>
+                        </span>
+                    </a>
+                    <a href="{% url 'languages:user_logout' %}"
+                        class="ml-2 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out transform hover:scale-105">
+                        Logout
+                    </a>
+                    {% else %}
+                    <a href="{% url 'users:user_login' %}" 
+                        class="nav-link text-green-400 hover:text-green-300 py-2 text-base font-medium ml-4 flex items-center">
+                        <svg class="w-5 h-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V7.5A2.25 2.25 0 0 1 10.5 5h3A2.25 2.25 0 0 1 15.75 7.5v1.5m-3 9-4.5-4.5m0 0 4.5-4.5m-4.5 4.5h11.25" />
+                        </svg>
+                        Login
+                    </a>
+                    <a href="{% url 'users:user_register' %}"
+                        class="ml-4 inline-flex items-center justify-center px-5 py-2 border border-transparent rounded-full shadow-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition duration-150 ease-in-out transform hover:scale-105">
+                        Sign Up
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="md:hidden">
+                    <button id="menu-button" type="button" 
+                            class="inline-flex items-center justify-center p-2 rounded-md text-indigo-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-400 transition duration-150" 
+                            aria-controls="drawer" aria-expanded="false">
+                        <svg class="block h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                        </svg>
+                        <span class="sr-only">Open main menu</span>
+                    </button>
+                </div>
             </div>
         </nav>
-    </header>
 
-    <div id="drawer" class="fixed top-0 right-0 h-full w-64 drawer-glass z-40 shadow-2xl drawer-transition drawer-close md:hidden">
-        <div class="p-6 h-full flex flex-col justify-start">
-            <div class="flex justify-end mb-8">
-                <button id="close-drawer-button" class="text-gray-300 focus:outline-none">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="flex flex-col space-y-4 text-center">
+        <div id="drawer" class="drawer-glass fixed inset-y-0 left-0 w-64 z-50 transform drawer-close drawer-transition overflow-y-auto shadow-2xl md:hidden">
+            <div class="p-6 space-y-6">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-700">
+                    <a href="{% url 'languages:home' %}" class="text-2xl font-extrabold text-indigo-400">MyLanguage</a>
+                    <button id="close-drawer-button" class="text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-700 transition duration-150">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
                 
-                <a href="{% url 'languages:contribute' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contribute</a>
-                <a href="{% url 'languages:browse_contributions' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Contributions</a>
-                <a href="{% url 'languages:sponsor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Sponsor Us</a>
-                <a href="{% url 'languages:best_contributor' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300 active">Top Contributor</a>
-                <a href="{% url 'eshop:product_list' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Market</a>
-                <a href="{% url 'eshop:view_cart' %}" class="nav-link text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-300">Cart</a>
-
+                <a href="{% url 'languages:home' %}" class="nav-link-mobile block text-lg font-medium text-gray-200 hover:text-indigo-400 py-3 border-b border-gray-800 transition duration-150">
+                    <span class="flex items-center"><svg class="w-5 h-5 mr-3 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125V14.25c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v6.625c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21.75h8.25"/></svg> Home</span>
+                </a>
+                <a href="{% url 'users:profile' %}" class="nav-link-mobile block text-lg font-medium text-gray-200 hover:text-indigo-400 py-3 border-b border-gray-800 transition duration-150">
+                    <span class="flex items-center"><svg class="w-5 h-5 mr-3 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg> Profile</span>
+                </a>
+                <a href="{% url 'languages:post_job' %}" class="nav-link-mobile block text-lg font-medium text-gray-200 hover:text-indigo-400 py-3 border-b border-gray-800 transition duration-150">
+                    <span class="flex items-center"><svg class="w-5 h-5 mr-3 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg> Post Job</span>
+                </a>
+                <a href="{% url 'languages:browse_job_listings' %}" class="nav-link-mobile block text-lg font-medium text-gray-200 hover:text-indigo-400 py-3 border-b border-gray-800 transition duration-150">
+                    <span class="flex items-center"><svg class="w-5 h-5 mr-3 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.75v-1.5a2.25 2.25 0 0 0-2.25-2.25h-6l-3-3H6.75A2.25 2.25 0 0 0 4.5 9v1.5a2.25 2.25 0 0 0 2.25 2.25h6l3 3h1.5a2.25 2.25 0 0 0 2.25-2.25Z" /></svg> Job Listings</span>
+                </a>
+                <a href="{% url 'languages:recruiters_page' %}" class="nav-link-mobile block text-lg font-medium text-gray-200 hover:text-indigo-400 py-3 border-b border-gray-800 transition duration-150">
+                    <span class="flex items-center"><svg class="w-5 h-5 mr-3 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V20.25a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25v-1.996c0-.306.125-.6.353-.828l1.378-1.378c.31-.31.724-.51 1.171-.572L7.5 15h9l1.458-.33a2.25 2.25 0 0 0 1.17-.572l.937-.936c.228-.228.353-.522.353-.828V12c0-.306-.125-.6-.353-.828l-1.378-1.378a2.25 2.25 0 0 0-2.25-2.25H12c-.828 0-1.61.328-2.182.9l-1.06 1.06a.75.75 0 0 1-1.06 0L6.182 8.718A2.25 2.25 0 0 0 4.5 8.136V7.5a2.25 2.25 0 0 1 2.25-2.25h1.5a.75.75 0 0 0 0-1.5H6.75A3.75 3.75 0 0 0 3 7.5v1.136c0 .854.341 1.667.956 2.282l1.06 1.06a.75.75 0 0 1 0 1.06l-1.06 1.06a3.75 3.75 0 0 0-.956 2.282V18.72Z" /></svg> Recruiters</span>
+                </a>
+                <a href="{% url 'eshop:product_list' %}" class="nav-link-mobile block text-lg font-medium text-gray-200 hover:text-indigo-400 py-3 border-b border-gray-800 transition duration-150">
+                    <span class="flex items-center"><svg class="w-5 h-5 mr-3 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.5.856 8.528a2.25 2.25 0 0 1-.676 1.76l-.44.437c-.322.32-.744.498-1.18.498H5.986c-.436 0-.858-.178-1.18-.498l-.44-.438a2.25 2.25 0 0 1-.676-1.757l.856-8.527M12 8.25h.008v.008H12V8.25Z" /></svg> Market</span>
+                </a>
+                
+                <div class="pt-4 space-y-4 border-t border-gray-700">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'languages:user_profile' %}" class="nav-link-mobile block text-lg font-medium text-indigo-400 hover:text-indigo-300 py-2 transition duration-150">
+                        <span class="flex items-center"><svg class="w-5 h-5 mr-3 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" /></svg> Dashboard: **{{ user.username }}**</span>
+                    </a>
+                    <a href="{% url 'languages:user_logout' %}" class="block text-lg font-bold text-white bg-red-600 hover:bg-red-700 text-center py-2 rounded-full transition duration-150 ease-in-out transform hover:scale-[1.02]">
+                        Logout
+                    </a>
+                    {% else %}
+                    <a href="{% url 'users:user_login' %}"class="block text-lg font-medium text-green-400 hover:text-green-300 py-2 border-b border-gray-700 transition duration-150">
+                        <span class="flex items-center"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V7.5A2.25 2.25 0 0 1 10.5 5h3A2.25 2.25 0 0 1 15.75 7.5v1.5m-3 9-4.5-4.5m0 0 4.5-4.5m-4.5 4.5h11.25" /></svg> Login</span>
+                    </a>
+                    <a href="{% url 'users:user_register' %}" class="block text-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 text-center py-3 rounded-full transition duration-150 ease-in-out transform hover:scale-[1.02] shadow-lg">
+                        Sign Up Now
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
-    
-    <main class="flex-grow flex items-center justify-center p-4">
+    </header>
+
+    <main class="flex-grow">
         {% block content %}
         {% endblock %}
     </main>
 
-    <footer class="bg-gray-800 text-gray-400 py-6 text-center shadow-inner mt-auto">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p>&copy; 2025 myUgandaMyCultue. All rights reserved.</p>
-            <div class="mt-2 space-x-4">
-                <a href="https://wa.me/256789746493" class="footer-link">WhatsApp: +256789746493</a>
-                <span class="hidden md:inline">|</span>
-                <a href="mailto:kintupeter7@gmail.com" class="footer-link">Email: kintupeter7@gmail.com</a>
+    <footer class="bg-gray-800 text-gray-400 py-10 border-t border-indigo-700/30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-2xl font-bold text-indigo-400 mb-2">MyLanguage.africa</p>
+            <p class="text-sm font-light">&copy; {% now "Y" %} All rights reserved. Built with passion for African Languages.</p>
+            <div class="mt-4 space-x-4 flex justify-center items-center text-sm">
+                <a href="https://wa.me/256789746493" class="footer-link flex items-center hover:text-green-400 transition duration-150">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12.032 2.378c-5.02 0-9.102 4.082-9.102 9.102s4.082 9.102 9.102 9.102 9.102-4.082 9.102-9.102-4.082-9.102-9.102-9.102zm3.328 12.353c-.152.418-.813.79-1.218.813-.25.014-.501.014-.752.014-.525 0-.85-.145-1.268-.564-.672-.672-1.34-1.84-.712-3.045.244-.469.516-.957.778-1.442.261-.485.604-1.05.694-1.57.067-.373.18-.707.03-1.096-.151-.419-.517-.79-.904-.813-.25-.014-.501-.014-.752-.014-.525 0-.85.145-1.268.564-.672.672-1.34 1.84-.712 3.045.244.469.516.957.778 1.442.261.485.604 1.05.694 1.57.067.373.18.707.03 1.096-.151.419-.517.79-.904.813-.25-.014-.501-.014-.752-.014-.525 0-.85.145-1.268.564-.672.672-1.34 1.84-.712 3.045.244.469.516.957.778 1.442.261.485.604 1.05.694 1.57.067.373.18.707.03 1.096-.151.419-.517.79-.904.813-.25-.014-.501-.014-.752-.014-.525 0-.85.145-1.268.564-1.637 1.637-2.903 2.87-4.137 4.104-.618.618-1.077 1.34-1.206 2.09-.13.749.117 1.5.767 2.15l1.62 1.62c.65.65 1.391.897 2.14.767.75-.13 1.472-.589 2.09-1.206 1.234-1.234 2.47-2.47 4.104-4.104.419-.419.564-.743.564-1.268z"/></svg>
+                    WhatsApp: **+256789746493**
+                </a>
+                <span class="hidden sm:inline text-gray-600">|</span>
+                <a href="mailto:kintupeter7@gmail.com" class="footer-link flex items-center hover:text-red-400 transition duration-150">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+                    Email: **kintupeter7@gmail.com**
+                </a>
             </div>
         </div>
     </footer>
+    
     <script>
         const menuButton = document.getElementById('menu-button');
         const drawer = document.getElementById('drawer');
         const closeDrawerButton = document.getElementById('close-drawer-button');
+        const drawerOverlay = document.getElementById('drawer-overlay');
 
         // Function to open the drawer
-        menuButton.addEventListener('click', () => {
+        const openDrawer = () => {
             drawer.classList.remove('drawer-close');
             drawer.classList.add('drawer-open');
-        });
+            drawerOverlay.classList.add('visible');
+            drawerOverlay.classList.remove('hidden');
+        };
 
         // Function to close the drawer
-        closeDrawerButton.addEventListener('click', () => {
+        const closeDrawer = () => {
             drawer.classList.remove('drawer-open');
             drawer.classList.add('drawer-close');
-        });
+            drawerOverlay.classList.remove('visible');
+            // Give it a moment to animate out before hiding completely
+            setTimeout(() => {
+                drawerOverlay.classList.add('hidden');
+            }, 400); 
+        };
 
-        // Close the drawer if the user clicks outside of it
-        document.addEventListener('click', (event) => {
-            const isClickInsideDrawer = drawer.contains(event.target) || menuButton.contains(event.target);
-            if (!isClickInsideDrawer && drawer.classList.contains('drawer-open')) {
-                drawer.classList.remove('drawer-open');
-                drawer.classList.add('drawer-close');
+        menuButton.addEventListener('click', openDrawer);
+        closeDrawerButton.addEventListener('click', closeDrawer);
+        drawerOverlay.addEventListener('click', closeDrawer); // Close when clicking the overlay
+
+        // Close the drawer when resizing to desktop view
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768 && drawer.classList.contains('drawer-open')) {
+                closeDrawer();
             }
         });
     </script>
+    {% block footer_scripts %}{% endblock %}
 </body>
 </html>

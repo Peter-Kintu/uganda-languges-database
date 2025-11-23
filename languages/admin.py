@@ -1,67 +1,63 @@
 # File: languages/admin.py
 
 from django.contrib import admin
-from .models import PhraseContribution
+from .models import JobPost, Applicant # Updated model names
 from django.urls import reverse
 from django.shortcuts import redirect
-from .models import PhraseContribution, Contributor
 
 
-
-admin.site.register(Contributor)
-# A custom admin class for the PhraseContribution model.
-# This enhances the admin interface to make it easier to manage contributions.
-class PhraseContributionAdmin(admin.ModelAdmin):
+admin.site.register(Applicant) # Updated model name
+# A custom admin class for the JobPost model.
+class JobPostAdmin(admin.ModelAdmin):
     # This defines the fields that will be displayed in the list view.
     list_display = (
-        'text', 
-        'translation', 
-        'language', 
-        'intent', 
-        'contributor_name',
-        'likes',
-        'contributor',  
+        'post_content', 
+        'required_skills', 
+        'job_category', 
+        'job_type', 
+        'recruiter_name',
+        'application_url', # <--- NEW FIELD
+        'company_logo_or_media', # <--- ADDED FIELD
+        'upvotes', # Updated field name
+        'applicant',  # Updated field name
         'timestamp', 
         'is_validated'
     )
     
-    # These fields can be used for filtering the contributions.
-    list_filter = ('language', 'intent', 'is_validated')
+    # These fields can be used for filtering the posts.
+    list_filter = ('job_category', 'job_type', 'is_validated')
     
     # This enables a search bar to search through the specified fields.
-    search_fields = ('text', 'translation', 'contributor_name')
+    search_fields = ('post_content', 'required_skills', 'recruiter_name')
     
-    # This allows for bulk actions on selected contributions.
-    # We add our new export action here.
-    actions = ['mark_validated', 'export_json']
+    # This allows for bulk actions on selected job posts.
+    actions = ['mark_validated', 'export_json', 'reset_upvotes'] # Updated action name
 
-    # Custom action to mark selected contributions as validated.
-    # The short_description is what will appear in the action dropdown.
-    @admin.action(description='Mark selected contributions as validated')
+    # Custom action to mark selected posts as validated.
+    @admin.action(description='Mark selected job posts as validated') 
     def mark_validated(self, request, queryset):
         # Update the 'is_validated' field to True for the selected items.
         updated_count = queryset.update(is_validated=True)
         self.message_user(
             request, 
-            f'{updated_count} contribution(s) were successfully marked as validated.'
+            f'{updated_count} job post(s) were successfully marked as validated.'
         )
 
-    @admin.action(description='Reset likes for selected contributions')
-    def reset_likes(self, request, queryset):
-        # Update the 'likes' field to 0 for the selected items.
-        updated_count = queryset.update(likes=0)
+    # Custom action to reset upvotes
+    @admin.action(description='Reset upvotes for selected job posts')
+    def reset_upvotes(self, request, queryset): # Renamed function
+        # Update the 'upvotes' field to 0 for the selected items.
+        updated_count = queryset.update(upvotes=0) # Updated field name
         self.message_user(
             request,
-            f'Likes were reset for {updated_count} contribution(s).'
+            f'Upvotes were reset for {updated_count} job post(s).'
         )
     
-
-    # Custom action to export validated contributions as JSON.
-    @admin.action(description='Export validated contributions as JSON')
+    # Custom action to export validated job posts as JSON.
+    @admin.action(description='Export validated job posts as JSON')
     def export_json(self, request, queryset):
-        # We don't need the queryset for this action, as the view will handle it.
-        # We just need to redirect to our new view.
+        # Redirect to the export view (URL name remains 'export_json' for simplicity)
         return redirect('export_contributions_json')
     
 # Register the model with the custom admin class.
-admin.site.register(PhraseContribution, PhraseContributionAdmin)
+admin.site.register(JobPost, JobPostAdmin)

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load user_filters %}
+{% load widget_tweaks %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<main class="max-w-3xl mx-auto px-4 py-8 sm:py-12">
+    <h1 class="text-4xl font-extrabold text-indigo-400 text-center mb-8 tracking-tight drop-shadow-lg">
+        Edit Your Profile ✏️
+    </h1>
+    
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="p-4 text-sm text-green-700 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-400" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="bg-gray-800 p-6 sm:p-10 rounded-3xl shadow-2xl border border-indigo-700/50">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            <p class="text-gray-400 mb-6">Update your core personal and professional details below. For Experience/Education, please use the <a href="{% url 'admin:index' %}" class="text-indigo-400 hover:underline font-semibold">Admin Panel</a> for now.</p>
+            
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {# First Name and Last Name #}
+                {% for field_name in 'first_name,last_name'|split:',' %}
+                    {% with form|get_field:field_name as field %}
+                        <div class="space-y-1">
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                                {{ field.label }}
+                            </label>
+                            {{ field|add_class:"w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500" }}
+                            {% for error in field.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            
+            {# Headline and Location #}
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {% for field_name in 'headline,location'|split:',' %}
+                    {% with form|get_field:field_name as field %}
+                        <div class="space-y-1">
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                                {{ field.label }}
+                            </label>
+                            {{ field|add_class:"w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500" }}
+                            {% for error in field.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            
+            {# About (Textarea) #}
+            {% with form.about as field %}
+                <div class="space-y-1">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                        {{ field.label }}
+                    </label>
+                    {{ field|add_class:"w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500" }}
+                    {% for error in field.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endwith %}
+
+            {# Profile Image #}
+            {% with form.profile_image as field %}
+                <div class="space-y-1">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                        {{ field.label }}
+                    </label>
+                    <div class="flex items-center space-x-4">
+                        {% if field.value %}
+                            <p class="text-sm text-gray-400">Current file: {{ field.value.name|truncatechars:30 }}</p>
+                        {% endif %}
+                        {{ field|add_class:"block w-full text-sm text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600" }}
+                    </div>
+                    {% for error in field.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endwith %}
+
+            <div class="pt-5 flex justify-between items-center">
+                <a href="{% url 'languages:user_profile' %}" class="inline-block py-3 px-4 text-sm font-medium text-gray-400 bg-gray-700 rounded-md shadow-sm hover:bg-gray-600 transition duration-150 ease-in-out">
+                    ← Back to Profile
+                </a>
+                <button type="submit" class="inline-block py-3 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition duration-150 ease-in-out">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+{% endblock content %}

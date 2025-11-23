@@ -4,10 +4,6 @@ from .views import google_verification
 from .views import robots_txt
 
 
-   
-
-
-
 app_name = 'eshop'
 
 urlpatterns = [
@@ -30,5 +26,5 @@ urlpatterns = [
     
     # Negotiation Feature URLs
     path('product/<slug:slug>/negotiate/', views.ai_negotiation_view, name='ai_negotiation'),
-    path('product/<slug:slug>/accept-negotiated-price/', views.accept_negotiated_price, name='accept_negotiated_price'),
+    path('product/<slug:slug>/accept-price/', views.accept_negotiated_price, name='accept_negotiated_price'),
 ]
