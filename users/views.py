@@ -137,10 +137,9 @@ def _get_user_profile_data(user):
         "username": user.username,
         "full_name": user.get_full_name(),
         "email": user.email,
-        # Safely access attributes that might be missing on the CustomUser model
-        "location": getattr(user, 'location', None), 
-        "bio": getattr(user, 'bio', None), 
-        "headline": getattr(user, 'headline', None),
+        "location": user.location,
+        "bio": user.bio,
+        "headline": user.headline,
         "profile_image_url": user.profile_image.url if user.profile_image else None,
         "experiences": [
             {
@@ -294,11 +293,12 @@ def gemini_proxy(request):
         )
         
         # 5. Build the API Payload
-        # **FIX:** Renamed 'config' to 'generationConfig' as required by the Gemini API.
+        # **FIX:** 'systemInstruction' is moved to the top level.
+        # **FIX:** 'config' is renamed to 'generationConfig'.
         payload = {
             "contents": _clean_history(contents),
+            "systemInstruction": system_instruction_content, 
             "generationConfig": { 
-                "systemInstruction": system_instruction_content,
                 "temperature": generation_config["temperature"],
                 "maxOutputTokens": generation_config["maxOutputTokens"],
             }
