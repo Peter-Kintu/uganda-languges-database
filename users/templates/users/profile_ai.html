@@ -563,18 +563,31 @@
 
         // Prepare API Call
         const history = getCurrentHistory();
-        // Push the user's message to the temporary history array for the call
-        history.push({ role: 'user', text: prompt });
-        
-        // Inject System Context for the AI to use
-        const contextMessage = `[System Context: Current Time is ${userCurrentContext.localTime}, Timezone: ${userCurrentContext.localTimeZone}. Location: ${userCurrentContext.latitude ? userCurrentContext.latitude.toFixed(2) + ', ' + userCurrentContext.longitude.toFixed(2) : 'Not Shared'}]`;
-        const contentsWithContext = [...history, { role: 'user', text: contextMessage }]; 
 
-        fetchGemini(contentsWithContext).then(aiText => {
+        // 1. Create a deep copy of the history array for the API call
+        //    We use a deep copy to ensure modifications for context don't affect the original history.
+        let contentsForApi = JSON.parse(JSON.stringify(history));
+
+        // 2. Add the user's current message to the API content array
+        contentsForApi.push({ role: 'user', text: prompt });
+        
+        // 3. Inject System Context into the text of the *last* message to maintain role alternation
+        const contextMessage = `\n\n[System Context: Current Time is ${userCurrentContext.localTime}, Timezone: ${userCurrentContext.localTimeZone}. Location: ${userCurrentContext.latitude ? userCurrentContext.latitude.toFixed(2) + ', ' + userCurrentContext.longitude.toFixed(2) : 'Not Shared'}]`;
+        const lastUserMessage = contentsForApi[contentsForApi.length - 1];
+
+        // Append context to the text of the current user message
+        lastUserMessage.text += contextMessage; 
+        
+        // Call the proxy with the content that has context injected into the last message's text
+        fetchGemini(contentsForApi).then(aiText => {
             appendMessage('ai', aiText);
             
-            // Save the *actual* user message and AI response (excluding the context prompt)
-            history.push({ role: 'ai', text: aiText });
+            // 4. Update the permanent history (which excludes the temporary context injection)
+            // Push the clean user prompt
+            history.push({ role: 'user', text: prompt }); 
+            // Push the AI response
+            history.push({ role: 'ai', text: aiText }); 
+            
             saveChatSession(currentSessionId, history); 
 
         }).catch(error => {
