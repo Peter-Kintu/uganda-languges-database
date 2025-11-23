@@ -1,0 +1,923 @@
+{% extends "base.html" %}
+
+{% block title %}Career Companion AI - Personalized Guidance{% endblock %}
+
+{% block content %}
+<style>
+    /* Base styling for a clean dark theme */
+    body {
+        background: linear-gradient(135deg, #101725, #0a0e16);
+        font-family: 'Inter', sans-serif;
+        color: #e5e7eb;
+    }
+
+    /* General container and card styling - Wider on all screens */
+    .chat-container-card {
+        max-width: 95%; 
+        margin: 1rem auto;
+        background-color: #1f2937;
+        border-radius: 1.0rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border: 1px solid #374151;
+        overflow: hidden;
+        transition: all 0.5s ease-in-out;
+    }
+
+    /* Header styling */
+    .chat-header {
+        background: linear-gradient(135deg, #2d3748, #1f2937);
+        padding: 2.5rem 1.5rem;
+        border-bottom: 1px solid #374151;
+        text-align: center;
+    }
+
+    .chat-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+    }
+    /*
+    .chat-header p {
+        font-size: 1.125rem;
+        color: #9ca3af;
+        margin-top: 0.5rem;
+        max-width: 32rem;
+        margin-left: auto;
+        margin-right: auto;
+    } */
+
+    /* Main chat area layout */
+    .chat-area {
+        display: flex;
+        flex-direction: column; /* Stacks on all screens now */
+        padding: 0; 
+        gap: 0;
+    }
+
+    /* Chat log container - No boundaries */
+    #chatLog {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 1.5rem; 
+        background-color: transparent; 
+        border: none;
+        border-radius: 0;
+        transition: all 0.3s ease-in-out;
+        min-height: 50vh; 
+        max-height: 70vh; /* Base height for small screens */
+    }
+
+    /* Message styling (same) */
+    .chat-message {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        max-width: 95%; 
+        line-height: 1.5;
+        font-size: 1rem;
+    }
+    .chat-message strong { font-weight: 700; margin-right: 0.5rem; min-width: fit-content; }
+    .chat-message.user { justify-content: flex-end; align-self: flex-end; background-color: #4338ca; color: #e0e7ff; }
+    .chat-message.ai { justify-content: flex-start; align-self: flex-start; background-color: #2d3748; color: #e5e7eb; }
+    .chat-message.error { background-color: #b91c1c; color: #ffffff; border: 1px solid #dc2626; }
+
+    /* Input and button area */
+    .chat-input-area {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.5rem;
+        border-top: 1px solid #374151;
+        background-color: #1f2937;
+    }
+    
+    /* MODIFIED: Integrated Input Container - Tighter vertical padding */
+    .integrated-input-container {
+        display: flex;
+        align-items: center; 
+        width: 100%;
+        background-color: #0a0e16; 
+        border-radius: 1rem; 
+        border: 1px solid #4b5563;
+        padding: 0.5rem 0.5rem; /* Reduced vertical padding for more space for input field */
+        transition: border-color 0.3s, box-shadow 0.3s; 
+    }
+    
+    /* NEW: Add a visual focus state to the container */
+    .integrated-input-container:focus-within {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px #4f46e5;
+    }
+
+    /* MODIFIED: #chatInput - Still no padding, maximizes space */
+    #chatInput {
+        flex-grow: 1; 
+        width: 100%;
+        padding: 0; 
+        border-radius: 0;
+        border: none;
+        background-color: transparent; 
+        color: #e5e7eb;
+        font-size: 1.1rem; 
+        box-shadow: none; 
+        display: block;
+        margin: 0;
+        resize: none; 
+        overflow: auto; 
+        min-height: 1.5rem; 
+        max-height: 10rem; 
+    }
+
+    #chatInput::placeholder {
+        color: #9ca3af;
+        text-align: left; 
+    }
+    
+    #chatInput:focus {
+        outline: none; 
+        box-shadow: none;
+    }
+
+    /* 🔥 MODIFIED: ICON BUTTON Base Styling - Reduced size for more input space 🔥 */
+    .action-icon-button {
+        flex-shrink: 0; 
+        width: 2.5rem; /* Reduced from 3rem */
+        height: 2.5rem; /* Reduced from 3rem */
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0; 
+        font-size: 1.2rem; /* Reduced icon size slightly */
+        border-radius: 50%; 
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); 
+    }
+
+    /* Updated Microphone/Record Button */
+    #recordButton {
+        background-color: #ef4444; 
+        color: white;
+        margin-right: 0.25rem; /* Reduced from 0.5rem */
+    }
+    
+    #recordButton:hover {
+        background-color: #dc2626;
+        transform: scale(1.05);
+    }
+
+    #recordButton.recording {
+        background-color: #10b981; 
+        animation: pulse 1.5s infinite;
+    }
+    
+    #recordButton:disabled {
+        background-color: #4b5563;
+        cursor: not-allowed;
+        animation: none;
+        transform: none;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    }
+    
+    /* MODIFIED Send Button */
+    #sendChatButton {
+        background-color: #4f46e5; 
+        color: #fff; 
+        margin-left: 0.25rem; /* Reduced from 0.5rem */
+    }
+
+    #sendChatButton:hover { 
+        background-color: #4338ca; 
+        transform: scale(1.05); 
+    } 
+    
+    /* Hide the old voice status div as it's not needed in this layout */
+    #voiceStatus {
+        display: none;
+    }
+    
+    /* Button Group Styling (Unchanged) */
+    .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+    }
+    
+    .action-button {
+        flex: 1 1 150px; 
+        padding: 0.75rem 1.5rem;
+        border-radius: 1.5rem;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    .action-button.stop-speak { 
+        background-color: #f59e0b; 
+        color: #1f2937; 
+        display: none; 
+        order: -1; 
+    }
+    .action-button.stop-speak:hover { background-color: #d97706; transform: translateY(-2px); }
+    .action-button.summarize { background-color: #10b981; color: #fff; }
+    .action-button.summarize:hover { background-color: #059669; transform: translateY(-2px); }
+    .action-button.export { background-color: #3b82f6; color: #fff; }
+    .action-button.export:hover { background-color: #2563eb; transform: translateY(-2px); }
+    .action-button.clear { background-color: #ef4444; color: #fff; }
+    .action-button.clear:hover { background-color: #dc2626; transform: translateY(-2px); }
+
+    /* 🔥 MODIFIED: Responsive adjustments for large screens (md: 768px and up) 🔥 */
+    @media (min-width: 768px) {
+        .chat-container-card {
+            max-width: 80%;
+        }
+
+        /* REMOVED two-column layout: */
+        /* .chat-area { flex-direction: row; min-height: 80vh; } */
+
+        #chatLog {
+            width: auto; /* Full width */
+            min-height: 60vh;
+            max-height: 60vh; /* Constrain log height */
+            border-radius: 0; /* Reset */
+            padding: 1.5rem;
+        }
+
+        /* Input area now spans full width at the bottom: */
+        .chat-input-area {
+            width: auto;
+            border-top: 1px solid #374151; /* Restore border */
+            border-left: none; /* Remove side border */
+            border-radius: 0 0 1.5rem 1.5rem; /* Rounded bottom corners */
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        /* Adjusted button group layout for larger screens: */
+        .button-group {
+            justify-content: flex-start;
+            gap: 1rem;
+        }
+
+        .action-button {
+            flex: 0 1 auto; /* No growth, base on content/padding */
+        }
+    }
+</style>
+
+<div class="chat-container-card">
+    <div class="chat-header">
+        <h1>Career Companion AI</h1>
+        <p class="text-sm text-indigo-400 mt-2">Personalized Career, CV, & Interview Guidance</p>
+        <p id="localTimeDisplay" class="text-xs text-gray-500 mt-1"></p>
+    </div>
+
+    <div class="chat-area">
+        <div id="chatLog" class="flex-grow">
+            </div>
+
+        <div class="chat-input-area">
+            <div id="userLocationDisplay" class="text-xs text-gray-500 text-center mb-1"></div>
+
+            <div class="integrated-input-container">
+                <button onclick="toggleRecording()" class="action-icon-button" id="recordButton" title="Record Voice Message (Voice commands not supported on Safari)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3.9-3.6 7.1-8.3 7.1S3.7 13.9 3.7 10h-1c0 4.9 3.6 8.9 8.3 9.8v3.2h2v-3.2c4.7-.9 8.3-4.9 8.3-9.8h-1zm-6.6 0H12V5H9v6c0 1.66 1.34 3 3 3zm.3 0c.7-.7.7-1.7 0-2.4l.3-.3c.4-.4 1-.4 1.4 0 .4.4.4 1 0 1.4l-.3.3z"/>
+                        <path d="M14.7 10c0 .9-.7 1.6-1.6 1.6-.9 0-1.6-.7-1.6-1.6h-2.7c0 4.3 3.3 7.8 7.5 8.3v3.7h1v-3.7c4.2-.5 7.5-4 7.5-8.3h-2.7z"/>
+                    </svg>
+                </button>
+                <textarea id="chatInput" placeholder="Type your career question, job title, or tap the mic to speak..." onkeydown="handleKeydown(event)"></textarea>
+                <button onclick="typeQuery()" class="action-icon-button" id="sendChatButton" title="Send Message">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3v7l15 2-15 2v7z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="button-group">
+                <button onclick="summarizeChat()" class="action-button summarize" title="Summarize the current chat session">Summarize Session</button>
+                <button onclick="exportChat()" class="action-button export" title="Download the chat history">Export Chat (.txt)</button>
+                <button onclick="clearChat()" class="action-button clear" title="Clear all chat history">Clear History</button>
+                <button onclick="stopSpeaking()" class="action-button stop-speak" id="stopSpeakButton" title="Stop current text-to-speech output">Stop Speaking</button>
+            </div>
+            
+            <div id="loadingIndicator" class="text-center text-indigo-400 mt-2 hidden">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-400 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                AI is typing...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Constants
+    const chatLog = document.getElementById('chatLog');
+    const chatInput = document.getElementById('chatInput');
+    const recordButton = document.getElementById('recordButton');
+    const sendChatButton = document.getElementById('sendChatButton');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const stopSpeakButton = document.getElementById('stopSpeakButton');
+    const chatHistoryKey = 'careerCompanionChatHistory';
+    let recognition; // Speech Recognition object
+    let isRecording = false;
+    let responseCount = 0; // To track if this is the first interaction
+
+    // Global context object for location and time (passed to AI for context)
+    let userCurrentContext = {
+        latitude: null,
+        longitude: null,
+        localTime: null,
+        localTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    };
+
+    // --- Utility Functions ---
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function handleKeydown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            typeQuery();
+        } 
+        // Auto-resize the textarea
+        chatInput.style.height = 'auto'; // Reset height
+        chatInput.style.height = chatInput.scrollHeight + 'px'; // Set to new scroll height
+    }
+    
+    // --- Speech Recognition ---
+    function initSpeechRecognition() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            // Check if user is on a modern device with African language support (optional)
+            // For now, only check for basic support
+            console.warn("Speech Recognition not supported in this browser.");
+            recordButton.disabled = true;
+            recordButton.title = "Recording not supported";
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false; // Only get one result per tap
+        recognition.interimResults = false;
+        recognition.lang = 'en-US'; // Default to English, will be updated based on best guess if needed
+
+        recognition.onstart = () => {
+            isRecording = true;
+            recordButton.classList.add('recording');
+            recordButton.title = "Recording... Click to stop.";
+            chatInput.placeholder = "Listening...";
+            chatInput.value = '';
+            chatInput.disabled = true;
+            sendChatButton.disabled = true;
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            chatInput.value = transcript;
+            chatInput.style.height = 'auto'; // Reset height
+            chatInput.style.height = chatInput.scrollHeight + 'px'; // Set to new scroll height
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            // Optionally append an error message to the chat
+            if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                appendMessage('ai', `Voice Error: ${event.error}. Please try typing.`, true);
+            }
+        };
+
+        recognition.onend = () => {
+            isRecording = false;
+            recordButton.classList.remove('recording');
+            recordButton.title = "Record Voice Message";
+            chatInput.placeholder = "Type your career question, job title, or tap the mic to speak...";
+            chatInput.disabled = false;
+            sendChatButton.disabled = false;
+            
+            // If text was captured, automatically send it
+            if (chatInput.value.trim() !== "") {
+                typeQuery();
+            }
+        };
+    }
+
+    function toggleRecording() {
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            // Re-initialize language based on a guess from chat history or user locale if a need arises
+            // For now, stick to the default one set in initSpeechRecognition (en-US)
+            recognition.start();
+        }
+    }
+
+    // --- Message and History Management ---
+
+    function appendMessage(sender, text, isError = false) {
+        // Sanitize text before rendering to prevent XSS if possible, though Gemini should return clean text
+        // Note: The strong tag for role is already added in loadChatHistory, so we replicate it here for consistency
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${sender} ${isError ? 'error' : ''}`;
+        
+        // Simple HTML entity escaping for display text
+        const safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+        messageDiv.innerHTML = `<strong>${sender === 'user' ? 'You' : 'Ai'}:</strong> <span class="text-gray-400">${safeText}</span>`;
+        chatLog.appendChild(messageDiv);
+        chatLog.scrollTop = chatLog.scrollHeight;
+
+        if (!isError && sender !== 'user') {
+            responseCount++;
+            saveChatHistory();
+            speak(text); // Automatically speak the AI response
+        }
+        
+        // Auto-resize the textarea back to minimum if a response is received
+        chatInput.style.height = 'auto'; 
+    }
+
+    function typeQuery() {
+        const prompt = chatInput.value.trim();
+        if (prompt === "") return;
+
+        // Display user message
+        appendMessage('user', prompt);
+        chatInput.value = '';
+        
+        // Add a temporary loader message
+        loadingIndicator.classList.remove('hidden');
+        
+        // Disable input while waiting for response
+        chatInput.disabled = true;
+        sendChatButton.disabled = true;
+        recordButton.disabled = true;
+
+        // --- Prepare for API Call ---
+        const history = getChatHistory();
+        // Add the new user message to the history for sending
+        history.push({ role: 'user', text: prompt });
+        
+        // Also inject the time and location context into the chat history for the AI to process it 
+        // (Even if location is null, the time context is crucial)
+        const contextMessage = `[System Context: Current Time is ${userCurrentContext.localTime}, Timezone: ${userCurrentContext.localTimeZone}. Location: ${userCurrentContext.latitude ? userCurrentContext.latitude.toFixed(2) + ', ' + userCurrentContext.longitude.toFixed(2) : 'Not Shared'}]`;
+        history.push({ role: 'user', text: contextMessage }); 
+
+        // Send the full history and prompt to the proxy
+        fetchGemini(history).then(aiText => {
+            appendMessage('ai', aiText);
+        }).catch(error => {
+            appendMessage('ai', `Error: ${error.message}`, true);
+        }).finally(() => {
+            loadingIndicator.classList.add('hidden');
+            chatInput.disabled = false;
+            sendChatButton.disabled = false;
+            recordButton.disabled = false;
+            
+            // Remove the temporary context message before saving/reloading history
+            history.pop(); 
+            saveChatHistory(history);
+        });
+    }
+
+    function fetchGemini(fullContents) {
+        // Full contents is already the history + new user message + system context message
+        return fetch('{% url "users:gemini_proxy" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                contents: fullContents,
+                config: {
+                    temperature: 0.7,
+                    maxOutputTokens: 2048
+                }
+            })
+        }).then(async response => {
+            if (!response.ok) {
+                // Try to extract an error message from the response body
+                try {
+                    const errorBody = await response.json();
+                    throw new Error(errorBody.error || `HTTP error! Status: ${response.status}`);
+                } catch (e) {
+                    throw new Error(`Non-JSON response (Status ${response.status}). Check server/proxy connection.`);
+                }
+            }
+            return response.json();
+        }).then(data => {
+            return data.text || "I apologize, I could not generate a response.";
+        }).catch(e => {
+            console.error("Fetch error:", e);
+            throw new Error(`Connection failed or API error: ${e.message}`);
+        });
+    }
+
+    // --- Text-to-Speech (TTS) Functions ---
+
+    /**
+     * Finds the best voice based on the text's guessed language and professional preference.
+     * @param {string} targetLangCode The BCP-47 code (e.g., 'en-US', 'sw-TZ').
+     * @returns {SpeechSynthesisVoice | null} The best matching voice object.
+     */
+    function findBestVoice(targetLangCode) {
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoiceName = 'Google US English'; // A common, professional-sounding voice
+
+        // 1. Try to find the preferred voice by name
+        let bestVoice = voices.find(v => v.name === preferredVoiceName);
+
+        if (!bestVoice) {
+            // 2. Fallback: Find the first voice matching the language code
+            bestVoice = voices.find(v => v.lang.startsWith(targetLangCode.substring(0, 2)));
+        }
+
+        if (!bestVoice) {
+             // 3. Last Fallback: Find the first English voice
+            bestVoice = voices.find(v => v.lang.startsWith('en'));
+        }
+        
+        return bestVoice || null;
+    }
+
+    let speakingInterval = null;
+
+    function speak(text) {
+        stopSpeaking(); // Stop any currently speaking utterance
+        stopSpeakButton.style.display = 'inline-block';
+
+        const cleanedText = cleanTextForSpeech(text);
+        
+        // 1. Guess Language
+        const langCode = guessTextLanguage(cleanedText);
+
+        // 2. Find Voice
+        const voice = findBestVoice(langCode);
+        if (!voice) {
+            console.warn("No suitable voice found for synthesis.");
+            return;
+        }
+
+        // 3. Create Utterance
+        const utterance = new SpeechSynthesisUtterance(cleanedText);
+        utterance.voice = voice;
+        utterance.lang = voice.lang; // Use the found voice's exact language code
+        utterance.rate = 1.0; // Normal speed
+
+        utterance.onend = () => {
+            stopSpeaking();
+        };
+
+        utterance.onerror = (event) => {
+            console.error('Speech synthesis error:', event.error);
+            stopSpeaking();
+        };
+
+        // 4. Speak
+        window.speechSynthesis.speak(utterance);
+        
+        // 5. Visual cue while speaking
+        const aiMessage = chatLog.lastElementChild;
+        if (aiMessage && aiMessage.classList.contains('ai')) {
+            aiMessage.classList.add('speaking');
+            speakingInterval = setInterval(() => {
+                if (!window.speechSynthesis.speaking) {
+                    clearInterval(speakingInterval);
+                    aiMessage.classList.remove('speaking');
+                }
+            }, 100);
+        }
+    }
+
+    function stopSpeaking() {
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
+        clearInterval(speakingInterval);
+        stopSpeakButton.style.display = 'none';
+
+        // Remove speaking class from all AI messages
+        document.querySelectorAll('.chat-message.ai.speaking').forEach(el => {
+            el.classList.remove('speaking');
+        });
+    }
+
+    /**
+     * Cleans up text for better speech synthesis quality.
+     * @param {string} text The text to be cleaned.
+     * @returns {string} The cleaned text.
+     */
+    function cleanTextForSpeech(text) {
+        let cleaned = text;
+        // 1. Remove markdown links, only keeping the display text
+        cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1'); 
+        // 2. Remove markdown list markers (like *, -, 1. etc)
+        cleaned = cleaned.replace(/^[*-]\s*|^[0-9]+\.\s*/gm, ''); 
+        // 3. Remove list markers at start of line
+        cleaned = cleaned.replace(/-\s+/g, ''); 
+        // 4. Clean up any extra whitespace that might result from removals
+        cleaned = cleaned.replace(/\s\s+/g, ' '); // Replace multiple spaces with a single space
+
+        return cleaned.trim(); // Trim leading/trailing whitespace
+    }
+
+    /**
+     * Attempts a basic guess of the language based on keywords.
+     * @param {string} text The text to analyze.
+     * @returns {string} The guessed BCP-47 language tag (e.g., 'sw-TZ', 'lg-UG', 'en-US').
+     */
+    function guessTextLanguage(text) {
+        const lowerText = text.toLowerCase();
+        // Swahili (sw) keywords
+        if (lowerText.includes('mambo') || lowerText.includes('asante') || lowerText.includes('tafadhali') || lowerText.includes('swahili') || lowerText.includes('jambo') || lowerText.includes('habari')) {
+            return 'sw-TZ';
+        }
+        // Luganda (lg) keywords
+        if (lowerText.includes('webale') || lowerText.includes('otya') || lowerText.includes('luganda') || lowerText.includes('oli otya')) {
+            return 'lg-UG';
+        }
+        // English (en) is the default
+        return 'en-US';
+    }
+
+
+    // --- Context and Time Management ---
+
+    function updateAccurateLocalTime() {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            timeZoneName: 'short' 
+        };
+        userCurrentContext.localTime = now.toLocaleTimeString('en-US', options);
+        document.getElementById('localTimeDisplay').innerText = `Your Local Time: ${userCurrentContext.localTime} (${userCurrentContext.localTimeZone})`;
+        
+        // Update every second to keep time accurate
+        setTimeout(updateAccurateLocalTime, 1000);
+    }
+
+    // --- Function to get the user's coordinates and pass them to the AI ---
+    function getUserLocation() {
+        if ("geolocation" in navigator) {
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userCurrentContext.latitude = position.coords.latitude;
+                    userCurrentContext.longitude = position.coords.longitude;
+                    
+                    // Confirmation message for the user
+                    const aiMessage = `Thank you! I have securely integrated your current location (Lat: ${position.coords.latitude.toFixed(2)}, Lng: ${position.coords.longitude.toFixed(2)}) into my career advice context.`;
+                    
+                    // Only append a message if the log isn't empty, otherwise it clutters the initial screen
+                    if (getChatHistory().length > 0) {
+                        appendMessage('ai', aiMessage);
+                    }
+                },
+                (error) => {
+                    console.error("Error getting user location:", error.code, error.message);
+                    let errorMessage = "Unable to retrieve your location.";
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errorMessage = "Location access was denied. You can still use the AI, but location-aware features will be disabled.";
+                    } else if (error.code === error.TIMEOUT) {
+                        errorMessage = "Location request timed out. Please check your signal.";
+                    }
+                    // Only append an error message if the log isn't empty
+                    if (getChatHistory().length > 0) {
+                        appendMessage('ai', errorMessage, true);
+                    }
+                },
+                options
+            );
+        } else {
+            console.warn("Geolocation is not supported by this browser.");
+            // Only append a message if the log isn't empty
+            if (getChatHistory().length > 0) {
+                appendMessage('ai', "Location services are not supported by your browser, disabling location-aware features.", true);
+            }
+        }
+    }
+
+    // --- Action Functions (Summarize, Export, Clear) ---
+
+    function summarizeChat() {
+        const history = getChatHistory();
+        if (history.length === 0) {
+            alert("No chat history to summarize.");
+            return;
+        }
+
+        // 1. Add a temporary loader message
+        const summaryLoader = document.createElement('div');
+        summaryLoader.id = 'summaryLoader';
+        summaryLoader.className = 'chat-message ai';
+        summaryLoader.innerHTML = `<strong>Ai:</strong> <span class="text-gray-400">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-400 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Generating Summary...
+        </span>`;
+        chatLog.appendChild(summaryLoader);
+        chatLog.scrollTop = chatLog.scrollHeight;
+
+        // 2. Prepare the summary prompt and call API
+        const summaryPrompt = {
+            role: 'user', 
+            text: `Please provide a concise, professional summary of our current chat session. Focus on the main topics discussed and the career advice provided. Do not invent new content.`
+        };
+        const summaryContents = [...history, summaryPrompt]; // Send full history + summary request
+
+        fetch('{% url "users:gemini_proxy" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                contents: summaryContents,
+                config: {
+                    temperature: 0.1, // Low temp for factual summary
+                    maxOutputTokens: 512
+                }
+            })
+        })
+        .then(async response => {
+            if (!response.ok) {
+                try {
+                    const errorBody = await response.json();
+                    throw new Error(errorBody.error || `HTTP error! Status: ${response.status}`);
+                } catch (e) {
+                    throw new Error(`Non-JSON response (Status ${response.status}). Check server/proxy connection.`);
+                }
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('summaryLoader')?.remove();
+            const summaryText = data.text || "I was unable to generate a summary.";
+            appendMessage('ai', "Summary of Session:\n\n" + summaryText);
+        })
+        .catch(error => {
+            document.getElementById('summaryLoader')?.remove();
+            appendMessage('ai', `Summary Error: ${error.message}`, true);
+            console.error("Summary API Call Failed:", error);
+        });
+    }
+
+    function exportChat() {
+        const history = getChatHistory();
+        if (history.length === 0) {
+            alert("No chat history to export.");
+            return;
+        }
+
+        let exportText = `Career Companion AI Chat Export - {{ user.username }}\nDate: ${new Date().toLocaleString()}\n\n`;
+
+        history.forEach(item => {
+            // Use 'You' and 'AI' for clarity in the export file
+            const role = item.role === 'user' ? 'You' : 'AI'; 
+            exportText += `${role}: ${item.text}\n\n`;
+        });
+
+        const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `CareerCompanion_Chat_Export_{{ user.username }}_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        appendMessage('ai', "Chat history exported successfully as a text file.");
+    }
+
+    function clearChat() {
+        if (confirm("Are you sure you want to clear your entire chat history? This action cannot be undone.")) {
+            localStorage.removeItem(chatHistoryKey);
+            responseCount = 0; // Reset response counter
+            loadChatHistory();
+            appendMessage('ai', "Chat history has been cleared. How can I help you start fresh with your career goals today?", false); // Re-add the welcome message
+            stopSpeaking();
+        }
+    }
+
+
+    // --- History Storage (localStorage) ---
+
+    /**
+     * Saves the current chat messages to localStorage.
+     * @param {Array} [messages=null] Optional array of messages to save. If null, reads from chatLog.
+     */
+    function saveChatHistory(messages = null) {
+        if (messages === null) {
+            messages = [];
+            chatLog.querySelectorAll('.chat-message').forEach(div => {
+                // Find the strong tag for the role
+                const strongTag = div.querySelector('strong');
+                const roleText = strongTag ? strongTag.textContent.toLowerCase().replace(':', '').trim() : '';
+                
+                // Find the span for the actual text
+                const textSpan = div.querySelector('span');
+                const textContent = textSpan ? textSpan.textContent.trim() : '';
+                
+                // Only save user/ai messages, and skip the initial welcome message from template 
+                // and system context messages from query
+                if ((roleText === 'you' || roleText === 'ai') && textContent.length > 0) {
+                    messages.push({
+                        role: roleText === 'you' ? 'user' : 'ai',
+                        text: textContent
+                    });
+                }
+            });
+        }
+        
+        // Remove the first AI message which is the initial welcome message if a real conversation has started
+        const finalMessages = messages.filter(item => item.text.toLowerCase().indexOf("hello, {{ user.username }}! i am your career companion ai.") === -1);
+        localStorage.setItem(chatHistoryKey, JSON.stringify(finalMessages));
+    }
+
+    function getChatHistory() {
+        const storedHistory = localStorage.getItem(chatHistoryKey);
+        return storedHistory ? JSON.parse(storedHistory) : [];
+    }
+
+    function loadChatHistory() {
+        const history = getChatHistory();
+        chatLog.innerHTML = ''; // Clear the initial message template
+        
+        if (history.length === 0) {
+            // Restore initial welcome message if history is empty
+            chatLog.innerHTML = `
+                <div class="chat-message ai">
+                    <strong>Ai:</strong>
+                    <span class="text-gray-400">
+                        Hello, {{ user.username }}! I am your Career Companion AI. How can I assist you with job searching, CV optimization, or interview preparation today?
+                    </span>
+                </div>
+            `;
+            return;
+        }
+
+        history.forEach(item => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${item.role}`;
+            messageDiv.innerHTML = `<strong>${item.role === 'user' ? 'You' : 'Ai'}:</strong> <span class="text-gray-400">${item.text}</span>`;
+            chatLog.appendChild(messageDiv);
+        });
+
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    // Initialize
+    window.onload = () => {
+        loadChatHistory();
+        initSpeechRecognition(); // Initialize recognition on page load
+        
+        // Start the local time display
+        updateAccurateLocalTime(); 
+        
+        // Optionally prompt for location access on first use to enable Capabilitiy 1 enhancements
+        // This is commented out to avoid annoying popups, but can be uncommented for full feature test:
+        // if (responseCount === 0) { getUserLocation(); }
+    };
+</script>
+{% endblock content %}
