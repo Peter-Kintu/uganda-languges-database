@@ -18,7 +18,7 @@ from .models import CustomUser, Experience, Education, Skill, SocialConnection
 
 
 # ==============================================================================
-# AUTHENTICATION VIEWS (UNCHANGED)
+# AUTHENTICATION VIEWS
 # ==============================================================================
 
 def user_login(request):
@@ -35,307 +35,221 @@ def user_login(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Welcome back, {user.username}!")
-                return redirect(request.POST.get('next') or reverse('users:profile')) 
+                # Use 'next' parameter for redirection after login, defaulting to a specified path
+                return redirect(request.GET.get('next') or reverse('languages:browse_job_listings')) 
             else:
                 messages.error(request, "Invalid username or password.")
         else:
-            messages.error(request, "Invalid form submission.")
-            
-    form = AuthenticationForm()
-    return render(request, 'users/login.html', {'form': form})
+            messages.error(request, "Invalid username or password.")
+    else:
+        form = AuthenticationForm()
+        
+    context = {'form': form, 'title': 'Login'}
+    return render(request, 'users/login.html', context)
+
 
 def user_register(request):
     """Handles user registration."""
     if request.user.is_authenticated:
-        return redirect('users:profile')
-        
+        return redirect('languages:browse_job_listings')
+
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # Auto-login the user after registration
+            # Log the user in immediately after successful registration
             login(request, user)
-            messages.success(request, "Registration successful. Welcome to Career Companion!")
-            return redirect('users:profile')
+            messages.success(request, f"Account created for {user.username}. Welcome!")
+            return redirect(reverse('users:profile_edit')) # Redirect to profile edit to complete profile
         else:
-            # Add form errors to messages
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.capitalize()}: {error}")
+            messages.error(request, "Please correct the errors below.")
     else:
         form = CustomUserCreationForm()
-        
-    return render(request, 'users/register.html', {'form': form})
+
+    context = {'form': form, 'title': 'Register'}
+    return render(request, 'users/register.html', context)
+
 
 @login_required
 def user_logout(request):
-    """Logs the user out and redirects to the login page."""
+    """Logs out the current user."""
     logout(request)
-    messages.info(request, "You have been logged out successfully.")
+    messages.info(request, "You have been logged out.")
     return redirect(reverse('users:user_login'))
 
 
 # ==============================================================================
-# PROFILE VIEWS (UNCHANGED)
+# PROFILE VIEWS
 # ==============================================================================
 
 @login_required
 def user_profile(request):
-    """Displays the user's profile information."""
+    """Displays the user's complete profile."""
     user = request.user
+    
+    # Fetch related data for the profile template
+    experiences = user.experiences.all() 
+    education = user.education.all()
+    skills = user.skills.all()
+    social_connections = user.social_connection.all() # Fetch social connections
+    
     context = {
         'user': user,
-        'experiences': user.experiences.all(),
-        'education': user.education.all(),
-        'skills': user.skills.all(),
-        'social_connections': SocialConnection.objects.filter(user=user)
+        'experiences': experiences,
+        'education': education,
+        'skills': skills,
+        'social_connections': social_connections, # Pass to context
+        'title': f"{user.get_full_name() or user.username}'s Profile"
     }
     return render(request, 'users/profile.html', context)
 
+
 @login_required
 def profile_edit(request):
-    """Allows the user to edit their profile details."""
+    """Handles editing of the user's main profile and inlines for Experience/Education/Skills."""
+    
     user = request.user
     
     if request.method == 'POST':
+        # Pass request.FILES for profile_image handling
         form = ProfileEditForm(request.POST, request.FILES, instance=user)
+        
         if form.is_valid():
             form.save()
-            messages.success(request, "Your profile has been updated successfully.")
-            return redirect('users:profile')
+            messages.success(request, "Your profile has been updated successfully!")
+            return redirect(reverse('users:profile'))
         else:
             messages.error(request, "Please correct the errors below.")
     else:
         form = ProfileEditForm(instance=user)
-        
+
     context = {
         'form': form,
-        'user': user,
+        'title': 'Edit Profile',
     }
     return render(request, 'users/profile_edit.html', context)
-
-
-# --- Utility function to clean history format (UNCHANGED) ---
-def clean_contents(messages):
-    """ 
-    Ensures messages conform to the Gemini API format:
-    1. Standardizes role: 'Ai' -> 'model', 'user' remains 'user'
-    2. Standardizes content: 'text' property is moved into 'parts' array.
-    """
-    cleaned = []
-    for msg in messages:
-        # Standardize role: 'Ai' -> 'model'
-        role = msg.get("role", "").lower()
-        if role == "ai":
-            role = "model"
-        
-        # Skip messages without a role or text for safety
-        text_content = msg.get("text")
-        if not role or not text_content:
-            continue
-            
-        # Structure the content for the API: {"role": ..., "parts": [{"text": ...}]}
-        cleaned.append({
-            "role": role,
-            "parts": [{"text": text_content}]
-        })
-        
-    return cleaned
-
-# ------------------------------------------------------------------------------
-# NEW UTILITY FUNCTION TO FETCH EXTERNAL PROFILE DATA
-# ------------------------------------------------------------------------------
-def fetch_external_profile_data(user):
-    """
-    Attempts to fetch and return the raw content from the user's social links.
-    Uses a simulated approach for platforms like LinkedIn/GitHub that block simple scraping.
-    """
-    external_data = []
-    social_connections = SocialConnection.objects.filter(user=user)
     
-    # Simple User-Agent to mimic a browser, though highly detectable
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-
-    for connection in social_connections:
-        content = None
-        status = "FETCH_FAILED"
-        try:
-            platform_lower = connection.platform.lower()
-
-            # For platforms that block scraping, provide simulated data
-            if platform_lower in ['linkedin', 'github']:
-                status = "SIMULATED_SUCCESS"
-                if platform_lower == 'linkedin':
-                    content = (
-                        f"Simulated LinkedIn Data for {user.get_full_name()}: "
-                        f"Headline: {user.headline}. Primary experience: Senior Developer at TechCorp. "
-                        f"Recent activity suggests expertise in Cloud Architecture. "
-                        f"Please note: Full, unparsed HTML content is unavailable without dedicated API access."
-                    )
-                elif platform_lower == 'github':
-                    content = (
-                        f"Simulated GitHub Data for {user.username}: "
-                        f"User has 15 public repositories. Main languages: Python (60%), JavaScript (30%). "
-                        f"Top project is 'Django-Career-App'. Last commit was 2 days ago."
-                    )
-            
-            # For general websites/blogs, attempt a real fetch but with caution
-            elif platform_lower in ['personal website', 'blog', 'portfolio']:
-                 # Use a short timeout to prevent extremely slow API calls
-                response = requests.get(connection.url, headers=headers, timeout=5)
-                
-                if response.status_code == 200:
-                    # Truncate content to avoid overwhelming the prompt/model
-                    content = response.text[:2000] + "..."
-                    status = "FETCH_SUCCESS_RAW_TRUNCATED"
-                else:
-                    status = f"HTTP_ERROR_{response.status_code}"
-            else:
-                 status = "PLATFORM_NOT_SUPPORTED_FOR_FETCH"
-
-        except requests.exceptions.RequestException as e:
-            # Handle connection errors, DNS failure, timeout, etc.
-            status = f"CONNECTION_ERROR: {str(e)[:50]}..."
-        except Exception as e:
-            status = f"UNKNOWN_ERROR: {str(e)[:50]}..."
-
-        external_data.append({
-            "platform": connection.platform,
-            "url": connection.url,
-            "fetch_status": status,
-            "raw_content": content if content else ""
-        })
-
-    return external_data
-
-
-# ==============================================================================
-# AI CHAT PROXY VIEWS
-# ==============================================================================
-
-# Assuming a tts_proxy function exists elsewhere or is a placeholder
-def tts_proxy(request):
-    """
-    Placeholder for Text-to-Speech proxy view.
-    Actual implementation would use a TTS API.
-    """
-    return JsonResponse({"error": "TTS proxy not fully implemented."}, status=501)
-
+# =============================================================================
+# AI VIEWS
+# =============================================================================
 
 @csrf_exempt
-@login_required
 def gemini_proxy(request):
     """
-    Proxies chat requests to the Gemini API, now including external profile data.
+    Proxies a chat request to the Gemini API using request.user's profile
+    data as context to the AI.
     """
     if request.method != 'POST':
         return JsonResponse({"error": "Only POST requests are allowed."}, status=405)
-    
-    # 1. API Configuration and Key
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        return JsonResponse({"error": "GEMINI_API_KEY not configured."}, status=500)
-    
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required."}, status=401)
 
     try:
-        # 2. Prepare the contents (history + new message)
-        body = json.loads(request.body.decode("utf-8"))
-        raw_contents = body.get("contents", [])
-        
-        # Clean the history format for the API
-        contents = clean_contents(raw_contents)
+        # 1. Configuration
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return JsonResponse({"error": "Server configuration error: API key missing."}, status=500)
 
-        # 3. Get User Profile Information and Construct JSON structure
+        # Model and URL
+        model_name = "gemini-2.5-flash"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+
+        # 2. Extract Data from Request
+        try:
+            data = json.loads(request.body)
+            # The client sends history as an array of objects: [{'role': 'user/model', 'text': '...'}]
+            history = data.get("history", [])
+            user_input = data.get("prompt", "")
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON format in request body."}, status=400)
+
+        if not user_input:
+            return JsonResponse({"error": "Prompt cannot be empty."}, status=400)
+
+        # 3. Compile User Profile Context
         user = request.user
         
-        if user.is_authenticated:
-            # --- FETCH EXTERNAL DATA (NEW CALL) ---
-            external_profile_data = fetch_external_profile_data(user)
-            
-            # --- Serialize internal Django models into a list of dicts ---
-            experiences = Experience.objects.filter(user=user).order_by('-start_date')
-            exp_list = [{
-                "job_title": e.title,
-                "company_name": e.company_name,
-                "start_date": e.start_date.isoformat(),
-                "end_date": e.end_date.isoformat() if e.end_date else "Present",
-                "description": e.description or ""
-            } for e in experiences]
-
-            educations = Education.objects.filter(user=user).order_by('-start_date')
-            edu_list = [{
-                "institution": e.institution,
-                "degree": e.degree,
-                "field_of_study": getattr(e, 'field_of_study', 'N/A'), 
-                "start_date": e.start_date.isoformat(),
-                "end_date": e.end_date.isoformat() if e.end_date else "Ongoing"
-            } for e in educations]
-            
-            skills = Skill.objects.filter(user=user)
-            skill_list = [s.name for s in skills]
-            
-            # --- Construct the Unified User Profile JSON (Internal + External) ---
-            user_profile_data = {
-              "fullName": user.get_full_name() or user.username,
-              "headline": user.headline or "Software Developer",
-              "location": user.location or "Not specified",
-              "externalLinksData": external_profile_data, # INJECTED FETCHED DATA
-              "parsedProfiles": {
-                "career_companion_internal": {
-                    "about": user.about or "",
-                    "experience": exp_list,
-                    "education": edu_list,
-                    "skills": skill_list
-                },
-              },
-              "emailSignals": {
-                  "jobAlerts": [] 
-              }
-            }
-            
-            # Dump the structured data for injection into the system instruction
-            profile_context_json = json.dumps(user_profile_data, indent=2, ensure_ascii=False)
-
-            # 4. Construct the System Instruction Content
-            system_instruction_content = (
-                "I am a Career Companion AI. I provide personalized advice on job search, CV optimization, interview preparation, and career development.\n\n"
-                "My responses MUST be tailored based on the provided 'USER PROFILE JSON DATA' below. This JSON now includes fetched data from the user's external links under the `externalLinksData` key.\n\n"
-                f"Current Context:\n- Local Date/Time: {datetime.now().isoformat()}\n\n"
-                "**USER PROFILE JSON DATA:**\n"
-                f"```json\n{profile_context_json}\n```\n\n"
-                "**AI BEHAVIOR GUIDELINES:**\n"
-                "1. Speak in a professional, encouraging, and clear tone.\n"
-                "2. **CRUCIALLY, analyze the 'USER PROFILE JSON DATA'**. Use the data in `externalLinksData` and `parsedProfiles.career_companion_internal` to formulate your advice. If you see raw content in `externalLinksData.raw_content`, use your reasoning to summarize that content and integrate it into your advice, stating that you have successfully analyzed their linked profiles.\n"
-                "3. **DATA FRAMING:** When responding to the user, **CONFIRM that you have read their external profile/links**. If the `raw_content` or internal profile data is empty, suggest the user ensure their external profiles are public or complete their internal profile, but frame this as a next step after a successful link check (e.g., 'I successfully checked your LinkedIn link, but the public content was minimal. Can you tell me more about...').\n"
-                "4. Directly address the user's career and job-related queries.\n"
-                "5. Use the provided chat history to maintain context."
-            )
-            
-        else:
-            # Fallback for unauthenticated users
-            system_instruction_content = (
-                "I am a Career Companion AI. The user is not logged in. Provide general, high-level career guidance (e.g., general CV tips, common interview questions, or job search strategies), and politely suggest they log in to receive personalized advice."
-            )
-
-        # 5. Build the final payload
-        generation_config = {
-            "temperature": body.get("config", {}).get("temperature", 0.7),
-            "maxOutputTokens": body.get("config", {}).get("maxOutputTokens", 2048),
+        # Build the structured profile data
+        profile_data = {
+            "name": user.get_full_name() or user.username,
+            "username": user.username,
+            "email": user.email,
+            "headline": user.headline,
+            "about": user.about,
+            "location": user.location,
+            "current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "experiences": [
+                {
+                    "title": exp.title, 
+                    "company": exp.company_name,
+                    "duration": f"{exp.start_date.year} - {exp.end_date.year if exp.end_date else 'Present'}",
+                    "description": exp.description
+                } 
+                for exp in user.experiences.all()
+            ],
+            "education": [
+                {
+                    "degree": edu.degree, 
+                    "institution": edu.institution,
+                    "duration": f"{edu.start_date.year} - {edu.end_date.year if edu.end_date else 'Ongoing'}"
+                } 
+                for edu in user.education.all()
+            ],
+            "skills": [skill.name for skill in user.skills.all()],
+            # New context: Social Connections
+            "social_connections": [
+                {
+                    "platform": conn.platform,
+                    "url": conn.url
+                }
+                for conn in user.social_connection.all()
+            ]
         }
         
-        # CRITICAL: systemInstruction must be a Content object with a 'parts' key
+        # Format the profile data into a string for the system instruction
+        profile_context = json.dumps(profile_data, indent=2)
+
+        # 4. System Instruction: The AI's role and context
+        system_instruction_content = (
+            "You are an expert Career Companion AI. Your primary goal is to assist the user with job searching, CV/resume optimization, interview preparation, and career guidance. You have access to the user's complete profile data. Use this data to provide highly personalized and relevant advice, suggestions, and answers. Do not reveal the raw JSON structure of the profile data. Only use the information for context. "
+            f"USER'S CURRENT PROFILE DATA:\n{profile_context}"
+        )
+        
+        # 5. Construct the Request Payload
+        
+        # Convert client history to model's 'contents' format
+        # Filter out empty or None text values before creating the part object
+        contents = []
+        for item in history:
+            text = item.get('text')
+            role = item.get('role', 'user') # Default to user if role is missing/bad
+            if text:
+                contents.append({
+                    "role": role if role in ['user', 'model'] else 'user', 
+                    "parts": [{"text": text}]
+                })
+
+        # Add the current user prompt
+        contents.append({"role": "user", "parts": [{"text": user_input}]})
+
+        # Set up generation config (temperature for less factual, more creative/helpful responses)
+        generation_config = {
+            "temperature": 0.5,
+            "maxOutputTokens": 2048,
+        }
+        
+        # The main payload structure:
         payload = {
+            # contents list already contains the history and the new user prompt
             "contents": contents,
-            "systemInstruction": {
-                "parts": [
-                    {"text": system_instruction_content}
-                ]
-            },
+            # PASS THE CORRECTLY STRUCTURED CONTENT OBJECT
+            "systemInstruction": system_instruction_content, 
             "generationConfig": generation_config,
         }
+
+        # Debug log: Log the final outbound payload before sending
+        # print("Outbound Gemini payload:", json.dumps(payload, indent=2))
 
         # 6. Make the API Request
         resp = requests.post(url, json=payload)
@@ -367,6 +281,82 @@ def gemini_proxy(request):
 
 @login_required
 def ai_quiz_generator(request):
-    """Placeholder view for the AI Quiz Generator page."""
-    context = {'user': request.user}
-    return render(request, 'users/profile_ai.html', context)
+    """Placeholder view for the AI Quiz Generator page (maps to 'profile_ai' in urls.py)."""
+    # This view simply renders the profile_ai.html template
+    return render(request, 'users/profile_ai.html', {'title': 'AI Companion'})
+
+
+# =============================================================================
+# TEXT-TO-SPEECH PROXY
+# =============================================================================
+
+@csrf_exempt
+def tts_proxy(request):
+    """
+    Proxies a text-to-speech request to a third-party API (e.g., Google Text-to-Speech).
+    This is an API-key protected endpoint.
+    """
+    if request.method != 'POST':
+        return JsonResponse({"error": "Only POST requests are allowed."}, status=405)
+
+    # 1. Check for API Key
+    api_key = os.environ.get("TTS_API_KEY") # Replace with your actual TTS API key environment variable name
+    if not api_key:
+        return JsonResponse({"error": "Server configuration error: TTS API key missing."}, status=500)
+
+    # 2. Extract Data from Request
+    try:
+        data = json.loads(request.body)
+        text_to_speak = data.get("text", "")
+        # Optional: voice_name = data.get("voice", "en-US-Wavenet-D")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON format in request body."}, status=400)
+
+    if not text_to_speak:
+        return JsonResponse({"error": "Text to speak cannot be empty."}, status=400)
+
+    # 3. Google Cloud Text-to-Speech API Configuration (Example)
+    # The actual URL might vary. This is a generic example.
+    tts_url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}" 
+    
+    tts_payload = {
+        "input": {
+            "text": text_to_speak
+        },
+        "voice": {
+            "languageCode": "en-US",
+            "name": "en-US-Standard-C" # A standard male voice
+        },
+        "audioConfig": {
+            "audioEncoding": "MP3"
+        }
+    }
+
+    # 4. Make the API Request
+    try:
+        resp = requests.post(tts_url, json=tts_payload)
+        
+        # 5. Error Handling
+        if resp.status_code != 200:
+            print("TTS API Error Details:", resp.text)
+            return JsonResponse(
+                {"error": f"TTS API error {resp.status_code}", "details": resp.text},
+                status=resp.status_code,
+            )
+            
+        # 6. Success Response Handling
+        tts_data = resp.json()
+        audio_content = tts_data.get("audioContent") # Base64 encoded audio
+
+        if not audio_content:
+             return JsonResponse({"error": "TTS API returned no audio content."}, status=500)
+
+        # Return the Base64 audio content directly to the client
+        return JsonResponse({"audio_content": audio_content})
+
+    except requests.exceptions.RequestException as e:
+        print("Network/Connection Error in tts_proxy:", str(e))
+        return JsonResponse({"error": "Network or external API connection error."}, status=503)
+    except Exception as e:
+        print("Unexpected Error in tts_proxy:", str(e))
+        return JsonResponse({"error": str(e)}, status=500)
