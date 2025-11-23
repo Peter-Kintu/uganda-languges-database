@@ -294,11 +294,10 @@ def gemini_proxy(request):
         )
         
         # 5. Build the API Payload
-        # The first item in the contents array for the API must be the system instruction
-        # to ensure it's treated as model-specific guidance.
+        # **FIX:** Renamed 'config' to 'generationConfig' as required by the Gemini API.
         payload = {
             "contents": _clean_history(contents),
-            "config": {
+            "generationConfig": { 
                 "systemInstruction": system_instruction_content,
                 "temperature": generation_config["temperature"],
                 "maxOutputTokens": generation_config["maxOutputTokens"],
