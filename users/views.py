@@ -132,14 +132,14 @@ def _get_user_profile_data(user):
     Gathers all relevant user profile data into a single,
     JSON-serializable dictionary for the AI.
     
-    FIX: Use getattr for safe access to optional CustomUser fields.
+    NOTE: Using getattr for safe access to optional CustomUser fields.
     """
     profile_data = {
         "username": user.username,
         # Use username if full_name is empty
         "full_name": user.get_full_name() or user.username, 
         "email": user.email,
-        # FIX: Safely access attributes that might be missing on the CustomUser model
+        # Safely access attributes that might be missing on the CustomUser model
         "location": getattr(user, 'location', 'Not provided'),
         "bio": getattr(user, 'bio', 'Not provided'),
         "headline": getattr(user, 'headline', 'Not provided'),
@@ -175,9 +175,7 @@ def _get_user_profile_data(user):
 def _fetch_external_content(social_connections):
     """
     Attempts to fetch content from the user's social connections for AI context.
-    NOTE: This is a PLACEHOLDER for a real-world implementation that would
-    use an authenticated, rate-limited, and safe external API service.
-    For this project, we'll simulate the successful fetch.
+    NOTE: This is a PLACEHOLDER for a real-world implementation.
     """
     external_data = []
 
@@ -199,7 +197,7 @@ def _fetch_external_content(social_connections):
 def _clean_history(messages):
     """
     Clean the chat history format for the Gemini API.
-    1. Standardizes role: 'Ai' -> 'model', 'user' remains 'user'
+    1. Standardizes role: 'Ai' -> 'model', 'user' remains 'user'.
     2. Standardizes content: 'text' property is moved into 'parts' array.
     """
     cleaned = []
@@ -209,9 +207,9 @@ def _clean_history(messages):
         if role == "ai":
             role = "model"
         
-        # Skip messages without a role or text for safety
+        # Skip messages without a role or text or if role is neither user nor model (e.g., system)
         text_content = msg.get("text")
-        if not role or not text_content:
+        if not role or not text_content or role not in ['user', 'model']:
             continue
         
         # Structure the content for the API: {"role": ..., "parts": [{"text": ...}]}
@@ -229,7 +227,6 @@ def _clean_history(messages):
 def tts_proxy(request):
     """ 
     Placeholder for Text-to-Speech proxy view. 
-    Actual implementation would use a TTS API.
     """
     return JsonResponse({"error": "TTS proxy not fully implemented."}, status=501)
 
@@ -247,7 +244,6 @@ def gemini_proxy(request):
         # 1. Parse Request Body
         data = json.loads(request.body)
         contents = data.get('contents', [])
-        # The frontend sends 'config', we use it to populate 'generation_config'
         config = data.get('config', {}) 
         
         # 2. Setup API Key and Model
@@ -255,9 +251,9 @@ def gemini_proxy(request):
         if not api_key:
             return JsonResponse({"error": "GEMINI_API_KEY environment variable not set."}, status=500)
         
-        # Use the most capable model for complex reasoning and context
         model_name = "gemini-2.5-flash" 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        # Using the v1 endpoint for broad compatibility
+        url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={api_key}"
 
         # 3. Gather Context
         user = request.user
@@ -269,7 +265,6 @@ def gemini_proxy(request):
         profile_context_json = json.dumps(profile_data, indent=2)
         external_data_json = json.dumps(external_data, indent=2)
 
-        # Define the generation config (defaults if not provided in POST)
         generation_config_params = {
             "temperature": config.get("temperature", 0.7),
             "maxOutputTokens": config.get("maxOutputTokens", 2048),
@@ -295,17 +290,17 @@ def gemini_proxy(request):
         )
         
         # 5. Build the API Payload
-        # FIX: System Instruction must be the first message in the 'contents' array with role 'system'.
-        system_message = {
-            "role": "system",
+        # FIX: System Instruction must be the first message in the 'contents' array with role 'user'.
+        system_message_as_user = {
+            "role": "user",
             "parts": [
                 {"text": system_instruction_content}
             ]
         }
         
         payload = {
-            # FIX: Prepend the system message to the cleaned chat history
-            "contents": [system_message] + _clean_history(contents), 
+            # Prepend the system message (as user role) to the cleaned chat history
+            "contents": [system_message_as_user] + _clean_history(contents), 
             "generationConfig": {                         
                 "temperature": generation_config_params["temperature"],
                 "maxOutputTokens": generation_config_params["maxOutputTokens"],
