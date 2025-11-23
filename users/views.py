@@ -13,7 +13,7 @@ from datetime import datetime
 
 # Import the Custom Forms and Models from our new app
 from .forms import CustomUserCreationForm, ProfileEditForm
-from .models import CustomUser, Experience, Education, Skill # Imported for clarity, but generally accessed via request.user
+from .models import CustomUser, Experience, Education, Skill
 
 
 # ==============================================================================
@@ -83,9 +83,7 @@ def user_logout(request):
 @login_required
 def user_profile(request):
     """Displays the user's full profile."""
-    # The user object is available via request.user thanks to @login_required
     
-    # FIX: Use explicit Model Manager lookup instead of reverse manager
     context = {
         'user': request.user,
         'experiences': Experience.objects.filter(user=request.user).order_by('-start_date'),
@@ -111,7 +109,6 @@ def profile_edit(request):
         form = ProfileEditForm(instance=request.user)
 
     context = {'form': form}
-    # You will need to create a simple 'profile_edit.html' template
     return render(request, 'users/profile_edit.html', context)
 
 # --- Utility function to clean history format ---
@@ -133,8 +130,7 @@ def clean_contents(messages):
         if not role or not text_content:
             continue
             
-        # Structure the content for the API
-        # This correctly creates the {"role": ..., "parts": [{"text": ...}]} structure
+        # Structure the content for the API: {"role": ..., "parts": [{"text": ...}]}
         cleaned.append({
             "role": role,
             "parts": [{"text": text_content}]
@@ -156,20 +152,11 @@ def tts_proxy(request):
             # Assuming the request body contains JSON with 'text' and 'voice'
             body = json.loads(request.body.decode('utf-8'))
             text_to_speak = body.get('text', '')
-            # voice_config = body.get('voice', 'en-US-Standard-C') # Example voice parameter
             
-            # TODO: Integrate with a real TTS API (e.g., Google Cloud TTS, Azure TTS)
-            # For now, just a success response or error if text is missing
             if not text_to_speak:
                 return JsonResponse({"error": "No text provided for TTS."}, status=400)
             
-            # In a real implementation, this would call the external TTS API and stream back the audio
-            # response. For a simple placeholder, we just log and return a 'successful' message.
-            # print(f"TTS Request received for text: {text_to_speak[:50]}...")
-
             # --- Mock Response (replace with real API call) ---
-            # response = requests.post(REAL_TTS_API_ENDPOINT, json={...})
-            # return HttpResponse(response.content, content_type='audio/mpeg')
             
             return JsonResponse({"message": "TTS processing started (mock response)."}, status=200)
 
@@ -203,32 +190,27 @@ def gemini_proxy(request):
         # 2. Get User Profile Information for System Instruction
         user = request.user
         
-        # Check if user is authenticated (should be guaranteed by @login_required but safe check)
         if user.is_authenticated:
             # Format Experience
-            # FIX: Use explicit Model Manager lookup instead of reverse manager
             experiences = Experience.objects.filter(user=request.user).order_by('-start_date')
             exp_list = []
             for e in experiences:
-                # Assuming end_date can be None or an empty string, and checking for it.
                 end_year = e.end_date.year if e.end_date else 'Present'
+                # NOTE: Changed from 'title' to 'job_title' as per model consistency
                 exp_list.append(
-                    f"- {e.job_title} at {e.company}, {e.start_date.year}-{end_year}. Description: {e.description or 'N/A'}"
+                    f"- {e.job_title} at {e.company_name}, {e.start_date.year}-{end_year}. Description: {e.description or 'N/A'}"
                 )
 
             # Format Education
-            # FIX: Use explicit Model Manager lookup instead of reverse manager
             educations = Education.objects.filter(user=request.user).order_by('-start_date')
             edu_list = []
             for e in educations:
-                # Assuming end_date can be None or an empty string, and checking for it.
                 end_year = e.end_date.year if e.end_date else 'Ongoing'
                 edu_list.append(
                     f"- {e.degree} in {e.field_of_study} from {e.institution}, {e.start_date.year}-{end_year}"
                 )
 
             # Format Skills
-            # FIX: Use explicit Model Manager lookup instead of reverse manager
             skills = Skill.objects.filter(user=request.user)
             skill_list = [s.name for s in skills]
             
@@ -256,11 +238,11 @@ def gemini_proxy(request):
         body = json.loads(request.body.decode("utf-8"))
         raw_contents = body.get("contents", [])
         
-        # Clean the history format for the API (ensures {"role":..., "parts": [{"text":...}]} format)
+        # Clean the history format for the API
         contents = clean_contents(raw_contents)
 
         # 4. Construct the system instruction content
-        # FIX: Changed datetime formatting to isoformat and used explicit concatenation
+        # Using isoformat for a safe, portable timestamp (as suggested)
         system_instruction_content = (
             "I am a Career Companion AI. I provide personalized advice on job search, CV optimization, interview preparation, and career development.\n\n"
             "My responses MUST be tailored based on the provided 'User Profile' data.\n\n"
@@ -280,7 +262,7 @@ def gemini_proxy(request):
             "maxOutputTokens": body.get("config", {}).get("maxOutputTokens", 2048),
         }
         
-        # CRITICAL FIX: systemInstruction must be a Content object, not a raw string
+        # CRITICAL FIX: The systemInstruction must be a Content object
         payload = {
             "contents": contents,
             "systemInstruction": {
@@ -322,6 +304,5 @@ def gemini_proxy(request):
 @login_required
 def ai_quiz_generator(request):
     """Placeholder view for the AI Quiz Generator page."""
-    # This view simply renders the profile_ai.html template
     context = {'user': request.user}
     return render(request, 'users/profile_ai.html', context)
