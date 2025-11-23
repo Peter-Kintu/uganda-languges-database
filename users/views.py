@@ -137,9 +137,10 @@ def _get_user_profile_data(user):
         "username": user.username,
         "full_name": user.get_full_name(),
         "email": user.email,
-        "location": user.location,
-        "bio": user.bio,
-        "headline": user.headline,
+        # Safely access attributes that might be missing on the CustomUser model
+        "location": getattr(user, 'location', None), 
+        "bio": getattr(user, 'bio', None), 
+        "headline": getattr(user, 'headline', None),
         "profile_image_url": user.profile_image.url if user.profile_image else None,
         "experiences": [
             {
