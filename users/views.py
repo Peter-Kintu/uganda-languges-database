@@ -232,7 +232,7 @@ def tts_proxy(request):
 
 
 @csrf_exempt
-# FIX: Removed @login_required to prevent 403 Forbidden errors when session cookies fail on platform proxies like Koyeb.
+@login_required
 def gemini_proxy(request):
     """ 
     Proxies chat requests to the Gemini API, now including external profile data.
@@ -257,23 +257,14 @@ def gemini_proxy(request):
 
         # 3. Gather Context
         user = request.user
-        
-        # Check authentication status after removing @login_required
-        if user.is_authenticated:
-            profile_data = _get_user_profile_data(user)
-            social_connections = SocialConnection.objects.filter(user=user)
-            external_data = _fetch_external_content(social_connections)
-        else:
-            # Handle unauthenticated user gracefully if the session fails
-            profile_data = {"status": "User not authenticated. Using minimal context."}
-            social_connections = []
-            external_data = []
+        profile_data = _get_user_profile_data(user)
+        social_connections = SocialConnection.objects.filter(user=user)
+        external_data = _fetch_external_content(social_connections)
 
         # 4. Construct System Instruction String
         profile_context_json = json.dumps(profile_data, indent=2)
         external_data_json = json.dumps(external_data, indent=2)
 
-        # Define the generation config (defaults if not provided in POST)
         generation_config_params = {
             "temperature": config.get("temperature", 0.7),
             "maxOutputTokens": config.get("maxOutputTokens", 2048),
@@ -299,7 +290,7 @@ def gemini_proxy(request):
         )
         
         # 5. Build the API Payload
-        # Correct Payload: System Instruction must be the first message in the 'contents' array with role 'user'.
+        # FIX: System Instruction must be the first message in the 'contents' array with role 'user'.
         system_message_as_user = {
             "role": "user",
             "parts": [
