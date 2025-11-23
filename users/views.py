@@ -12,7 +12,6 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 
 # Import the Custom Forms and Models from our new app
-# NOTE: SocialConnection is added here for the new logic
 from .forms import CustomUserCreationForm, ProfileEditForm
 from .models import CustomUser, Experience, Education, Skill, SocialConnection
 
@@ -273,7 +272,7 @@ def gemini_proxy(request):
                 "**AI BEHAVIOR GUIDELINES:**\n"
                 "1. Speak in a professional, encouraging, and clear tone.\n"
                 "2. **CRUCIALLY, analyze the 'USER PROFILE JSON DATA'** (especially `parsedProfiles.career_companion_internal`) to formulate your advice. If the user asks for CV tips, use their existing experience/skills. If they ask for interview prep, tailor the questions to their job titles.\n"
-                "3. **LINK READING CAPABILITY:** If the user mentions an external link, check `socialLinks`. Acknowledge that the link is noted, but politely inform them that **live fetching of external profile data via API is the next planned feature upgrade** and currently not active. Ask them to ensure their internal profile is complete.\n"
+                "3. **EXTERNAL DATA LINKS:** The `socialLinks` field is for record-keeping. The AI should focus solely on the rich data provided under `parsedProfiles.career_companion_internal` and **ignore the content of any external links**. Do not mention the lack of API fetching; simply use the internal profile to provide advice.\n"
                 "4. Directly address the user's career and job-related queries.\n"
                 "5. Use the provided chat history to maintain context."
             )
