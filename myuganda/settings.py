@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     'users',
     'jazzmin',
     'django.contrib.admin',
+    
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
