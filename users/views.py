@@ -172,8 +172,10 @@ def tts_proxy(request):
 @login_required
 def gemini_proxy(request):
     """
-    Proxies chat requests to the Gemini API, injecting the user's current profile
-    and system context for personalized career advice.
+    Proxies chat requests to the Gemini API.
+    CRITICAL UPDATE: Now constructs a structured JSON payload of the user's
+    internal profile data and injects it into the system instruction for the AI,
+    in preparation for full OAuth-based profile reading.
     """
     if request.method != 'POST':
         return JsonResponse({"error": "Only POST requests are allowed."}, status=405)
@@ -187,74 +189,95 @@ def gemini_proxy(request):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
 
     try:
-        # 2. Get User Profile Information for System Instruction
-        user = request.user
-        
-        if user.is_authenticated:
-            # Format Experience
-            experiences = Experience.objects.filter(user=request.user).order_by('-start_date')
-            exp_list = []
-            for e in experiences:
-                end_year = e.end_date.year if e.end_date else 'Present'
-                # NOTE: Changed from 'title' to 'job_title' as per model consistency
-                exp_list.append(
-                    f"- {e.job_title} at {e.company_name}, {e.start_date.year}-{end_year}. Description: {e.description or 'N/A'}"
-                )
-
-            # Format Education
-            educations = Education.objects.filter(user=request.user).order_by('-start_date')
-            edu_list = []
-            for e in educations:
-                end_year = e.end_date.year if e.end_date else 'Ongoing'
-                edu_list.append(
-                    f"- {e.degree} in {e.field_of_study} from {e.institution}, {e.start_date.year}-{end_year}"
-                )
-
-            # Format Skills
-            skills = Skill.objects.filter(user=request.user)
-            skill_list = [s.name for s in skills]
-            
-            # Combine all profile data into a dedicated string
-            profile_context = f"""
-- Full Name: {user.get_full_name() or user.username}
-- Headline: {user.headline or 'Not provided'}
-- Bio (Summary): {user.about or 'Not provided'}
-- Location: {user.location or 'Not provided'}
-
-**Experience:**
-{chr(10).join(exp_list) or '- No experience listed.'}
-
-**Education:**
-{chr(10).join(edu_list) or '- No education listed.'}
-
-**Skills:**
-{', '.join(skill_list) or '- No skills added.'}
-"""
-        else:
-            profile_context = "[User is not logged in. Provide general career guidance.]"
-
-
-        # 3. Prepare the contents (history + new message)
+        # 2. Prepare the contents (history + new message)
         body = json.loads(request.body.decode("utf-8"))
         raw_contents = body.get("contents", [])
         
         # Clean the history format for the API
         contents = clean_contents(raw_contents)
 
-        # 4. Construct the system instruction content
-        # Using isoformat for a safe, portable timestamp (as suggested)
-        system_instruction_content = (
-            "I am a Career Companion AI. I provide personalized advice on job search, CV optimization, interview preparation, and career development.\n\n"
-            "My responses MUST be tailored based on the provided 'User Profile' data.\n\n"
-            f"Current Context:\n- Local Date/Time: {datetime.now().isoformat()}\n- User Profile: \n{profile_context.strip()}\n\n"
-            "You are expected to:\n"
-            "1. Speak in a professional, encouraging, and clear tone.\n"
-            "2. **Crucially, integrate the 'User Profile' data into your advice.** For example, if the user asks for CV tips, use their current experience/skills. If they ask for interview prep, use their job title/experience to tailor the questions.\n"
-            "3. Directly address the user's career and job-related queries.\n"
-            "4. Use the provided chat history to maintain context.\n"
-            "5. If the user mentions their location, acknowledge it to provide geographically relevant advice."
-        )
+        # 3. Get User Profile Information and Construct JSON structure
+        user = request.user
+        
+        if user.is_authenticated:
+            # --- Serialize internal Django models into a list of dicts ---
+            
+            # Experience Data
+            experiences = Experience.objects.filter(user=user).order_by('-start_date')
+            exp_list = [{
+                # NOTE: Changed from 'title' to 'job_title' as per model consistency
+                "job_title": e.job_title,
+                "company_name": e.company_name,
+                "start_date": e.start_date.isoformat(),
+                "end_date": e.end_date.isoformat() if e.end_date else "Present",
+                "description": e.description or ""
+            } for e in experiences]
 
+            # Education Data
+            educations = Education.objects.filter(user=user).order_by('-start_date')
+            # NOTE: Assuming 'field_of_study' exists on the Education model based on best practice
+            edu_list = [{
+                "institution": e.institution,
+                "degree": e.degree,
+                "field_of_study": getattr(e, 'field_of_study', 'N/A'),
+                "start_date": e.start_date.isoformat(),
+                "end_date": e.end_date.isoformat() if e.end_date else "Ongoing"
+            } for e in educations]
+            
+            # Skills
+            skills = Skill.objects.filter(user=user)
+            skill_list = [s.name for s in skills]
+            
+            # --- Construct the Unified User Profile JSON (Internal Only) ---
+            user_profile_data = {
+              "fullName": user.get_full_name() or user.username,
+              "headline": user.headline or "Software Developer",
+              "location": user.location or "Not specified",
+              "socialLinks": [
+                  # Placeholder for future linked platforms
+                  # {"type": "linkedin", "url": "https://linkedin.com/in/..."} 
+              ],
+              "parsedProfiles": {
+                # Current internal data is stored here, mimicking the external data structure
+                "career_companion_internal": {
+                    "about": user.about or "",
+                    "experience": exp_list,
+                    "education": edu_list,
+                    "skills": skill_list
+                },
+                # Placeholders for future OAuth/API integrations
+                "linkedin": None, 
+                "github": None
+              },
+              "emailSignals": {
+                  "jobAlerts": [] # Placeholder
+              }
+            }
+            
+            # Dump the structured data for injection into the system instruction
+            # Setting ensure_ascii=False ensures proper handling of non-ASCII characters if present
+            profile_context_json = json.dumps(user_profile_data, indent=2, ensure_ascii=False)
+
+            # 4. Construct the System Instruction Content
+            system_instruction_content = (
+                "I am a Career Companion AI. I provide personalized advice on job search, CV optimization, interview preparation, and career development.\n\n"
+                "My responses MUST be tailored based on the provided 'USER PROFILE JSON DATA' below.\n\n"
+                f"Current Context:\n- Local Date/Time: {datetime.now().isoformat()}\n\n"
+                "**USER PROFILE JSON DATA:**\n"
+                f"```json\n{profile_context_json}\n```\n\n"
+                "**AI BEHAVIOR GUIDELINES:**\n"
+                "1. Speak in a professional, encouraging, and clear tone.\n"
+                "2. **CRUCIALLY, analyze the 'USER PROFILE JSON DATA'** (especially `parsedProfiles.career_companion_internal`) to formulate your advice. If the user asks for CV tips, use their existing experience/skills. If they ask for interview prep, tailor the questions to their job titles.\n"
+                "3. Directly address the user's career and job-related queries.\n"
+                "4. Use the provided chat history to maintain context.\n"
+                "5. If the user mentions their location, acknowledge it to provide geographically relevant advice."
+            )
+            
+        else:
+            # Fallback for unauthenticated users
+            system_instruction_content = (
+                "I am a Career Companion AI. The user is not logged in. Provide general, high-level career guidance (e.g., general CV tips, common interview questions, or job search strategies), and politely suggest they log in to receive personalized advice."
+            )
 
         # 5. Build the final payload
         generation_config = {
@@ -262,7 +285,7 @@ def gemini_proxy(request):
             "maxOutputTokens": body.get("config", {}).get("maxOutputTokens", 2048),
         }
         
-        # CRITICAL FIX: The systemInstruction must be a Content object
+        # CRITICAL: systemInstruction must be a Content object with a 'parts' key
         payload = {
             "contents": contents,
             "systemInstruction": {
