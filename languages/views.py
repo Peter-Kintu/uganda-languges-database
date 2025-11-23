@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib.auth import  logout  # Make sure 'logout' is imported
 from django.contrib import messages
-from users.models import UserProfile # ASSUMPTION: Importing UserProfile for skills/location/etc.
+# The import 'from users.models import Profile' has been removed to fix the ImportError.
 
 # Updated Imports: PhraseContributionForm -> JobPostForm, 
 # PhraseContribution, LANGUAGES, INTENTS -> JobPost, JOB_CATEGORIES, JOB_TYPES
@@ -199,14 +199,22 @@ def browse_job_listings(request):
     recommended_jobs = JobPost.objects.none() # Initialize an empty queryset
 
     if request.user.is_authenticated:
-        # Assuming the user profile is linked to the User model and has a 'skills' field (UserProfile model)
         try:
-            user_profile = request.user.userprofile # Access the related profile object
-            user_skills_raw = user_profile.skills.split(',') if user_profile.skills else []
-            # Clean and lower-case the skills for matching
-            user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
-        except AttributeError:
-            # Handle case where user_profile might not exist or the 'skills' field is missing/different
+            # We try to access the related profile object using the most common related names:
+            user_profile = getattr(request.user, 'userprofile', None)
+            if user_profile is None:
+                user_profile = getattr(request.user, 'profile', None)
+            
+            # If a profile object was successfully retrieved
+            if user_profile and hasattr(user_profile, 'skills'):
+                user_skills_raw = user_profile.skills.split(',') if user_profile.skills else []
+                # Clean and lower-case the skills for matching
+                user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
+            else:
+                user_skills = []
+                
+        except Exception:
+            # Catch all exceptions during profile access to prevent a crash
             user_skills = []
 
         if user_skills:
@@ -214,7 +222,6 @@ def browse_job_listings(request):
             skill_match_query = Q()
             for skill in user_skills:
                 # Use Q(required_skills__icontains=skill) for case-insensitive partial match
-                # NOTE: This assumes required_skills is a CharField/TextField containing a list of skills.
                 skill_match_query |= Q(required_skills__icontains=skill)
 
             # Separate recommended jobs from the filtered set
@@ -224,8 +231,6 @@ def browse_job_listings(request):
             other_jobs = job_posts_filtered.exclude(pk__in=recommended_jobs.values_list('pk', flat=True))
             
             # Combine the two QuerySets: Recommended first, then others, maintaining order by timestamp
-            # NOTE: list() conversion forces execution and prevents simple QuerySet union, which is necessary
-            # for the paginator to work correctly when ordering is maintained across two groups.
             final_job_list = list(recommended_jobs.order_by('-timestamp')) + list(other_jobs.order_by('-timestamp'))
             
         else:
@@ -246,11 +251,15 @@ def browse_job_listings(request):
     except EmptyPage:
         posts_on_page = paginator.page(paginator.num_pages)
 
+    # FIX: posts_on_page.object_list is a Python list, so we must manually extract pks
+    posts_pk_list = [job.pk for job in posts_on_page.object_list]
+
     context = {
         'job_posts': posts_on_page, # Paginated list containing recommended and other jobs
         # Pass these for separate display in the template
         'recommended_jobs_count': recommended_jobs.count(), 
-        'is_recommended_page': True if recommended_jobs.filter(pk__in=posts_on_page.object_list.values_list('pk', flat=True)).exists() and posts_on_page.number == 1 else False,
+        # Corrected line 258: Use list comprehension to get PKs instead of values_list()
+        'is_recommended_page': True if recommended_jobs.filter(pk__in=posts_pk_list).exists() and posts_on_page.number == 1 else False,
         
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
