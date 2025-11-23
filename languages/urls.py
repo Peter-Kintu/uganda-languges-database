@@ -3,9 +3,8 @@
 from django.urls import path
 from . import views
 from .views import google_verification
-
-
 from .views import robots_txt
+from .views import featured_recruiter_view # Corrected Import: Replaced the non-existent view with the new, correct name.
 
 
 # Set the app name for namespacing. This is a best practice
@@ -13,27 +12,32 @@ from .views import robots_txt
 app_name = 'languages'
 
 urlpatterns = [
+    
     path('googlec0826a61eabee54e.html', google_verification),
     path("robots.txt", robots_txt),
+    path('user_profile/', views.user_profile, name='user_profile'),
+    
     # The URL for the root of your application, pointing to the browse view.
-    path('', views.browse_contributions, name='home'),
+    path('', views.browse_job_listings, name='home'), # Updated view name
     
-    # URL for the contribution page. This is where users can add new phrases.
-    path('contribute/', views.contribute, name='contribute'),
+    # URL for the job post page. (Was: 'contribute/')
+    path('post-job/', views.post_job, name='post_job'), # Updated path and name
     
-    # This URL is for browsing the contributions.
-    path('browse/', views.browse_contributions, name='browse_contributions'),
+    # This URL is for browsing the job listings. (Was: 'browse/')
+    path('jobs/', views.browse_job_listings, name='browse_job_listings'), # Updated path and name
     
-    # URL for the sponsorship page.
-    path('sponsor/', views.sponsor, name='sponsor'),
+    # URL for the recruiters page. (Was: 'sponsor/')
+    path('recruiters/', views.recruiters_page, name='recruiters_page'), # Updated path and name
 
-    # This URL handles 'liking' a specific contribution.
-    # It expects an integer primary key (pk) to identify the item.
-    path('like/<int:pk>/', views.like_contribution, name='like_contribution'),
+    # URL for the featured recruiter page (Best Contributor).
+    # This was the view causing the import error, now using the corrected view name.
+    path('featured/', featured_recruiter_view, name='featured_recruiter'),
 
-    # This URL handles exporting contributions to a JSON file.
-    path('export_json/', views.export_contributions_json, name='export_json'),
     
-    # New URL to display the best contributor of the month.
-    path('best-contributor/', views.best_contributor_view, name='best_contributor'),
+    # This URL handles 'upvoting' a specific job post. (Was: 'like/<int:pk>/')
+    path('upvote/<int:pk>/', views.upvote_job_application, name='upvote_job_application'), # Updated path and name
+
+    # This URL handles exporting contributions to a JSON file. (No name change for admin simplicity)
+    path('logout/', views.user_logout, name='user_logout'),    
+    path('export_contributions_json/', views.export_contributions_json, name='export_contributions_json'),
 ]

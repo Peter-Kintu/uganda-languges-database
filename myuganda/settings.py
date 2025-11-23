@@ -90,6 +90,7 @@ CSRF_TRUSTED_ORIGINS.extend([
 
 INSTALLED_APPS = [
     # Jazzmin Admin Interface
+    'users',
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -186,6 +187,19 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# --- Custom Authentication Configuration (Fix for 404 Redirect) ---
+# 1. Use the custom user model defined in the 'users' app
+AUTH_USER_MODEL = 'users.CustomUser' 
+
+# 2. Tell Django the name of the URL pattern for the login page
+# This resolves the /accounts/login/ 404 error by pointing to the 'user_login' URL pattern.
+LOGIN_URL = 'users:user_login' 
+
+# 3. Where to redirect after a successful login (optional, but recommended)
+LOGIN_REDIRECT_URL = 'users:user_profile' 
+# ------------------------------------------------------------------
+
 
 
 # Internationalization

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Your Profile - {{ user.username }}{% endblock %}
+
+{% block content %}
+<main class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+    <header class="text-center mb-10">
+        <h1 class="text-5xl font-extrabold text-indigo-400 mb-2 tracking-tight drop-shadow-lg">
+            {{ user.username }}'s Activity Dashboard 👤
+        </h1>
+        <p class="text-xl text-gray-300">
+            Welcome back! Here's a summary of your contributions.
+        </p>
+        {% if user.email %}
+            <p class="text-md text-gray-500 mt-2">Email: {{ user.email }}</p>
+        {% endif %}
+    </header>
+
+    <div class="space-y-12">
+        
+        <section class="bg-gray-800 p-6 sm:p-10 rounded-3xl shadow-2xl border border-indigo-700/50">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+                <h2 class="text-3xl font-bold text-white">
+                    Recruiting Activity (Job Posts) 💼
+                </h2>
+                <span class="text-2xl font-extrabold text-indigo-400">{{ job_posts|length }}</span>
+            </div>
+
+            {% if job_posts %}
+                <div class="space-y-4">
+                    {% for post in job_posts|slice:":5" %}
+                    <div class="p-4 bg-gray-700 rounded-xl shadow-md transition duration-300 hover:bg-gray-600">
+                        <h3 class="text-xl font-semibold text-indigo-300">{{ post.post_content|truncatechars:100 }}</h3>
+                        <p class="text-sm text-gray-400 mt-1">
+                            **{{ post.job_category }}** | {{ post.job_type }} | Posted {{ post.timestamp|timesince }} ago
+                        </p>
+                        <p class="text-sm text-green-400 mt-1">
+                            Upvotes: {{ post.upvotes }}
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if job_posts|length > 5 %}
+                <div class="mt-6 text-center">
+                    <a href="{% url 'languages:browse_job_listings' %}?q={{ user.username }}" class="text-indigo-400 hover:text-indigo-300 font-semibold transition duration-150">
+                        View All {{ job_posts|length }} Job Posts &rarr;
+                    </a>
+                </div>
+                {% endif %}
+            {% else %}
+                <p class="text-gray-400 text-lg p-4 bg-gray-700/50 rounded-lg">
+                    You haven't posted any jobs yet. <a href="{% url 'languages:post_job' %}" class="text-indigo-400 hover:underline font-medium">Post your first job here!</a>
+                </p>
+            {% endif %}
+        </section>
+
+        <section class="bg-gray-800 p-6 sm:p-10 rounded-3xl shadow-2xl border border-green-700/50">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+                <h2 class="text-3xl font-bold text-white">
+                    Market Activity (Products Listed) 🛍️
+                </h2>
+                <span class="text-2xl font-extrabold text-green-400">{{ products_listed|length }}</span>
+            </div>
+
+            {% if products_listed %}
+                <div class="space-y-4">
+                    {% for product in products_listed|slice:":5" %}
+                    <div class="p-4 bg-gray-700 rounded-xl shadow-md transition duration-300 hover:bg-gray-600">
+                        <h3 class="text-xl font-semibold text-green-300">
+                            <a href="{% url 'eshop:product_detail' product.slug %}" class="hover:underline">
+                                {{ product.name }}
+                            </a>
+                        </h3>
+                        <p class="text-sm text-gray-400 mt-1">
+                            Price: UGX {{ product.price|floatformat:0|intcomma }} (Negotiable: {{ product.is_negotiable|yesno:"Yes,No" }})
+                        </p>
+                        <p class="text-sm text-gray-400 mt-1">
+                            Tag: {{ product.language_tag }} | Listed: {{ product.timestamp|timesince }} ago
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if products_listed|length > 5 %}
+                <div class="mt-6 text-center">
+                    <a href="{% url 'eshop:product_list' %}?vendor={{ user.username }}" class="text-green-400 hover:text-green-300 font-semibold transition duration-150">
+                        View All {{ products_listed|length }} Products Listed &rarr;
+                    </a>
+                </div>
+                {% endif %}
+            {% else %}
+                <p class="text-gray-400 text-lg p-4 bg-gray-700/50 rounded-lg">
+                    You have no products listed in the market. <a href="{% url 'eshop:add_product' %}" class="text-green-400 hover:underline font-medium">Add your first product now!</a>
+                </p>
+            {% endif %}
+        </section>
+
+        <section class="bg-gray-800 p-6 sm:p-10 rounded-3xl shadow-2xl border border-yellow-700/50">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+                <h2 class="text-3xl font-bold text-white">
+                    Liking / Upvoting Activity ❤️
+                </h2>
+            </div>
+            <p class="text-yellow-400 text-lg p-4 bg-gray-700/50 rounded-lg">
+                **Note:** We currently track the total number of upvotes on each job post, but we do not record *which* specific user cast a vote. Therefore, we cannot display a list of jobs you have personally liked here.
+            </p>
+        </section>
+
+    </div>
+</main>
+{% endblock content %}

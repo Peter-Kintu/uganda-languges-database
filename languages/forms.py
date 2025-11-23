@@ -1,54 +1,73 @@
 from django import forms
-from .models import PhraseContribution
+from .models import JobPost # Updated import to the new model name
 
-class PhraseContributionForm(forms.ModelForm):
+# Renamed PhraseContributionForm to JobPostForm
+class JobPostForm(forms.ModelForm):
     """
-    A form for users to submit new phrase contributions to the database.
-    It uses a ModelForm to automatically create form fields based on the
-    PhraseContribution model, and then customizes them for better user experience.
+    A form for users (recruiters) to submit new job posts (language data).
     """
     class Meta:
         # Specifies the model this form is based on.
-        model = PhraseContribution
+        model = JobPost
         
         # Defines which fields from the model should be included in the form.
         fields = [
-            'language', 
-            'intent', 
-            'text', 
-            'translation', 
-            'contributor_name', 
-            'contributor_location'
+            'job_category', 
+            'job_type', 
+            'post_content', 
+            'required_skills', 
+            'recruiter_name', 
+            'recruiter_location',
+            'application_url', # <--- ADDED FIELD
+            'company_logo_or_media', # ADDED: New file field for logo/media
         ]
         
-        # Customizes the HTML widgets for each field to add attributes like
-        # placeholders, rows for textareas, and CSS classes for styling.
+        # Customizes the HTML widgets with job-themed placeholders.
         widgets = {
-            'text': forms.Textarea(attrs={
+            # This is the original 'text' field (the phrase/sentence)
+            'post_content': forms.Textarea(attrs={
                 'rows': 4, 
-                'placeholder': 'Enter a word, phrase, or sentence...',
+                'placeholder': 'Enter the full job description here...',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
             }),
-            'translation': forms.Textarea(attrs={
+            # This is the original 'translation' field (the translation)
+            'required_skills': forms.Textarea(attrs={
                 'rows': 4, 
-                'placeholder': 'Optional: Enter the English translation...',
+                'placeholder': 'List essential skills, e.g., Python, Django, Tailwind CSS, 3+ years experience...',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
             }),
-            'contributor_name': forms.TextInput(attrs={
-                'placeholder': 'Optional: Your name',
+            # This is the original 'contributor_name' field
+            'recruiter_name': forms.TextInput(attrs={
+                'placeholder': 'Your Name or Company Name (required)',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
             }),
-            'contributor_location': forms.TextInput(attrs={
-                'placeholder': 'Optional: Your community or location',
+            # This is the original 'contributor_location' field
+            'recruiter_location': forms.TextInput(attrs={
+                'placeholder': 'Company Headquarters or Remote Location',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+            }),
+            # ADDED: Widget for the new application URL field
+            'application_url': forms.URLInput(attrs={
+                'placeholder': 'https://company.com/apply/job-title',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+            }),
+            # ADDED: Widget for the new file field. Using a standard file input class.
+            'company_logo_or_media': forms.ClearableFileInput(attrs={
+                'class': 'w-full text-sm text-gray-300 border border-gray-700 rounded-lg cursor-pointer bg-gray-800 focus:outline-none focus:border-indigo-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700'
             }),
         }
         
         # Provides custom, more user-friendly labels for the fields.
         labels = {
-            'text': 'Contribution (Word/Phrase/Sentence)',
-            'translation': 'English Translation',
-            'contributor_name': 'Your Name',
-            'contributor_location': 'Your Community/Location',
+            'post_content': 'Job Description',
+            'required_skills': 'Required Skills/Qualifications',
+            'job_category': 'Job Industry/Category',
+            'job_type': 'Employment Type',
+            'recruiter_name': 'Your/Company Name',
+            'recruiter_location': 'Location',
+            'application_url': 'Application Link (URL)', # <--- ADDED LABEL
+            'company_logo_or_media': 'Company Logo or Media',
         }
-
+        
+        # Excludes the 'applicant' field, which is handled in the view.
+        exclude = ('applicant',)
