@@ -327,6 +327,8 @@
             height: 100%;
             width: 80%;
             transform: translateX(-100%); /* Start hidden */
+            /* Ensure the sidebar covers the chat area when open */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5); 
         }
         
         .sidebar.open {
@@ -488,6 +490,22 @@
             typeQuery();
         }
     }
+    
+    // --- New function to sanitize text for TTS (Symbol Handling) ---
+    function sanitizeForSpeech(text) {
+        if (!text) return "";
+        
+        // Remove markdown emphasis symbols that TTS engines often read as separate words
+        let sanitized = text.replace(/([*#`])/g, '');
+        
+        // Replace common non-prose characters with spaces or words (e.g., list bullets)
+        sanitized = sanitized.replace(/•/g, ' '); 
+        sanitized = sanitized.replace(/[\n\t]/g, '. '); // Replace newlines/tabs with a period for a pause
+        sanitized = sanitized.replace(/ {2,}/g, ' '); // Collapse multiple spaces
+        
+        return sanitized.trim();
+    }
+
 
     // --- Message Display and API Functions ---
 
@@ -495,16 +513,18 @@
         const messageDiv = document.createElement('div');
         const roleText = role === 'user' ? 'You' : 'Ai';
         
-        const sanitizedText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // Use sanitizeForSpeech only before speaking, keep the original text structure for display
+        const textToDisplay = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
         messageDiv.className = `chat-message ${role} ${isError ? 'error' : ''}`;
-        messageDiv.innerHTML = `<strong>${roleText}:</strong> <span class="text-gray-400">${sanitizedText}</span>`;
+        messageDiv.innerHTML = `<strong>${roleText}:</strong> <span class="text-gray-400">${textToDisplay}</span>`;
         
         chatLog.appendChild(messageDiv);
         chatLog.scrollTop = chatLog.scrollHeight;
         
         // If it's an AI response, attempt to speak it.
         if (role === 'ai' && !isError) {
+            // Pass the original text to the speaking function
             speakText(text);
         }
     }
@@ -640,7 +660,8 @@
             const strongTag = div.querySelector('strong');
             const roleText = strongTag ? strongTag.textContent.toLowerCase().replace(':', '').trim() : '';
             const textSpan = div.querySelector('span');
-            const textContent = textSpan ? textSpan.textContent.trim() : '';
+            // Get the innerHTML to preserve certain non-text content, then strip HTML tags for storage
+            const textContent = textSpan ? textSpan.innerHTML.replace(/<[^>]*>/g, '').trim() : ''; 
             
             if ((roleText === 'you' || roleText === 'ai') && textContent.length > 0) {
                 // Exclude the welcome message
@@ -686,6 +707,10 @@
         // On desktop, clicking a history item should expand the sidebar if it was collapsed
         if (window.innerWidth > 768) {
             sidebar.classList.remove('is-collapsed');
+        } 
+        // --- NEW: Close sidebar on mobile after selecting a history item ---
+        else {
+            sidebar.classList.remove('open');
         }
     }
 
@@ -709,7 +734,9 @@
         history.forEach(item => {
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${item.role}`;
-            messageDiv.innerHTML = `<strong>${item.role === 'user' ? 'You' : 'Ai'}:</strong> <span class="text-gray-400">${item.text}</span>`;
+            // Sanitize only for display to prevent XSS, the stored content is assumed safe text.
+            const display_text = item.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            messageDiv.innerHTML = `<strong>${item.role === 'user' ? 'You' : 'Ai'}:</strong> <span class="text-gray-400">${display_text}</span>`;
             chatLog.appendChild(messageDiv);
         });
 
@@ -750,7 +777,9 @@
             const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
             
             // Wrap title text in a span to allow hiding in collapsed state
-            listItem.innerHTML = icon + `<span>${title}</span>`;
+            // Sanitize for display
+            const displayTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            listItem.innerHTML = icon + `<span>${displayTitle}</span>`;
             
             listItem.onclick = () => loadHistory(sessionId);
             historyList.appendChild(listItem);
@@ -922,17 +951,59 @@
         speaker.cancel();
         stopSpeakButton.style.display = 'block';
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        // --- NEW: Sanitize text for better TTS experience ---
+        const textToSpeak = sanitizeForSpeech(text); 
         
-        // Optional: Select a specific voice for better quality
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        
+        // --- NEW: Set Rate for "not too fast" and Pitch for professional tone ---
+        utterance.rate = 0.9; // Slightly slower than default (1.0)
+        utterance.pitch = 1.0; // Default pitch
         utterance.lang = 'en-US';
+        
+        // --- NEW: Voice Selection Logic (Male Professional) ---
         speaker.onvoiceschanged = () => {
             const voices = speaker.getVoices();
-            const desiredVoice = voices.find(voice => voice.name.includes('Google US English') || voice.default); 
-            if (desiredVoice) {
-                utterance.voice = desiredVoice;
+            
+            // 1. Filter for male voices (or gender-neutral but professional sounding ones)
+            // 2. Prioritize high-quality/standard voices
+            // Google US English (Male) is a good target if available, or a generic male one.
+            const maleVoice = voices.find(voice => 
+                (voice.name.includes('Google US English') && !voice.name.includes('Female')) || 
+                voice.name.includes('Male') || 
+                (voice.default && !voice.name.includes('Female')) 
+            ); 
+
+            if (maleVoice) {
+                utterance.voice = maleVoice;
+            } else {
+                 // Fallback: Check for any suitable English voice
+                 const fallbackVoice = voices.find(voice => voice.lang === 'en-US' && !voice.name.includes('Female'));
+                 if (fallbackVoice) {
+                    utterance.voice = fallbackVoice;
+                 } else {
+                    console.warn("Could not find a specific male English voice. Using default.");
+                 }
             }
         };
+        // Re-check voices immediately in case they are already loaded
+        const initialVoices = speaker.getVoices();
+        if (initialVoices.length > 0) {
+             const maleVoice = initialVoices.find(voice => 
+                (voice.name.includes('Google US English') && !voice.name.includes('Female')) || 
+                voice.name.includes('Male') || 
+                (voice.default && !voice.name.includes('Female')) 
+            ); 
+             if (maleVoice) {
+                utterance.voice = maleVoice;
+            } else {
+                 const fallbackVoice = initialVoices.find(voice => voice.lang === 'en-US' && !voice.name.includes('Female'));
+                 if (fallbackVoice) {
+                    utterance.voice = fallbackVoice;
+                 }
+            }
+        }
+
 
         utterance.onstart = () => {
             const lastAiMessage = chatLog.querySelector('.chat-message.ai:last-child');
