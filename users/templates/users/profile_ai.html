@@ -495,8 +495,8 @@
     function sanitizeForSpeech(text) {
         if (!text) return "";
         
-        // Remove markdown emphasis symbols that TTS engines often read as separate words
-        let sanitized = text.replace(/([*#`])/g, '');
+        // Remove markdown emphasis, list bullets, code blocks, slashes, and other noise symbols
+        let sanitized = text.replace(/([*#`\/<>@])/g, ' '); 
         
         // Replace common non-prose characters with spaces or words (e.g., list bullets)
         sanitized = sanitized.replace(/•/g, ' '); 
@@ -708,7 +708,7 @@
         if (window.innerWidth > 768) {
             sidebar.classList.remove('is-collapsed');
         } 
-        // --- NEW: Close sidebar on mobile after selecting a history item ---
+        // --- UPDATED: Close sidebar on mobile after selecting a history item ---
         else {
             sidebar.classList.remove('open');
         }
@@ -945,64 +945,74 @@
         }
     }
 
+    function getMaleProfessionalVoice(voices) {
+        // Voice priority list (Male or Professional sounding English voices)
+        const preferredVoices = [
+            'Google US English Male',
+            'Microsoft David - English (United States)',
+            'Alex', // macOS default
+            'Zira', // Sometimes gender-neutral, often good quality
+            'en-US Male'
+        ];
+
+        // 1. Try to match by name
+        for (const preferredName of preferredVoices) {
+            const match = voices.find(voice => 
+                voice.lang === 'en-US' && 
+                voice.name.includes(preferredName) &&
+                !voice.name.includes('Female')
+            );
+            if (match) return match;
+        }
+
+        // 2. Fallback: Find any English voice that is not explicitly female
+        const fallbackVoice = voices.find(voice => 
+            voice.lang === 'en-US' && 
+            !voice.name.includes('Female') &&
+            !voice.name.includes('female') &&
+            voice.default // Prefer the default non-female if available
+        );
+
+        if (fallbackVoice) return fallbackVoice;
+
+        // 3. Final Fallback: Any English voice
+        return voices.find(voice => voice.lang === 'en-US');
+    }
+
     function speakText(text) {
         if (!speaker) return;
         
         speaker.cancel();
         stopSpeakButton.style.display = 'block';
 
-        // --- NEW: Sanitize text for better TTS experience ---
+        // --- UPDATED: Sanitize text for better TTS experience ---
         const textToSpeak = sanitizeForSpeech(text); 
         
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         
-        // --- NEW: Set Rate for "not too fast" and Pitch for professional tone ---
+        // --- UPDATED: Set Rate for "not too fast" and Pitch for professional tone ---
         utterance.rate = 0.9; // Slightly slower than default (1.0)
         utterance.pitch = 1.0; // Default pitch
         utterance.lang = 'en-US';
         
-        // --- NEW: Voice Selection Logic (Male Professional) ---
-        speaker.onvoiceschanged = () => {
+        // --- UPDATED: Voice Selection Logic (Male Professional) ---
+        const setVoice = () => {
             const voices = speaker.getVoices();
-            
-            // 1. Filter for male voices (or gender-neutral but professional sounding ones)
-            // 2. Prioritize high-quality/standard voices
-            // Google US English (Male) is a good target if available, or a generic male one.
-            const maleVoice = voices.find(voice => 
-                (voice.name.includes('Google US English') && !voice.name.includes('Female')) || 
-                voice.name.includes('Male') || 
-                (voice.default && !voice.name.includes('Female')) 
-            ); 
-
-            if (maleVoice) {
-                utterance.voice = maleVoice;
-            } else {
-                 // Fallback: Check for any suitable English voice
-                 const fallbackVoice = voices.find(voice => voice.lang === 'en-US' && !voice.name.includes('Female'));
-                 if (fallbackVoice) {
-                    utterance.voice = fallbackVoice;
-                 } else {
-                    console.warn("Could not find a specific male English voice. Using default.");
-                 }
+            if (voices.length > 0) {
+                const maleVoice = getMaleProfessionalVoice(voices);
+                if (maleVoice) {
+                    utterance.voice = maleVoice;
+                } else {
+                    console.warn("Could not find a specific male/professional English voice. Using default.");
+                }
             }
         };
-        // Re-check voices immediately in case they are already loaded
-        const initialVoices = speaker.getVoices();
-        if (initialVoices.length > 0) {
-             const maleVoice = initialVoices.find(voice => 
-                (voice.name.includes('Google US English') && !voice.name.includes('Female')) || 
-                voice.name.includes('Male') || 
-                (voice.default && !voice.name.includes('Female')) 
-            ); 
-             if (maleVoice) {
-                utterance.voice = maleVoice;
-            } else {
-                 const fallbackVoice = initialVoices.find(voice => voice.lang === 'en-US' && !voice.name.includes('Female'));
-                 if (fallbackVoice) {
-                    utterance.voice = fallbackVoice;
-                 }
-            }
-        }
+
+        // If voices are already loaded, set it immediately
+        setVoice(); 
+
+        // Always register the handler in case they load later (especially for Chrome/Android)
+        speaker.onvoiceschanged = setVoice;
 
 
         utterance.onstart = () => {
