@@ -36,6 +36,23 @@ def robots_txt(request):
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
+# languages/views.py
+
+# ... existing code ...
+
+
+def job_post_detail(request, pk):
+    """
+    Displays the details of a single job post.
+    """
+    job_post = get_object_or_404(JobPost, pk=pk)
+    # TODO: Add logic for comments, related jobs, etc.
+    context = {
+        'job_post': job_post,
+        'page_title': f"Job: {job_post.post_content[:40]}...",
+    }
+    return render(request, 'job_post_detail.html', context)
+
 
 # Renamed get_top_contributors to get_top_recruiters
 @login_required

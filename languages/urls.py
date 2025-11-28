@@ -22,6 +22,8 @@ urlpatterns = [
     
     # URL for the job post page. (Was: 'contribute/')
     path('post-job/', views.post_job, name='post_job'), # Updated path and name
+    path('job/<int:pk>/', views.job_post_detail, name='job_post_detail'),
+   
     
     # This URL is for browsing the job listings. (Was: 'browse/')
     path('jobs/', views.browse_job_listings, name='browse_job_listings'), # Updated path and name
