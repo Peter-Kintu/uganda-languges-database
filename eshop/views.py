@@ -29,7 +29,7 @@ def google_verification(request):
 def robots_txt(request):
     lines = [
         "User-agent: *",
-        "Disallow:",
+        "allow:",
         "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")

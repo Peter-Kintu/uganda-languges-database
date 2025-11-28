@@ -34,7 +34,7 @@ def robots_txt(request):
         "allow:",
         "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
     ]
-    return HttpResponse("\n".join(lines), content_type="text/plain")     
+    return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
 # Renamed get_top_contributors to get_top_recruiters

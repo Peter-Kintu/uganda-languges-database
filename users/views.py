@@ -7,7 +7,7 @@ from django.urls import reverse
 import json
 import os
 import requests
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime 
 
@@ -19,6 +19,18 @@ from .models import CustomUser, Experience, Education, Skill, SocialConnection
 # ==============================================================================
 # AUTHENTICATION VIEWS (UNCHANGED)
 # ==============================================================================
+
+def google_verification(request):
+    return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
+
+
+def robots_txt(request):
+    lines = [
+        "User-agent: *",
+        "allow:",
+        "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
 
 def user_login(request):
     """Handles user login."""
