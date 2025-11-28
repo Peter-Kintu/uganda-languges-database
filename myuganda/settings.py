@@ -252,12 +252,12 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # JAZZMIN Settings
 JAZZMIN_SETTINGS = {
     # --- Branding ---
-    "site_title": "MyUganda Admin", # Using your original title
-    "site_header": "MyUganda",      # Using your original header
-    "site_brand": "MyUganda",       # Added brand name
-    "site_logo": "static/images/myuganda_logo.png", # Placeholder logo
+    "site_title": "Uganda Admin", # Using your original title
+    "site_header": "Uganda",      # Using your original header
+    "site_brand": "Uganda",       # Added brand name
+    "site_logo": "static/images/uganda_logo.png", # Placeholder logo
     "site_icon": "static/images/favicon.ico",
-    "welcome_sign": "Welcome to MyUganda — Administration Dashboard", # Using your original welcome sign
+    "welcome_sign": "Welcome to Uganda — Administration Dashboard", # Using your original welcome sign
 
     # --- Models & Structure (Adapted for MyUganda apps) ---
     # Models must exist in your INSTALLED_APPS (users, eshop, languages)
