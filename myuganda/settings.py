@@ -249,69 +249,94 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Ensure this is set in your .env file or environment variables
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-
 # JAZZMIN Settings
 JAZZMIN_SETTINGS = {
-    # title of the window (Will default to current_admin_site.site_title if absent or None)
-    "site_title": "MyUganda Admin",
+    # --- Branding ---
+    "site_title": "MyUganda Admin", # Using your original title
+    "site_header": "MyUganda",      # Using your original header
+    "site_brand": "MyUganda",       # Added brand name
+    "site_logo": "static/images/myuganda_logo.png", # Placeholder logo
+    "site_icon": "static/images/favicon.ico",
+    "welcome_sign": "Welcome to MyUganda — Administration Dashboard", # Using your original welcome sign
 
-    # Title on the brand (19 chars max) (defaults to current_admin_site.site_header if absent or None)
-    "site_header": "MyUganda",
-
-    # Welcome text on the login screen
-    "welcome_sign": "Welcome to the MyUganda Administration Dashboard",
-
-    # Copyright on the footer
-    "copyright": "MyUganda Ltd",
-
-    # The model name to use as a look-up when the user is searching
-    "search_model": "eshop.Product",
-
-    # Field name on user model that contains avatar image
+    # --- Models & Structure (Adapted for MyUganda apps) ---
+    # Models must exist in your INSTALLED_APPS (users, eshop, languages)
+    "search_model": ["users.CustomUser", "eshop.Product", "languages.PhraseContribution"],
     "user_avatar": None,
+    "topmenu_links": [
+        {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
+        # Direct links to key MyUganda models
+        {"model": "users.CustomUser"},
+        {"model": "eshop.Product"},
+        {"model": "languages.PhraseContribution"},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    # Ordering apps in the menu
+    "order_with_respect_to": ["auth", "users", "eshop", "languages"],
+    # Hiding utility apps for a cleaner menu
+    "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
+    "hide_models": [],
 
-    # Custom icons for the application. The default is `fontawesome` icon set.
+    # --- Icons (Expanded with MyUganda models) ---
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
+        "users.CustomUser": "fas fa-user-circle",
+        "eshop.Product": "fas fa-store",
+        "eshop.Order": "fas fa-shopping-cart",
         "languages.PhraseContribution": "fas fa-language",
     },
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
-
     "related_modal_active": False
 }
 
-# JAZZMIN UI Tweaks
+# JAZZMIN UI Tweaks (Updated for modern, organized look)
 JAZZMIN_UI_TWEAKS = {
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": False,
+    # --- Theme & Colors ---
+    "theme": "lux",                     # Recommended clean, bright, and professional theme
+    "dark_mode_theme": "darkly",        # Retains your original dark mode theme preference
     "accent": "accent-primary",
-    "navbar": "navbar-dark",
-    "no_navbar_border": False,
-    "navbar_fixed": False,
-    "layout_boxed": False,
-    "footer_fixed": False,
-    "sidebar_fixed": False,
-    "sidebar": "sidebar-dark-primary",
-    "sidebar_nav_small_text": False,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": False,
-    "sidebar_nav_compact_style": False,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": False,
-    "theme": "darkly",
-    "dark_mode_theme": "darkly",
+    "navbar": "navbar-white navbar-light", # Clean white navbar with dark text for high contrast
+    "sidebar": "sidebar-dark-primary",     # Dark sidebar provides good contrast for the menu
+
+    # --- Layout Organization Fixes ---
+    "navbar_fixed": True,               # FIX: Keeps the top navbar visible while scrolling
+    "sidebar_fixed": True,              # FIX: Keeps the sidebar (navigation) always accessible
+    "sidebar_nav_child_indent": True,   # FIX: Adds indentation for clearer hierarchy in the menu
+    "footer_small_text": True,          # Make footer text smaller for a cleaner look
+
+    # --- Button Styles (Switched from low-contrast outlines to solid colors) ---
     "button_classes": {
-        "primary": "btn-outline-primary",
-        "secondary": "btn-outline-secondary",
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
         "info": "btn-info",
         "warning": "btn-warning",
         "danger": "btn-danger",
         "success": "btn-success"
-    }
+    },
+    # Action buttons remain solid as you intended
+    "actions_button_classes": {
+        "add": "btn-success",
+        "change": "btn-info",
+        "delete": "btn-danger",
+        "save": "btn-primary",
+        "submit": "btn-primary",
+    },
+    
+    # --- Other Layout Settings (retained/optimized) ---
+    "navbar_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "no_navbar_border": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
 }
