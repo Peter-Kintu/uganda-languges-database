@@ -190,17 +190,15 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# --- Custom Authentication Configuration (Fix for 404 Redirect) ---
-# 1. Use the custom user model defined in the 'users' app
+
+# --- Custom Authentication Configuration ---
 AUTH_USER_MODEL = 'users.CustomUser' 
 
+# Directs unauthenticated requests to your custom view
+LOGIN_URL = reverse_lazy('users:user_login')
+
 # The URL to redirect to after a user successfully logs in
-LOGIN_REDIRECT_URL = '/jobs/browse/'  # Use the actual URL path for the job listings page
-
-# OR, if you are using Django's reverse_lazy (recommended):
-from django.urls import reverse_lazy
 LOGIN_REDIRECT_URL = reverse_lazy('languages:browse_job_listings')
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
