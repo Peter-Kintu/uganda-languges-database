@@ -16,6 +16,7 @@ urlpatterns = [
     path('', include('users.urls')), 
     
     path('admin/', admin.site.urls),
+    path('accounts/', include('django.contrib.auth.urls')),
     path('', include('languages.urls')),
     path('eshop/', include('eshop.urls', namespace='eshop')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps_dict}, name='sitemap'),
