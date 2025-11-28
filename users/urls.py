@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import tts_proxy
+
+from languages.views import robots_txt
+from .views import google_verification, tts_proxy
 from users.views import gemini_proxy
 from . import views
 
@@ -7,6 +9,8 @@ app_name = 'users'
 
 urlpatterns = [
     # AUTHENTICATION
+    path('googlec0826a61eabee54e.html', google_verification),
+    path("robots.txt", robots_txt),
     path('login/', views.user_login, name='user_login'),
     path('register/', views.user_register, name='user_register'),
     path('logout/', views.user_logout, name='user_logout'),
