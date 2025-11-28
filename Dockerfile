@@ -14,8 +14,20 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY . /app
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# [cite_start]Collect static files [cite: 1, 2]
+[cite_start]RUN python manage.py collectstatic --noinput [cite: 1, 2]
 
-# Run migrations and start gunicorn
-CMD ["bash", "-c", "python manage.py migrate --noinput && gunicorn myuganda.wsgi:application --bind 0.0.0.0:$PORT"]
+# NEW STEP: Create Superuser using Environment Variables
+# This requires you to set DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, and DJANGO_SUPERUSER_PASSWORD
+# in your deployment environment (Render/Koyeb).
+# We use the '|| true' trick to prevent the build from failing if the user already exists.
+RUN bash -c "python manage.py createsuperuser --noinput || true"
+
+# [cite_start]Run migrations and start gunicorn [cite: 1, 2]
+[cite_start]CMD ["bash", "-c", "python manage.py migrate --noinput && gunicorn myuganda.wsgi:application --bind 0.0.0.0:$PORT"] [cite: 1, 2]
+
+
+
+
+
+
