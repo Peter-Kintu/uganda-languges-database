@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}  <-- THIS LINE MUST BE ADDED!
+{% load widget_tweaks %}
 
 {% block title %}Post a New Job{% endblock %}
 
@@ -79,6 +79,19 @@
                     {% endfor %}
                 </div>
             </div>
+            
+            **<div class="space-y-8">
+                <div class="space-y-2">
+                    <label for="{{ form.application_url.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
+                        {{ form.application_url.label }}
+                    </label>
+                    {{ form.application_url|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out shadow-inner" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.application_url.help_text }}</p>
+                    {% for error in form.application_url.errors %}
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>**
 
             <div class="grid grid-cols-1 gap-8 sm:grid-cols-2">
                 <div class="space-y-2">
