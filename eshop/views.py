@@ -205,15 +205,64 @@ def checkout_view(request):
 
 
 @login_required
+def delivery_location_view(request):
+    """
+    Displays the form for capturing the delivery location.
+    """
+    return render(request, 'eshop/delivery_location.html')
+
+@login_required
+def process_delivery_location(request):
+    """
+    Processes the delivery location form submission, stores data in the session, 
+    and redirects to the order confirmation page.
+    """
+    if request.method == 'POST':
+        # Retrieve data from the form
+        address = request.POST.get('address_line1', '').strip()
+        city = request.POST.get('city', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        latitude = request.POST.get('latitude', 'N/A')
+        longitude = request.POST.get('longitude', 'N/A')
+        
+        # Basic validation (a proper Form class should be used for real validation)
+        if not all([address, city, phone]):
+             messages.error(request, "Please fill in all required delivery details (Address, City, Phone).")
+             return redirect('eshop:delivery_location')
+
+        # Store delivery details in the session 
+        request.session['delivery_details'] = {
+            'address': address,
+            'city': city,
+            'phone': phone,
+            'latitude': latitude,
+            'longitude': longitude,
+        }
+        
+        messages.success(request, "Delivery location confirmed! Please proceed to order confirmation.")
+        # Redirect to the next step in the checkout flow
+        return redirect('eshop:confirm_order_whatsapp') 
+        
+    return redirect('eshop:delivery_location')
+
+
+@login_required
 def confirm_order_whatsapp(request):
     """
     Redirects the user to WhatsApp with the order details and clears the cart.
+    Now includes delivery details from session.
     """
     cart = get_user_cart(request)
+    # Get and clear session data
+    delivery_details = request.session.pop('delivery_details', None) 
     
     if not cart.items.exists():
         messages.error(request, "Your cart is empty. Cannot confirm an empty order.")
         return redirect('eshop:product_list')
+        
+    if not delivery_details:
+        messages.error(request, "Delivery details are missing. Please re-enter your location.")
+        return redirect('eshop:delivery_location')
 
     # Get vendor details (assuming one vendor per cart)
     first_item = cart.items.first()
@@ -224,6 +273,14 @@ def confirm_order_whatsapp(request):
     lines = [
         f"Hello {vendor_name},",
         "🎉 A new order has been confirmed!",
+        "",
+        "📍 Delivery Address:",
+        f"Address: {delivery_details.get('address', 'N/A')}",
+        f"City: {delivery_details.get('city', 'N/A')}",
+        f"Coordinates: Lat {delivery_details.get('latitude', 'N/A')}, Lng {delivery_details.get('longitude', 'N/A')}",
+        "",
+        "📞 Buyer Contact:",
+        f"Phone: {delivery_details.get('phone', 'N/A')}",
         "",
         "🛍️ Items:",
     ]
@@ -237,7 +294,6 @@ def confirm_order_whatsapp(request):
 
     lines.append("")
     lines.append(f"💰 Total: UGX {cart.cart_total:,.0f}")
-    lines.append("📞 Buyer contact: A proud customer awaits.")
     lines.append("")
     lines.append("Please prepare for delivery. Uganda thanks you.")
 
@@ -457,11 +513,3 @@ def export_products_json(request):
     response = HttpResponse(data, content_type='application/json')
     response['Content-Disposition'] = 'attachment; filename="products.json"'
     return response
-
-# Placeholder for delivery_location_view (as it was implied in other files)
-@login_required
-def delivery_location_view(request):
-    """
-    Placeholder for the delivery location view.
-    """
-    return render(request, 'eshop/delivery_location.html')
