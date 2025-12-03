@@ -260,53 +260,50 @@ JAZZMIN_SETTINGS = {
     # --- Models & Structure (Consolidated for a cleaner look) ---
     "search_model": ["users.CustomUser", "eshop.Product", "languages.PhraseContribution"],
     "user_avatar": None,
+    # HIDE unnecessary Top Menu links for a cleaner header
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
-        # Direct links to key MyUganda models
         {"model": "users.CustomUser"},
-        {"model": "eshop.Product"},
-        # New Link Grouping for Job Posts to mirror your admin's logic
-        {"app": "languages"}, 
     ],
     "show_sidebar": True,
     "navigation_expanded": True,
     
-    # --- Side Menu Organization (FIX: Grouping related apps) ---
+    # --- Side Menu Organization (FIX: Grouping related apps and removing redundant/single links) ---
     "usermenu_links": [
         {"name": "See Profile", "url": "/profile/", "icon": "fas fa-user-circle"},
-        # Add another relevant link if needed, e.g., "Settings"
     ],
     
+    # Custom Links to group all models logically
     "custom_links": {
         "languages": [
             {
-                "name": "Job Post Management",
+                "name": "Job Posts & Listing",
                 "icon": "fas fa-briefcase",
                 "models": ["languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType"],
+            },
+            {
+                "name": "Phrase Contributions",
+                "icon": "fas fa-language",
+                "models": ["languages.PhraseContribution"],
             },
         ],
         "eshop": [
             {
-                "name": "Products & Inventory",
-                "icon": "fas fa-cubes",
+                "name": "Products & Orders",
+                "icon": "fas fa-store",
                 "models": ["eshop.Product", "eshop.Order"],
             },
         ],
-        "auth": [
-             {
-                "name": "Users & Permissions",
-                "icon": "fas fa-shield-alt",
-                "models": ["auth.Group", "users.CustomUser"],
-            },
-        ]
     },
+    
+    # FIX: Remove default app links which overlap with custom_links
+    # Hide the individual models/apps that are now grouped under "custom_links"
+    "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
+    "hide_models": ["languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType", "languages.PhraseContribution", "eshop.Product", "eshop.Order", "auth.Group", "users.CustomUser"],
+
 
     # Ordering apps in the menu
     "order_with_respect_to": ["auth", "users", "eshop", "languages"],
-    # Hiding utility apps for a cleaner menu
-    "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
-    "hide_models": ["languages.PhraseContribution", "languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType", "eshop.Product", "eshop.Order", "auth.Group", "users.CustomUser"],
     "related_modal_active": False,
 
     # --- Icons (Expanded and used for custom links) ---
@@ -327,7 +324,7 @@ JAZZMIN_SETTINGS = {
     "default_icon_children": "fas fa-circle",
 }
 
-# JAZZMIN UI Tweaks (Updated for modern, organized look)
+# JAZZMIN UI Tweaks (MAXIMUM COMPACTNESS AND CLARITY)
 JAZZMIN_UI_TWEAKS = {
     # --- Theme & Colors ---
     # Using 'lux' but with dark components for a professional, crisp feel.
@@ -347,11 +344,14 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar_nav_child_indent": True,   # FIX: Adds indentation for clearer hierarchy in the menu
     "footer_small_text": True,          # Make footer text smaller for a cleaner look
     
-    # TWEAKS FOR A TIGHTER LAYOUT:
+    # TWEAKS FOR A TIGHTER LAYOUT (These are the keys to a non-disorganized look):
     "navbar_small_text": True,          # Use smaller text in the navbar
-    "body_small_text": True,            # Use smaller text in the main content area (tightens up forms/tables)
-    "sidebar_nav_compact_style": True,  # Use compact style for the sidebar navigation
-    "sidebar_nav_small_text": True,     # Use smaller text in the sidebar
+    "body_small_text": True,            # **CRITICAL FIX**: Uses smaller text in the main content (tables/forms)
+    "sidebar_nav_compact_style": True,  # Uses compact style for the sidebar navigation
+    "sidebar_nav_small_text": True,     # Uses smaller text in the sidebar
+
+    # Added one more layout tweak for max space usage
+    "layout_boxed": False, # Ensures content uses full screen width
 
     # --- Button Styles ---
     "button_classes": {
@@ -373,7 +373,6 @@ JAZZMIN_UI_TWEAKS = {
     # --- Other Layout Settings (retained/optimized) ---
     "brand_small_text": False,
     "no_navbar_border": False,
-    "layout_boxed": False,
     "footer_fixed": False,
     "sidebar_disable_expand": False,
     "sidebar_nav_legacy_style": False,
