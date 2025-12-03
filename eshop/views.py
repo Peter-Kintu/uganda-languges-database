@@ -251,14 +251,25 @@ def confirm_order_whatsapp(request):
     return redirect(whatsapp_url)
 
 # ------------------------------------
-# AI Price Negotiation Logic
+# AI Price Negotiation Logic (Updated for Iterative Negotiation)
 # ------------------------------------
 
 def get_ai_response(product, user_message, chat_history):
     """
-    Simplified AI negotiation logic.
+    Updated AI negotiation logic for a more iterative, human-like feel.
+    The AI counter-offers gradually but maintains a firm floor price (75%).
     """
     product_price = product.price
+
+    # Define negotiation constants
+    # Absolute lowest price (60%) - for immediate rejection
+    VENDOR_MIN_ACCEPT = Decimal('0.6')      
+    # AI's final stand (75%) - The price the AI must not go below during negotiation
+    VENDOR_NEGOTIATION_FLOOR = Decimal('0.75') 
+    # Offer >= 90% is accepted quickly
+    EASY_ACCEPT_THRESHOLD = Decimal('0.90') 
+    # AI will move 40% of the distance from its last offer toward the user's offer
+    STEP_FACTOR = Decimal('0.4') 
 
     # 1. Parse user offer
     offer_match = re.search(r'UGX\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)', user_message, re.IGNORECASE)
@@ -269,66 +280,102 @@ def get_ai_response(product, user_message, chat_history):
             offer_str = offer_match.group(1).replace(',', '')
             offer = Decimal(offer_str)
         except:
-            return "I'm the AI Negotiator! Your offer must be a valid number. For example: 'My offer is UGX 80000'."
+            return "I'm the AI Negotiator! Your offer must be a valid number. For example: 'My offer is UGX 80,000'."
     else:
         # Initial instruction or missing currency
-        return "I'm the AI Negotiator! Tell me your best offer in Ugandan Shillings (UGX) and I'll see what my vendor is willing to accept. For example: 'My offer is UGX 80000'."
+        return "I'm the AI Negotiator! Tell me your best offer in Ugandan Shillings (UGX) and I'll see what my vendor is willing to accept. For example: 'My offer is UGX 80,000'."
     
     # 2. Check for negotiation status (already finalized)
-    if product.negotiated_price and product.negotiated_price < product.price:
+    if product.negotiated_price and product.negotiated_price < product_price:
         return f"We already agreed on a final price of UGX {product.negotiated_price:,.0f}! Click 'Accept Final Price' to proceed."
 
-    # 3. Simple Negotiation Logic
+    # 3. Negotiation Logic
     
-    # 3a. Check for minimum acceptable price (60% of original price)
-    # FIX: The check is now aligned with the minimum quoted to the user (60%)
-    if offer < product_price * Decimal('0.6'): 
-        return f"I appreciate your enthusiasm, but your offer is too low. My vendor's absolute minimum is UGX {product_price * Decimal('0.6'):,.0f}. Try again!"
+    # Calculate absolute floor prices
+    min_price_accept = product_price * VENDOR_MIN_ACCEPT
+    floor_price = product_price * VENDOR_NEGOTIATION_FLOOR
 
-    # 3b. Offer is near original price (accept it immediately)
-    # Use Decimal('0.9') for consistent multiplication
-    if offer >= product_price * Decimal('0.9'):
-        final_price = offer
-        # Store the negotiated price on the product instance
+    # 3a. Offer is too low (below 60%)
+    if offer < min_price_accept: 
+        display_floor = product_price * Decimal('0.7') # Suggest a higher floor than VENDOR_MIN_ACCEPT
+        return f"I appreciate your enthusiasm, but your offer is too low. My vendor's minimum acceptable offer is UGX {display_floor:,.0f}. Try again!"
+
+    # 3b. Offer is generous (>= 90%)
+    if offer >= product_price * EASY_ACCEPT_THRESHOLD:
+        final_price = offer if offer < product_price else product_price # Don't accept more than original price
         product.negotiated_price = final_price
         product.save()
         return f"That is a very generous offer! UGX {final_price:,.0f} is a deal. I have marked this as the accepted price. Click 'Accept Final Price' to proceed."
-
-    # 3c. Offer is in the negotiation range (60% to 90%)
-    if offer < product_price:
-        # Determine the counter-offer
-        current_lowest = product_price * Decimal('0.7') # Vendor's true minimum selling price after negotiation
-        
-        # Simple counter: Meet them in the middle of their offer and the product price, but never below 70%
-        # Use Decimal('2.0') for division
-        counter_price = (offer + product_price) / Decimal('2.0') 
-        if counter_price < current_lowest:
-            counter_price = current_lowest
-
-        # Round the counter price to a cleaner number
-        final_counter = Decimal(round(counter_price, -3)) # Round to the nearest thousand
-
-        # Set the product negotiated price to this new counter price
-        product.negotiated_price = final_counter
-        product.save()
-
-        # Check if the counter is close to the user's offer
-        if final_counter <= offer + Decimal('500'): # Use Decimal('500') for comparison
-             product.negotiated_price = offer # Just give them what they offered
-             product.save()
-             return f"After consulting the elders, I accept your offer of UGX {offer:,.0f}! Click 'Accept Final Price' to proceed."
-        else:
-            return f"Hmm, I see your offer of UGX {offer:,.0f}. My vendor can only accept UGX {final_counter:,.0f}. What is your next move?"
     
-    # 3d. Offer is higher than or equal to the original price
-    if offer >= product_price:
+    # 3c. Offer is higher than the original price
+    if offer > product_price:
         final_price = product_price
         product.negotiated_price = final_price
         product.save()
         return f"Your offer of UGX {offer:,.0f} is higher than the asking price! We will happily sell it to you for the original price of UGX {final_price:,.0f}. Click 'Accept Final Price' to proceed."
-    
-    # Fallback response
-    return "I'm sorry, I seem to be having trouble understanding that. Please provide your offer in the format 'My offer is UGX 80000'."
+
+
+    # 3d. Iterative Negotiation (between 60% and 90% of price)
+    if offer < product_price:
+        
+        # Determine the AI's last counter-offer. If none, start from the original price.
+        # Ensure last_ai_offer is always greater than or equal to the floor price
+        last_ai_offer = product.negotiated_price if product.negotiated_price and product.negotiated_price > floor_price else product_price
+        
+        # If the user's offer is already at or above the AI's last offer, accept it.
+        if offer >= last_ai_offer:
+            final_price = offer
+            product.negotiated_price = final_price
+            product.save()
+            return f"That is an excellent counter-offer! We accept UGX {final_price:,.0f}. Click 'Accept Final Price' to proceed."
+        
+        # If the last counter-offer was already the floor, and the user's offer is below it, reiterate the final price.
+        if last_ai_offer <= floor_price:
+             final_price = floor_price
+             if offer >= floor_price:
+                product.negotiated_price = floor_price
+                product.save()
+                return f"We've reached our absolute final position! My vendor accepts UGX {floor_price:,.0f} and can go no lower. Click 'Accept Final Price' to proceed now."
+             else:
+                return f"I can't drop below UGX {floor_price:,.0f}. What's your next best offer?"
+
+        # Calculate the new counter-offer: move 40% of the distance toward the user's offer.
+        reduction_amount = (last_ai_offer - offer) * STEP_FACTOR
+        counter_price = last_ai_offer - reduction_amount
+
+        # Enforce the AI's final negotiation floor (75%)
+        if counter_price < floor_price:
+            counter_price = floor_price
+            
+        # Round the final counter price to the nearest hundred or thousand for segmented steps
+        if product_price >= Decimal('100000'):
+             final_counter = Decimal(round(counter_price, -3)) # Round to the nearest thousand
+        elif product_price >= Decimal('1000'):
+             final_counter = Decimal(round(counter_price, -2)) # Round to the nearest hundred
+        else:
+             final_counter = counter_price.quantize(Decimal('0.00')) # Keep two decimal places
+
+        # Ensure the new counter is not higher than the last one
+        if final_counter > last_ai_offer:
+            final_counter = last_ai_offer
+        
+        # Ensure the final counter is not less than the floor after rounding
+        if final_counter < floor_price:
+            final_counter = floor_price
+
+        # Store the new counter price
+        product.negotiated_price = final_counter
+        product.save()
+        
+        # If the new counter is the floor, give the final message
+        if final_counter <= floor_price + Decimal('1'):
+            return f"We've reached our absolute final position! My vendor accepts UGX {final_counter:,.0f} and can go no lower. Click 'Accept Final Price' to proceed now."
+        
+        # Normal counter-offer response
+        return f"Hmm, I see your offer of UGX {offer:,.0f}. After a quick check, my vendor can only accept UGX {final_counter:,.0f}. What is your next move?"
+        
+    # Fallback response (should be rare)
+    return "I'm sorry, I seem to be having trouble understanding that. Please provide your offer in the format 'My offer is UGX 80,000'."
 
 @login_required
 def ai_negotiation_view(request, slug):
@@ -343,7 +390,7 @@ def ai_negotiation_view(request, slug):
     
     # Retrieve chat history from session
     chat_history = request.session.get(f'chat_history_{slug}', [
-        {'role': 'ai', 'text': f"I'm the AI Negotiator! Tell me your best offer in Ugandan Shillings (UGX) and I'll see what my vendor is willing to accept. The product price is UGX {product.price:,.0f}. For example: 'My offer is UGX 80000'."}
+        {'role': 'ai', 'text': f"I'm the AI Negotiator! Tell me your best offer in Ugandan Shillings (UGX) and I'll see what my vendor is willing to accept. The product price is UGX {product.price:,.0f}. For example: 'My offer is UGX 80,000'."}
     ])
 
     if request.method == 'POST' and form.is_valid():
