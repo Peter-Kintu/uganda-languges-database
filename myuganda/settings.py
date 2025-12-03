@@ -250,15 +250,14 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # JAZZMIN Settings
 JAZZMIN_SETTINGS = {
     # --- Branding ---
-    "site_title": "Uganda Admin", # Using your original title
-    "site_header": "Uganda",      # Using your original header
-    "site_brand": "Uganda",       # Added brand name
-    "site_logo": "static/images/uganda_logo.png", # Placeholder logo
+    "site_title": "Uganda Admin", 
+    "site_header": "Uganda",      
+    "site_brand": "Uganda",       
+    "site_logo": "static/images/uganda_logo.png", 
     "site_icon": "static/images/favicon.ico",
-    "welcome_sign": "Welcome to Uganda — Administration Dashboard", # Using your original welcome sign
+    "welcome_sign": "Welcome to Uganda — Administration Dashboard", 
 
-    # --- Models & Structure (Adapted for MyUganda apps) ---
-    # Models must exist in your INSTALLED_APPS (users, eshop, languages)
+    # --- Models & Structure (Consolidated for a cleaner look) ---
     "search_model": ["users.CustomUser", "eshop.Product", "languages.PhraseContribution"],
     "user_avatar": None,
     "topmenu_links": [
@@ -267,47 +266,94 @@ JAZZMIN_SETTINGS = {
         # Direct links to key MyUganda models
         {"model": "users.CustomUser"},
         {"model": "eshop.Product"},
-        {"model": "languages.PhraseContribution"},
+        # New Link Grouping for Job Posts to mirror your admin's logic
+        {"app": "languages"}, 
     ],
     "show_sidebar": True,
     "navigation_expanded": True,
+    
+    # --- Side Menu Organization (FIX: Grouping related apps) ---
+    "usermenu_links": [
+        {"name": "See Profile", "url": "/profile/", "icon": "fas fa-user-circle"},
+        # Add another relevant link if needed, e.g., "Settings"
+    ],
+    
+    "custom_links": {
+        "languages": [
+            {
+                "name": "Job Post Management",
+                "icon": "fas fa-briefcase",
+                "models": ["languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType"],
+            },
+        ],
+        "eshop": [
+            {
+                "name": "Products & Inventory",
+                "icon": "fas fa-cubes",
+                "models": ["eshop.Product", "eshop.Order"],
+            },
+        ],
+        "auth": [
+             {
+                "name": "Users & Permissions",
+                "icon": "fas fa-shield-alt",
+                "models": ["auth.Group", "users.CustomUser"],
+            },
+        ]
+    },
+
     # Ordering apps in the menu
     "order_with_respect_to": ["auth", "users", "eshop", "languages"],
     # Hiding utility apps for a cleaner menu
     "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
-    "hide_models": [],
+    "hide_models": ["languages.PhraseContribution", "languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType", "eshop.Product", "eshop.Order", "auth.Group", "users.CustomUser"],
+    "related_modal_active": False,
 
-    # --- Icons (Expanded with MyUganda models) ---
+    # --- Icons (Expanded and used for custom links) ---
     "icons": {
-        "auth": "fas fa-users-cog",
+        "auth": "fas fa-shield-alt",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "users.CustomUser": "fas fa-user-circle",
-        "eshop.Product": "fas fa-store",
+        "eshop.Product": "fas fa-box-open",
         "eshop.Order": "fas fa-shopping-cart",
+        "languages.JobPost": "fas fa-file-alt",
+        "languages.Recruiter": "fas fa-address-card",
+        "languages.JobCategory": "fas fa-sitemap",
+        "languages.JobType": "fas fa-clock",
         "languages.PhraseContribution": "fas fa-language",
     },
-    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_parents": "fas fa-folder-open",
     "default_icon_children": "fas fa-circle",
-    "related_modal_active": False
 }
 
 # JAZZMIN UI Tweaks (Updated for modern, organized look)
 JAZZMIN_UI_TWEAKS = {
     # --- Theme & Colors ---
-    "theme": "lux",                     # Recommended clean, bright, and professional theme
-    "dark_mode_theme": "darkly",        # Retains your original dark mode theme preference
+    # Using 'lux' but with dark components for a professional, crisp feel.
+    "theme": "lux",                     
+    "dark_mode_theme": "darkly",        
     "accent": "accent-primary",
-    "navbar": "navbar-white navbar-light", # Clean white navbar with dark text for high contrast
-    "sidebar": "sidebar-dark-primary",     # Dark sidebar provides good contrast for the menu
+    
+    # Using dark, highly contrasting navbar for clear visual break.
+    "navbar": "navbar-dark navbar-primary", 
+    
+    # Dark sidebar for branding and clarity.
+    "sidebar": "sidebar-dark-primary",     
 
-    # --- Layout Organization Fixes ---
+    # --- Layout Organization Fixes (Essential for a clean, compact look) ---
     "navbar_fixed": True,               # FIX: Keeps the top navbar visible while scrolling
     "sidebar_fixed": True,              # FIX: Keeps the sidebar (navigation) always accessible
     "sidebar_nav_child_indent": True,   # FIX: Adds indentation for clearer hierarchy in the menu
     "footer_small_text": True,          # Make footer text smaller for a cleaner look
+    
+    # TWEAKS FOR A TIGHTER LAYOUT:
+    "navbar_small_text": True,          # Use smaller text in the navbar
+    "body_small_text": True,            # Use smaller text in the main content area (tightens up forms/tables)
+    "sidebar_nav_compact_style": True,  # Use compact style for the sidebar navigation
+    "sidebar_nav_small_text": True,     # Use smaller text in the sidebar
 
-    # --- Button Styles (Switched from low-contrast outlines to solid colors) ---
+    # --- Button Styles ---
     "button_classes": {
         "primary": "btn-primary",
         "secondary": "btn-secondary",
@@ -316,7 +362,6 @@ JAZZMIN_UI_TWEAKS = {
         "danger": "btn-danger",
         "success": "btn-success"
     },
-    # Action buttons remain solid as you intended
     "actions_button_classes": {
         "add": "btn-success",
         "change": "btn-info",
@@ -326,15 +371,11 @@ JAZZMIN_UI_TWEAKS = {
     },
     
     # --- Other Layout Settings (retained/optimized) ---
-    "navbar_small_text": False,
-    "body_small_text": False,
     "brand_small_text": False,
     "no_navbar_border": False,
     "layout_boxed": False,
     "footer_fixed": False,
-    "sidebar_nav_small_text": False,
     "sidebar_disable_expand": False,
-    "sidebar_nav_compact_style": False,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
 }
