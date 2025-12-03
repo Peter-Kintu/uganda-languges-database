@@ -253,7 +253,7 @@ def confirm_order_whatsapp(request):
 # ------------------------------------
 # AI Price Negotiation Logic
 # ------------------------------------
-@login_required
+
 def get_ai_response(product, user_message, chat_history):
     """
     Simplified AI negotiation logic.
