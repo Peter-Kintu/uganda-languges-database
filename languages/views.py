@@ -164,7 +164,7 @@ def post_job(request):
             recruiter_name = job_post.recruiter_name
             # Find an existing Applicant or create a new one.
             applicant, created = Applicant.objects.get_or_create(
-                name=recruiter_name,
+                recruiter_name=recruiter_name,
                 # FIX APPLIED: Changed the key in defaults from 'recruiter_location' to 'location'
                 defaults={'location': job_post.recruiter_location} 
             )
