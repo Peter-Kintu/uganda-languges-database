@@ -22,6 +22,7 @@ urlpatterns = [
     # Checkout & Confirmation Views
     path('checkout/', views.checkout_view, name='checkout'),
     path('delivery-location/', views.delivery_location_view, name='delivery_location'),
+    path('process-delivery/', views.process_delivery_location, name='process_delivery'), 
     path('confirm-order/', views.confirm_order_whatsapp, name='confirm_order_whatsapp'), 
     
     # Negotiation Feature URLs
