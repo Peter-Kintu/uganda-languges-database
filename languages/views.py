@@ -375,6 +375,6 @@ def user_logout(request):
     # Optional: Display a success message
     messages.info(request, "You have been logged out successfully.")
     # Redirect to the login page or homepage
-    return redirect(reverse('user_login'))
+    return redirect(reverse('users:user_login'))
     
 # ... (user_profile view code)
