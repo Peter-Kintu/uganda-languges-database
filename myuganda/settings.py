@@ -247,8 +247,7 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Ensure this is set in your .env file or environment variables
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-
-# Jazzmin Admin (Uganda Language Database)
+# # Jazzmin Admin (Uganda Language Database)
 JAZZMIN_SETTINGS = {
     # --- Branding ---
     "site_title": "Uganda Language Admin",
@@ -261,15 +260,22 @@ JAZZMIN_SETTINGS = {
 
     # --- Search bar models ---
     "search_model": [
+        "auth.User",
         "users.CustomUser",
         "languages.PhraseContribution",
         "languages.Translation",
-        "languages.JobPost"
+        "languages.JobPost",
     ],
 
-    # --- Top menu (Minimalist) ---
+    # --- Top menu (balanced like LearnFlow) ---
     "topmenu_links": [
-        {"name": "Dashboard", "url": "admin:index"},
+        {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Support", "url": "https://github.com/farkasgabor/django-jazzmin/issues", "new_window": True},
+        {"model": "auth.User"},
+        {"model": "users.CustomUser"},
+        {"model": "languages.PhraseContribution"},
+        {"model": "languages.Translation"},
+        {"model": "languages.JobPost"},
     ],
 
     "show_sidebar": True,
@@ -280,52 +286,20 @@ JAZZMIN_SETTINGS = {
         {"name": "Profile", "url": "/profile/", "icon": "fas fa-user-circle"},
     ],
 
-    # --- Custom links (Structured Groups) ---
-    "custom_links": {
-        "languages": [
-            {
-                "name": "Phrase Contributions",
-                "icon": "fas fa-language",
-                "models": ["languages.PhraseContribution", "languages.Translation"],
-            },
-            {
-                "name": "Job Management",
-                "icon": "fas fa-briefcase",
-                "models": [
-                    "languages.JobPost",
-                    "languages.Recruiter",
-                    "languages.JobCategory",
-                    "languages.JobType",
-                ],
-            },
-        ],
-        "users": [
-            {
-                "name": "User Management",
-                "icon": "fas fa-users",
-                "models": ["users.CustomUser"],
-            },
-        ],
-    },
+    # --- Sidebar ordering ---
+    "order_with_respect_to": ["auth", "users", "languages"],
 
     # --- Hide redundant/system apps ---
-    "hide_apps": [
-        "languages", "users",   # hide parent apps since grouped above
-        "contenttypes", "sessions", "sites",
-        "cloudinary_storage", "cloudinary"
-    ],
+    "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
 
     # --- Hide redundant models ---
     "hide_models": ["auth.Group"],
 
-    # --- Ordering ---
-    "order_with_respect_to": ["auth", "users", "languages"],
-    "related_modal_active": False,
-
     # --- Icons ---
     "icons": {
-        "auth": "fas fa-shield-alt",
+        "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
         "users.CustomUser": "fas fa-user-circle",
         "languages.PhraseContribution": "fas fa-language",
         "languages.Translation": "fas fa-book",
@@ -334,23 +308,47 @@ JAZZMIN_SETTINGS = {
         "languages.JobCategory": "fas fa-sitemap",
         "languages.JobType": "fas fa-clock",
     },
-    "default_icon_parents": "fas fa-folder-open",
+
+    "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
+
+    "related_modal_active": False,
 }
-# Jazzmin UI Tweaks
+
+# Jazzmin UI Tweaks (Uganda Language Database)
 JAZZMIN_UI_TWEAKS = {
-    "theme": "darkly",
-    "dark_mode_theme": "darkly",
+    # --- Theme & Colors ---
+    "theme": "darkly",                  # modern dark theme
+    "dark_mode_theme": "darkly",        # consistent dark mode
     "accent": "accent-primary",
-    "navbar": "navbar-dark",
+
+    # Navbar & sidebar styling
+    "navbar": "navbar-dark navbar-primary",
     "sidebar": "sidebar-dark-primary",
+
+    # --- Layout ---
+    "navbar_fixed": True,               # keep top bar visible
+    "sidebar_fixed": True,              # keep sidebar visible
+    "layout_boxed": True,               # center content (avoids “one side” look)
+    "sidebar_nav_child_indent": True,   # indent child items for hierarchy
+    "sidebar_nav_compact_style": False, # normal spacing
+    "sidebar_nav_flat_style": False,    # keep hierarchy visible
+
+    # --- Text sizes ---
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "sidebar_nav_small_text": False,
+    "brand_small_text": False,
+
+    # --- Buttons ---
     "button_classes": {
         "primary": "btn-outline-primary",
         "secondary": "btn-outline-secondary",
         "info": "btn-outline-info",
         "warning": "btn-outline-warning",
         "danger": "btn-outline-danger",
-        "success": "btn-outline-success"
+        "success": "btn-outline-success",
     },
     "actions_button_classes": {
         "add": "btn-success",
@@ -359,19 +357,10 @@ JAZZMIN_UI_TWEAKS = {
         "save": "btn-primary",
         "submit": "btn-primary",
     },
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
+
+    # --- Other defaults ---
     "no_navbar_border": False,
-    "navbar_fixed": False,
-    "layout_boxed": False,
     "footer_fixed": False,
-    "sidebar_fixed": False,
-    "sidebar_nav_small_text": False,
     "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": False,
-    "sidebar_nav_compact_style": False,
     "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": False,
 }
