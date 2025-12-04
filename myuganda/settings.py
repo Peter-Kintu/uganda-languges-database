@@ -247,48 +247,45 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Ensure this is set in your .env file or environment variables
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-
-# settings.py (REVISED JAZZMIN_SETTINGS)
-
 JAZZMIN_SETTINGS = {
-    # --- Branding (Kept as-is) ---
-    "site_title": "Uganda Admin", 
-    "site_header": "Uganda",      
-    "site_brand": "Uganda",       
-    "site_logo": "static/images/uganda_logo.png", 
+    "site_title": "Uganda Admin",
+    "site_header": "Uganda",
+    "site_brand": "Uganda",
+    "site_logo": "static/images/uganda_logo.png",
     "site_icon": "static/images/favicon.ico",
-    "welcome_sign": "Welcome to Uganda — Administration Dashboard", 
+    "welcome_sign": "Welcome to Uganda — Administration Dashboard",
     "user_avatar": None,
-    
-    # --- Menu Structure ---
+
+    # Search bar models
     "search_model": ["users.CustomUser", "eshop.Product", "languages.PhraseContribution"],
-    
-    # HIDE unnecessary Top Menu links for a cleaner header
+
+    # Top menu (keep minimal to avoid duplication)
     "topmenu_links": [
-        {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"model": "users.CustomUser"},
+        {"name": "Dashboard", "url": "admin:index"},
     ],
+
     "show_sidebar": True,
     "navigation_expanded": True,
-    
-    # --- Side Menu Links ---
-    "usermenu_links": [
-        {"name": "See Profile", "url": "/profile/", "icon": "fas fa-user-circle"},
-    ],
-    
-    # Custom Links (Refined Grouping)
+
+    # User menu (remove duplicate "See Profile")
+    "usermenu_links": [],
+
+    # Custom links (grouping only)
     "custom_links": {
         "languages": [
             {
                 "name": "Job Management",
                 "icon": "fas fa-briefcase",
-                # Group JobPost, Recruiter, JobCategory, JobType
-                "models": ["languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType"],
+                "models": [
+                    "languages.JobPost",
+                    "languages.Recruiter",
+                    "languages.JobCategory",
+                    "languages.JobType",
+                ],
             },
             {
                 "name": "Phrase Contributions",
                 "icon": "fas fa-language",
-                # Group PhraseContribution
                 "models": ["languages.PhraseContribution"],
             },
         ],
@@ -296,34 +293,24 @@ JAZZMIN_SETTINGS = {
             {
                 "name": "Store Operations",
                 "icon": "fas fa-store",
-                # Group Product and Order
                 "models": ["eshop.Product", "eshop.Order"],
             },
         ],
     },
-    
-    # --- Hiding Redundant/System Models (Simplified) ---
-    # Only hide system models and the apps that hold only grouped models.
-    "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
-    
-    # Only hide the individual models that are now grouped under "custom_links"
-    "hide_models": [
-        "languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType", "languages.PhraseContribution",
-        "eshop.Product", "eshop.Order", 
-        "auth.Group" # Hiding Group since permissions are managed via Users
-    ],
 
+    # Hide entire apps if you only want custom_links
+    "hide_apps": ["languages", "eshop", "contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
 
-    # Ordering apps in the menu
+    # Hide redundant models
+    "hide_models": ["auth.Group"],
+
     "order_with_respect_to": ["auth", "users", "eshop", "languages"],
     "related_modal_active": False,
 
-    # --- Icons (Retained and used for custom links) ---
     "icons": {
         "auth": "fas fa-shield-alt",
         "auth.user": "fas fa-user",
         "users.CustomUser": "fas fa-user-circle",
-        # ... (rest of the icons are fine)
         "eshop.Product": "fas fa-box-open",
         "eshop.Order": "fas fa-shopping-cart",
         "languages.JobPost": "fas fa-file-alt",
@@ -334,53 +321,4 @@ JAZZMIN_SETTINGS = {
     },
     "default_icon_parents": "fas fa-folder-open",
     "default_icon_children": "fas fa-circle",
-}
-
-
-# settings.py (REVISED JAZZMIN_UI_TWEAKS)
-JAZZMIN_UI_TWEAKS = {
-    # --- Theme & Colors (Kept as-is) ---
-    "theme": "lux",                     
-    "dark_mode_theme": "darkly",        
-    "accent": "accent-primary",
-    "navbar": "navbar-dark navbar-primary", 
-    "sidebar": "sidebar-dark-primary",     
-
-    # --- Layout Organization Fixes (Essential for a clean, compact look) ---
-    "navbar_fixed": True,              
-    "sidebar_fixed": True,              
-    "sidebar_nav_child_indent": True,  
-    "footer_small_text": True,          
-    "layout_boxed": False, 
-    
-    # TWEAKS RELAXED FOR CLARITY:
-    "navbar_small_text": True,          # Still useful for a sleek top bar
-    "body_small_text": False,           # **CRITICAL CHANGE**: Use default body text size
-    "sidebar_nav_compact_style": False, # **CRITICAL CHANGE**: Use normal sidebar spacing
-    "sidebar_nav_small_text": False,    # **CRITICAL CHANGE**: Use normal sidebar text size
-
-    # --- Button Styles (Kept as-is) ---
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success"
-    },
-    "actions_button_classes": {
-        "add": "btn-success",
-        "change": "btn-info",
-        "delete": "btn-danger",
-        "save": "btn-primary",
-        "submit": "btn-primary",
-    },
-    
-    # --- Other Layout Settings (retained/optimized) ---
-    "brand_small_text": False,
-    "no_navbar_border": False,
-    "footer_fixed": False,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": False,
 }
