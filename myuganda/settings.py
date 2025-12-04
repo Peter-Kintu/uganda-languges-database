@@ -248,20 +248,24 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 
-# --- JAZZMIN_SETTINGS (Structure: Cleaned, Grouped, No Duplication) ---
-
+# Jazzmin Admin (Uganda Language Database)
 JAZZMIN_SETTINGS = {
     # --- Branding ---
-    "site_title": "Uganda Admin",
-    "site_header": "Uganda",
-    "site_brand": "Uganda",
+    "site_title": "Uganda Language Admin",
+    "site_header": "Uganda Languages",
+    "site_brand": "Uganda Languages",
     "site_logo": "static/images/uganda_logo.png",
     "site_icon": "static/images/favicon.ico",
-    "welcome_sign": "Welcome to Uganda — Administration Dashboard",
+    "welcome_sign": "Welcome to the Uganda Language Database — preserving and managing local languages.",
     "user_avatar": None,
 
     # --- Search bar models ---
-    "search_model": ["users.CustomUser", "eshop.Product", "languages.PhraseContribution"],
+    "search_model": [
+        "users.CustomUser",
+        "languages.PhraseContribution",
+        "languages.Translation",
+        "languages.JobPost"
+    ],
 
     # --- Top menu (Minimalist) ---
     "topmenu_links": [
@@ -271,7 +275,7 @@ JAZZMIN_SETTINGS = {
     "show_sidebar": True,
     "navigation_expanded": True,
 
-    # --- User menu (Clean profile link) ---
+    # --- User menu ---
     "usermenu_links": [
         {"name": "Profile", "url": "/profile/", "icon": "fas fa-user-circle"},
     ],
@@ -279,6 +283,11 @@ JAZZMIN_SETTINGS = {
     # --- Custom links (Structured Groups) ---
     "custom_links": {
         "languages": [
+            {
+                "name": "Phrase Contributions",
+                "icon": "fas fa-language",
+                "models": ["languages.PhraseContribution", "languages.Translation"],
+            },
             {
                 "name": "Job Management",
                 "icon": "fas fa-briefcase",
@@ -289,24 +298,19 @@ JAZZMIN_SETTINGS = {
                     "languages.JobType",
                 ],
             },
-            {
-                "name": "Phrase Contributions",
-                "icon": "fas fa-language",
-                "models": ["languages.PhraseContribution"],
-            },
         ],
-        "eshop": [
+        "users": [
             {
-                "name": "Store Operations",
-                "icon": "fas fa-store",
-                "models": ["eshop.Product", "eshop.Order"],
+                "name": "User Management",
+                "icon": "fas fa-users",
+                "models": ["users.CustomUser"],
             },
         ],
     },
 
     # --- Hide redundant/system apps ---
     "hide_apps": [
-        "languages", "eshop",
+        "languages", "users",   # hide parent apps since grouped above
         "contenttypes", "sessions", "sites",
         "cloudinary_storage", "cloudinary"
     ],
@@ -315,7 +319,7 @@ JAZZMIN_SETTINGS = {
     "hide_models": ["auth.Group"],
 
     # --- Ordering ---
-    "order_with_respect_to": ["auth", "users", "eshop", "languages"],
+    "order_with_respect_to": ["auth", "users", "languages"],
     "related_modal_active": False,
 
     # --- Icons ---
@@ -323,22 +327,16 @@ JAZZMIN_SETTINGS = {
         "auth": "fas fa-shield-alt",
         "auth.user": "fas fa-user",
         "users.CustomUser": "fas fa-user-circle",
-        "eshop.Product": "fas fa-box-open",
-        "eshop.Order": "fas fa-shopping-cart",
+        "languages.PhraseContribution": "fas fa-language",
+        "languages.Translation": "fas fa-book",
         "languages.JobPost": "fas fa-file-alt",
         "languages.Recruiter": "fas fa-address-card",
         "languages.JobCategory": "fas fa-sitemap",
         "languages.JobType": "fas fa-clock",
-        "languages.PhraseContribution": "fas fa-language",
     },
     "default_icon_parents": "fas fa-folder-open",
     "default_icon_children": "fas fa-circle",
 }
-
-# ----------------------------------------------------------------------
-
-# --- JAZZMIN_UI_TWEAKS (Styling: Attractive, Modern, Readable) ---
-
 # Jazzmin UI Tweaks
 JAZZMIN_UI_TWEAKS = {
     "theme": "darkly",
