@@ -247,7 +247,11 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Ensure this is set in your .env file or environment variables
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+
+# --- JAZZMIN_SETTINGS (Structure: Cleaned, Grouped, No Duplication) ---
+
 JAZZMIN_SETTINGS = {
+    # --- Branding ---
     "site_title": "Uganda Admin",
     "site_header": "Uganda",
     "site_brand": "Uganda",
@@ -256,10 +260,10 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Welcome to Uganda — Administration Dashboard",
     "user_avatar": None,
 
-    # Search bar models
+    # --- Search bar models ---
     "search_model": ["users.CustomUser", "eshop.Product", "languages.PhraseContribution"],
 
-    # Top menu (keep minimal to avoid duplication)
+    # --- Top menu (Minimalist) ---
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index"},
     ],
@@ -267,10 +271,12 @@ JAZZMIN_SETTINGS = {
     "show_sidebar": True,
     "navigation_expanded": True,
 
-    # User menu (remove duplicate "See Profile")
-    "usermenu_links": [],
+    # --- User menu (Clean profile link) ---
+    "usermenu_links": [
+        {"name": "Profile", "url": "/profile/", "icon": "fas fa-user-circle"},
+    ],
 
-    # Custom links (grouping only)
+    # --- Custom links (Structured Groups) ---
     "custom_links": {
         "languages": [
             {
@@ -298,15 +304,21 @@ JAZZMIN_SETTINGS = {
         ],
     },
 
-    # Hide entire apps if you only want custom_links
-    "hide_apps": ["languages", "eshop", "contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
+    # --- Hide redundant/system apps ---
+    "hide_apps": [
+        "languages", "eshop",
+        "contenttypes", "sessions", "sites",
+        "cloudinary_storage", "cloudinary"
+    ],
 
-    # Hide redundant models
+    # --- Hide redundant models ---
     "hide_models": ["auth.Group"],
 
+    # --- Ordering ---
     "order_with_respect_to": ["auth", "users", "eshop", "languages"],
     "related_modal_active": False,
 
+    # --- Icons ---
     "icons": {
         "auth": "fas fa-shield-alt",
         "auth.user": "fas fa-user",
@@ -321,4 +333,57 @@ JAZZMIN_SETTINGS = {
     },
     "default_icon_parents": "fas fa-folder-open",
     "default_icon_children": "fas fa-circle",
+}
+
+# ----------------------------------------------------------------------
+
+# --- JAZZMIN_UI_TWEAKS (Styling: Attractive, Modern, Readable) ---
+
+JAZZMIN_UI_TWEAKS = {
+    # --- Theme & Colors (The Attractive Core) ---
+    "theme": "cosmo",                     # CRITICAL: A modern, clean light theme
+    "dark_mode_theme": "darkly",          # Crisp, professional dark mode
+    "accent": "accent-primary",
+    
+    # High contrast sidebar and navbar for a sharp look
+    "navbar": "navbar-dark navbar-primary", # Dark blue/purple navbar
+    "sidebar": "sidebar-dark-warning",    # Dark sidebar with a striking yellow/gold accent on active items
+
+    # --- Layout & Fixes (Maximized Usability) ---
+    "navbar_fixed": True,               # Fixed top bar
+    "sidebar_fixed": True,              # Fixed sidebar (best for navigation)
+    "sidebar_nav_child_indent": True,   
+    "footer_small_text": True,          
+    "layout_boxed": False,
+
+    # --- Text & Spacing (Perfect Balance for Clarity) ---
+    "navbar_small_text": True,          # Sleek top bar
+    "body_small_text": False,           # CRITICAL: Ensures content text is large and readable (not cramped)
+    "sidebar_nav_compact_style": False, # CRITICAL: Normal line spacing in the menu
+    "sidebar_nav_small_text": False,    # CRITICAL: Normal sidebar text size
+
+    # --- Buttons (Maintain Professional Colors) ---
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    },
+    "actions_button_classes": {
+        "add": "btn-success",
+        "change": "btn-info",
+        "delete": "btn-danger",
+        "save": "btn-primary",
+        "submit": "btn-primary",
+    },
+    
+    # --- Other Defaults ---
+    "brand_small_text": False,
+    "no_navbar_border": True,
+    "footer_fixed": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
 }
