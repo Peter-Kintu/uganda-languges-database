@@ -36,6 +36,25 @@
             background-color: rgba(30, 41, 59, 0.95); /* slate-800 with transparency */
             backdrop-filter: blur(5px);
         }
+        
+        /* NEW: Class for subtle hover glow */
+        .job-card-hover:hover {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); /* indigo-500 shadow */
+        }
+
+        /* Styles for the Read More/Less toggle */
+        .collapsed-content {
+            max-height: 4rem; /* Hides overflow for job content */
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .expanded-content {
+            max-height: 1000px; /* Large height to ensure full content is visible */
+        }
+        /* Text fading effect for collapsed state */
+        .text-fade-bottom {
+            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+        }
     </style>
 {% endblock %}
 
@@ -76,7 +95,7 @@
             {% for job in job_posts %}
                 {% if forloop.counter <= recommended_jobs_count %}
                 {# Only show the recommended subset from the paginated list on the first page #}
-                <div class="bg-gray-800 rounded-lg shadow-2xl p-6 transition duration-300 ease-in-out border-2 border-indigo-500 hover:bg-gray-700/50">
+                <div class="bg-gray-800 rounded-xl shadow-2xl p-6 transition duration-300 ease-in-out border-2 border-indigo-500 hover:bg-gray-700/50 job-card-hover">
                     <div class="flex flex-col md:flex-row md:justify-between md:items-start">
                         
                         {% if job.company_logo_or_media %}
@@ -86,12 +105,13 @@
                         {% endif %}
 
                         <div class="flex-grow">
-                            <div class="flex justify-between items-start mb-2">
-                                <h2 class="text-xl font-bold text-white leading-tight">
+                            {# Updated Layout for Mobile Stacking #}
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
+                                <h2 class="text-xl font-bold text-white leading-tight mb-2 sm:mb-0">
                                     {{ job.post_content|truncatechars:70 }} 
                                     {% if job.post_content|length > 70 %}...{% endif %}
                                 </h2>
-                                <span class="ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0">{{ job.get_job_category_display }}</span>
+                                <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
                             </div>
                             
                             <p class="text-gray-400 text-sm mb-3">
@@ -100,14 +120,30 @@
                                 <span>{{ job.recruiter_location }}</span>
                             </p>
 
-                            <p class="text-gray-300 text-sm mb-4">
-                                <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills|truncatechars:120 }}
-                            </p>
+                            {# Expandable Job Content #}
+                            <div id="recommended-details-{{ job.pk }}">
+                                <p class="text-gray-300 text-sm mb-2 collapsed-content text-fade-bottom" data-job-content>
+                                    {{ job.post_content }}
+                                </p>
+                                <p class="text-gray-300 text-sm mb-4" data-job-skills>
+                                    <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills }}
+                                </p>
+                            </div>
                             
+                            {% if job.post_content|length > 70 or job.required_skills|length > 120 %}
+                            <button onclick="toggleDetails('recommended-details-{{ job.pk }}', this)" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium mt-1 mb-3 transition duration-150 ease-in-out flex items-center">
+                                Read More
+                                <svg class="w-4 h-4 ml-1 transform transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                            
+                            {# Updated Metadata for always visible date #}
                             <div class="flex items-center text-sm text-gray-500 space-x-4">
                                 <span class="text-xs font-medium uppercase border border-gray-600 px-2 py-0.5 rounded-full">{{ job.get_job_type_display }}</span>
-                                <span class="text-gray-600 hidden sm:inline">|</span>
-                                <span class="hidden sm:inline">Posted: {{ job.timestamp|date:"M d, Y" }}</span>
+                                <span class="text-gray-600">|</span>
+                                <span>Posted: {{ job.timestamp|date:"M d, Y" }}</span>
                             </div>
                         </div>
                     </div>
@@ -154,7 +190,8 @@
             {% for job in job_posts %}
                 {# If on page 1 and recommendations exist, skip the recommended ones in the main list #}
                 {% if not user.is_authenticated or job_posts.number != 1 or forloop.counter > recommended_jobs_count %}
-                <div class="bg-gray-800 rounded-lg shadow-xl p-6 transition duration-300 ease-in-out hover:shadow-indigo-500/50 hover:bg-gray-700/50 border border-gray-700">
+                {# Updated Card Styling #}
+                <div class="bg-gray-800 rounded-xl shadow-xl p-6 transition duration-300 ease-in-out hover:bg-gray-700/50 border border-gray-700 job-card-hover">
                     <div class="flex flex-col md:flex-row md:justify-between md:items-start">
                         
                         {% if job.company_logo_or_media %}
@@ -164,12 +201,13 @@
                         {% endif %}
 
                         <div class="flex-grow">
-                            <div class="flex justify-between items-start mb-2">
-                                <h2 class="text-xl font-bold text-white leading-tight">
+                            {# Updated Layout for Mobile Stacking #}
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
+                                <h2 class="text-xl font-bold text-white leading-tight mb-2 sm:mb-0">
                                     {{ job.post_content|truncatechars:70 }} 
                                     {% if job.post_content|length > 70 %}...{% endif %}
                                 </h2>
-                                <span class="ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0">{{ job.get_job_category_display }}</span>
+                                <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
                             </div>
                             
                             <p class="text-gray-400 text-sm mb-3">
@@ -178,14 +216,30 @@
                                 <span>{{ job.recruiter_location }}</span>
                             </p>
 
-                            <p class="text-gray-300 text-sm mb-4">
-                                <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills|truncatechars:120 }}
-                            </p>
+                            {# Expandable Job Content #}
+                            <div id="main-details-{{ job.pk }}">
+                                <p class="text-gray-300 text-sm mb-2 collapsed-content text-fade-bottom" data-job-content>
+                                    {{ job.post_content }}
+                                </p>
+                                <p class="text-gray-300 text-sm mb-4" data-job-skills>
+                                    <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills }}
+                                </p>
+                            </div>
                             
+                            {% if job.post_content|length > 70 or job.required_skills|length > 120 %}
+                            <button onclick="toggleDetails('main-details-{{ job.pk }}', this)" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium mt-1 mb-3 transition duration-150 ease-in-out flex items-center">
+                                Read More
+                                <svg class="w-4 h-4 ml-1 transform transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                            
+                            {# Updated Metadata for always visible date #}
                             <div class="flex items-center text-sm text-gray-500 space-x-4">
                                 <span class="text-xs font-medium uppercase border border-gray-600 px-2 py-0.5 rounded-full">{{ job.get_job_type_display }}</span>
-                                <span class="text-gray-600 hidden sm:inline">|</span>
-                                <span class="hidden sm:inline">Posted: {{ job.timestamp|date:"M d, Y" }}</span>
+                                <span class="text-gray-600">|</span>
+                                <span>Posted: {{ job.timestamp|date:"M d, Y" }}</span>
                             </div>
                         </div>
                     </div>
@@ -264,6 +318,43 @@
 {% block footer_scripts %}
     {{ block.super }}
     <script>
+        
+        // Function to toggle job details (Read More/Less)
+        function toggleDetails(id, button) {
+            const container = document.getElementById(id);
+            const content = container.querySelector('[data-job-content]');
+            const icon = button.querySelector('[data-toggle-icon]');
+
+            // Check if the content is currently expanded
+            if (content.classList.contains('expanded-content')) {
+                // Collapse
+                content.classList.remove('expanded-content');
+                content.classList.add('collapsed-content');
+                content.classList.add('text-fade-bottom'); // Reapply fade effect
+                
+                button.innerHTML = 'Read More <svg class="w-4 h-4 ml-1 transform transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
+            } else {
+                // Expand
+                content.classList.remove('collapsed-content');
+                content.classList.remove('text-fade-bottom'); // Remove fade effect
+                content.classList.add('expanded-content');
+                
+                button.innerHTML = 'Read Less <svg class="w-4 h-4 ml-1 transform rotate-180 transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
+            }
+        }
+        
+        // Initialize collapsed state for all job content on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-job-content]').forEach(content => {
+                // Only collapse if the content is actually longer than the truncated amount (assuming 4 lines in max-h-16)
+                if (content.scrollHeight > content.clientHeight) {
+                    content.classList.add('collapsed-content');
+                    content.classList.add('text-fade-bottom');
+                }
+            });
+        });
+
+
         // Simple AJAX for Upvoting
         document.querySelectorAll('.upvote-form').forEach(form => {
             form.addEventListener('submit', function(e) {
