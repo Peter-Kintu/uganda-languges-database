@@ -247,19 +247,22 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Ensure this is set in your .env file or environment variables
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# JAZZMIN Settings
+
+# settings.py (REVISED JAZZMIN_SETTINGS)
+
 JAZZMIN_SETTINGS = {
-    # --- Branding ---
+    # --- Branding (Kept as-is) ---
     "site_title": "Uganda Admin", 
     "site_header": "Uganda",      
     "site_brand": "Uganda",       
     "site_logo": "static/images/uganda_logo.png", 
     "site_icon": "static/images/favicon.ico",
     "welcome_sign": "Welcome to Uganda — Administration Dashboard", 
-
-    # --- Models & Structure (Consolidated for a cleaner look) ---
-    "search_model": ["users.CustomUser", "eshop.Product", "languages.PhraseContribution"],
     "user_avatar": None,
+    
+    # --- Menu Structure ---
+    "search_model": ["users.CustomUser", "eshop.Product", "languages.PhraseContribution"],
+    
     # HIDE unnecessary Top Menu links for a cleaner header
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
@@ -268,50 +271,59 @@ JAZZMIN_SETTINGS = {
     "show_sidebar": True,
     "navigation_expanded": True,
     
-    # --- Side Menu Organization (FIX: Grouping related apps and removing redundant/single links) ---
+    # --- Side Menu Links ---
     "usermenu_links": [
         {"name": "See Profile", "url": "/profile/", "icon": "fas fa-user-circle"},
     ],
     
-    # Custom Links to group all models logically
+    # Custom Links (Refined Grouping)
     "custom_links": {
         "languages": [
             {
-                "name": "Job Posts & Listing",
+                "name": "Job Management",
                 "icon": "fas fa-briefcase",
+                # Group JobPost, Recruiter, JobCategory, JobType
                 "models": ["languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType"],
             },
             {
                 "name": "Phrase Contributions",
                 "icon": "fas fa-language",
+                # Group PhraseContribution
                 "models": ["languages.PhraseContribution"],
             },
         ],
         "eshop": [
             {
-                "name": "Products & Orders",
+                "name": "Store Operations",
                 "icon": "fas fa-store",
+                # Group Product and Order
                 "models": ["eshop.Product", "eshop.Order"],
             },
         ],
     },
     
-    # FIX: Remove default app links which overlap with custom_links
-    # Hide the individual models/apps that are now grouped under "custom_links"
+    # --- Hiding Redundant/System Models (Simplified) ---
+    # Only hide system models and the apps that hold only grouped models.
     "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage", "cloudinary"],
-    "hide_models": ["languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType", "languages.PhraseContribution", "eshop.Product", "eshop.Order", "auth.Group", "users.CustomUser"],
+    
+    # Only hide the individual models that are now grouped under "custom_links"
+    "hide_models": [
+        "languages.JobPost", "languages.Recruiter", "languages.JobCategory", "languages.JobType", "languages.PhraseContribution",
+        "eshop.Product", "eshop.Order", 
+        "auth.Group" # Hiding Group since permissions are managed via Users
+    ],
 
 
     # Ordering apps in the menu
     "order_with_respect_to": ["auth", "users", "eshop", "languages"],
     "related_modal_active": False,
 
-    # --- Icons (Expanded and used for custom links) ---
+    # --- Icons (Retained and used for custom links) ---
     "icons": {
         "auth": "fas fa-shield-alt",
         "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
         "users.CustomUser": "fas fa-user-circle",
+        # ... (rest of the icons are fine)
         "eshop.Product": "fas fa-box-open",
         "eshop.Order": "fas fa-shopping-cart",
         "languages.JobPost": "fas fa-file-alt",
@@ -324,36 +336,30 @@ JAZZMIN_SETTINGS = {
     "default_icon_children": "fas fa-circle",
 }
 
-# JAZZMIN UI Tweaks (MAXIMUM COMPACTNESS AND CLARITY)
+
+# settings.py (REVISED JAZZMIN_UI_TWEAKS)
 JAZZMIN_UI_TWEAKS = {
-    # --- Theme & Colors ---
-    # Using 'lux' but with dark components for a professional, crisp feel.
+    # --- Theme & Colors (Kept as-is) ---
     "theme": "lux",                     
     "dark_mode_theme": "darkly",        
     "accent": "accent-primary",
-    
-    # Using dark, highly contrasting navbar for clear visual break.
     "navbar": "navbar-dark navbar-primary", 
-    
-    # Dark sidebar for branding and clarity.
     "sidebar": "sidebar-dark-primary",     
 
     # --- Layout Organization Fixes (Essential for a clean, compact look) ---
-    "navbar_fixed": True,               # FIX: Keeps the top navbar visible while scrolling
-    "sidebar_fixed": True,              # FIX: Keeps the sidebar (navigation) always accessible
-    "sidebar_nav_child_indent": True,   # FIX: Adds indentation for clearer hierarchy in the menu
-    "footer_small_text": True,          # Make footer text smaller for a cleaner look
+    "navbar_fixed": True,              
+    "sidebar_fixed": True,              
+    "sidebar_nav_child_indent": True,  
+    "footer_small_text": True,          
+    "layout_boxed": False, 
     
-    # TWEAKS FOR A TIGHTER LAYOUT (These are the keys to a non-disorganized look):
-    "navbar_small_text": True,          # Use smaller text in the navbar
-    "body_small_text": True,            # **CRITICAL FIX**: Uses smaller text in the main content (tables/forms)
-    "sidebar_nav_compact_style": True,  # Uses compact style for the sidebar navigation
-    "sidebar_nav_small_text": True,     # Uses smaller text in the sidebar
+    # TWEAKS RELAXED FOR CLARITY:
+    "navbar_small_text": True,          # Still useful for a sleek top bar
+    "body_small_text": False,           # **CRITICAL CHANGE**: Use default body text size
+    "sidebar_nav_compact_style": False, # **CRITICAL CHANGE**: Use normal sidebar spacing
+    "sidebar_nav_small_text": False,    # **CRITICAL CHANGE**: Use normal sidebar text size
 
-    # Added one more layout tweak for max space usage
-    "layout_boxed": False, # Ensures content uses full screen width
-
-    # --- Button Styles ---
+    # --- Button Styles (Kept as-is) ---
     "button_classes": {
         "primary": "btn-primary",
         "secondary": "btn-secondary",
