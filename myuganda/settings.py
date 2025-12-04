@@ -339,37 +339,20 @@ JAZZMIN_SETTINGS = {
 
 # --- JAZZMIN_UI_TWEAKS (Styling: Attractive, Modern, Readable) ---
 
+# Jazzmin UI Tweaks
 JAZZMIN_UI_TWEAKS = {
-    # --- Theme & Colors (The Attractive Core) ---
-    "theme": "cosmo",                     # CRITICAL: A modern, clean light theme
-    "dark_mode_theme": "darkly",          # Crisp, professional dark mode
+    "theme": "darkly",
+    "dark_mode_theme": "darkly",
     "accent": "accent-primary",
-    
-    # High contrast sidebar and navbar for a sharp look
-    "navbar": "navbar-dark navbar-primary", # Dark blue/purple navbar
-    "sidebar": "sidebar-dark-warning",    # Dark sidebar with a striking yellow/gold accent on active items
-
-    # --- Layout & Fixes (Maximized Usability) ---
-    "navbar_fixed": True,               # Fixed top bar
-    "sidebar_fixed": True,              # Fixed sidebar (best for navigation)
-    "sidebar_nav_child_indent": True,   
-    "footer_small_text": True,          
-    "layout_boxed": False,
-
-    # --- Text & Spacing (Perfect Balance for Clarity) ---
-    "navbar_small_text": True,          # Sleek top bar
-    "body_small_text": False,           # CRITICAL: Ensures content text is large and readable (not cramped)
-    "sidebar_nav_compact_style": False, # CRITICAL: Normal line spacing in the menu
-    "sidebar_nav_small_text": False,    # CRITICAL: Normal sidebar text size
-
-    # --- Buttons (Maintain Professional Colors) ---
+    "navbar": "navbar-dark",
+    "sidebar": "sidebar-dark-primary",
     "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success"
+        "primary": "btn-outline-primary",
+        "secondary": "btn-outline-secondary",
+        "info": "btn-outline-info",
+        "warning": "btn-outline-warning",
+        "danger": "btn-outline-danger",
+        "success": "btn-outline-success"
     },
     "actions_button_classes": {
         "add": "btn-success",
@@ -378,12 +361,19 @@ JAZZMIN_UI_TWEAKS = {
         "save": "btn-primary",
         "submit": "btn-primary",
     },
-    
-    # --- Other Defaults ---
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
     "brand_small_text": False,
-    "no_navbar_border": True,
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
     "footer_fixed": False,
+    "sidebar_fixed": False,
+    "sidebar_nav_small_text": False,
     "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
 }
