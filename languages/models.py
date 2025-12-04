@@ -117,6 +117,21 @@ class JobPost(models.Model):
         help_text=_("The location of the company/recruiter.")
     )
 
+    # === NEW FIELDS FOR EASY APPLY CONTACT ===
+    recruiter_email = models.EmailField(
+        max_length=254, 
+        null=True, 
+        blank=True,
+        help_text=_("The email address applicants should use for 'Easy Apply'.")
+    )
+    recruiter_whatsapp = models.CharField(
+        max_length=20, 
+        null=True, 
+        blank=True,
+        help_text=_("The WhatsApp number (e.g., +256701234567) applicants should use for 'Easy Apply'.")
+    )
+    # =========================================
+
     timestamp = models.DateTimeField(auto_now_add=True)
     is_validated = models.BooleanField(
         default=False, 
@@ -133,7 +148,7 @@ class JobPost(models.Model):
         help_text=_("Optional: Upload a company logo (image) or short recruitment video.")
     )
 
-    # === NEW FIELD FOR APPLICATION LINK ===
+    # === NEW FIELD FOR APPLICATION LINK (NON-EASY APPLY) ===
     application_url = models.URLField(
         max_length=200, 
         null=True, 

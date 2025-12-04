@@ -155,7 +155,10 @@
                             Apply Now
                         </a>
                         {% else %}
-                        <span class="text-gray-500 text-sm italic">Application link not provided.</span>
+                        {# NEW: Easy Apply Button - NOW PASSING EMAIL/WHATSAPP #}
+                        <button onclick="openEasyApplyModal('{{ job.post_content|safe }}', '{{ job.recruiter_name|safe }}', '{{ job.recruiter_email|safe }}', '{{ job.recruiter_whatsapp|safe }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
+                            Easy Apply
+                        </button>
                         {% endif %}
                         
                         <form method="post" action="{% url 'languages:upvote_job_application' pk=job.pk %}" class="upvote-form flex items-center">
@@ -251,7 +254,10 @@
                             Apply Now
                         </a>
                         {% else %}
-                        <span class="text-gray-500 text-sm italic">Application link not provided.</span>
+                        {# NEW: Easy Apply Button - NOW PASSING EMAIL/WHATSAPP #}
+                        <button onclick="openEasyApplyModal('{{ job.post_content|safe }}', '{{ job.recruiter_name|safe }}', '{{ job.recruiter_email|safe }}', '{{ job.recruiter_whatsapp|safe }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
+                            Easy Apply
+                        </button>
                         {% endif %}
                         
                         <form method="post" action="{% url 'languages:upvote_job_application' pk=job.pk %}" class="upvote-form flex items-center">
@@ -313,6 +319,53 @@
         {% endwith %}
     {% endif %}
 </main>
+
+<div id="easyApplyModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity duration-300">
+    <div class="flex items-center justify-center min-h-screen px-4 py-8">
+        <div class="bg-gray-800 w-full max-w-lg mx-auto rounded-xl shadow-2xl p-6 md:p-8 transform transition-all duration-300 scale-95 opacity-0" id="easyApplyModalContent">
+            <div class="flex justify-between items-start border-b border-gray-700 pb-3 mb-4">
+                <h3 class="text-2xl font-bold text-indigo-400">Easy Application</h3>
+                <button onclick="closeEasyApplyModal()" class="text-gray-400 hover:text-white transition duration-150">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <p class="text-gray-300 mb-4">Applying for: <span id="modal-job-title" class="font-semibold text-white italic"></span></p>
+            <p class="text-gray-400 mb-6 text-sm">You are applying to <span id="modal-recruiter-name" class="font-medium text-indigo-300"></span>.</p>
+
+            <form id="easyApplyForm" class="space-y-6">
+                <div class="space-y-2">
+                    <label for="cvFile" class="block text-sm font-medium text-indigo-300">Upload Your CV/Resume (PDF/DOCX)</label>
+                    <input type="file" id="cvFile" name="cvFile" accept=".pdf,.doc,.docx" required 
+                           class="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 file:cursor-pointer transition duration-150 ease-in-out">
+                    <p class="text-xs text-gray-500 mt-1">Maximum file size: 5MB</p>
+                </div>
+                
+                <div class="space-y-2">
+                    <label for="applicationMethod" class="block text-sm font-medium text-indigo-300">Select Submission Method</label>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="applicationMethod" value="email" required class="form-radio h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 focus:ring-indigo-500" checked>
+                            <span class="ml-2 text-white">Email</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="applicationMethod" value="whatsapp" required class="form-radio h-4 w-4 text-green-600 bg-gray-700 border-gray-600 focus:ring-green-500">
+                            <span class="ml-2 text-white">WhatsApp</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3 px-4 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-150 ease-in-out">
+                    Continue to Application
+                </button>
+            </form>
+
+            <div id="applicationActionMessage" class="hidden mt-4 p-3 rounded-md text-sm">
+                
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
 
 {% block footer_scripts %}
@@ -381,6 +434,123 @@
                 })
                 .catch(error => console.error('Error:', error));
             });
+        });
+
+        // ==========================================================
+        // NEW: Easy Apply Modal Functions
+        // ==========================================================
+        const modal = document.getElementById('easyApplyModal');
+        const modalContent = document.getElementById('easyApplyModalContent');
+        const modalJobTitle = document.getElementById('modal-job-title');
+        const modalRecruiterName = document.getElementById('modal-recruiter-name');
+        const easyApplyForm = document.getElementById('easyApplyForm');
+        const applicationActionMessage = document.getElementById('applicationActionMessage');
+        
+        // Variables to hold job data context
+        let currentRecruiterName = '';
+        let currentJobTitle = '';
+        let currentRecruiterEmail = '';
+        let currentRecruiterWhatsApp = '';
+        
+        // Updated function signature to accept contact details
+        function openEasyApplyModal(jobTitle, recruiterName, recruiterEmail, recruiterWhatsApp) {
+            // Remove truncation marks for display in modal and set context
+            currentJobTitle = jobTitle.replace('...', '').trim(); 
+            currentRecruiterName = recruiterName.trim();
+            // Set the new contact context, trimming potential white spaces from Django template
+            currentRecruiterEmail = recruiterEmail.trim();
+            currentRecruiterWhatsApp = recruiterWhatsApp.trim();
+            
+            modalJobTitle.textContent = currentJobTitle;
+            modalRecruiterName.textContent = currentRecruiterName;
+
+            // Reset form visibility and message
+            easyApplyForm.classList.remove('hidden');
+            applicationActionMessage.classList.add('hidden');
+            applicationActionMessage.innerHTML = '';
+            easyApplyForm.reset(); 
+
+            // Show and animate modal
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeEasyApplyModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('opacity-100');
+            }, 300);
+        }
+
+        // Handle form submission - now uses dynamic email/WhatsApp variables
+        easyApplyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const method = document.querySelector('input[name="applicationMethod"]:checked').value;
+            const cvFile = document.getElementById('cvFile').files[0];
+            
+            if (!cvFile) {
+                alert('Please upload your CV/Resume.');
+                return;
+            }
+
+            let actionText = '';
+            
+            const subject = `Job Application: ${currentJobTitle}`;
+            const emailBody = `Dear ${currentRecruiterName},\n\nPlease find my CV attached for the role of ${currentJobTitle} I found on your job board.`;
+            const whatsappBody = `Hello ${currentRecruiterName}, I am applying for the role of ${currentJobTitle}. My CV is attached to this message.`;
+            
+            // Fallback for phone number display in case the field is empty
+            const phoneNumber = currentRecruiterWhatsApp || 'N/A (Not Provided)'; 
+
+            if (method === 'email') {
+                const mailtoLink = `mailto:${currentRecruiterEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+                
+                actionText = `
+                    <div class="bg-indigo-600 p-3 rounded-lg">
+                        <p class="font-semibold text-white mb-2">Email Application Instructions (to: <span class="text-yellow-300 font-bold">${currentRecruiterEmail || 'N/A (Not Provided)'}</span>):</p>
+                        <p class="text-white">1. Click the button below to open your email client.</p>
+                        <p class="text-white">2. **Crucially, manually attach** your uploaded CV (${cvFile.name}) to the email.</p>
+                        <p class="text-white mb-3">3. Send the pre-filled email.</p>
+                        <a href="${currentRecruiterEmail ? mailtoLink : '#'}" target="_blank" class="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-indigo-900 bg-yellow-300 hover:bg-yellow-400 transition duration-150 ${currentRecruiterEmail ? '' : 'opacity-50 cursor-not-allowed'}">
+                            Open Email to Attach & Send
+                        </a>
+                    </div>
+                `;
+            } else if (method === 'whatsapp') {
+                // Use wa.me for web/mobile compatibility
+                const whatsappLink = `https://wa.me/${currentRecruiterWhatsApp}?text=${encodeURIComponent(whatsappBody)}`;
+                
+                actionText = `
+                    <div class="bg-green-700 p-3 rounded-lg">
+                        <p class="font-semibold text-white mb-2">WhatsApp Application Instructions (to: <span class="text-white font-bold">${phoneNumber}</span>):</p>
+                        <p class="text-white">1. Click the button below to open WhatsApp chat.</p>
+                        <p class="text-white">2. **Crucially, manually attach** your uploaded CV (${cvFile.name}) to the message.</p>
+                        <p class="text-white mb-3">3. Send the pre-filled message.</p>
+                        <a href="${currentRecruiterWhatsApp ? whatsappLink : '#'}" target="_blank" class="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-green-900 bg-white hover:bg-gray-100 transition duration-150 ${currentRecruiterWhatsApp ? '' : 'opacity-50 cursor-not-allowed'}">
+                            Open WhatsApp to Attach & Send
+                        </a>
+                    </div>
+                `;
+            }
+
+            // Display the instructions to the user and hide the form
+            document.getElementById('easyApplyForm').classList.add('hidden');
+            applicationActionMessage.innerHTML = actionText;
+            applicationActionMessage.classList.remove('hidden');
+        });
+
+        // Hide the modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target.id === 'easyApplyModal') {
+                closeEasyApplyModal();
+            }
         });
     </script>
 {% endblock footer_scripts %}

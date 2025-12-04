@@ -18,8 +18,10 @@ class JobPostForm(forms.ModelForm):
             'required_skills', 
             'recruiter_name', 
             'recruiter_location',
-            'application_url', # <--- ADDED FIELD
-            'company_logo_or_media', # ADDED: New file field for logo/media
+            'application_url', 
+            'recruiter_email',       # <--- ADDED FIELD
+            'recruiter_whatsapp',    # <--- ADDED FIELD
+            'company_logo_or_media', 
         ]
         
         # Customizes the HTML widgets with job-themed placeholders.
@@ -48,7 +50,17 @@ class JobPostForm(forms.ModelForm):
             }),
             # ADDED: Widget for the new application URL field
             'application_url': forms.URLInput(attrs={
-                'placeholder': 'https://company.com/apply/job-title',
+                'placeholder': 'https://company.com/apply/job-title (Alternative to Easy Apply)',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+            }),
+            # NEW: Widget for Recruiter Email
+            'recruiter_email': forms.EmailInput(attrs={
+                'placeholder': 'application@company.com (For Easy Apply applicants)',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+            }),
+            # NEW: Widget for Recruiter WhatsApp
+            'recruiter_whatsapp': forms.TextInput(attrs={
+                'placeholder': '+256770123456 (For Easy Apply applicants, no spaces/dashes)',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
             }),
             # ADDED: Widget for the new file field. Using a standard file input class.
@@ -65,7 +77,9 @@ class JobPostForm(forms.ModelForm):
             'job_type': 'Employment Type',
             'recruiter_name': 'Your/Company Name',
             'recruiter_location': 'Location',
-            'application_url': 'Application Link (URL)', # <--- ADDED LABEL
+            'application_url': 'External Application Link (URL)', 
+            'recruiter_email': 'Easy Apply Email',       # <--- ADDED LABEL
+            'recruiter_whatsapp': 'Easy Apply WhatsApp Number', # <--- ADDED LABEL
             'company_logo_or_media': 'Company Logo or Media',
         }
         

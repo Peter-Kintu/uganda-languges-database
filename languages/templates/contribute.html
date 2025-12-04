@@ -80,7 +80,7 @@
                 </div>
             </div>
             
-            **<div class="space-y-8">
+            <div class="space-y-8">
                 <div class="space-y-2">
                     <label for="{{ form.application_url.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
                         {{ form.application_url.label }}
@@ -91,7 +91,33 @@
                         <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
                     {% endfor %}
                 </div>
-            </div>**
+            </div>
+            
+            {# NEW: Easy Apply Contact Fields #}
+            <div class="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <label for="{{ form.recruiter_email.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
+                        {{ form.recruiter_email.label }}
+                    </label>
+                    {{ form.recruiter_email|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out shadow-inner" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.recruiter_email.help_text }}</p>
+                    {% for error in form.recruiter_email.errors %}
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="space-y-2">
+                    <label for="{{ form.recruiter_whatsapp.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
+                        {{ form.recruiter_whatsapp.label }}
+                    </label>
+                    {{ form.recruiter_whatsapp|add_class:"w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out shadow-inner" }}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.recruiter_whatsapp.help_text }}</p>
+                    {% for error in form.recruiter_whatsapp.errors %}
+                        <p class="text-red-400 text-sm mt-1 font-medium">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {# END NEW EASY APPLY FIELDS #}
 
             <div class="grid grid-cols-1 gap-8 sm:grid-cols-2">
                 <div class="space-y-2">
