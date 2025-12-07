@@ -226,15 +226,7 @@
     .chat-message strong { font-weight: 700; margin-right: 0.5rem; min-width: fit-content; }
     .chat-message.user { justify-content: flex-end; align-self: flex-end; background-color: #4f46e5; color: #e0e7ff; }
     .chat-message.ai { justify-content: flex-start; align-self: flex-start; background-color: #2d3748; color: #e5e7eb; }
-    .chat-message.ai.speaking { 
-        box-shadow: 0 0 5px 2px #4f46e5; 
-        animation: subtle-pulse 2s infinite ease-in-out;
-    }
-    @keyframes subtle-pulse {
-        0% { box-shadow: 0 0 5px 2px rgba(79, 70, 229, 0.4); }
-        50% { box-shadow: 0 0 10px 4px rgba(79, 70, 229, 0.8); }
-        100% { box-shadow: 0 0 5px 2px rgba(79, 70, 229, 0.4); }
-    }
+    
     .chat-message.error { background-color: #b91c1c; color: #ffffff; border: 1px solid #dc2626; }
 
     /* Input and button area */
@@ -255,111 +247,73 @@
         width: 100%;
         background-color: #0a0e16; 
         border-radius: 1rem; 
-        border: 1px solid #4b5563;
+        border: 1px solid #4b5563; 
         padding: 0.5rem 0.5rem; 
-        transition: border-color 0.3s, box-shadow 0.3s; 
-        max-width: 900px; /* Constraint input width on large screens */
-        margin: 0 auto;
+        transition: border-color 0.3s, box-shadow 0.3s;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     }
     
-    .integrated-input-container:focus-within {
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 2px #4f46e5;
-    }
-
+    /* Textarea styling */
     #chatInput {
-        flex-grow: 1; 
-        width: 100%;
-        padding: 0 0.5rem; /* Added slight horizontal padding here */
+        flex-grow: 1;
+        min-height: 2.5rem; 
+        max-height: 200px; /* Limit vertical growth */
+        padding: 0.75rem; 
+        background: transparent;
         border: none;
-        background-color: transparent; 
         color: #e5e7eb;
-        font-size: 1.1rem; 
-        box-shadow: none; 
-        display: block;
-        margin: 0;
-        resize: none; 
-        overflow: auto; 
-        min-height: 1.5rem; 
-        max-height: 10rem; 
-    }
-    
-    /* Microphone/Record Button (consistent style) */
-    #recordButton {
-        background-color: #ef4444; 
-        color: white;
-        margin-right: 0.25rem; 
-    }
-    
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        resize: none; /* Controlled by JS, but set to none initially */
+        font-size: 1rem;
+        line-height: 1.5;
+        outline: none;
+        overflow-y: auto;
     }
 
-    #recordButton.recording {
-        background-color: #10b981; 
-        animation: pulse 1.5s infinite;
-    }
-
-    /* Send Button (consistent style) */
-    #sendChatButton {
-        background-color: #4f46e5; 
-        color: #fff; 
-        margin-left: 0.25rem; 
-    }
-    
-    /* Stop Speaking Button - Now a discreet icon in the utility group */
-    #stopSpeakButton {
-        background-color: #f59e0b; 
-        color: #1f2937; 
-        display: none; 
-    }
-    
-    /* Responsive Adjustments (Mobile Overlay) */
+    /* Responsive Design for Mobile */
     @media (max-width: 768px) {
         .app-container {
             flex-direction: column;
+            height: auto;
+            min-height: 100vh;
         }
 
         .sidebar {
-            position: absolute; /* Overlay on mobile */
+            width: 100%;
             height: 100%;
-            width: 80%;
-            transform: translateX(-100%); /* Start hidden */
-            /* Ensure the sidebar covers the chat area when open */
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5); 
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translateX(-100%); /* Start off-screen */
+            padding-top: 5rem; /* Space for the fixed header */
+            transition: transform 0.3s ease-in-out;
+            border-right: none;
         }
-        
+
         .sidebar.open {
-            transform: translateX(0);
+            transform: translateX(0); /* Slide in */
         }
 
         .chat-main-area {
-            height: 100%; /* Take up the rest of the space */
-        }
-
-        #chatLog {
-            max-height: calc(100vh - 12rem); /* Adjust for header and input area */
-            min-height: unset;
+            width: 100%;
         }
         
-        .integrated-input-container {
-            max-width: 100%;
+        /* The header needs to be fixed to show the menu button */
+        .chat-header-main {
+            position: sticky;
+            top: 0;
+            z-index: 5;
         }
         
-        /* Ensure the desktop collapse styles are overridden on mobile */
+        /* Specific adjustments for mobile view when sidebar is open */
         .sidebar.is-collapsed {
             width: 80%; /* Back to mobile overlay width */
         }
-        
         .sidebar.is-collapsed .sidebar-header h2,
         .sidebar.is-collapsed .history-item span,
         .sidebar.is-collapsed .sidebar-footer #localTimeDisplay,
         .sidebar.is-collapsed .sidebar-footer #userLocationDisplay {
             display: block; /* Show text content when sidebar is open on mobile */
         }
-        
         .sidebar.is-collapsed .utility-button-group {
             flex-direction: row; /* Restore row layout on mobile */
         }
@@ -374,38 +328,32 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
             </button>
         </div>
-
         <ul class="history-list" id="historyList">
             </ul>
-
         <div class="sidebar-footer">
-            <div id="localTimeDisplay" class="text-xs text-gray-500 text-center mb-2"></div>
-            <div id="userLocationDisplay" class="text-xs text-gray-500 text-center mb-3"></div>
-
             <div class="utility-button-group">
                 <button onclick="summarizeChat()" class="action-icon-button summarize" title="Summarize Session">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5C4 17.433 5.567 19 7.5 19H16.5C18.433 19 20 17.433 20 15.5V8.5C20 6.567 18.433 5 16.5 5H7.5C5.567 5 4 6.567 4 8.5V15.5Z"></path><path d="M8 11L16 11"></path><path d="M8 7L16 7"></path><path d="M8 15L13 15"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                 </button>
-                <button onclick="exportChat()" class="action-icon-button export" title="Export Chat (.txt)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6m-3 10v-6m-3 3h6"></path></svg>
+                <button onclick="exportChat()" class="action-icon-button export" title="Export Chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
-                <button onclick="clearChat()" class="action-icon-button clear" title="Clear History">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0l-1.63 15.48a2 2 0 0 1-2 1.83H7.63a2 2 0 0 1-2-1.83L5 6m1 0V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
-                <button onclick="stopSpeaking()" class="action-icon-button" id="stopSpeakButton" title="Stop Speaking">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-6h4V8h-4v6z"/></svg>
+                <button onclick="clearChat()" class="action-icon-button clear" title="Clear All History">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
             </div>
+            
+            <p id="localTimeDisplay" class="text-sm text-gray-400 mt-4">Local Time: 00:00:00</p>
+            <p id="userLocationDisplay" class="text-xs text-gray-500 mt-1">Location: Loading...</p>
         </div>
     </div>
 
     <div class="chat-main-area">
         <div class="chat-header-main">
-            <button id="sidebarToggle" title="Toggle Sidebar">☰</button>
-            <div>
-                <h1>Career Companion AI</h1>
-                <p class="text-xs text-indigo-400">Personalized Career, CV, & Interview Guidance</p>
-            </div>
+            <button id="sidebarToggle" title="Toggle Sidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <h1>Career Companion AI 🧑‍💻</h1>
         </div>
 
         <div id="chatLog">
@@ -413,663 +361,81 @@
 
         <div class="chat-input-area">
             <div class="integrated-input-container">
-                <button onclick="toggleRecording()" class="action-icon-button" id="recordButton" title="Record Voice Message">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3.9-3.6 7.1-8.3 7.1S3.7 13.9 3.7 10h-1c0 4.9 3.6 8.9 8.3 9.8v3.2h2v-3.2c4.7-.9 8.3-4.9 8.3-9.8h-1z"/>
-                    </svg>
-                </button>
-                
-                <textarea id="chatInput" placeholder="Type your career question, job title, or tap the mic to speak..." onkeydown="handleKeydown(event)"></textarea>
-                
+                <textarea id="chatInput" placeholder="Type your career question, job title, or message here..." onkeydown="handleKeydown(event)"></textarea>
                 <button onclick="typeQuery()" class="action-icon-button" id="sendChatButton" title="Send Message">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M2.01 21L23 12 2.01 3v7l15 2-15 2v7z"/>
                     </svg>
                 </button>
             </div>
-
             <div id="loadingIndicator" class="text-center text-indigo-400 mt-2 hidden">
                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-400 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                AI is typing...
+                AI is thinking...
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- Global Variables and Constants ---
-    const sidebar = document.getElementById('sidebar');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const historyList = document.getElementById('historyList');
-    const chatLog = document.getElementById('chatLog');
     const chatInput = document.getElementById('chatInput');
-    const recordButton = document.getElementById('recordButton');
+    const chatLog = document.getElementById('chatLog');
     const sendChatButton = document.getElementById('sendChatButton');
     const loadingIndicator = document.getElementById('loadingIndicator');
-    const stopSpeakButton = document.getElementById('stopSpeakButton');
-
-    const chatSessionsKey = 'careerCompanionChatSessions';
-    let currentSessionId = 'default'; 
-    let recognition; 
-    let isRecording = false;
-    let speaker = window.speechSynthesis;
-    let userCurrentContext = {
-        latitude: null,
-        longitude: null,
-        localTime: null,
-        localTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    };
+    const historyList = document.getElementById('historyList');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const chatSessionsKey = 'careerCompanionSessions';
+    
+    // Global state for the current chat session
+    let currentSessionId = 'default';
 
     // --- Utility Functions ---
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    function handleKeydown(event) {
-        // Auto-resize textarea logic
-        chatInput.style.height = 'auto';
-        chatInput.style.height = chatInput.scrollHeight + 'px';
-        
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault(); // Prevent new line
-            typeQuery();
-        }
-    }
-    
-    // --- New function to sanitize text for TTS (Symbol Handling) ---
-    function sanitizeForSpeech(text) {
-        if (!text) return "";
-        
-        // Remove markdown emphasis, list bullets, code blocks, slashes, and other noise symbols
-        let sanitized = text.replace(/([*#`\/<>@])/g, ' '); 
-        
-        // Replace common non-prose characters with spaces or words (e.g., list bullets)
-        sanitized = sanitized.replace(/•/g, ' '); 
-        sanitized = sanitized.replace(/[\n\t]/g, '. '); // Replace newlines/tabs with a period for a pause
-        sanitized = sanitized.replace(/ {2,}/g, ' '); // Collapse multiple spaces
-        
-        return sanitized.trim();
-    }
-
-
-    // --- Message Display and API Functions ---
-
-    function appendMessage(role, text, isError = false) {
-        const messageDiv = document.createElement('div');
-        const roleText = role === 'user' ? 'You' : 'Ai';
-        
-        // Use sanitizeForSpeech only before speaking, keep the original text structure for display
-        const textToDisplay = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-        messageDiv.className = `chat-message ${role} ${isError ? 'error' : ''}`;
-        messageDiv.innerHTML = `<strong>${roleText}:</strong> <span class="text-gray-400">${textToDisplay}</span>`;
-        
-        chatLog.appendChild(messageDiv);
-        chatLog.scrollTop = chatLog.scrollHeight;
-        
-        // If it's an AI response, attempt to speak it.
-        if (role === 'ai' && !isError) {
-            // Pass the original text to the speaking function
-            speakText(text);
-        }
-    }
-
-    async function fetchGemini(contents) {
-        try {
-            const response = await fetch('{% url "users:gemini_proxy" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    contents: contents,
-                    config: {
-                        temperature: 0.7,
-                        maxOutputTokens: 2048
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                try {
-                    const errorBody = await response.json();
-                    throw new Error(errorBody.error || `HTTP error! Status: ${response.status}`);
-                } catch (e) {
-                    throw new Error(`Server returned status ${response.status}. Check Django proxy URL.`);
-                }
-            }
-
-            const data = await response.json();
-            const aiText = data.text || "I apologize, I received an empty response from the AI model.";
-            return aiText;
-
-        } catch (error) {
-            console.error("Gemini API Call Failed:", error);
-            throw error;
-        }
-    }
-
-    function typeQuery() {
-        const prompt = chatInput.value.trim();
-        if (prompt === "") return;
-
-        // Display user message
-        appendMessage('user', prompt);
-        chatInput.value = '';
-        chatInput.style.height = '1.5rem'; // Reset textarea height
-
-        
-        // Loader/Disabling
-        loadingIndicator.classList.remove('hidden');
-        chatInput.disabled = true;
-        sendChatButton.disabled = true;
-        recordButton.disabled = true;
-
-        // Prepare API Call
-        const history = getCurrentHistory();
-
-        // 1. Create a deep copy of the history array for the API call
-        //    We use a deep copy to ensure modifications for context don't affect the original history.
-        let contentsForApi = JSON.parse(JSON.stringify(history));
-
-        // 2. Add the user's current message to the API content array
-        contentsForApi.push({ role: 'user', text: prompt });
-        
-        // 3. Inject System Context into the text of the *last* message to maintain role alternation
-        const contextMessage = `\n\n[System Context: Current Time is ${userCurrentContext.localTime}, Timezone: ${userCurrentContext.localTimeZone}. Location: ${userCurrentContext.latitude ? userCurrentContext.latitude.toFixed(2) + ', ' + userCurrentContext.longitude.toFixed(2) : 'Not Shared'}]`;
-        const lastUserMessage = contentsForApi[contentsForApi.length - 1];
-
-        // Append context to the text of the current user message
-        lastUserMessage.text += contextMessage; 
-        
-        // Call the proxy with the content that has context injected into the last message's text
-        fetchGemini(contentsForApi).then(aiText => {
-            appendMessage('ai', aiText);
-            
-            // 4. Update the permanent history (which excludes the temporary context injection)
-            // Push the clean user prompt
-            history.push({ role: 'user', text: prompt }); 
-            // Push the AI response
-            history.push({ role: 'ai', text: aiText }); 
-            
-            saveChatSession(currentSessionId, history); 
-
-        }).catch(error => {
-            appendMessage('ai', `Error: ${error.message}`, true);
-        }).finally(() => {
-            loadingIndicator.classList.add('hidden');
-            chatInput.disabled = false;
-            sendChatButton.disabled = false;
-            recordButton.disabled = false;
-            chatInput.focus();
-            updateHistorySidebar(); // Update sidebar in case this was the first message of a new session
-        });
-    }
-
-    // --- History Management Functions ---
-
-    sidebarToggle.onclick = () => {
-        // Desktop Collapse/Expand Logic
-        if (window.innerWidth > 768) {
-            sidebar.classList.toggle('is-collapsed');
-        } 
-        // Mobile Overlay Logic
-        else {
-            sidebar.classList.toggle('open');
-        }
-    };
-
     function getChatSessions() {
-        const storedSessions = localStorage.getItem(chatSessionsKey);
-        // Ensure default session exists if storage is empty
-        return storedSessions ? JSON.parse(storedSessions) : { default: [] };
+        const sessions = localStorage.getItem(chatSessionsKey);
+        return sessions ? JSON.parse(sessions) : { 'default': [] };
     }
 
-    function saveChatSession(sessionId, messages) {
+    function saveChatSession(sessionId, history) {
         const sessions = getChatSessions();
-        sessions[sessionId] = messages;
+        sessions[sessionId] = history;
         localStorage.setItem(chatSessionsKey, JSON.stringify(sessions));
-        updateHistorySidebar(); 
     }
 
     function getCurrentHistory() {
-        const sessions = getChatSessions();
-        return sessions[currentSessionId] || [];
+        return getChatSessions()[currentSessionId] || [];
     }
-
-    function getMessagesFromLog() {
-        // Extracts the currently visible messages for saving before a session switch
-        let messages = [];
-        chatLog.querySelectorAll('.chat-message').forEach(div => {
-            const strongTag = div.querySelector('strong');
-            const roleText = strongTag ? strongTag.textContent.toLowerCase().replace(':', '').trim() : '';
-            const textSpan = div.querySelector('span');
-            // Get the innerHTML to preserve certain non-text content, then strip HTML tags for storage
-            const textContent = textSpan ? textSpan.innerHTML.replace(/<[^>]*>/g, '').trim() : ''; 
-            
-            if ((roleText === 'you' || roleText === 'ai') && textContent.length > 0) {
-                // Exclude the welcome message
-                if (textContent.toLowerCase().indexOf("hello, {{ user.username }}! i am your career companion ai.") === -1) {
-                    messages.push({
-                        role: roleText === 'you' ? 'user' : 'ai',
-                        text: textContent
-                    });
-                }
-            }
-        });
-        return messages;
-    }
-
-    function createNewChat() {
-        // Check if current session is worth saving
-        if (getCurrentHistory().length > 0 || (currentSessionId === 'default' && getMessagesFromLog().length > 0)) {
-            // Save the current chat before switching
-            saveChatSession(currentSessionId, getMessagesFromLog());
-            
-            const newSessionId = 'session_' + Date.now();
-            currentSessionId = newSessionId;
-            loadChatHistory(true); 
-            updateHistorySidebar();
-        } else if (getCurrentHistory().length === 0) {
-            // If default is empty, just reset
-            currentSessionId = 'default';
-            loadChatHistory(true);
-            updateHistorySidebar();
-        }
-    }
-
-    function loadHistory(sessionId) {
-        if (currentSessionId === sessionId) return;
-
-        // Save current session before switching
-        saveChatSession(currentSessionId, getMessagesFromLog());
-
-        currentSessionId = sessionId;
-        loadChatHistory(); // Load the selected session's history
-        updateHistorySidebar();
-        
-        // On desktop, clicking a history item should expand the sidebar if it was collapsed
-        if (window.innerWidth > 768) {
-            sidebar.classList.remove('is-collapsed');
-        } 
-        // --- UPDATED: Close sidebar on mobile after selecting a history item ---
-        else {
-            sidebar.classList.remove('open');
-        }
-    }
-
-    function loadChatHistory(isNewSession = false) {
-        const history = isNewSession ? [] : getCurrentHistory();
-        chatLog.innerHTML = ''; 
-        
-        if (history.length === 0) {
-            // Restore initial welcome message if history is empty
-            chatLog.innerHTML = `
-                <div class="chat-message ai">
-                    <strong>Ai:</strong>
-                    <span class="text-gray-400">
-                        Hello, {{ user.username }}! I am your Career Companion AI. How can I assist you with job searching, CV optimization, or interview preparation today?
-                    </span>
-                </div>
-            `;
-            return;
-        }
-
-        history.forEach(item => {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${item.role}`;
-            // Sanitize only for display to prevent XSS, the stored content is assumed safe text.
-            const display_text = item.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            messageDiv.innerHTML = `<strong>${item.role === 'user' ? 'You' : 'Ai'}:</strong> <span class="text-gray-400">${display_text}</span>`;
-            chatLog.appendChild(messageDiv);
-        });
-
-        chatLog.scrollTop = chatLog.scrollHeight;
-    }
-
-    function updateHistorySidebar() {
-        const sessions = getChatSessions();
-        historyList.innerHTML = '';
-        const sessionKeys = Object.keys(sessions).filter(key => sessions[key].length > 0 || key === currentSessionId);
-
-        sessionKeys.sort((a, b) => {
-             // Put 'default' first, then sort by session ID (timestamp) descending
-            if (a === 'default') return -1;
-            if (b === 'default') return 1;
-            return b.localeCompare(a); 
-        });
-
-        sessionKeys.forEach(sessionId => {
-            const messages = sessions[sessionId] || [];
-            
-            let title = 'New Chat'; // Default title for an empty session
-            
-            if (messages.length > 0) {
-                // Use the first user message as the title
-                const firstUserMessage = messages.find(m => m.role === 'user');
-                if (firstUserMessage) {
-                    title = firstUserMessage.text.substring(0, 30).trim() + (firstUserMessage.text.length > 30 ? '...' : '');
-                } else {
-                     title = 'Conversation Started';
-                }
-            }
-
-            const listItem = document.createElement('li');
-            listItem.className = `history-item ${sessionId === currentSessionId ? 'active' : ''}`;
-            
-            // Add icon for better visualization when collapsed
-            const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
-            
-            // Wrap title text in a span to allow hiding in collapsed state
-            // Sanitize for display
-            const displayTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            listItem.innerHTML = icon + `<span>${displayTitle}</span>`;
-            
-            listItem.onclick = () => loadHistory(sessionId);
-            historyList.appendChild(listItem);
-        });
-    }
-
-
-    // --- Action Button Functions (Summarize, Export, Clear) ---
-
-    function summarizeChat() {
-        const history = getCurrentHistory();
-        if (history.length === 0) {
-            alert("No chat history to summarize in this session.");
-            return;
-        }
-        
-        // 1. Add a temporary loader message
-        const summaryLoader = document.createElement('div');
-        summaryLoader.id = 'summaryLoader';
-        summaryLoader.className = 'chat-message ai';
-        summaryLoader.innerHTML = `<strong>Ai:</strong> <span class="text-gray-400">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-400 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Generating Summary...
-        </span>`;
-        chatLog.appendChild(summaryLoader);
-        chatLog.scrollTop = chatLog.scrollHeight;
-
-        // 2. Prepare the summary prompt and call API
-        const summaryPrompt = {
-            role: 'user', 
-            text: `Please provide a concise, professional summary of our current chat session. Focus on the main topics discussed and the career advice provided. Do not invent new content.`
-        };
-        const summaryContents = [...history, summaryPrompt]; // Send full history + summary request
-
-        fetch('{% url "users:gemini_proxy" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                contents: summaryContents,
-                config: {
-                    temperature: 0.1, // Low temp for factual summary
-                    maxOutputTokens: 512
-                }
-            })
-        })
-        .then(async response => {
-            if (!response.ok) {
-                 // Try to catch and display API error details
-                try {
-                    const errorBody = await response.json();
-                    throw new Error(errorBody.error || `HTTP error! Status: ${response.status}`);
-                } catch (e) {
-                    throw new Error(`Non-JSON response (Status ${response.status}). Check server/proxy connection.`);
-                }
-            }
-            return response.json();
-        })
-        .then(data => {
-            document.getElementById('summaryLoader')?.remove();
-            const summaryText = data.text || "I was unable to generate a summary.";
-            appendMessage('ai', "Summary of Session:\n\n" + summaryText);
-        })
-        .catch(error => {
-            document.getElementById('summaryLoader')?.remove();
-            appendMessage('ai', `Summary Error: ${error.message}`, true);
-            console.error("Summary API Call Failed:", error);
-        });
-    }
-
-    function exportChat() {
-        const history = getCurrentHistory(); 
-        if (history.length === 0) {
-            alert("No chat history to export.");
-            return;
-        }
-
-        let exportText = `Career Companion AI Chat Export - {{ user.username }}\nDate: ${new Date().toLocaleString()}\nSession ID: ${currentSessionId}\n\n`;
-
-        history.forEach(item => {
-            const role = item.role === 'user' ? 'You' : 'AI'; 
-            exportText += `${role}: ${item.text}\n\n`;
-        });
-        
-        const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `CareerCompanion_Chat_Export_{{ user.username }}_${Date.now()}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        appendMessage('ai', "Chat history exported successfully as a text file.");
-    }
-
-    function clearChat() {
-        if (confirm("Are you sure you want to clear your entire chat history? This action cannot be undone.")) {
-            localStorage.removeItem(chatSessionsKey);
-            currentSessionId = 'default'; 
-            loadChatHistory(true); 
-            updateHistorySidebar(); 
-            appendMessage('ai', "All chat history has been cleared. How can I help you start fresh with your career goals today?", false); 
-            stopSpeaking();
-        }
-    }
-
-
-    // --- Voice Recognition and TTS Functions ---
-
-    function initSpeechRecognition() {
-        // webkitSpeechRecognition is typically supported in Chrome/Edge, but might need prefixes in other browsers
-        if ('webkitSpeechRecognition' in window) {
-            recognition = new webkitSpeechRecognition();
-            recognition.continuous = false;
-            recognition.lang = 'en-US';
-            
-            recognition.onstart = () => {
-                isRecording = true;
-                recordButton.classList.add('recording');
-                chatInput.placeholder = "Listening... Speak now.";
-                stopSpeaking(); 
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                chatInput.value = transcript;
-                chatInput.style.height = 'auto'; 
-                chatInput.style.height = chatInput.scrollHeight + 'px';
-                setTimeout(typeQuery, 500); 
-            };
-
-            recognition.onerror = (event) => {
-                console.error('Speech Recognition Error:', event.error);
-                chatInput.placeholder = "Error, try typing or press mic again.";
-                isRecording = false;
-                recordButton.classList.remove('recording');
-            };
-
-            recognition.onend = () => {
-                if (isRecording) { 
-                    isRecording = false;
-                    recordButton.classList.remove('recording');
-                    chatInput.placeholder = "Type your career question, job title, or tap the mic to speak...";
-                }
-            };
-        } else {
-            recordButton.disabled = true;
-            recordButton.title = "Voice recognition not supported in this browser.";
-        }
-    }
-
-    function toggleRecording() {
-        if (isRecording) {
-            recognition.stop();
-            isRecording = false;
-        } else if (recognition) {
-            recognition.start();
-        }
-    }
-
-    function getMaleProfessionalVoice(voices) {
-        // Voice priority list (Male or Professional sounding English voices)
-        const preferredVoices = [
-            'Google US English Male',
-            'Microsoft David - English (United States)',
-            'Alex', // macOS default
-            'Zira', // Sometimes gender-neutral, often good quality
-            'en-US Male'
-        ];
-
-        // 1. Try to match by name
-        for (const preferredName of preferredVoices) {
-            const match = voices.find(voice => 
-                voice.lang === 'en-US' && 
-                voice.name.includes(preferredName) &&
-                !voice.name.includes('Female')
-            );
-            if (match) return match;
-        }
-
-        // 2. Fallback: Find any English voice that is not explicitly female
-        const fallbackVoice = voices.find(voice => 
-            voice.lang === 'en-US' && 
-            !voice.name.includes('Female') &&
-            !voice.name.includes('female') &&
-            voice.default // Prefer the default non-female if available
-        );
-
-        if (fallbackVoice) return fallbackVoice;
-
-        // 3. Final Fallback: Any English voice
-        return voices.find(voice => voice.lang === 'en-US');
-    }
-
-    function speakText(text) {
-        if (!speaker) return;
-        
-        speaker.cancel();
-        stopSpeakButton.style.display = 'block';
-
-        // --- UPDATED: Sanitize text for better TTS experience ---
-        const textToSpeak = sanitizeForSpeech(text); 
-        
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
-        
-        // --- UPDATED: Set Rate for "not too fast" and Pitch for professional tone ---
-        utterance.rate = 0.9; // Slightly slower than default (1.0)
-        utterance.pitch = 1.0; // Default pitch
-        utterance.lang = 'en-US';
-        
-        // --- UPDATED: Voice Selection Logic (Male Professional) ---
-        const setVoice = () => {
-            const voices = speaker.getVoices();
-            if (voices.length > 0) {
-                const maleVoice = getMaleProfessionalVoice(voices);
-                if (maleVoice) {
-                    utterance.voice = maleVoice;
-                } else {
-                    console.warn("Could not find a specific male/professional English voice. Using default.");
-                }
-            }
-        };
-
-        // If voices are already loaded, set it immediately
-        setVoice(); 
-
-        // Always register the handler in case they load later (especially for Chrome/Android)
-        speaker.onvoiceschanged = setVoice;
-
-
-        utterance.onstart = () => {
-            const lastAiMessage = chatLog.querySelector('.chat-message.ai:last-child');
-            if (lastAiMessage) {
-                lastAiMessage.classList.add('speaking');
-            }
-        };
-
-        utterance.onend = () => {
-            stopSpeaking(); // Will hide the button and remove speaking class
-        };
-
-        speaker.speak(utterance);
-    }
-
-    function stopSpeaking() {
-        if (speaker) {
-            speaker.cancel();
-        }
-        stopSpeakButton.style.display = 'none';
-        const speakingMessage = chatLog.querySelector('.chat-message.ai.speaking');
-        if (speakingMessage) {
-            speakingMessage.classList.remove('speaking');
-        }
-    }
-
-
-    // --- Context Functions ---
-
+    
+    // Function to update local time and location for context
     function updateAccurateLocalTime() {
+        const timeDisplay = document.getElementById('localTimeDisplay');
         const now = new Date();
-        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const dateString = now.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        
-        userCurrentContext.localTime = `${dateString} ${timeString}`;
-        document.getElementById('localTimeDisplay').textContent = `Time: ${userCurrentContext.localTime}`;
-
-        setTimeout(updateAccurateLocalTime, 60000); 
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short' };
+        timeDisplay.textContent = `Local Time: ${now.toLocaleString(undefined, options)}`;
     }
 
     function getUserLocation() {
         const locationDisplay = document.getElementById('userLocationDisplay');
-        locationDisplay.textContent = "Location: Attempting to get location...";
-
+        window.userCurrentContext = window.userCurrentContext || {};
+        
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    userCurrentContext.latitude = position.coords.latitude;
-                    userCurrentContext.longitude = position.coords.longitude;
-                    locationDisplay.textContent = `Location: Lat ${userCurrentContext.latitude.toFixed(2)}, Lon ${userCurrentContext.longitude.toFixed(2)}`;
+                function(position) {
+                    const lat = position.coords.latitude.toFixed(4);
+                    const lon = position.coords.longitude.toFixed(4);
+                    
+                    locationDisplay.textContent = `Location: Lat ${lat}, Lon ${lon}`;
+                    window.userCurrentContext.latitude = lat;
+                    window.userCurrentContext.longitude = lon;
                 },
-                (error) => {
-                    console.warn('Geolocation Error:', error.code, error.message);
+                function(error) {
+                    console.error("Geolocation error:", error.code, error.message);
                     locationDisplay.textContent = "Location: Not shared (Access Denied or Unavailable)";
-                    userCurrentContext.latitude = null;
-                    userCurrentContext.longitude = null;
+                    window.userCurrentContext.latitude = null;
+                    window.userCurrentContext.longitude = null;
                 },
                 { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
             );
@@ -1078,11 +444,307 @@
         }
     }
 
+
+    // --- Core Chat Functions ---
+
+    function handleKeydown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            typeQuery();
+        }
+        // Auto-resize textarea
+        chatInput.style.height = 'auto';
+        chatInput.style.height = (chatInput.scrollHeight) + 'px';
+    }
+
+    function appendMessage(role, text, isError = false) {
+        const messageDiv = document.createElement('div');
+        const roleText = role === 'user' ? 'You' : 'Ai';
+        const textToDisplay = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
+        messageDiv.className = `chat-message ${role} ${isError ? 'error' : ''}`;
+        messageDiv.innerHTML = `<strong>${roleText}:</strong> <span class="text-gray-400">${textToDisplay}</span>`;
+        
+        chatLog.appendChild(messageDiv);
+        chatLog.scrollTop = chatLog.scrollHeight; 
+    }
+
+    async function fetchGemini(contents) {
+        try {
+            const response = await fetch('{% url "users:gemini_proxy" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({ contents: contents })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.text;
+
+        } catch (error) {
+            console.error('Gemini API Fetch Error:', error);
+            throw error;
+        }
+    }
+
+    function typeQuery() {
+        const prompt = chatInput.value.trim();
+        if (!prompt) return;
+
+        chatInput.value = '';
+        chatInput.style.height = 'auto'; // Reset height after sending
+
+        appendMessage('user', prompt);
+        
+        const history = getCurrentHistory();
+        
+        // 1. Disable inputs and show loading
+        loadingIndicator.classList.remove('hidden');
+        chatInput.disabled = true;
+        sendChatButton.disabled = true;
+
+        // 2. Prepare contents array for API, injecting context first
+        const contentsForApi = [];
+        
+        // Context injection based on current time and location
+        const contextMessage = `**SYSTEM CONTEXT** (Do not show this to the user):\n` +
+                                `Current Time: ${document.getElementById('localTimeDisplay').textContent}\n` +
+                                `Current Location: ${document.getElementById('userLocationDisplay').textContent}\n` +
+                                `---`;
+        contentsForApi.push({ role: 'user', text: contextMessage });
+
+        // Add previous messages (history)
+        history.forEach(msg => contentsForApi.push(msg));
+
+        // Add the current user prompt
+        contentsForApi.push({ role: 'user', text: prompt });
+
+        // 3. Call Gemini
+        fetchGemini(contentsForApi).then(aiText => {
+            appendMessage('ai', aiText);
+
+            // 4. Update the permanent history (which excludes the temporary context injection)
+            // Push the clean user prompt
+            history.push({ role: 'user', text: prompt });
+            // Push the AI response
+            history.push({ role: 'ai', text: aiText });
+            saveChatSession(currentSessionId, history);
+
+        }).catch(error => {
+            appendMessage('ai', `Error: ${error.message}`, true);
+        }).finally(() => {
+            loadingIndicator.classList.add('hidden');
+            chatInput.disabled = false;
+            sendChatButton.disabled = false;
+            chatInput.focus();
+            updateHistorySidebar(); // Update sidebar in case this was the first message of a new session
+        });
+    }
+
+    // --- History Management Functions ---
+
+    function createNewChat() {
+        // Generate a unique session ID
+        const newSessionId = 'session_' + Date.now();
+        const sessions = getChatSessions();
+        sessions[newSessionId] = []; // Create an empty history for the new session
+        localStorage.setItem(chatSessionsKey, JSON.stringify(sessions));
+        
+        // Switch to the new session
+        currentSessionId = newSessionId;
+        loadChatHistory(true);
+        updateHistorySidebar();
+        
+        // On desktop, ensure the sidebar is expanded on new chat
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('is-collapsed');
+        }
+    }
+    
+    // Helper function to extract a title from the first AI or User message
+    function getSessionTitle(history) {
+        if (history.length === 0) return 'New Chat';
+        const firstMessage = history[0];
+        const text = firstMessage.text;
+        // Simple heuristic: Take the first 50 characters and append "..."
+        return text.length > 40 ? text.substring(0, 40).trim() + '...' : text;
+    }
+
+    function updateHistorySidebar() {
+        const sessions = getChatSessions();
+        historyList.innerHTML = '';
+        
+        const sortedSessionIds = Object.keys(sessions).sort((a, b) => {
+            // Sort by session ID descending (most recent first)
+            return b.localeCompare(a);
+        });
+
+        sortedSessionIds.forEach(sessionId => {
+            const history = sessions[sessionId];
+            if (history.length === 0 && sessionId !== currentSessionId) {
+                // Skip empty sessions that are not the current one
+                return;
+            }
+            
+            const title = getSessionTitle(history);
+            const isActive = sessionId === currentSessionId;
+            
+            const listItem = document.createElement('li');
+            listItem.className = `history-item ${isActive ? 'active' : ''}`;
+            listItem.setAttribute('data-session-id', sessionId);
+            
+            const icon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+            
+            // Sanitize for display
+            const displayTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            listItem.innerHTML = icon + `<span>${displayTitle}</span>`;
+            
+            listItem.onclick = () => loadHistory(sessionId);
+            historyList.appendChild(listItem);
+        });
+    }
+    
+    function loadHistory(sessionId) {
+        if (sessionId === currentSessionId) {
+            // On desktop, just toggle the sidebar if clicking the current session
+            if (window.innerWidth > 768) {
+                sidebar.classList.toggle('is-collapsed');
+            } else {
+                sidebar.classList.remove('open');
+            }
+            return;
+        }
+
+        // Save the current session before switching
+        saveChatSession(currentSessionId, getCurrentHistory());
+        
+        currentSessionId = sessionId;
+        loadChatHistory(); // Load the selected session's history
+        updateHistorySidebar();
+
+        // On desktop, clicking a history item should expand the sidebar if it was collapsed
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('is-collapsed');
+        } 
+        // Close sidebar on mobile after selecting a history item
+        else { 
+            sidebar.classList.remove('open');
+        }
+    }
+
+    function loadChatHistory(isNewSession = false) {
+        const history = isNewSession ? [] : getCurrentHistory();
+        chatLog.innerHTML = '';
+
+        if (history.length === 0) {
+            // Restore initial welcome message if history is empty
+            chatLog.innerHTML = `
+                <div class="chat-message ai">
+                    <strong>Ai:</strong> <span class="text-gray-400"> Hello, {{ user.username }}! I am your Career Companion AI. How can I assist you with job searching, CV optimization, or interview preparation today? </span>
+                </div>
+            `;
+            return;
+        }
+
+        history.forEach(item => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${item.role}`;
+            const roleText = item.role === 'user' ? 'You' : 'Ai';
+            // Simple display sanitization for clean text
+            const textToDisplay = item.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            messageDiv.innerHTML = `<strong>${roleText}:</strong> <span class="text-gray-400">${textToDisplay}</span>`;
+            chatLog.appendChild(messageDiv);
+        });
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    // --- Action Button Functions (Summarize, Export, Clear) ---
+    
+    function summarizeChat() {
+        const history = getCurrentHistory();
+        if (history.length === 0) {
+            alert("No chat history to summarize in this session.");
+            return;
+        }
+
+        // 1. Add a temporary loader message
+        const summaryLoader = document.createElement('div');
+        summaryLoader.id = 'summaryLoader';
+        summaryLoader.className = 'chat-message ai';
+        summaryLoader.innerHTML = `<strong>Ai:</strong> <span class="text-gray-400"> <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-400 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg> Summarizing conversation...</span>`;
+        chatLog.appendChild(summaryLoader);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        
+        // 2. Prepare context for the summary request
+        const summaryPrompt = `Please summarize the following conversation in 3-5 concise bullet points. The conversation history is provided below. Do not include any of your usual welcome text, only the bullet points.`;
+        
+        const contentsForApi = [];
+        // Add current history
+        history.forEach(msg => contentsForApi.push(msg));
+        // Add the summary prompt as the final user message
+        contentsForApi.push({ role: 'user', text: summaryPrompt });
+
+        // 3. Call Gemini for summary
+        fetchGemini(contentsForApi).then(aiText => {
+            // Remove loader
+            summaryLoader.remove();
+            
+            // Append the summary
+            appendMessage('ai', aiText);
+        }).catch(error => {
+            summaryLoader.remove();
+            appendMessage('ai', `Error summarizing chat: ${error.message}`, true);
+        });
+    }
+
+    function exportChat() {
+        const history = getCurrentHistory();
+        if (history.length === 0) {
+            alert("No chat history to export in this session.");
+            return;
+        }
+
+        let exportText = `Career Companion AI Chat Export (Session ID: ${currentSessionId})\n\n`;
+        history.forEach(item => {
+            const role = item.role === 'user' ? 'USER' : 'AI';
+            exportText += `${role}: ${item.text}\n\n`;
+        });
+
+        const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `CareerCompanion_Chat_Export_{{ user.username }}_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        appendMessage('ai', "Chat history exported successfully as a text file.");
+    }
+
+    function clearChat() {
+        if (confirm("Are you sure you want to clear your entire chat history? This action cannot be undone.")) {
+            localStorage.removeItem(chatSessionsKey);
+            currentSessionId = 'default';
+            loadChatHistory(true);
+            updateHistorySidebar();
+            appendMessage('ai', "All chat history has been cleared. How can I help you start fresh with your career goals today?", false);
+        }
+    }
+    
     // --- Initialization ---
 
     window.onload = () => {
         // Initialize Core Features
-        initSpeechRecognition(); 
         updateAccurateLocalTime(); 
         getUserLocation();
         
@@ -1108,5 +770,16 @@
             sidebar.classList.remove('open');
         }
     });
+
+    sidebarToggle.onclick = () => {
+        // Desktop Collapse/Expand Logic
+        if (window.innerWidth > 768) {
+            sidebar.classList.toggle('is-collapsed');
+        } 
+        // Mobile Overlay Logic
+        else {
+            sidebar.classList.toggle('open');
+        }
+    };
 </script>
 {% endblock content %}
