@@ -319,9 +319,9 @@ def get_ai_response(product, user_message, chat_history):
 
     # Define negotiation constants
     # Absolute lowest price (60%) - for immediate rejection
-    VENDOR_MIN_ACCEPT = Decimal('0.6')      
-    # AI's final stand (75%) - The price the AI must not go below during negotiation
-    VENDOR_NEGOTIATION_FLOOR = Decimal('0.75') 
+    VENDOR_MIN_ACCEPT = Decimal('0.7')      
+    # AI's final stand (85%) - The price the AI must not go below during negotiation
+    VENDOR_NEGOTIATION_FLOOR = Decimal('0.85') 
     # Offer >= 90% is accepted quickly
     EASY_ACCEPT_THRESHOLD = Decimal('0.90') 
     # AI will move 40% of the distance from its last offer toward the user's offer
@@ -353,7 +353,7 @@ def get_ai_response(product, user_message, chat_history):
 
     # 3a. Offer is too low (below 60%)
     if offer < min_price_accept: 
-        display_floor = product_price * Decimal('0.7') # Suggest a higher floor than VENDOR_MIN_ACCEPT
+        display_floor = product_price * Decimal('0.8') # Suggest a higher floor than VENDOR_MIN_ACCEPT
         return f"I appreciate your enthusiasm, but your offer is too low. My vendor's minimum acceptable offer is UGX {display_floor:,.0f}. Try again!"
 
     # 3b. Offer is generous (>= 90%)
