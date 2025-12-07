@@ -36,7 +36,7 @@
                         <div class="mb-2">
                             {% if item.total_price %}
                                 <p class="text-2xl font-extrabold text-green-400">
-                                    USD {{ item.total_price|floatformat:2 }}
+                                    UGX {{ item.total_price|floatformat:2 }}
                                 </p>
                             {% else %}
                                 <p class="text-xl font-bold italic text-red-400">
@@ -46,7 +46,7 @@
     
                             {% if item.product.price %}
                                 <p class="text-sm text-gray-500 mt-1">
-                                    (USD {{ item.product.price|floatformat:2 }} per unit)
+                                    (UGX {{ item.product.price|floatformat:2 }} per unit)
                                 </p>
                             {% else %}
                                 <p class="text-sm text-gray-500 italic mt-1">
@@ -75,12 +75,12 @@
 
             <div class="flex justify-between items-center mb-6">
                 <p class="text-xl font-medium text-gray-300">Cart Subtotal:</p>
-                <p class="text-xl font-semibold text-white">USD {{ cart_total|floatformat:2 }}</p>
+                <p class="text-xl font-semibold text-white">UGX {{ cart_total|floatformat:2 }}</p>
             </div>
             
             <div class="flex flex-col items-stretch pt-4 border-t border-gray-700 mt-8 bg-gray-950 p-4 rounded-xl shadow-xl">
                 <h2 class="text-2xl font-extrabold text-indigo-400 mb-2">Grand Total:</h2>
-                <p class="text-5xl font-extrabold text-green-400 drop-shadow-lg">USD {{ cart_total|floatformat:2 }}</p>
+                <p class="text-5xl font-extrabold text-green-400 drop-shadow-lg">UGX {{ cart_total|floatformat:2 }}</p>
             </div>
             
             <div class="mt-8 space-y-4">
