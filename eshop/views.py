@@ -306,9 +306,6 @@ def confirm_order_whatsapp(request):
     cart.save()
     return redirect(whatsapp_url)
 
-# ------------------------------------
-# AI Price Negotiation Logic (Updated for Iterative Negotiation)
-# ------------------------------------
 
 def get_ai_response(product, user_message, chat_history):
     """
