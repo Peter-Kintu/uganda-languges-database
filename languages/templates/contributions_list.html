@@ -156,7 +156,7 @@
                         </a>
                         {% else %}
                         {# NEW: Easy Apply Button - NOW PASSING EMAIL/WHATSAPP #}
-                        <button onclick="openEasyApplyModal('{{ job.post_content|safe }}', '{{ job.recruiter_name|safe }}', '{{ job.recruiter_email|safe }}', '{{ job.recruiter_whatsapp|safe }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
+                        <button onclick="openEasyApplyModal('{{ job.post_content|escapejs }}', '{{ job.recruiter_name|escapejs }}', '{{ job.recruiter_email|escapejs }}', '{{ job.recruiter_whatsapp|escapejs }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
                             Easy Apply
                         </button>
                         {% endif %}
@@ -255,7 +255,7 @@
                         </a>
                         {% else %}
                         {# NEW: Easy Apply Button - NOW PASSING EMAIL/WHATSAPP #}
-                        <button onclick="openEasyApplyModal('{{ job.post_content|safe }}', '{{ job.recruiter_name|safe }}', '{{ job.recruiter_email|safe }}', '{{ job.recruiter_whatsapp|safe }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
+                        <button onclick="openEasyApplyModal('{{ job.post_content|escapejs }}', '{{ job.recruiter_name|escapejs }}', '{{ job.recruiter_email|escapejs }}', '{{ job.recruiter_whatsapp|escapejs }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
                             Easy Apply
                         </button>
                         {% endif %}
