@@ -96,25 +96,31 @@
                 {% if forloop.counter <= recommended_jobs_count %}
                 {# Only show the recommended subset from the paginated list on the first page #}
                 <div class="bg-gray-800 rounded-xl shadow-2xl p-6 transition duration-300 ease-in-out border-2 border-indigo-500 hover:bg-gray-700/50 job-card-hover">
-                    <div class="flex flex-col md:flex-row md:justify-between md:items-start">
+                    {# MODIFIED: Changed default flex-col to flex items-start for compact mobile layout #}
+                    <div class="flex items-start md:flex-row md:justify-between md:items-start">
                         
                         {% if job.company_logo_or_media %}
-                            <div class="mb-4 md:mb-0 md:mr-6 flex-shrink-0">
-                                <img src="{{ job.company_logo_or_media.url }}" alt="{{ job.recruiter_name }} Logo" class="h-16 w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
+                            {# MODIFIED: Reduced logo size on mobile (h-12 w-12) and added right margin (mr-4) #}
+                            <div class="mr-4 md:mb-0 md:mr-6 flex-shrink-0">
+                                <img src="{{ job.company_logo_or_media.url }}" alt="{{ job.recruiter_name }} Logo" class="h-12 w-12 md:h-16 md:w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
                             </div>
                         {% endif %}
 
-                        <div class="flex-grow">
+                        {# Added min-w-0 to the content area to prevent overflow issues on small screens #}
+                        <div class="flex-grow min-w-0">
                             {# Updated Layout for Mobile Stacking #}
-                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
-                                <h2 class="text-xl font-bold text-white leading-tight mb-2 sm:mb-0">
+                            {# MODIFIED: Title margin mb-2 -> mb-1 #}
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
+                                {# MODIFIED: Reduced text size on mobile (text-lg) and added truncate #}
+                                <h2 class="text-lg md:text-xl font-bold text-white leading-tight mb-1 sm:mb-0 truncate">
                                     {{ job.post_content|truncatechars:70 }} 
                                     {% if job.post_content|length > 70 %}...{% endif %}
                                 </h2>
                                 <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
                             </div>
                             
-                            <p class="text-gray-400 text-sm mb-3">
+                            {# MODIFIED: Recruiter info margin mb-3 -> mb-2 #}
+                            <p class="text-gray-400 text-sm mb-2">
                                 <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
                                 — 
                                 <span>{{ job.recruiter_location }}</span>
@@ -195,25 +201,31 @@
                 {% if not user.is_authenticated or job_posts.number != 1 or forloop.counter > recommended_jobs_count %}
                 {# Updated Card Styling #}
                 <div class="bg-gray-800 rounded-xl shadow-xl p-6 transition duration-300 ease-in-out hover:bg-gray-700/50 border border-gray-700 job-card-hover">
-                    <div class="flex flex-col md:flex-row md:justify-between md:items-start">
+                    {# MODIFIED: Changed default flex-col to flex items-start for compact mobile layout #}
+                    <div class="flex items-start md:flex-row md:justify-between md:items-start">
                         
                         {% if job.company_logo_or_media %}
-                            <div class="mb-4 md:mb-0 md:mr-6 flex-shrink-0">
-                                <img src="{{ job.company_logo_or_media.url }}" alt="{{ job.recruiter_name }} Logo" class="h-16 w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
+                            {# MODIFIED: Reduced logo size on mobile (h-12 w-12) and added right margin (mr-4) #}
+                            <div class="mr-4 md:mb-0 md:mr-6 flex-shrink-0">
+                                <img src="{{ job.company_logo_or_media.url }}" alt="{{ job.recruiter_name }} Logo" class="h-12 w-12 md:h-16 md:w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
                             </div>
                         {% endif %}
 
-                        <div class="flex-grow">
+                        {# Added min-w-0 to the content area to prevent overflow issues on small screens #}
+                        <div class="flex-grow min-w-0">
                             {# Updated Layout for Mobile Stacking #}
-                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
-                                <h2 class="text-xl font-bold text-white leading-tight mb-2 sm:mb-0">
+                            {# MODIFIED: Title margin mb-2 -> mb-1 #}
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
+                                {# MODIFIED: Reduced text size on mobile (text-lg) and added truncate #}
+                                <h2 class="text-lg md:text-xl font-bold text-white leading-tight mb-1 sm:mb-0 truncate">
                                     {{ job.post_content|truncatechars:70 }} 
                                     {% if job.post_content|length > 70 %}...{% endif %}
                                 </h2>
                                 <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
                             </div>
                             
-                            <p class="text-gray-400 text-sm mb-3">
+                            {# MODIFIED: Recruiter info margin mb-3 -> mb-2 #}
+                            <p class="text-gray-400 text-sm mb-2">
                                 <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
                                 — 
                                 <span>{{ job.recruiter_location }}</span>
