@@ -37,41 +37,11 @@
             backdrop-filter: blur(5px);
         }
         
-        /* UPDATED: Class for subtle hover glow and LIFT */
+        /* NEW: Class for subtle hover glow */
         .job-card-hover:hover {
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.6); /* stronger indigo shadow */
-            transform: translateY(-2px); /* Subtle lift effect */
-        }
-        /* NEW: Style for the skill tags */
-        .skill-tag {
-            display: inline-block;
-            background-color: #374151; /* gray-700 */
-            color: #d1d5db; /* gray-300 */
-            padding: 0.2rem 0.6rem;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-            border-radius: 9999px; /* pill shape */
-            font-size: 0.75rem; /* text-xs */
-            font-weight: 500;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); /* indigo-500 shadow */
         }
 
-        /* NEW: Differentiate CTA styles */
-        .cta-primary {
-            /* Apply Now / External Link (Green for standard Apply) */
-            background-color: #10b981; /* emerald-500/green-600 */
-            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
-        }
-        .cta-primary:hover {
-            background-color: #059669; /* emerald-600 */
-        }
-        .cta-secondary {
-            /* Easy Apply / Internal Modal (Blue for Modal action) */
-            background-color: #3b82f6; /* blue-500 */
-            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
-        }
-        .cta-secondary:hover {
-            background-color: #2563eb; /* blue-600 */
-        }
         /* Styles for the Read More/Less toggle */
         .collapsed-content {
             max-height: 4rem; /* Hides overflow for job content */
@@ -135,22 +105,18 @@
                         {% endif %}
 
                         <div class="flex-grow">
-                            {# UPDATED: Layout for Mobile Stacking & Prominence #}
+                            {# Updated Layout for Mobile Stacking #}
                             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
-                                <h2 class="text-2xl font-extrabold text-indigo-300 leading-snug mb-2 sm:mb-0">
+                                <h2 class="text-xl font-bold text-white leading-tight mb-2 sm:mb-0">
                                     {{ job.post_content|truncatechars:70 }} 
                                     {% if job.post_content|length > 70 %}...{% endif %}
                                 </h2>
-                                {# CHANGED: Tag color for better visual separation #}
-                                <span class="sm:ml-4 px-3 py-1 text-xs font-bold rounded-full bg-emerald-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
+                                <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
                             </div>
                             
-                            {# UPDATED: Enhanced Recruiter/Location Info with Icons #}
-                            <p class="text-gray-400 text-sm mb-3 flex items-center">
-                                <svg class="w-4 h-4 mr-1 text-indigo-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
-                                <span class="font-bold text-white mr-2">{{ job.recruiter_name }}</span> 
+                            <p class="text-gray-400 text-sm mb-3">
+                                <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
                                 — 
-                                <svg class="w-4 h-4 mx-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
                                 <span>{{ job.recruiter_location }}</span>
                             </p>
 
@@ -159,21 +125,9 @@
                                 <p class="text-gray-300 text-sm mb-2 collapsed-content text-fade-bottom" data-job-content>
                                     {{ job.post_content }}
                                 </p>
-                                
-                                {# NEW: Skills as Tags/Pills - ASSUMING A CUSTOM DJANGO FILTER or pre-processing to split `required_skills` string #}
-                                <div class="text-gray-300 text-sm mb-4" data-job-skills>
-                                    <strong class="text-indigo-300 block mb-1">Skills:</strong> 
-                                    <div class="flex flex-wrap">
-                                        {# NOTE: Replace the loop below with your actual Django filter/split logic #}
-                                        {% for skill in job.required_skills|split_and_tag %}
-                                            <span class="skill-tag">{{ skill }}</span>
-                                        {% endfor %}
-                                        {# FALLBACK/Example tags for non-split string: #}
-                                        <span class="skill-tag">Python</span>
-                                        <span class="skill-tag">Django</span>
-                                        <span class="skill-tag">Tailwind CSS</span>
-                                    </div>
-                                </div>
+                                <p class="text-gray-300 text-sm mb-4" data-job-skills>
+                                    <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills }}
+                                </p>
                             </div>
                             
                             {% if job.post_content|length > 70 or job.required_skills|length > 120 %}
@@ -185,25 +139,25 @@
                             </button>
                             {% endif %}
                             
-                            {# Updated Metadata for always visible date - Separator changed, Job type border added #}
-                            <div class="flex items-center text-sm text-gray-500 space-x-4 pt-3 border-t border-gray-700/50 mt-4">
-                                <span class="text-xs font-medium uppercase border border-emerald-600 px-2 py-0.5 rounded-full text-emerald-400">{{ job.get_job_type_display }}</span>
-                                <span class="text-gray-600">•</span>
-                                <span class="font-medium text-gray-400">Posted: {{ job.timestamp|date:"M d, Y" }}</span>
+                            {# Updated Metadata for always visible date #}
+                            <div class="flex items-center text-sm text-gray-500 space-x-4">
+                                <span class="text-xs font-medium uppercase border border-gray-600 px-2 py-0.5 rounded-full">{{ job.get_job_type_display }}</span>
+                                <span class="text-gray-600">|</span>
+                                <span>Posted: {{ job.timestamp|date:"M d, Y" }}</span>
                             </div>
                         </div>
                     </div>
                     
-                    {# UPDATED: CTA Buttons with new classes #}
                     <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
                         
                         {% if job.application_url %}
-                        <a href="{{ job.application_url }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 text-white font-semibold rounded-md transition duration-150 ease-in-out text-sm cta-primary">
-                            Apply Now (External)
+                        <a href="{{ job.application_url }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
+                            Apply Now
                         </a>
                         {% else %}
-                        <button onclick="openEasyApplyModal('{{ job.post_content|safe }}', '{{ job.recruiter_name|safe }}', '{{ job.recruiter_email|safe }}', '{{ job.recruiter_whatsapp|safe }}')" class="px-4 py-2 text-white font-semibold rounded-md transition duration-150 ease-in-out text-sm cta-secondary">
-                            Easy Apply (Internal)
+                        {# NEW: Easy Apply Button - NOW PASSING EMAIL/WHATSAPP #}
+                        <button onclick="openEasyApplyModal('{{ job.post_content|safe }}', '{{ job.recruiter_name|safe }}', '{{ job.recruiter_email|safe }}', '{{ job.recruiter_whatsapp|safe }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
+                            Easy Apply
                         </button>
                         {% endif %}
                         
@@ -250,22 +204,18 @@
                         {% endif %}
 
                         <div class="flex-grow">
-                            {# UPDATED: Layout for Mobile Stacking & Prominence #}
+                            {# Updated Layout for Mobile Stacking #}
                             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
-                                <h2 class="text-2xl font-extrabold text-indigo-300 leading-snug mb-2 sm:mb-0">
+                                <h2 class="text-xl font-bold text-white leading-tight mb-2 sm:mb-0">
                                     {{ job.post_content|truncatechars:70 }} 
                                     {% if job.post_content|length > 70 %}...{% endif %}
                                 </h2>
-                                {# CHANGED: Tag color for better visual separation #}
-                                <span class="sm:ml-4 px-3 py-1 text-xs font-bold rounded-full bg-emerald-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
+                                <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
                             </div>
                             
-                            {# UPDATED: Enhanced Recruiter/Location Info with Icons #}
-                            <p class="text-gray-400 text-sm mb-3 flex items-center">
-                                <svg class="w-4 h-4 mr-1 text-indigo-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
-                                <span class="font-bold text-white mr-2">{{ job.recruiter_name }}</span> 
+                            <p class="text-gray-400 text-sm mb-3">
+                                <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
                                 — 
-                                <svg class="w-4 h-4 mx-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
                                 <span>{{ job.recruiter_location }}</span>
                             </p>
 
@@ -274,21 +224,9 @@
                                 <p class="text-gray-300 text-sm mb-2 collapsed-content text-fade-bottom" data-job-content>
                                     {{ job.post_content }}
                                 </p>
-                                
-                                {# NEW: Skills as Tags/Pills - ASSUMING A CUSTOM DJANGO FILTER or pre-processing to split `required_skills` string #}
-                                <div class="text-gray-300 text-sm mb-4" data-job-skills>
-                                    <strong class="text-indigo-300 block mb-1">Skills:</strong> 
-                                    <div class="flex flex-wrap">
-                                        {# NOTE: Replace the loop below with your actual Django filter/split logic #}
-                                        {% for skill in job.required_skills|split_and_tag %}
-                                            <span class="skill-tag">{{ skill }}</span>
-                                        {% endfor %}
-                                        {# FALLBACK/Example tags for non-split string: #}
-                                        <span class="skill-tag">JavaScript</span>
-                                        <span class="skill-tag">React</span>
-                                        <span class="skill-tag">REST API</span>
-                                    </div>
-                                </div>
+                                <p class="text-gray-300 text-sm mb-4" data-job-skills>
+                                    <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills }}
+                                </p>
                             </div>
                             
                             {% if job.post_content|length > 70 or job.required_skills|length > 120 %}
@@ -300,25 +238,25 @@
                             </button>
                             {% endif %}
                             
-                            {# Updated Metadata for always visible date - Separator changed, Job type border added #}
-                            <div class="flex items-center text-sm text-gray-500 space-x-4 pt-3 border-t border-gray-700/50 mt-4">
-                                <span class="text-xs font-medium uppercase border border-emerald-600 px-2 py-0.5 rounded-full text-emerald-400">{{ job.get_job_type_display }}</span>
-                                <span class="text-gray-600">•</span>
-                                <span class="font-medium text-gray-400">Posted: {{ job.timestamp|date:"M d, Y" }}</span>
+                            {# Updated Metadata for always visible date #}
+                            <div class="flex items-center text-sm text-gray-500 space-x-4">
+                                <span class="text-xs font-medium uppercase border border-gray-600 px-2 py-0.5 rounded-full">{{ job.get_job_type_display }}</span>
+                                <span class="text-gray-600">|</span>
+                                <span>Posted: {{ job.timestamp|date:"M d, Y" }}</span>
                             </div>
                         </div>
                     </div>
 
-                    {# UPDATED: CTA Buttons with new classes #}
                     <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
                         
                         {% if job.application_url %}
-                        <a href="{{ job.application_url }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 text-white font-semibold rounded-md transition duration-150 ease-in-out text-sm cta-primary">
-                            Apply Now (External)
+                        <a href="{{ job.application_url }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
+                            Apply Now
                         </a>
                         {% else %}
-                        <button onclick="openEasyApplyModal('{{ job.post_content|safe }}', '{{ job.recruiter_name|safe }}', '{{ job.recruiter_email|safe }}', '{{ job.recruiter_whatsapp|safe }}')" class="px-4 py-2 text-white font-semibold rounded-md transition duration-150 ease-in-out text-sm cta-secondary">
-                            Easy Apply (Internal)
+                        {# NEW: Easy Apply Button - NOW PASSING EMAIL/WHATSAPP #}
+                        <button onclick="openEasyApplyModal('{{ job.post_content|safe }}', '{{ job.recruiter_name|safe }}', '{{ job.recruiter_email|safe }}', '{{ job.recruiter_whatsapp|safe }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition duration-150 ease-in-out text-sm">
+                            Easy Apply
                         </button>
                         {% endif %}
                         
@@ -392,8 +330,8 @@
                 </button>
             </div>
 
-            <p class="text-gray-300 mb-4 text-lg font-medium">Applying for: <span id="modal-job-title" class="font-bold text-indigo-400"></span></p>
-            <p class="text-gray-400 mb-6 text-sm">To: <span id="modal-recruiter-name" class="font-bold text-indigo-300"></span></p>
+            <p class="text-gray-300 mb-4">Applying for: <span id="modal-job-title" class="font-semibold text-white italic"></span></p>
+            <p class="text-gray-400 mb-6 text-sm">You are applying to <span id="modal-recruiter-name" class="font-medium text-indigo-300"></span>.</p>
 
             <form id="easyApplyForm" class="space-y-6">
                 <div class="space-y-2">
@@ -406,23 +344,23 @@
                 <div class="space-y-2">
                     <label for="applicationMethod" class="block text-sm font-medium text-indigo-300">Select Submission Method</label>
                     <div class="flex space-x-4">
-                        <label class="inline-flex items-center cursor-pointer p-2 bg-gray-700 rounded-lg w-full">
+                        <label class="inline-flex items-center cursor-pointer">
                             <input type="radio" name="applicationMethod" value="email" required class="form-radio h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 focus:ring-indigo-500" checked>
-                            <span class="ml-2 text-white font-medium flex items-center"><svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg> Email</span>
+                            <span class="ml-2 text-white">Email</span>
                         </label>
-                        <label class="inline-flex items-center cursor-pointer p-2 bg-gray-700 rounded-lg w-full">
+                        <label class="inline-flex items-center cursor-pointer">
                             <input type="radio" name="applicationMethod" value="whatsapp" required class="form-radio h-4 w-4 text-green-600 bg-gray-700 border-gray-600 focus:ring-green-500">
-                            <span class="ml-2 text-white font-medium flex items-center"><svg class="w-5 h-5 mr-1 text-green-500" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.477 2 2 6.477 2 12c0 3.313 1.284 6.31 3.376 8.52L4 22l2.124-.624A9.954 9.954 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm4.49 14.73l-.707-.043c-.477-.03-2.835-1.554-3.79-1.956-.37-.156-.84-.234-.84-.39 0-.08.062-.164.094-.218.062-.094.03-.188-.062-.313-.093-.156-.25-.375-.375-.594-.125-.188-.281-.438-.375-.625-.094-.188-.062-.313.062-.438.094-.093.218-.218.313-.312.093-.094.156-.157.188-.282.03-.093.03-.25-.063-.374-.093-.156-.468-1.125-.624-1.5-.156-.375-.313-.438-.375-.438-.062 0-.156 0-.281.062-.125.063-.313.157-.5.313-.188.156-.406.375-.531.594-.125.22-.218.468-.187.75.031.282.125.562.344.874.22.313.468.656.718.969.25.312.562.625.875.875.312.25.656.469.968.625.313.187.625.281.937.312.313.03.625 0 .938-.094.312-.094.625-.22.906-.406.281-.188.5-.438.625-.563.125-.093.25-.187.375-.187.125 0 .313.03.563.125.25.093.531.187.718.312.188.125.344.25.438.313.093.062.156.094.218.094.063 0 .157.03.282.094l.718.344z"/> </svg> WhatsApp</span>
+                            <span class="ml-2 text-white">WhatsApp</span>
                         </label>
                     </div>
                 </div>
 
-                <button type="submit" class="w-full py-3 px-4 rounded-lg bg-indigo-600 text-white font-bold text-lg hover:bg-indigo-700 transition duration-150 ease-in-out">
+                <button type="submit" class="w-full py-3 px-4 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-150 ease-in-out">
                     Continue to Application
                 </button>
             </form>
 
-            <div id="applicationActionMessage" class="hidden mt-6 p-4 rounded-lg text-sm">
+            <div id="applicationActionMessage" class="hidden mt-4 p-3 rounded-md text-sm">
                 
             </div>
         </div>
@@ -571,64 +509,37 @@
             // Fallback for phone number display in case the field is empty
             const phoneNumber = currentRecruiterWhatsApp || 'N/A (Not Provided)'; 
 
-            // --- START: UPDATED INSTRUCTION DISPLAY LOGIC (UX IMPROVEMENT) ---
-            
-            let bgColor, borderColor, iconSvg, contactInfo, buttonColor;
-            
             if (method === 'email') {
-                bgColor = 'bg-indigo-900/30';
-                borderColor = 'border-indigo-600';
-                iconSvg = '<svg class="w-6 h-6 mr-3 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>';
-                contactInfo = `<span class="text-yellow-300 font-bold break-all">${currentRecruiterEmail || 'N/A (Not Provided)'}</span>`;
-                buttonColor = `text-indigo-900 bg-yellow-300 hover:bg-yellow-400`;
-
+                const mailtoLink = `mailto:${currentRecruiterEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+                
                 actionText = `
-                    <div class="${bgColor} border-2 ${borderColor} p-4 rounded-lg">
-                        <div class="flex items-center mb-3">
-                            ${iconSvg}
-                            <p class="font-semibold text-white text-lg">Step 2: Send Email Application</p>
-                        </div>
-                        <p class="text-gray-300 mb-3">Recipient: ${contactInfo}</p>
-                        <ol class="list-decimal list-inside text-gray-300 pl-2 space-y-2 mb-4">
-                            <li>Click **Open Email** below.</li>
-                            <li>In your email client, **manually attach** your CV (${cvFile.name}).</li>
-                            <li>Send the pre-filled email.</li>
-                        </ol>
-                        <a href="${currentRecruiterEmail ? mailtoLink : '#'}" target="_blank" class="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold transition duration-150 ${buttonColor} ${currentRecruiterEmail ? '' : 'opacity-50 cursor-not-allowed'}">
-                            Open Email Client
+                    <div class="bg-indigo-600 p-3 rounded-lg">
+                        <p class="font-semibold text-white mb-2">Email Application Instructions (to: <span class="text-yellow-300 font-bold">${currentRecruiterEmail || 'N/A (Not Provided)'}</span>):</p>
+                        <p class="text-white">1. Click the button below to open your email client.</p>
+                        <p class="text-white">2. **Crucially, manually attach** your uploaded CV (${cvFile.name}) to the email.</p>
+                        <p class="text-white mb-3">3. Send the pre-filled email.</p>
+                        <a href="${currentRecruiterEmail ? mailtoLink : '#'}" target="_blank" class="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-indigo-900 bg-yellow-300 hover:bg-yellow-400 transition duration-150 ${currentRecruiterEmail ? '' : 'opacity-50 cursor-not-allowed'}">
+                            Open Email to Attach & Send
                         </a>
                     </div>
                 `;
             } else if (method === 'whatsapp') {
+                // Use wa.me for web/mobile compatibility
                 const whatsappLink = `https://wa.me/${currentRecruiterWhatsApp}?text=${encodeURIComponent(whatsappBody)}`;
                 
-                bgColor = 'bg-green-900/30';
-                borderColor = 'border-green-600';
-                iconSvg = '<svg class="w-6 h-6 mr-3 text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.477 2 2 6.477 2 12c0 3.313 1.284 6.31 3.376 8.52L4 22l2.124-.624A9.954 9.954 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm4.49 14.73l-.707-.043c-.477-.03-2.835-1.554-3.79-1.956-.37-.156-.84-.234-.84-.39 0-.08.062-.164.094-.218.062-.094.03-.188-.062-.313-.093-.156-.25-.375-.375-.594-.125-.188-.281-.438-.375-.625-.094-.188-.062-.313.062-.438.094-.093.218-.218.313-.312.093-.094.156-.157.188-.282.03-.093.03-.25-.063-.374-.093-.156-.468-1.125-.624-1.5-.156-.375-.313-.438-.375-.438-.062 0-.156 0-.281.062-.125.063-.313.157-.5.313-.188.156-.406.375-.531.594-.125.22-.218.468-.187.75.031.282.125.562.344.874.22.313.468.656.718.969.25.312.562.625.875.875.312.25.656.469.968.625.313.187.625.281.937.312.313.03.625 0 .938-.094.312-.094.625-.22.906-.406.281-.188.5-.438.625-.563.125-.093.25-.187.375-.187.125 0 .313.03.563.125.25.093.531.187.718.312.188.125.344.25.438.313.093.062.156.094.218.094.063 0 .157.03.282.094l.718.344z"/> </svg>';
-                contactInfo = `<span class="text-white font-bold">${phoneNumber}</span>`;
-                buttonColor = `text-green-900 bg-white hover:bg-gray-100`;
-
                 actionText = `
-                    <div class="${bgColor} border-2 ${borderColor} p-4 rounded-lg">
-                        <div class="flex items-center mb-3">
-                            ${iconSvg}
-                            <p class="font-semibold text-white text-lg">Step 2: Send WhatsApp Application</p>
-                        </div>
-                        <p class="text-gray-300 mb-3">Recipient: ${contactInfo}</p>
-                        <ol class="list-decimal list-inside text-gray-300 pl-2 space-y-2 mb-4">
-                            <li>Click **Open WhatsApp** below.</li>
-                            <li>In the chat, **manually attach** your CV (${cvFile.name}).</li>
-                            <li>Send the pre-filled message.</li>
-                        </ol>
-                        <a href="${currentRecruiterWhatsApp ? whatsappLink : '#'}" target="_blank" class="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold transition duration-150 ${buttonColor} ${currentRecruiterWhatsApp ? '' : 'opacity-50 cursor-not-allowed'}">
-                            Open WhatsApp Chat
+                    <div class="bg-green-700 p-3 rounded-lg">
+                        <p class="font-semibold text-white mb-2">WhatsApp Application Instructions (to: <span class="text-white font-bold">${phoneNumber}</span>):</p>
+                        <p class="text-white">1. Click the button below to open WhatsApp chat.</p>
+                        <p class="text-white">2. **Crucially, manually attach** your uploaded CV (${cvFile.name}) to the message.</p>
+                        <p class="text-white mb-3">3. Send the pre-filled message.</p>
+                        <a href="${currentRecruiterWhatsApp ? whatsappLink : '#'}" target="_blank" class="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-green-900 bg-white hover:bg-gray-100 transition duration-150 ${currentRecruiterWhatsApp ? '' : 'opacity-50 cursor-not-allowed'}">
+                            Open WhatsApp to Attach & Send
                         </a>
                     </div>
                 `;
             }
 
-            // --- END: UPDATED INSTRUCTION DISPLAY LOGIC ---
-            
             // Display the instructions to the user and hide the form
             document.getElementById('easyApplyForm').classList.add('hidden');
             applicationActionMessage.innerHTML = actionText;
