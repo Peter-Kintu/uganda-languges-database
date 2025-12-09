@@ -79,16 +79,17 @@
         </a>
 
         <div class="bg-gray-800 rounded-xl shadow-2xl p-6 md:p-10 border-2 border-indigo-500">
-            <div class="flex items-start mb-6">
+            <div class="flex flex-col sm:flex-row items-start mb-6">
                 {% if selected_job.company_logo_or_media %}
-                    <div class="mr-6 flex-shrink-0">
+                    <div class="mb-4 sm:mb-0 sm:mr-6 flex-shrink-0">
                         <img src="{{ selected_job.company_logo_or_media.url }}" alt="{{ selected_job.recruiter_name }} Logo" class="h-16 w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
                     </div>
                 {% endif %}
-                <div class="flex-grow">
-                    <h1 class="text-3xl font-extrabold text-white mb-1">{{ selected_job.post_content }}</h1>
+                <div class="flex-grow min-w-0">
+                    {# FIX: Added break-words to prevent overlap from long titles on small screens #}
+                    <h1 class="text-3xl font-extrabold text-white mb-1 break-words">{{ selected_job.post_content }}</h1>
                     <p class="text-xl text-indigo-400 font-semibold mb-2">{{ selected_job.recruiter_name }}</p>
-                    <div class="flex items-center text-gray-400 text-sm space-x-3">
+                    <div class="flex flex-wrap items-center text-gray-400 text-sm space-x-3 gap-y-1">
                         <span class="flex items-center">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m10.606-10.606L13.414 3.1a1.998 1.998 0 00-2.828 0l-4.243 4.243"></path></svg>
                             {{ selected_job.recruiter_location }}
@@ -101,24 +102,30 @@
             
             <div class="mt-6 border-t border-gray-700 pt-6">
                 <h2 class="text-2xl font-bold text-white mb-3 border-b border-gray-700 pb-2">Job Description</h2>
-                <div class="text-gray-300 text-base leading-relaxed whitespace-pre-wrap">
+                {# FIX: Added break-words to prevent long words/URLs from overlapping #}
+                <div class="text-gray-300 text-base leading-relaxed whitespace-pre-wrap break-words">
                     {{ selected_job.post_content }}
                 </div>
             </div>
 
             <div class="mt-6 border-t border-gray-700 pt-6">
                 <h2 class="text-2xl font-bold text-white mb-3 border-b border-gray-700 pb-2">Required Skills</h2>
-                <p class="text-gray-300 text-base">{{ selected_job.required_skills }}</p>
+                {# FIX: Added break-words to prevent long words/URLs from overlapping #}
+                <p class="text-gray-300 text-base break-words">{{ selected_job.required_skills }}</p>
             </div>
             
-            <div class="mt-8 pt-6 border-t border-indigo-500 flex justify-between items-center">
-                <div class="flex items-center space-x-4">
+            {# FIX: Used flex-wrap, reduced button size, and added gap-4 for better mobile layout #}
+            <div class="mt-8 pt-6 border-t border-indigo-500 flex flex-wrap gap-4 justify-between items-center">
+                
+                <div class="flex flex-wrap gap-4 items-center">
+                    {# FIX: Reduced button size from px-6 py-3 text-lg to px-4 py-2 text-base #}
                     {% if selected_job.application_url %}
-                    <a href="{{ selected_job.application_url }}" target="_blank" rel="noopener noreferrer" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out text-lg shadow-lg">
+                    <a href="{{ selected_job.application_url }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out text-base shadow-lg">
                         Apply Now via External Link
                     </a>
                     {% else %}
-                    <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out text-lg shadow-lg">
+                    {# FIX: Reduced button size from px-6 py-3 text-lg to px-4 py-2 text-base #}
+                    <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out text-base shadow-lg">
                         Easy Apply
                     </button>
                     {% endif %}
