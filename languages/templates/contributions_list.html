@@ -41,11 +41,20 @@
         .job-card-hover:hover {
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); /* indigo-500 shadow */
         }
+        
+        /* Utility class for truncating text after 2 lines (to show 'some description') */
+        /* Updated with standard line-clamp property for compatibility and future-proofing */
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Safari, Chrome, older versions */
+            -webkit-box-orient: vertical;
+            line-clamp: 2; /* Standard property for modern browsers (less widely supported than -webkit-) */
+        }
 
         /* Styles for the Read More/Less toggle */
         .collapsed-content {
-            /* Kept the original max-height of 4 lines */
-            max-height: 4rem; 
+            max-height: 4rem; /* Hides overflow for job content */
             overflow: hidden;
             transition: max-height 0.5s ease-in-out;
         }
@@ -61,6 +70,76 @@
 
 {% block content %}
 <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    
+    {% if selected_job %}
+        
+        <a href="{% url 'languages:browse_job_listings' %}" class="back-button text-indigo-400 hover:text-indigo-300 font-medium mb-6 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Job Listings
+        </a>
+
+        <div class="bg-gray-800 rounded-xl shadow-2xl p-6 md:p-10 border-2 border-indigo-500">
+            <div class="flex items-start mb-6">
+                {% if selected_job.company_logo_or_media %}
+                    <div class="mr-6 flex-shrink-0">
+                        <img src="{{ selected_job.company_logo_or_media.url }}" alt="{{ selected_job.recruiter_name }} Logo" class="h-16 w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
+                    </div>
+                {% endif %}
+                <div class="flex-grow">
+                    <h1 class="text-3xl font-extrabold text-white mb-1">{{ selected_job.post_content }}</h1>
+                    <p class="text-xl text-indigo-400 font-semibold mb-2">{{ selected_job.recruiter_name }}</p>
+                    <div class="flex items-center text-gray-400 text-sm space-x-3">
+                        <span class="flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m10.606-10.606L13.414 3.1a1.998 1.998 0 00-2.828 0l-4.243 4.243"></path></svg>
+                            {{ selected_job.recruiter_location }}
+                        </span>
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-700 text-indigo-300 uppercase">{{ selected_job.get_job_type_display }}</span>
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase">{{ selected_job.get_job_category_display }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 border-t border-gray-700 pt-6">
+                <h2 class="text-2xl font-bold text-white mb-3 border-b border-gray-700 pb-2">Job Description</h2>
+                <div class="text-gray-300 text-base leading-relaxed whitespace-pre-wrap">
+                    {{ selected_job.post_content }}
+                </div>
+            </div>
+
+            <div class="mt-6 border-t border-gray-700 pt-6">
+                <h2 class="text-2xl font-bold text-white mb-3 border-b border-gray-700 pb-2">Required Skills</h2>
+                <p class="text-gray-300 text-base">{{ selected_job.required_skills }}</p>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-indigo-500 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    {% if selected_job.application_url %}
+                    <a href="{{ selected_job.application_url }}" target="_blank" rel="noopener noreferrer" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out text-lg shadow-lg">
+                        Apply Now via External Link
+                    </a>
+                    {% else %}
+                    <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 ease-in-out text-lg shadow-lg">
+                        Easy Apply
+                    </button>
+                    {% endif %}
+                    
+                    <span class="text-gray-400 text-sm">Posted: {{ selected_job.timestamp|date:"M d, Y" }}</span>
+                </div>
+                
+                <form method="post" action="{% url 'languages:upvote_job_application' pk=selected_job.pk %}" class="upvote-form flex items-center">
+                    {% csrf_token %}
+                    <button type="submit" class="text-gray-400 hover:text-indigo-400 transition duration-150 ease-in-out flex items-center space-x-1 p-2 rounded-full hover:bg-gray-700">
+                        <svg class="h-6 w-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg>
+                        <span class="upvote-count font-semibold text-xl">{{ selected_job.upvotes }}</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    {% else %}
+
     <h1 class="text-4xl font-extrabold text-white mb-8 border-b border-indigo-500 pb-2">{{ page_title }}</h1>
 
     <form method="get" action="{% url 'languages:browse_job_listings' %}" class="mb-8 p-6 bg-gray-800 rounded-lg shadow-2xl">
@@ -96,65 +175,44 @@
             {% for job in job_posts %}
                 {% if forloop.counter <= recommended_jobs_count %}
                 {# Only show the recommended subset from the paginated list on the first page #}
-                {# MODIFIED: Reduced card padding on mobile to p-4 #}
                 <div class="bg-gray-800 rounded-xl shadow-2xl p-4 md:p-6 transition duration-300 ease-in-out border-2 border-indigo-500 hover:bg-gray-700/50 job-card-hover">
-                    <div class="flex items-start md:flex-row md:justify-between md:items-start">
-                        
-                        {% if job.company_logo_or_media %}
-                            {# MODIFIED: Reduced logo size on mobile (h-12 w-12) and added right margin (mr-4) #}
-                            <div class="mr-4 md:mb-0 md:mr-6 flex-shrink-0">
-                                <img src="{{ job.company_logo_or_media.url }}" alt="{{ job.recruiter_name }} Logo" class="h-12 w-12 md:h-16 md:w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
-                            </div>
-                        {% endif %}
-
-                        <div class="flex-grow min-w-0">
-                            {# Updated Layout for Mobile Stacking #}
-                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
-                                {# NO CHANGE HERE: Kept existing truncation and size for consistency. #}
-                                <h2 class="text-lg md:text-xl font-bold text-white leading-tight mb-1 sm:mb-0 truncate">
-                                    {{ job.post_content|truncatechars:70 }} 
-                                    {% if job.post_content|length > 70 %}...{% endif %}
-                                </h2>
-                                <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
-                            </div>
+                    <a href="{% url 'languages:browse_job_listings' %}?job_id={{ job.pk }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="block text-white">
+                        <div class="flex items-start md:flex-row md:justify-between md:items-start">
                             
-                            {# MODIFIED: The Company Name and Location are already displayed here #}
-                            <p class="text-gray-400 text-xs mb-1">
-                                <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
-                                — 
-                                <span>{{ job.recruiter_location }}</span>
-                            </p>
-
-                            {# Expandable Job Content - This is the description section #}
-                            <div id="recommended-details-{{ job.pk }}">
-                                {# MODIFIED: Ensure the content starts in the collapsed state with fade #}
-                                <p class="text-gray-300 text-sm mb-1 collapsed-content text-fade-bottom" data-job-content>
-                                    {{ job.post_content }}
-                                </p>
-                                {# The skills are part of the 'details' that should also be hidden initially #}
-                                <p class="text-gray-300 text-sm mb-2" data-job-skills>
-                                    <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills }}
-                                </p>
-                            </div>
-                            
-                            {# The 'Read More' button is what the user clicks to see ALL details #}
-                            {% if job.post_content|length > 70 or job.required_skills|length > 120 %}
-                            {# MODIFIED: Reduced margin to mb-1 #}
-                            <button onclick="toggleDetails('recommended-details-{{ job.pk }}', this)" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium mt-1 mb-1 transition duration-150 ease-in-out flex items-center">
-                                Read More
-                                <svg class="w-4 h-4 ml-1 transform transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
+                            {% if job.company_logo_or_media %}
+                                <div class="mr-4 md:mb-0 md:mr-6 flex-shrink-0">
+                                    <img src="{{ job.company_logo_or_media.url }}" alt="{{ job.recruiter_name }} Logo" class="h-12 w-12 md:h-16 md:w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
+                                </div>
                             {% endif %}
-                            
-                            {# MODIFIED: Reduced text size and space (text-xs, space-x-2) and removed separator #}
-                            <div class="flex items-center text-xs text-gray-500 space-x-2">
-                                <span class="font-medium uppercase border border-gray-600 px-2 py-0.5 rounded-full">{{ job.get_job_type_display }}</span>
-                                <span>Posted: {{ job.timestamp|date:"M d, Y" }}</span>
+
+                            <div class="flex-grow min-w-0">
+                                {# Updated Layout for Mobile Stacking #}
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
+                                    <h2 class="text-lg md:text-xl font-bold text-white leading-tight mb-1 sm:mb-0 truncate">
+                                        {{ job.post_content|truncatechars:70 }} 
+                                        {% if job.post_content|length > 70 %}...{% endif %}
+                                    </h2>
+                                    <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
+                                </div>
+                                
+                                <p class="text-gray-400 text-xs mb-1">
+                                    <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
+                                    — 
+                                    <span>{{ job.recruiter_location }}</span>
+                                </p>
+
+                                {# Concise Job Description Snippet (Truncated and clamped) #}
+                                <p class="text-gray-300 text-sm mb-2 line-clamp-2">
+                                    {{ job.post_content|truncatewords:20 }}
+                                </p>
+                                
+                                <div class="flex items-center text-xs text-gray-500 space-x-2 pt-1">
+                                    <span class="font-medium uppercase border border-gray-600 px-2 py-0.5 rounded-full">{{ job.get_job_type_display }}</span>
+                                    <span>Posted: {{ job.timestamp|date:"M d, Y" }}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                     
                     <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
                         
@@ -202,65 +260,44 @@
                 {# If on page 1 and recommendations exist, skip the recommended ones in the main list #}
                 {% if not user.is_authenticated or job_posts.number != 1 or forloop.counter > recommended_jobs_count %}
                 {# Updated Card Styling #}
-                {# MODIFIED: Reduced card padding on mobile to p-4 #}
                 <div class="bg-gray-800 rounded-xl shadow-xl p-4 md:p-6 transition duration-300 ease-in-out hover:bg-gray-700/50 border border-gray-700 job-card-hover">
-                    <div class="flex items-start md:flex-row md:justify-between md:items-start">
-                        
-                        {% if job.company_logo_or_media %}
-                            {# MODIFIED: Reduced logo size on mobile (h-12 w-12) and added right margin (mr-4) #}
-                            <div class="mr-4 md:mb-0 md:mr-6 flex-shrink-0">
-                                <img src="{{ job.company_logo_or_media.url }}" alt="{{ job.recruiter_name }} Logo" class="h-12 w-12 md:h-16 md:w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
-                            </div>
-                        {% endif %}
-
-                        <div class="flex-grow min-w-0">
-                            {# Updated Layout for Mobile Stacking #}
-                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
-                                {# NO CHANGE HERE: Kept existing truncation and size for consistency. #}
-                                <h2 class="text-lg md:text-xl font-bold text-white leading-tight mb-1 sm:mb-0 truncate">
-                                    {{ job.post_content|truncatechars:70 }} 
-                                    {% if job.post_content|length > 70 %}...{% endif %}
-                                </h2>
-                                <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
-                            </div>
+                    <a href="{% url 'languages:browse_job_listings' %}?job_id={{ job.pk }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="block text-white">
+                        <div class="flex items-start md:flex-row md:justify-between md:items-start">
                             
-                            {# MODIFIED: The Company Name and Location are already displayed here #}
-                            <p class="text-gray-400 text-xs mb-1">
-                                <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
-                                — 
-                                <span>{{ job.recruiter_location }}</span>
-                            </p>
-
-                            {# Expandable Job Content - This is the description section #}
-                            <div id="main-details-{{ job.pk }}">
-                                {# MODIFIED: Ensure the content starts in the collapsed state with fade #}
-                                <p class="text-gray-300 text-sm mb-1 collapsed-content text-fade-bottom" data-job-content>
-                                    {{ job.post_content }}
-                                </p>
-                                {# The skills are part of the 'details' that should also be hidden initially #}
-                                <p class="text-gray-300 text-sm mb-2" data-job-skills>
-                                    <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills }}
-                                </p>
-                            </div>
-                            
-                            {# The 'Read More' button is what the user clicks to see ALL details #}
-                            {% if job.post_content|length > 70 or job.required_skills|length > 120 %}
-                            {# MODIFIED: Reduced margin to mb-1 #}
-                            <button onclick="toggleDetails('main-details-{{ job.pk }}', this)" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium mt-1 mb-1 transition duration-150 ease-in-out flex items-center">
-                                Read More
-                                <svg class="w-4 h-4 ml-1 transform transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
+                            {% if job.company_logo_or_media %}
+                                <div class="mr-4 md:mb-0 md:mr-6 flex-shrink-0">
+                                    <img src="{{ job.company_logo_or_media.url }}" alt="{{ job.recruiter_name }} Logo" class="h-12 w-12 md:h-16 md:w-16 object-contain rounded-lg border border-gray-600 p-1 bg-white">
+                                </div>
                             {% endif %}
-                            
-                            {# MODIFIED: Reduced text size and space (text-xs, space-x-2) and removed separator #}
-                            <div class="flex items-center text-xs text-gray-500 space-x-2">
-                                <span class="font-medium uppercase border border-gray-600 px-2 py-0.5 rounded-full">{{ job.get_job_type_display }}</span>
-                                <span>Posted: {{ job.timestamp|date:"M d, Y" }}</span>
+
+                            <div class="flex-grow min-w-0">
+                                {# Updated Layout for Mobile Stacking #}
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
+                                    <h2 class="text-lg md:text-xl font-bold text-white leading-tight mb-1 sm:mb-0 truncate">
+                                        {{ job.post_content|truncatechars:70 }} 
+                                        {% if job.post_content|length > 70 %}...{% endif %}
+                                    </h2>
+                                    <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
+                                </div>
+                                
+                                <p class="text-gray-400 text-xs mb-1">
+                                    <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
+                                    — 
+                                    <span>{{ job.recruiter_location }}</span>
+                                </p>
+
+                                {# Concise Job Description Snippet (Truncated and clamped) #}
+                                <p class="text-gray-300 text-sm mb-2 line-clamp-2">
+                                    {{ job.post_content|truncatewords:20 }}
+                                </p>
+                                
+                                <div class="flex items-center text-xs text-gray-500 space-x-2 pt-1">
+                                    <span class="font-medium uppercase border border-gray-600 px-2 py-0.5 rounded-full">{{ job.get_job_type_display }}</span>
+                                    <span>Posted: {{ job.timestamp|date:"M d, Y" }}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
 
                     <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
                         
@@ -333,6 +370,8 @@
         </div>
         {% endwith %}
     {% endif %}
+
+    {% endif %}
 </main>
 
 <div id="easyApplyModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity duration-300">
@@ -391,7 +430,7 @@
         function toggleDetails(id, button) {
             const container = document.getElementById(id);
             const content = container.querySelector('[data-job-content]');
-            const toggleIcon = button.querySelector('[data-toggle-icon]');
+            const icon = button.querySelector('[data-toggle-icon]');
 
             // Check if the content is currently expanded
             if (content.classList.contains('expanded-content')) {
@@ -400,7 +439,6 @@
                 content.classList.add('collapsed-content');
                 content.classList.add('text-fade-bottom'); // Reapply fade effect
                 
-                // Update button text and icon
                 button.innerHTML = 'Read More <svg class="w-4 h-4 ml-1 transform transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
             } else {
                 // Expand
@@ -408,7 +446,6 @@
                 content.classList.remove('text-fade-bottom'); // Remove fade effect
                 content.classList.add('expanded-content');
                 
-                // Update button text and icon
                 button.innerHTML = 'Read Less <svg class="w-4 h-4 ml-1 transform rotate-180 transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
             }
         }
@@ -416,8 +453,7 @@
         // Initialize collapsed state for all job content on page load
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('[data-job-content]').forEach(content => {
-                // Only collapse if the content is actually longer than the truncated amount (assuming 4 lines in max-h-16/4rem)
-                // This logic ensures that short descriptions are fully displayed by default.
+                // Only collapse if the content is actually longer than the truncated amount (assuming 4 lines in max-h-16)
                 if (content.scrollHeight > content.clientHeight) {
                     content.classList.add('collapsed-content');
                     content.classList.add('text-fade-bottom');
