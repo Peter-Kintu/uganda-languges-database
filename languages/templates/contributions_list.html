@@ -44,7 +44,8 @@
 
         /* Styles for the Read More/Less toggle */
         .collapsed-content {
-            max-height: 4rem; /* Hides overflow for job content */
+            /* Kept the original max-height of 4 lines */
+            max-height: 4rem; 
             overflow: hidden;
             transition: max-height 0.5s ease-in-out;
         }
@@ -109,7 +110,7 @@
                         <div class="flex-grow min-w-0">
                             {# Updated Layout for Mobile Stacking #}
                             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
-                                {# MODIFIED: Reduced text size on mobile (text-lg) and added truncate #}
+                                {# NO CHANGE HERE: Kept existing truncation and size for consistency. #}
                                 <h2 class="text-lg md:text-xl font-bold text-white leading-tight mb-1 sm:mb-0 truncate">
                                     {{ job.post_content|truncatechars:70 }} 
                                     {% if job.post_content|length > 70 %}...{% endif %}
@@ -117,25 +118,26 @@
                                 <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
                             </div>
                             
-                            {# MODIFIED: Reduced margin (mb-1) and text size (text-xs) for compactness #}
+                            {# MODIFIED: The Company Name and Location are already displayed here #}
                             <p class="text-gray-400 text-xs mb-1">
                                 <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
                                 — 
                                 <span>{{ job.recruiter_location }}</span>
                             </p>
 
-                            {# Expandable Job Content #}
+                            {# Expandable Job Content - This is the description section #}
                             <div id="recommended-details-{{ job.pk }}">
-                                {# MODIFIED: Reduced margin to mb-1 #}
+                                {# MODIFIED: Ensure the content starts in the collapsed state with fade #}
                                 <p class="text-gray-300 text-sm mb-1 collapsed-content text-fade-bottom" data-job-content>
                                     {{ job.post_content }}
                                 </p>
-                                {# MODIFIED: Reduced margin to mb-2 #}
+                                {# The skills are part of the 'details' that should also be hidden initially #}
                                 <p class="text-gray-300 text-sm mb-2" data-job-skills>
                                     <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills }}
                                 </p>
                             </div>
                             
+                            {# The 'Read More' button is what the user clicks to see ALL details #}
                             {% if job.post_content|length > 70 or job.required_skills|length > 120 %}
                             {# MODIFIED: Reduced margin to mb-1 #}
                             <button onclick="toggleDetails('recommended-details-{{ job.pk }}', this)" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium mt-1 mb-1 transition duration-150 ease-in-out flex items-center">
@@ -214,7 +216,7 @@
                         <div class="flex-grow min-w-0">
                             {# Updated Layout for Mobile Stacking #}
                             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
-                                {# MODIFIED: Reduced text size on mobile (text-lg) and added truncate #}
+                                {# NO CHANGE HERE: Kept existing truncation and size for consistency. #}
                                 <h2 class="text-lg md:text-xl font-bold text-white leading-tight mb-1 sm:mb-0 truncate">
                                     {{ job.post_content|truncatechars:70 }} 
                                     {% if job.post_content|length > 70 %}...{% endif %}
@@ -222,25 +224,26 @@
                                 <span class="sm:ml-4 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white uppercase flex-shrink-0 self-start">{{ job.get_job_category_display }}</span>
                             </div>
                             
-                            {# MODIFIED: Reduced margin (mb-1) and text size (text-xs) for compactness #}
+                            {# MODIFIED: The Company Name and Location are already displayed here #}
                             <p class="text-gray-400 text-xs mb-1">
                                 <span class="font-medium text-indigo-400">{{ job.recruiter_name }}</span> 
                                 — 
                                 <span>{{ job.recruiter_location }}</span>
                             </p>
 
-                            {# Expandable Job Content #}
+                            {# Expandable Job Content - This is the description section #}
                             <div id="main-details-{{ job.pk }}">
-                                {# MODIFIED: Reduced margin to mb-1 #}
+                                {# MODIFIED: Ensure the content starts in the collapsed state with fade #}
                                 <p class="text-gray-300 text-sm mb-1 collapsed-content text-fade-bottom" data-job-content>
                                     {{ job.post_content }}
                                 </p>
-                                {# MODIFIED: Reduced margin to mb-2 #}
+                                {# The skills are part of the 'details' that should also be hidden initially #}
                                 <p class="text-gray-300 text-sm mb-2" data-job-skills>
                                     <strong class="text-indigo-300">Skills:</strong> {{ job.required_skills }}
                                 </p>
                             </div>
                             
+                            {# The 'Read More' button is what the user clicks to see ALL details #}
                             {% if job.post_content|length > 70 or job.required_skills|length > 120 %}
                             {# MODIFIED: Reduced margin to mb-1 #}
                             <button onclick="toggleDetails('main-details-{{ job.pk }}', this)" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium mt-1 mb-1 transition duration-150 ease-in-out flex items-center">
@@ -388,7 +391,7 @@
         function toggleDetails(id, button) {
             const container = document.getElementById(id);
             const content = container.querySelector('[data-job-content]');
-            const icon = button.querySelector('[data-toggle-icon]');
+            const toggleIcon = button.querySelector('[data-toggle-icon]');
 
             // Check if the content is currently expanded
             if (content.classList.contains('expanded-content')) {
@@ -397,6 +400,7 @@
                 content.classList.add('collapsed-content');
                 content.classList.add('text-fade-bottom'); // Reapply fade effect
                 
+                // Update button text and icon
                 button.innerHTML = 'Read More <svg class="w-4 h-4 ml-1 transform transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
             } else {
                 // Expand
@@ -404,6 +408,7 @@
                 content.classList.remove('text-fade-bottom'); // Remove fade effect
                 content.classList.add('expanded-content');
                 
+                // Update button text and icon
                 button.innerHTML = 'Read Less <svg class="w-4 h-4 ml-1 transform rotate-180 transition duration-300 ease-in-out" data-toggle-icon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
             }
         }
@@ -411,7 +416,8 @@
         // Initialize collapsed state for all job content on page load
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('[data-job-content]').forEach(content => {
-                // Only collapse if the content is actually longer than the truncated amount (assuming 4 lines in max-h-16)
+                // Only collapse if the content is actually longer than the truncated amount (assuming 4 lines in max-h-16/4rem)
+                // This logic ensures that short descriptions are fully displayed by default.
                 if (content.scrollHeight > content.clientHeight) {
                     content.classList.add('collapsed-content');
                     content.classList.add('text-fade-bottom');
