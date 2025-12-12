@@ -408,6 +408,7 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
         price_str = f"{price:,.0f}" if price is not None else "N/A"
         
         if is_luganda_session:
+            # Use the dedicated Luganda translation helper
             return get_luganda_response(stage_key, price_str, raw_offer_text)
         
         # English Responses
