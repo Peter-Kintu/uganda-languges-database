@@ -479,3 +479,93 @@ def get_ai_response(product, user_message, chat_history):
         product.negotiated_price = display_price
         product.save()
         return f"I've checked with the vendor and this is their final, non-negotiable price! The lowest I can possibly go is **UGX {display_price:,.0f}**. This is the best deal available. Are you ready to lock it in? 🤝"
+
+
+@login_required
+def ai_negotiation_view(request, slug):
+    product = get_object_or_404(Product, slug=slug)
+    
+    # Check if negotiation is even allowed
+    if not product.is_negotiable:
+        messages.error(request, f"Price negotiation is not available for {product.name}.")
+        return redirect('eshop:product_detail', slug=slug)
+
+    form = NegotiationForm(request.POST or None)
+    
+    # Retrieve chat history from session
+    chat_history = request.session.get(f'chat_history_{slug}', [
+        # Updated initial greeting to be more human-like
+        {'role': 'ai', 'text': f"Hello! I'm the AI Negotiator, and I'm ready to find you a great price. The original price for **{product.name}** is UGX {product.price:,.0f}. What is your first offer?"}
+    ])
+
+    if request.method == 'POST' and form.is_valid():
+        user_message = form.cleaned_data['user_message']
+        
+        # 1. Add user message to history
+        chat_history.append({'role': 'user', 'text': user_message})
+
+        # 2. Get AI response and add it to history
+        ai_response_text = get_ai_response(product, user_message, chat_history)
+        chat_history.append({'role': 'ai', 'text': ai_response_text})
+        
+        # Save updated chat history to session
+        request.session[f'chat_history_{slug}'] = chat_history
+        # This prevents the form resubmission on refresh
+        return redirect('eshop:ai_negotiation', slug=slug) 
+        
+    # Check for acceptance status for the template display
+    is_negotiation_active = product.negotiated_price and product.negotiated_price <= product.price * Decimal('0.90')
+
+    context = {
+        'product': product,
+        'form': form,
+        'chat_history': chat_history,
+        # Pass status to template for button control and price display
+        'is_negotiation_active': is_negotiation_active, 
+        'final_price': product.negotiated_price
+    }
+
+    return render(request, 'eshop/ai_negotiation.html', context)
+
+@login_required
+def accept_negotiated_price(request, slug):
+    product = get_object_or_404(Product, slug=slug)
+    cart = get_user_cart(request)
+
+    # Check if a negotiated price exists and is lower than the original price
+    if product.negotiated_price and product.negotiated_price <= product.price:
+        
+        # Optionally remove the item from the cart if it was already there (to enforce adding with the new price)
+        try:
+            cart_item = CartItem.objects.get(cart=cart, product=product)
+            cart_item.delete() 
+        except CartItem.DoesNotExist:
+            pass 
+            
+        # Clear chat history for this product
+        if f'chat_history_{slug}' in request.session:
+            del request.session[f'chat_history_{slug}']
+            
+        messages.success(request, f"🎉 Negotiated price of UGX {product.negotiated_price:,.0f} accepted! Add the product to your cart to proceed.")
+        return redirect('eshop:product_detail', slug=slug)
+
+    messages.error(request, "Oops! You must successfully negotiate a price with the bot first.")
+    return redirect('eshop:ai_negotiation', slug=slug) # Redirect back to negotiation to continue
+
+
+# ------------------------------------
+# Admin/Utility Views
+# ------------------------------------
+
+@login_required
+def export_products_json(request):
+    """
+    Exports all products as a JSON file.
+    This view is intended for use in the Django admin interface.
+    """
+    products = Product.objects.all()
+    # Note: 'serialize' must be imported from 'django.core.serializers' at the top of views.py
+    data = serialize('json', products, fields=('name', 'description', 'price', 'is_negotiable', 'vendor_name', 'whatsapp_number', 'tiktok_url', 'language_tag'))
+    response = HttpResponse(data, content_type='application/json')
+    response['Content-Disposition'] = 'attachment; filename="products.json"'
+    return response
