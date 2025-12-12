@@ -5,7 +5,7 @@ from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
 # FIX: Correctly import F and Sum for aggregation
 from django.db.models import F, Sum 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation # Import InvalidOperation for robust number handling
 from django.contrib.auth.decorators import login_required
 # REMOVED: from languages import models # Line removed due to incorrect/redundant import
 
@@ -309,23 +309,32 @@ def confirm_order_whatsapp(request):
 
 def get_ai_response(product, user_message, chat_history):
     """
-    Updated AI negotiation logic for a more iterative, human-like feel, 
-    with a firm final floor price set at 90% as requested.
+    Updated AI negotiation logic for a more iterative, human-like feel.
+    FIXED: Robust price parsing and accurate comparison to the 90% floor.
     """
     product_price = product.price
 
     # Define negotiation constants
     VENDOR_MIN_ACCEPT = Decimal('0.70')      # Absolute lowest offer AI will engage with (70%)
-    # Set the negotiation floor to 90% as requested ("let the last price be just 90%")
-    VENDOR_NEGOTIATION_FLOOR = Decimal('0.90') # AI's firm final stand (90%)
-    EASY_ACCEPT_THRESHOLD = Decimal('0.90') # Offer >= 90% is accepted quickly (same as floor now)
+    VENDOR_NEGOTIATION_FLOOR = product_price * Decimal('0.90') # AI's firm final stand (90%)
     
-    # Dynamic step factor: 30% to 50% of the distance, increasing with chat history length
-    # This makes the AI 'relent' faster the longer the negotiation goes on
+    # Dynamic step factor: 30% to 50% of the distance
     STEP_FACTOR = Decimal(str(0.30 + len(chat_history) * 0.02)) 
     STEP_FACTOR = min(STEP_FACTOR, Decimal('0.50')) # Cap at 50%
 
+    # Helper function for rounding
+    def round_price(price, product_price_ref):
+        # Round to 2 decimal places for safety, then apply rounding based on magnitude
+        price = price.quantize(Decimal('0.00')) 
+        if product_price_ref >= Decimal('100000'):
+             return Decimal(round(price, -3)) # Round to the nearest thousand 
+        elif product_price_ref >= Decimal('1000'):
+             return Decimal(round(price, -2)) # Round to the nearest hundred
+        else:
+             return price.quantize(Decimal('0.00')) 
+    
     # 1. Parse user offer - look for UGX followed by a number, or just a number
+    # Improved regex to capture numbers accurately, including large ones.
     offer_match = re.search(r'UGX\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+)', user_message, re.IGNORECASE)
     
     offer = None
@@ -333,73 +342,58 @@ def get_ai_response(product, user_message, chat_history):
         try:
             # Clean up and convert the offer to Decimal
             offer_str = offer_match.group(1).replace(',', '')
-            offer = Decimal(offer_str)
-        except Exception:
+            # Use quantize to ensure a fixed decimal point for comparison (e.g., '225000.00')
+            offer = Decimal(offer_str).quantize(Decimal('0.00')) 
+        except (InvalidOperation, ValueError):
             pass # Keep offer as None if conversion fails
     
-    # Also check if the user just entered a number (e.g., "4000")
-    if offer is None:
-        # Simple check for a number/price attempt as the first or second word
-        words = user_message.split()
-        if len(words) <= 3:
-             simple_number_match = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+)', words[0]) 
-             if simple_number_match:
-                  try:
-                    offer_str = simple_number_match.group(1).replace(',', '')
-                    offer = Decimal(offer_str)
-                  except Exception:
-                      pass
-                 
-    # 2. Handle Negotiation Status (already finalized)
+    # Check for acceptance status (already finalized)
     if product.negotiated_price and product.negotiated_price < product_price:
-        return f"We've already agreed on a sweet deal of **UGX {product.negotiated_price:,.0f}**! Go ahead and click the 'Lock In' button below to proceed. 🔒"
+        return f"We've already agreed on the amazing price of **UGX {product.negotiated_price:,.0f}**! Click the 'Lock In' button to proceed now. 🥳"
 
     
-    # 3. Negotiation Logic
     # Get the AI's last offer, or start with the original price
     last_ai_offer = product.negotiated_price if product.negotiated_price and product.negotiated_price > product_price * Decimal('0.70') else product_price
-    min_price_accept = product_price * VENDOR_MIN_ACCEPT
-    floor_price = product_price * VENDOR_NEGOTIATION_FLOOR # 90%
     
-    # Helper function for rounding
-    def round_price(price, product_price_ref):
-        if product_price_ref >= Decimal('100000'):
-             return Decimal(round(price, -3)) # Round to the nearest thousand 
-        elif product_price_ref >= Decimal('1000'):
-             return Decimal(round(price, -2)) # Round to the nearest hundred
-        else:
-             return price.quantize(Decimal('0.00')) # Keep two decimal places
-    
-    # 3a. User made a price offer
-    if offer:
-        
-        # 3a.1. Offer is too low (below 70%)
-        if offer < min_price_accept: 
-            # Suggest the floor price to re-engage
-            return f"I'm sorry, **UGX {offer:,.0f}** is too low for my vendor to accept. They can't sell at a loss. The lowest we can go is **UGX {floor_price:,.0f}**. Please make me a better offer."
+    # Ensure the last_ai_offer is also properly rounded for consistent comparison with the floor
+    # We round the floor price once for consistency.
+    floor_price = round_price(VENDOR_NEGOTIATION_FLOOR, product_price)
+    min_price_accept = round_price(product_price * VENDOR_MIN_ACCEPT, product_price)
 
-        # 3a.2. Offer is high (at or above 90%) - DEAL ACCEPTED
+
+    # 2. Negotiation Logic
+    
+    # 2a. User made a valid price offer
+    if offer is not None:
+        
+        # 2a.1. Offer is TOO LOW (below 70% threshold)
+        if offer < min_price_accept: 
+            return f"Honestly, that price of **UGX {offer:,.0f}** is too low for us to even consider. I can't let it go for less than **UGX {min_price_accept:,.0f}**. What's your next move?"
+
+        # 2a.2. Offer MEETS OR EXCEEDS THE FINAL FLOOR (90%) - DEAL ACCEPTED
+        # Crucial fix: Compare the user's *parsed* and *quantized* offer directly to the *calculated* floor.
         if offer >= floor_price:
-            final_price = offer if offer < product_price else product_price # Don't accept more than original price
+            final_price = offer if offer < product_price else product_price
             product.negotiated_price = final_price
             product.save()
-            return f"Yes, that is a great price! **UGX {final_price:,.0f}** is a deal we can finalize right now. The price is set! Click 'Lock In' to complete your purchase. Great negotiation! 🎉"
+            # New, human-like acceptance response
+            return f"That's a fantastic price, **UGX {final_price:,.0f}**! We have a deal. I've set the final price, so click the 'Lock In' button to grab it before someone else does! 🎉"
         
-        # 3a.3. Offer is between 70% and 90% (Iterative Counter)
+        # 2a.3. Offer is between 70% and 90% (Iterative Counter)
         if offer < floor_price:
             
-            # If the user's offer is at or above the AI's last counter, accept it
+            # If the user's offer is already at or above the AI's last counter, accept it.
             if offer >= last_ai_offer:
                 final_price = offer
                 product.negotiated_price = final_price
                 product.save()
-                return f"You got it! Your offer of **UGX {final_price:,.0f}** works for us. We have a final price! Click 'Lock In' to proceed now. 🥳"
+                return f"Yes, I can accept that! **UGX {final_price:,.0f}** is a final price. Please click 'Lock In' now. 🥳"
 
-            # Calculate the new counter-offer: move halfway from the last offer toward the floor (90%)
-            # This ensures progressive reduction.
-            reduction_amount = (last_ai_offer - floor_price) * STEP_FACTOR 
+            # Calculate the new counter-offer: move 30-50% of the distance toward the floor (90%)
+            reduction_amount = (last_ai_offer - offer) * STEP_FACTOR 
             counter_price = last_ai_offer - reduction_amount
             
+            # Ensure we don't counter-offer below the final floor
             if counter_price < floor_price:
                  counter_price = floor_price
 
@@ -408,56 +402,59 @@ def get_ai_response(product, user_message, chat_history):
             # Enforce the 90% floor after rounding
             if final_counter < floor_price:
                  final_counter = floor_price
-
+                 
             # Store the new counter price
             product.negotiated_price = final_counter
             product.save()
-
-            if final_counter <= floor_price + Decimal('1'):
-                 # Matched user's requested response: "ai: last price is ugx3900." (Adapted to 90% floor)
-                 return f"I've pushed my vendor to their absolute limit! The **last price** I can offer you is **UGX {final_counter:,.0f}**. I promise, this is the lowest we can go. What's your final answer?"
+            
+            if final_counter <= floor_price + Decimal('0.01'):
+                 # Final offer hit the floor price (90%)
+                 return f"I've checked with the vendor, and they won't budge anymore. The **last price** I can offer you is **UGX {final_counter:,.0f}**. Is this a deal?"
             
             # Conversational counter-offer
-            return f"I hear your offer of UGX {offer:,.0f}. I can't go that low yet, but I'll meet you halfway. My new offer is **UGX {final_counter:,.0f}**. Is that better?"
+            return f"I see your UGX {offer:,.0f} offer. I've managed to knock the price down to **UGX {final_counter:,.0f}** for you. Can you meet me there, or go a little higher?"
             
 
-    # 3b. User did NOT make a price offer (e.g., "reduce for me", "hi", etc.)
+    # 2b. User did NOT make a price offer (e.g., "reduce for me", "hi", etc.)
     
-    # Check for simple conversational messages that push for a lower price
     user_msg_lower = user_message.lower()
-    if 'reduce' in user_msg_lower or 'lower' in user_msg_lower or 'final' in user_msg_lower or 'best price' in user_msg_lower:
+    
+    if any(phrase in user_msg_lower for phrase in ['reduce', 'lower', 'final price', 'best price', 'last price', 'discount', 'can you do']):
         
         # If we are already at the floor, reiterate the floor price
-        if last_ai_offer <= floor_price + Decimal('1'): 
+        if last_ai_offer <= floor_price + Decimal('0.01'): 
             product.negotiated_price = floor_price # Ensure it's exactly the floor
             product.save()
-            # Matched user's requested response: "ai: okey the last price is ugx 3500." (Adapted to 90% floor)
-            return f"My friend, I'm being squeezed here! This is the absolute **last price** I can offer you: **UGX {floor_price:,.0f}**. Take it or leave it. 😉"
+            # Human-like response when stuck at the floor
+            return f"My apologies, but **UGX {floor_price:,.0f}** is literally the lowest I can go. My hands are tied now. What's your final answer?"
         
         # If we are not at the floor, make a small, progressive move (e.g., 5% of the distance from current to floor)
-        # This handles the "reduce for me" style push.
-        reduction = (last_ai_offer - floor_price) * Decimal('0.05') # Small step
+        reduction = (last_ai_offer - floor_price) * Decimal('0.05') 
         new_price = last_ai_offer - reduction
         
-        # Enforce the 90% floor
+        # Ensure we don't counter-offer below the final floor
         if new_price < floor_price:
             new_price = floor_price
             
         final_counter = round_price(new_price, product_price)
              
-        if final_counter < floor_price: # Re-check after rounding
+        if final_counter < floor_price: 
              final_counter = floor_price
              
         # Store the new price and respond
         product.negotiated_price = final_counter
         product.save()
         
-        # Matched user's requested response: "ai: reduce for me." (If they just said reduce)
-        return f"I can reduce a little. My current offer is now **UGX {final_counter:,.0f}**. What is your new offer?"
+        # Conversational move-down response
+        return f"Since you asked nicely, I can shave a little more off. I can do **UGX {final_counter:,.0f}**. What is the best price you are willing to pay right now?"
         
     # Default fallback for unparsable text or initial greeting
     else:
-        return "I'm not sure how to process that. To negotiate, please state your offer clearly, for example: 'UGX 80,000' or 'I offer 80k'."
+        # Check if it's the first message and redirect to a clear instruction
+        if len(chat_history) <= 2 and 'hello' in user_msg_lower:
+            return f"Hello back! To start, just tell me your first price offer for the **{product.name}** in UGX."
+
+        return "I'm not sure how to process that. Could you please make a clear price offer (e.g., 'UGX 80,000') or ask me to reduce the current price?"
 
 
 @login_required
@@ -493,7 +490,7 @@ def ai_negotiation_view(request, slug):
         return redirect('eshop:ai_negotiation', slug=slug) 
         
     # Check for acceptance status for the template display
-    is_negotiation_active = product.negotiated_price and product.negotiated_price < product.price
+    is_negotiation_active = product.negotiated_price and product.negotiated_price <= product.price * Decimal('0.90')
 
     context = {
         'product': product,
