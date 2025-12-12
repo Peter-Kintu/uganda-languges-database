@@ -44,6 +44,8 @@
                     
                     <input type="hidden" name="latitude" id="input_latitude" value="0.0000">
                     <input type="hidden" name="longitude" id="input_longitude" value="0.0000">
+                    
+                    <input type="hidden" name="vendor_whatsapp" id="input_vendor_whatsapp" value="{{ vendor_whatsapp_number }}">
 
                     <div>
                         <label for="address" class="block text-gray-300 font-medium mb-2">Street Address / Landmark</label>
@@ -127,7 +129,7 @@
         }
     });
 
-    // --- New Automatic WhatsApp Redirect Logic ---
+    // --- New Automatic WhatsApp Redirect Logic (UPDATED) ---
     document.getElementById('delivery-form').addEventListener('submit', function(event) {
         // Prevent the default form submission (which posts to the backend URL)
         event.preventDefault();
@@ -138,22 +140,27 @@
         const city = document.getElementById('city').value;
         const phone = document.getElementById('phone').value;
         
+        // <<< UPDATED LINE: Get vendor phone number from the hidden input
+        const vendorPhoneNumber = document.getElementById('input_vendor_whatsapp').value; 
+
         // Basic validation check
         if (address === '' || city === '' || phone === '' || lat === '0.0000') {
             alert('Please fill in the Street Address, City, Contact Phone, and use the "Use My Current GPS Location" button.');
             return;
         }
 
-        // IMPORTANT: Replace '256XXXXXXXXX' with the actual vendor's WhatsApp phone number.
-        // Since the vendor's number is not available in this client-side file, this is a placeholder.
-        const vendorPhoneNumber = '256770000000'; // <<< UPDATE THIS WITH THE VENDOR'S ACTUAL NUMBER
+        // Add validation for the vendor number
+        if (vendorPhoneNumber === '') {
+            alert('Error: Vendor contact information is missing. Cannot proceed with delivery.');
+            return;
+        }
 
         // Construct the message with all delivery details and a direct Google Maps link
         const messageContent = `*NEW DELIVERY ORDER (Automatic WhatsApp Link)*\n\n` +
                             `*Delivery Address:* ${address}, ${city}\n` +
                             `*Contact Phone (Customer):* ${phone}\n` +
                             `*GPS Coordinates:* Lat: ${lat}, Lng: ${lng}\n` +
-                            `*Google Maps Link:* https://www.google.com/maps/search/?api=1&query=${lat},${lng}\n\n` +
+                            `*Google Maps Link:* http://maps.google.com/?q=${lat},${lng}\n\n` +
                             `Please confirm order details and arrange delivery. Thank you!`;
 
         // Encode the message to be safely included in the URL
