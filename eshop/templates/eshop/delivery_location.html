@@ -22,150 +22,158 @@
                 
                 <button type="button" id="locate-me-button"
                     class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg mb-4 transition-colors duration-200">
-                    <svg class="w-5 h-5 inline mr-2 -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m-4.243 0a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    Use My Current GPS Location
+                    <svg class="w-5 h-5 inline mr-2 -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Use My Current Location
                 </button>
-                <div id="google-map-locator" class="w-full h-[450px] bg-gray-900 rounded-xl flex flex-col items-center justify-center border-4 border-indigo-500/50 shadow-inner shadow-indigo-900/50 p-6">
-                    <svg class="w-12 h-12 text-indigo-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m-4.243 0a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    <p class="text-gray-400 text-center text-lg italic p-4" id="map-message">
-                        This area requires JavaScript and a **Google Maps API Key** to render an interactive map. Click the button above to use your phone's GPS instead.
-                    </p>
-                </div>
-                <div class="mt-4 p-4 bg-gray-700 rounded-xl border border-gray-600">
-                    <p class="text-gray-300 font-semibold">Selected Coordinates:</p>
-                    <p class="text-sm text-green-400 font-bold" id="selected-coords">Lat: 0.0000, Lng: 0.0000</p>
-                </div>
-            </div>
+                
+                <div id="map" class="h-96 w-full rounded-2xl shadow-xl border border-gray-700 mb-4"></div>
 
-            <div class="lg:col-span-1">
-                <h2 class="text-2xl font-bold text-white mb-4">Confirm Delivery Details</h2>
+                <div id="current-coords" class="text-sm text-gray-400 mt-2 mb-4">
+                    <span id="latitude-display">Lat: N/A</span> | 
+                    <span id="longitude-display">Lng: N/A</span>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="p-3 mb-4 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-900 text-red-300{% elif message.tags == 'success' %}bg-green-900 text-green-300{% elif message.tags == 'warning' %}bg-yellow-900 text-yellow-300{% endif %}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
                 <form id="delivery-form" action="{% url 'eshop:process_delivery' %}" method="post" class="space-y-5">
                     {% csrf_token %}
+
+                    <input type="hidden" id="latitude" name="latitude" required value="{{ delivery_details.latitude|default:'' }}">
+                    <input type="hidden" id="longitude" name="longitude" required value="{{ delivery_details.longitude|default:'' }}">
                     
-                    <input type="hidden" name="latitude" id="input_latitude" value="0.0000">
-                    <input type="hidden" name="longitude" id="input_longitude" value="0.0000">
-
-                    <div>
-                        <label for="address" class="block text-gray-300 font-medium mb-2">Street Address / Landmark</label>
-                        <input type="text" id="address" name="address" required 
-                               class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
-                               placeholder="e.g., House #5, near Central Market">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="address" class="block text-sm font-medium text-gray-300 mb-1">Detailed Address (Street, Building, Landmark)</label>
+                            <input type="text" id="address" name="address" required 
+                                class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
+                                placeholder="e.g., Plot 45, Acacia Avenue, near the big mango tree"
+                                value="{{ delivery_details.address|default:'' }}">
+                        </div>
+                        <div>
+                            <label for="city" class="block text-sm font-medium text-gray-300 mb-1">City/Town/District</label>
+                            <input type="text" id="city" name="city" required 
+                                class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
+                                placeholder="e.g., Kampala"
+                                value="{{ delivery_details.city|default:'' }}">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-300 mb-1">Contact Phone</label>
+                            <input type="tel" id="phone" name="phone" required 
+                                class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
+                                placeholder="+256 770 000 000"
+                                value="{{ delivery_details.phone|default:'' }}">
+                        </div>
                     </div>
                     
-                    <div>
-                        <label for="city" class="block text-gray-300 font-medium mb-2">City / Region</label>
-                        <input type="text" id="city" name="city" required 
-                               class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
-                               placeholder="e.g., Kampala">
-                    </div>
-
-                    <div>
-                        <label for="phone" class="block text-gray-300 font-medium mb-2">Contact Phone</label>
-                        <input type="tel" id="phone" name="phone" required 
-                               class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
-                               placeholder="+256 770 000 000">
-                    </div>
-
-                    <button type="submit" id="confirm-button" 
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 px-8 rounded-xl transition-colors duration-300 shadow-2xl shadow-indigo-600/50 transform hover:scale-[1.01] mt-6 ring-4 ring-indigo-600/30">
-                        Confirm Location & Continue
+                    <button type="submit"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-2xl shadow-indigo-600/50">
+                        Confirm Location & Proceed to Final Order 🚀
                     </button>
                 </form>
             </div>
+
+            <div class="lg:col-span-1 bg-gray-700/50 p-6 rounded-2xl shadow-inner h-full flex flex-col justify-start">
+                <h2 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-3">Delivery Checklist</h2>
+                <ul class="space-y-4 text-gray-300">
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-green-400 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div>
+                            <p class="font-semibold text-white">Pin the Exact Spot</p>
+                            <p class="text-sm">Drag the pin or use 'My Location' for the most accurate drop-off point.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-green-400 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <div>
+                            <p class="font-semibold text-white">Vendor Contact</p>
+                            <p class="text-sm">After submission, you will be redirected to the vendor's WhatsApp to confirm details.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-green-400 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                        <div>
+                            <p class="font-semibold text-white">Payment & Confirmation</p>
+                            <p class="text-sm">Payment and final logistics will be handled directly with the vendor after they receive the order.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
         </div>
     </div>
 </div>
 
 <script>
-    // --- Geolocation Function (Retained) ---
-    document.getElementById('locate-me-button').addEventListener('click', function() {
-        const coordsDisplay = document.getElementById('selected-coords');
-        const mapMessage = document.getElementById('map-message');
-        const latInput = document.getElementById('input_latitude');
-        const lngInput = document.getElementById('input_longitude');
+    // Initialize Leaflet Map
+    var map = L.map('map').setView([0.3475, 32.5825], 13); // Default to Kampala
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-        coordsDisplay.textContent = 'Locating... Please wait.';
+    var marker = null;
+    var latitudeInput = document.getElementById('latitude');
+    var longitudeInput = document.getElementById('longitude');
+    var latitudeDisplay = document.getElementById('latitude-display');
+    var longitudeDisplay = document.getElementById('longitude-display');
+
+    // Function to update inputs and display
+    function updateLocation(lat, lng) {
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+            .bindPopup("Your Delivery Point").openPopup();
         
+        latitudeInput.value = lat.toFixed(6);
+        longitudeInput.value = lng.toFixed(6);
+        latitudeDisplay.textContent = `Lat: ${lat.toFixed(6)}`;
+        longitudeDisplay.textContent = `Lng: ${lng.toFixed(6)}`;
+
+        marker.on('dragend', function(e) {
+            var newLat = marker.getLatLng().lat;
+            var newLng = marker.getLatLng().lng;
+            updateLocation(newLat, newLng);
+        });
+    }
+
+    // Initialize with existing values if available
+    var initialLat = parseFloat(latitudeInput.value);
+    var initialLng = parseFloat(longitudeInput.value);
+
+    if (initialLat && initialLng && !isNaN(initialLat) && !isNaN(initialLng)) {
+        updateLocation(initialLat, initialLng);
+        map.setView([initialLat, initialLng], 15);
+    } else {
+        // Default pin if no previous data
+        updateLocation(0.3475, 32.5825);
+    }
+
+    // Handle 'Use My Current Location' button
+    document.getElementById('locate-me-button').addEventListener('click', function() {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude.toFixed(4);
-                    const lng = position.coords.longitude.toFixed(4);
-
-                    // 1. Update form inputs
-                    latInput.value = lat;
-                    lngInput.value = lng;
-
-                    // 2. Update display
-                    coordsDisplay.textContent = `Lat: ${lat}, Lng: ${lng}`;
-                    
-                    // 3. Update map placeholder message
-                    mapMessage.innerHTML = `✅ **GPS Location Found!** You can still adjust the address details on the right, but the coordinates (${lat}, ${lng}) are ready to go.`;
-                },
-                function(error) {
-                    let errorMessage = 'Location service denied or failed.';
-                    if (error.code === error.PERMISSION_DENIED) {
-                        errorMessage = '🛑 Permission Denied. Please enable location services for this browser/site.';
-                    } else if (error.code === error.POSITION_UNAVAILABLE) {
-                        errorMessage = '🛰️ Location unavailable. Try moving to an open area.';
-                    } else if (error.code === error.TIMEOUT) {
-                        errorMessage = 'Slow connection. Location request timed out.';
-                    }
-
-                    coordsDisplay.textContent = 'Lat: 0.0000, Lng: 0.0000';
-                    mapMessage.innerHTML = `**Location Error:** ${errorMessage}`;
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
-                }
-            );
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+                updateLocation(lat, lng);
+                map.setView([lat, lng], 15);
+            }, function(error) {
+                alert('Geolocation failed: ' + error.message);
+            });
         } else {
-            coordsDisplay.textContent = 'Lat: 0.0000, Lng: 0.0000';
-            mapMessage.innerHTML = 'Your browser does not support Geolocation.';
+            alert('Geolocation is not supported by your browser.');
         }
     });
 
-    // --- New Automatic WhatsApp Redirect Logic ---
-    document.getElementById('delivery-form').addEventListener('submit', function(event) {
-        // Prevent the default form submission (which posts to the backend URL)
-        event.preventDefault();
-
-        const lat = document.getElementById('input_latitude').value;
-        const lng = document.getElementById('input_longitude').value;
-        const address = document.getElementById('address').value;
-        const city = document.getElementById('city').value;
-        const phone = document.getElementById('phone').value;
-        
-        // Basic validation check
-        if (address === '' || city === '' || phone === '' || lat === '0.0000') {
-            alert('Please fill in the Street Address, City, Contact Phone, and use the "Use My Current GPS Location" button.');
-            return;
-        }
-
-        // IMPORTANT: Replace '256XXXXXXXXX' with the actual vendor's WhatsApp phone number.
-        // Since the vendor's number is not available in this client-side file, this is a placeholder.
-        const vendorPhoneNumber = '256770000000'; // <<< UPDATE THIS WITH THE VENDOR'S ACTUAL NUMBER
-
-        // Construct the message with all delivery details and a direct Google Maps link
-        const messageContent = `*NEW DELIVERY ORDER (Automatic WhatsApp Link)*\n\n` +
-                            `*Delivery Address:* ${address}, ${city}\n` +
-                            `*Contact Phone (Customer):* ${phone}\n` +
-                            `*GPS Coordinates:* Lat: ${lat}, Lng: ${lng}\n` +
-                            `*Google Maps Link:* https://www.google.com/maps/search/?api=1&query=${lat},${lng}\n\n` +
-                            `Please confirm order details and arrange delivery. Thank you!`;
-
-        // Encode the message to be safely included in the URL
-        const message = encodeURIComponent(messageContent);
-        const whatsappUrl = `https://wa.me/${vendorPhoneNumber}?text=${message}`;
-
-        // Redirect the user automatically to the vendor's WhatsApp chat
-        window.location.href = whatsappUrl;
-        
-        // NOTE: Because the form submit is prevented for the WhatsApp redirect, 
-        // the order details will NOT be saved to the backend URL ({% url 'eshop:process_delivery' %}).
-        // If the order needs to be saved to a database, an asynchronous AJAX call should be added here before the redirect.
+    // Handle map click to set marker
+    map.on('click', function(e) {
+        updateLocation(e.latlng.lat, e.latlng.lng);
+        map.setView([e.latlng.lat, e.latlng.lng]);
     });
 </script>
 {% endblock %}
