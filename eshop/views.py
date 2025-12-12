@@ -86,11 +86,13 @@ def add_product(request):
             messages.success(request, f"🎉 Great! Your product '{product.name}' is now listed. Sell with pride.")
             return redirect('eshop:product_list')
         else:
-            messages.error(request, "Oops! Please correct the errors below.")
+            messages.error(request, "Oops! Please correct the errors below and try again.")
     else:
         form = ProductForm()
-        
-    return render(request, 'eshop/add_product.html', {'form': form})
+
+    return render(request, 'eshop/add_product.html', {
+        'form': form
+    })
 
 @login_required
 def product_detail(request, slug):
@@ -98,41 +100,39 @@ def product_detail(request, slug):
     Displays the details of a single product.
     """
     product = get_object_or_404(Product, slug=slug)
-    
-    # Ensure cart context is available for base.html
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
     
     return render(request, 'eshop/product_detail.html', {
         'product': product,
+        'cart': cart,
         'cart_total': cart_total,
     })
-
+    
 @login_required
 def add_to_cart(request, product_id):
     """
-    Adds a specified product to the user's cart.
+    Adds a product to the user's cart.
     """
     product = get_object_or_404(Product, id=product_id)
     cart = get_user_cart(request)
-
-    # Check for existing item
-    try:
-        cart_item = CartItem.objects.get(cart=cart, product=product)
+    
+    # Try to find existing item
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart, 
+        product=product,
+        defaults={'quantity': 1}
+    )
+    
+    if not created:
         # If item already exists, increase quantity
         cart_item.quantity = F('quantity') + 1
         cart_item.save()
         cart_item.refresh_from_db() # Refresh to get the updated quantity
         messages.success(request, f"📦 Added another '{product.name}' to your cart. Total: {cart_item.quantity}")
-    except CartItem.DoesNotExist:
-        # If item does not exist, create new item
-        CartItem.objects.create(
-            cart=cart, 
-            product=product, 
-            quantity=1
-        )
+    else:
         messages.success(request, f"🛒 '{product.name}' has been added to your cart.")
-
+        
     return redirect('eshop:view_cart')
 
 @login_required
@@ -142,7 +142,7 @@ def view_cart(request):
     """
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
-    
+
     return render(request, 'eshop/cart.html', {
         'cart': cart,
         'cart_total': cart_total,
@@ -158,314 +158,367 @@ def remove_from_cart(request, item_id):
         item = CartItem.objects.get(id=item_id, cart=cart)
         product_name = item.product.name
         item.delete()
-        messages.warning(request, f"🗑️ '{product_name}' was removed from your cart.")
+        messages.success(request, f"🗑️ '{product_name}' was removed from your cart.")
     except CartItem.DoesNotExist:
-        messages.error(request, "Item not found in your cart.")
-        
+        messages.error(request, "That item was not found in your cart.")
+    
     return redirect('eshop:view_cart')
 
 @login_required
 def checkout_view(request):
     """
-    Initial step in the checkout process, summarizing the cart.
+    Displays the checkout page for order confirmation.
     """
     cart = get_user_cart(request)
     if not cart.items.exists():
-        messages.warning(request, "Your cart is empty. Please add items to proceed to checkout.")
+        messages.error(request, "Your cart is empty. Please add items to proceed to checkout.")
         return redirect('eshop:product_list')
 
-    # Assuming all items in the cart are from one vendor for simplicity (first item's vendor)
+    # Assuming all items belong to a single vendor for simplicity in this stage
     first_item = cart.items.first()
-    vendor = first_item.product 
-    
-    total_items_count = cart.items.aggregate(count=Sum('quantity'))['count'] or 0
+    vendor_name = first_item.product.vendor_name
+    vendor_phone = first_item.product.whatsapp_number
     cart_total = cart.cart_total
+    # FIX: Use imported Sum from django.db.models
+    total_items_count = cart.items.aggregate(total=Sum('quantity'))['total']
 
-    # Prepare order message for WhatsApp
-    order_message_parts = [
-        "*NEW ORDER from Africana AI Market*",
-        f"Items in Cart ({total_items_count}):",
-    ]
-    for item in cart.items.all():
-        # Use negotiated_price if available, otherwise use original price for message
-        price = item.product.negotiated_price if item.product.negotiated_price else item.product.price
-        order_message_parts.append(f"- {item.product.name} x {item.quantity} @ UGX {price:,.0f} each")
-
-    order_message_parts.append(f"\n*Estimated Total:* UGX {cart_total:,.0f}")
-    order_message_parts.append("\n*Customer will provide delivery location after this step.*")
-    order_message = "\n".join(order_message_parts)
-
+    # Build the message content for the vendor
+    order_items = "\n".join([f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}" for item in cart.items.all()])
+    
+    order_message = (
+        f"Hello {vendor_name},\n\n"
+        f"🎉 A new order has been confirmed!\n\n"
+        f"🛍️ Items:\n{order_items}\n\n"
+        f"💰 Total: UGX {cart_total:,.0f}\n"
+        f"📞 Buyer contact: A proud customer awaits. Please contact them for delivery and final payment."
+    )
+    
     context = {
         'cart': cart,
         'cart_total': cart_total,
         'total_items_count': total_items_count,
-        'vendor': vendor,
+        'vendor': {'name': vendor_name, 'phone_number': vendor_phone},
         'order_message': order_message,
     }
+
     return render(request, 'eshop/checkout.html', context)
 
 
 @login_required
 def delivery_location_view(request):
     """
-    View to capture the user's delivery location and details.
+    Displays the form for capturing the delivery location.
     """
-    # Check if cart is empty before allowing delivery location input
-    cart = get_user_cart(request)
-    if not cart.items.exists():
-        messages.error(request, "Cannot set delivery location: Your cart is empty.")
-        return redirect('eshop:product_list')
+    return render(request, 'eshop/delivery_location.html')
 
-    # Optionally pre-populate from session if user navigates back
-    delivery_details = request.session.get('delivery_details', {})
-    
-    return render(request, 'eshop/delivery_location.html', {
-        'delivery_details': delivery_details
-    })
-
-# This is the view that *saves* the location and redirects to the correct WhatsApp number view
 @login_required
 def process_delivery_location(request):
     """
-    Processes the delivery location form and stores details in the session.
+    Processes the delivery location form submission, stores data in the session, 
+    and redirects to the order confirmation page.
     """
-    if request.method != 'POST':
-        return redirect('eshop:delivery_location')
+    if request.method == 'POST':
+        # Retrieve data from the form
+        address = request.POST.get('address_line1', '').strip()
+        city = request.POST.get('city', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        latitude = request.POST.get('latitude', 'N/A')
+        longitude = request.POST.get('longitude', 'N/A')
+        
+        # Basic validation (a proper Form class should be used for real validation)
+        if not all([address, city, phone]):
+             messages.error(request, "Please fill in all required delivery details (Address, City, Phone).")
+             return redirect('eshop:delivery_location')
 
-    # Extract delivery details from POST data
-    address = request.POST.get('address')
-    city = request.POST.get('city')
-    phone = request.POST.get('phone')
-    latitude = request.POST.get('latitude')
-    longitude = request.POST.get('longitude')
+        # Store delivery details in the session 
+        request.session['delivery_details'] = {
+            'address': address,
+            'city': city,
+            'phone': phone,
+            'latitude': latitude,
+            'longitude': longitude,
+        }
+        
+        messages.success(request, "Delivery location confirmed! Please proceed to order confirmation.")
+        # Redirect to the next step in the checkout flow
+        return redirect('eshop:confirm_order_whatsapp') 
+        
+    return redirect('eshop:delivery_location')
 
-    if not all([address, city, phone, latitude, longitude]):
-        messages.error(request, "Please fill in all required delivery details (Address, City, Phone) and confirm location on the map.")
-        return redirect('eshop:delivery_location')
-
-    # Store delivery details in the session
-    request.session['delivery_details'] = {
-        'address': address,
-        'city': city,
-        'phone': phone,
-        'latitude': latitude,
-        'longitude': longitude,
-    }
-
-    messages.success(request, "Delivery location confirmed! Please proceed to order confirmation.")
-    # Redirect to the next step in the checkout flow, which fetches the vendor number and redirects to WhatsApp
-    return redirect('eshop:confirm_order_whatsapp') 
 
 @login_required
 def confirm_order_whatsapp(request):
     """
-    Redirects the user to WhatsApp with the full order details, including delivery location.
-    This view correctly uses the vendor's actual number.
+    Redirects the user to WhatsApp with the order details and clears the cart.
+    Now includes delivery details from session.
     """
     cart = get_user_cart(request)
-    delivery_details = request.session.get('delivery_details')
-
-    if not cart.items.exists() or not delivery_details:
-        messages.error(request, "Missing cart items or delivery details. Please re-check your order.")
-        return redirect('eshop:view_cart')
-
-    # 1. Get Vendor Phone Number (Assuming single vendor per cart for simplicity)
-    first_item = cart.items.first()
-    vendor_phone = first_item.product.whatsapp_number
+    # Get and clear session data
+    delivery_details = request.session.pop('delivery_details', None) 
     
-    # 2. Prepare Order Message
-    total_items_count = cart.items.aggregate(count=Sum('quantity'))['count'] or 0
-    cart_total = cart.cart_total
+    if not cart.items.exists():
+        messages.error(request, "Your cart is empty. Cannot confirm an empty order.")
+        return redirect('eshop:product_list')
+        
+    if not delivery_details:
+        messages.error(request, "Delivery details are missing. Please re-enter your location.")
+        return redirect('eshop:delivery_location')
 
-    order_message_parts = [
-        "*NEW DELIVERY ORDER from Africana AI Market*",
-        f"Items in Cart ({total_items_count}):",
+    # Get vendor details (assuming one vendor per cart)
+    first_item = cart.items.first()
+    vendor_name = first_item.product.vendor_name
+    vendor_phone = first_item.product.whatsapp_number
+
+    # Build poetic WhatsApp message
+    lines = [
+        f"Hello {vendor_name},",
+        "🎉 A new order has been confirmed!",
+        "",
+        "📍 Delivery Address:",
+        f"Address: {delivery_details.get('address', 'N/A')}",
+        f"City: {delivery_details.get('city', 'N/A')}",
+        f"Coordinates: Lat {delivery_details.get('latitude', 'N/A')}, Lng {delivery_details.get('longitude', 'N/A')}",
+        "",
+        "📞 Buyer Contact:",
+        f"Phone: {delivery_details.get('phone', 'N/A')}",
+        "",
+        "🛍️ Items:",
     ]
     for item in cart.items.all():
-        price = item.product.negotiated_price if item.product.negotiated_price else item.product.price
-        order_message_parts.append(f"- {item.product.name} x {item.quantity} @ UGX {price:,.0f} each")
+        # Defensive check in the loop for good measure
+        if item.product:
+            lines.append(f"- {item.quantity} x {item.product.name} @ UGX {item.product.price}")
+        else:
+             lines.append(f"- {item.quantity} x [UNAVAILABLE PRODUCT]")
 
-    # Add Delivery Details
-    order_message_parts.extend([
-        f"\n*ESTIMATED TOTAL:* UGX {cart_total:,.0f}",
-        "\n*Delivery Information (Please Confirm/Call Customer):*",
-        f"Customer Phone: {delivery_details.get('phone')}",
-        f"Address: {delivery_details.get('address')}, {delivery_details.get('city')}",
-        f"GPS (Lat, Lng): {delivery_details.get('latitude')}, {delivery_details.get('longitude')}",
-        f"Google Maps Link: https://www.google.com/maps/search/?api=1&query={delivery_details.get('latitude')},{delivery_details.get('longitude')}",
-        "\nPlease reply to confirm the final price, delivery cost, and payment details. Thank you!"
-    ])
 
-    order_message = "\n".join(order_message_parts)
-    
-    # 3. Construct WhatsApp URL and Redirect
-    whatsapp_url = f"https://wa.me/{vendor_phone}?text={quote(order_message)}"
-    
-    # After a successful redirect (or assumed successful redirect), clear the session data
-    if 'delivery_details' in request.session:
-        del request.session['delivery_details']
-        
-    # Mark cart as confirmed and deactivate it (or handle confirmation logic)
+    lines.append("")
+    lines.append(f"💰 Total: UGX {cart.cart_total:,.0f}")
+    lines.append("")
+    lines.append("Please prepare for delivery. Uganda thanks you.")
+
+    message = "\n".join(lines)
+    whatsapp_url = f"https://wa.me/{vendor_phone}?text={quote(message)}"
+
+    # Optional: clear cart after confirmation
+    cart.items.all().delete()
     cart.is_active = False
-    cart.status = 'confirmed'
     cart.save()
-    
-    messages.success(request, f"Redirecting to vendor's WhatsApp chat ({vendor_phone}) to finalize the order.")
     return redirect(whatsapp_url)
 
 
-# ------------------------------------
-# AI Negotiation Views/Functions
-# ------------------------------------
-
-def get_ai_response(offer_text, product_slug, request):
+def get_ai_response(product, user_message, chat_history):
     """
-    Core AI logic for negotiation.
+    Updated AI negotiation logic for a more iterative, human-like feel, 
+    with a firm final floor price set at 90% as requested.
     """
-    product = get_object_or_404(Product, slug=product_slug)
     product_price = product.price
+
+    # Define negotiation constants
+    VENDOR_MIN_ACCEPT = Decimal('0.70')      # Absolute lowest offer AI will engage with (70%)
+    # Set the negotiation floor to 90% as requested ("let the last price be just 90%")
+    VENDOR_NEGOTIATION_FLOOR = Decimal('0.90') # AI's firm final stand (90%)
+    EASY_ACCEPT_THRESHOLD = Decimal('0.90') # Offer >= 90% is accepted quickly (same as floor now)
     
-    # Define price bounds (e.g., vendor accepts min 60% of original price)
-    VENDOR_MIN_ACCEPT_RATIO = Decimal('0.65')
-    floor_price = product_price * VENDOR_MIN_ACCEPT_RATIO
+    # Dynamic step factor: 30% to 50% of the distance, increasing with chat history length
+    # This makes the AI 'relent' faster the longer the negotiation goes on
+    STEP_FACTOR = Decimal(str(0.30 + len(chat_history) * 0.02)) 
+    STEP_FACTOR = min(STEP_FACTOR, Decimal('0.50')) # Cap at 50%
+
+    # 1. Parse user offer - look for UGX followed by a number, or just a number
+    offer_match = re.search(r'UGX\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+)', user_message, re.IGNORECASE)
     
-    # Get last AI offer from session (default to 100% of price if none exists)
-    last_ai_offer = request.session.get(f'last_ai_offer_{product_slug}', product_price)
-    
-    # 1. Try to extract a numeric offer from the user's message
-    offer_match = re.search(r'UGX\s*([\d,]+)', offer_text, re.IGNORECASE)
-    
+    offer = None
     if offer_match:
         try:
+            # Clean up and convert the offer to Decimal
             offer_str = offer_match.group(1).replace(',', '')
             offer = Decimal(offer_str)
-        except:
-            return "I'm the AI Negotiator! Your offer must be a valid number. For example: 'My offer is UGX 80,000'."
-        
-        
-        # 2. Check if the offer matches or exceeds the current negotiated price (if accepted)
-        if product.negotiated_price and offer >= product.negotiated_price:
-            return f"You've already agreed to UGX {product.negotiated_price:,.0f} and that is our final price! Click 'Accept Final Price' to proceed."
+        except Exception:
+            pass # Keep offer as None if conversion fails
+    
+    # Also check if the user just entered a number (e.g., "4000")
+    if offer is None:
+        # Simple check for a number/price attempt as the first or second word
+        words = user_message.split()
+        if len(words) <= 3:
+             simple_number_match = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+)', words[0]) 
+             if simple_number_match:
+                  try:
+                    offer_str = simple_number_match.group(1).replace(',', '')
+                    offer = Decimal(offer_str)
+                  except Exception:
+                      pass
+                 
+    # 2. Handle Negotiation Status (already finalized)
+    if product.negotiated_price and product.negotiated_price < product_price:
+        return f"We've already agreed on a sweet deal of **UGX {product.negotiated_price:,.0f}**! Go ahead and click the 'Lock In' button below to proceed. 🔒"
 
-        # 3. Process the offer
-        
-        # 3a. Offer is too low
-        min_price_accept = product_price * VENDOR_MIN_ACCEPT_RATIO # Minimum acceptable price for the vendor
-        if offer < min_price_accept: 
-            # Suggest a higher, more encouraging minimum
-            display_floor = product_price * Decimal('0.85') 
-            return f"That's a bit too low for my vendor, sorry! We need a better starting point to negotiate seriously. Try an offer closer to UGX {display_floor:,.0f} and we can talk!"
-
-        # 3b. Offer is higher than or equal to the last AI offer
-        elif offer >= last_ai_offer:
-            request.session[f'last_ai_offer_{product_slug}'] = last_ai_offer
-            return f"That's not a negotiation! My last offer was UGX {last_ai_offer:,.0f}. Try lowering your price, or make a counter-offer below that."
-
-        # 3c. Offer is acceptable (between floor and last AI offer)
+    
+    # 3. Negotiation Logic
+    # Get the AI's last offer, or start with the original price
+    last_ai_offer = product.negotiated_price if product.negotiated_price and product.negotiated_price > product_price * Decimal('0.70') else product_price
+    min_price_accept = product_price * VENDOR_MIN_ACCEPT
+    floor_price = product_price * VENDOR_NEGOTIATION_FLOOR # 90%
+    
+    # Helper function for rounding
+    def round_price(price, product_price_ref):
+        if product_price_ref >= Decimal('100000'):
+             return Decimal(round(price, -3)) # Round to the nearest thousand 
+        elif product_price_ref >= Decimal('1000'):
+             return Decimal(round(price, -2)) # Round to the nearest hundred
         else:
-            # Calculate the new counter-offer. 
-            # The AI moves halfway between the user's offer and its last offer, or to the floor, whichever is higher.
-            # Max decrease from last offer is 50% of the difference between user's offer and last offer.
-            difference = last_ai_offer - offer
-            # AI will decrease its price by half the difference between the user's offer and the AI's last offer.
-            ai_reduction = difference / Decimal('2')
-            
-            # Ensure the counter price never goes below the floor
-            counter_price = max(last_ai_offer - ai_reduction, floor_price)
-            final_counter = counter_price # Renamed for clarity
+             return price.quantize(Decimal('0.00')) # Keep two decimal places
+    
+    # 3a. User made a price offer
+    if offer:
+        
+        # 3a.1. Offer is too low (below 70%)
+        if offer < min_price_accept: 
+            # Suggest the floor price to re-engage
+            return f"I'm sorry, **UGX {offer:,.0f}** is too low for my vendor to accept. They can't sell at a loss. The lowest we can go is **UGX {floor_price:,.0f}**. Please make me a better offer."
 
-            # Update the last AI offer in the session
-            request.session[f'last_ai_offer_{product_slug}'] = final_counter
+        # 3a.2. Offer is high (at or above 90%) - DEAL ACCEPTED
+        if offer >= floor_price:
+            final_price = offer if offer < product_price else product_price # Don't accept more than original price
+            product.negotiated_price = final_price
+            product.save()
+            return f"Yes, that is a great price! **UGX {final_price:,.0f}** is a deal we can finalize right now. The price is set! Click 'Lock In' to complete your purchase. Great negotiation! 🎉"
+        
+        # 3a.3. Offer is between 70% and 90% (Iterative Counter)
+        if offer < floor_price:
             
-            # Save the final agreed price to the product if it hits the floor
-            if final_counter == floor_price:
-                product.negotiated_price = floor_price
+            # If the user's offer is at or above the AI's last counter, accept it
+            if offer >= last_ai_offer:
+                final_price = offer
+                product.negotiated_price = final_price
                 product.save()
-                return f"Fantastic! We've reached our absolute final position! My vendor accepts UGX {floor_price:,.0f} and can go no lower. Click 'Accept Final Price' to proceed now."
+                return f"You got it! Your offer of **UGX {final_price:,.0f}** works for us. We have a final price! Click 'Lock In' to proceed now. 🥳"
+
+            # Calculate the new counter-offer: move halfway from the last offer toward the floor (90%)
+            # This ensures progressive reduction.
+            reduction_amount = (last_ai_offer - floor_price) * STEP_FACTOR 
+            counter_price = last_ai_offer - reduction_amount
             
-            # Human-like response generation
-            if final_counter <= floor_price + Decimal('1000') and final_counter < last_ai_offer:
-                # If AI is very close to the floor, express effort/finality
-                return f"Wow, you're a tough negotiator! I've talked to the vendor and they've agreed to **one final drop** for you: UGX {final_counter:,.0f}. That's the best they can do. Deal?"
-            elif final_counter < last_ai_offer:
-                # Standard polite counter
-                return f"I hear your offer of UGX {offer:,.0f}. That's a good move! Let's meet halfway. My counter-offer is UGX {final_counter:,.0f}. What is your next offer?"
-            else:
-                # If the AI couldn't move or the user's offer was bad (e.g. reduction was too small, final_counter didn't move)
-                return f"Thanks for the offer, but we can't accept it yet. I can only move a little bit at a time. My current offer remains at UGX {final_counter:,.0f}."
-                
+            if counter_price < floor_price:
+                 counter_price = floor_price
+
+            final_counter = round_price(counter_price, product_price)
+
+            # Enforce the 90% floor after rounding
+            if final_counter < floor_price:
+                 final_counter = floor_price
+
+            # Store the new counter price
+            product.negotiated_price = final_counter
+            product.save()
+
+            if final_counter <= floor_price + Decimal('1'):
+                 # Matched user's requested response: "ai: last price is ugx3900." (Adapted to 90% floor)
+                 return f"I've pushed my vendor to their absolute limit! The **last price** I can offer you is **UGX {final_counter:,.0f}**. I promise, this is the lowest we can go. What's your final answer?"
+            
+            # Conversational counter-offer
+            return f"I hear your offer of UGX {offer:,.0f}. I can't go that low yet, but I'll meet you halfway. My new offer is **UGX {final_counter:,.0f}**. Is that better?"
+            
+
+    # 3b. User did NOT make a price offer (e.g., "reduce for me", "hi", etc.)
+    
+    # Check for simple conversational messages that push for a lower price
+    user_msg_lower = user_message.lower()
+    if 'reduce' in user_msg_lower or 'lower' in user_msg_lower or 'final' in user_msg_lower or 'best price' in user_msg_lower:
+        
+        # If we are already at the floor, reiterate the floor price
+        if last_ai_offer <= floor_price + Decimal('1'): 
+            product.negotiated_price = floor_price # Ensure it's exactly the floor
+            product.save()
+            # Matched user's requested response: "ai: okey the last price is ugx 3500." (Adapted to 90% floor)
+            return f"My friend, I'm being squeezed here! This is the absolute **last price** I can offer you: **UGX {floor_price:,.0f}**. Take it or leave it. 😉"
+        
+        # If we are not at the floor, make a small, progressive move (e.g., 5% of the distance from current to floor)
+        # This handles the "reduce for me" style push.
+        reduction = (last_ai_offer - floor_price) * Decimal('0.05') # Small step
+        new_price = last_ai_offer - reduction
+        
+        # Enforce the 90% floor
+        if new_price < floor_price:
+            new_price = floor_price
+            
+        final_counter = round_price(new_price, product_price)
+             
+        if final_counter < floor_price: # Re-check after rounding
+             final_counter = floor_price
+             
+        # Store the new price and respond
+        product.negotiated_price = final_counter
+        product.save()
+        
+        # Matched user's requested response: "ai: reduce for me." (If they just said reduce)
+        return f"I can reduce a little. My current offer is now **UGX {final_counter:,.0f}**. What is your new offer?"
+        
+    # Default fallback for unparsable text or initial greeting
     else:
-        # Initial instruction or missing currency
-        return "I'm the AI Negotiator! Tell me your best offer in Ugandan Shillings (UGX) and I'll see what my vendor is willing to accept. For example: 'My offer is UGX 80,000'."
+        return "I'm not sure how to process that. To negotiate, please state your offer clearly, for example: 'UGX 80,000' or 'I offer 80k'."
 
 
 @login_required
 def ai_negotiation_view(request, slug):
-    """
-    Handles the chat interface for AI price negotiation.
-    """
     product = get_object_or_404(Product, slug=slug)
     
-    # Initialize or retrieve chat history from session
-    chat_history = request.session.get(f'chat_history_{slug}', [
-        {'role': 'ai', 'text': f"I'm the AI Negotiator! Tell me your best offer in Ugandan Shillings (UGX) and I'll see what my vendor is willing to accept. For example: 'My offer is UGX {product.price * Decimal('0.85'):,.0f}'."}
-    ])
-    
-    if request.method == 'POST':
-        form = NegotiationForm(request.POST)
-        
-        if form.is_valid():
-            # FIX: Use .get() defensively to prevent the KeyError, 
-            # in case the 'message' field was set to required=False in forms.py
-            user_message = form.cleaned_data.get('message') 
-            
-            if user_message:
-                # Add user message to history
-                chat_history.append({'role': 'user', 'text': user_message})
-                
-                # Get AI response
-                ai_response = get_ai_response(user_message, slug, request)
-                
-                # Add AI response to history
-                chat_history.append({'role': 'ai', 'text': ai_response})
-                
-                # Save updated history back to session
-                request.session[f'chat_history_{slug}'] = chat_history
-                request.session.modified = True
-                
-                # Redirect to GET to prevent form resubmission
-                return redirect('eshop:ai_negotiation', slug=slug)
-            else:
-                # If the message is empty/missing, add a user-friendly error and let the form re-render
-                messages.error(request, "Please enter a non-empty offer or message to negotiate.")
+    # Check if negotiation is even allowed
+    if not product.is_negotiable:
+        messages.error(request, f"Price negotiation is not available for {product.name}.")
+        return redirect('eshop:product_detail', slug=slug)
 
-    else:
-        form = NegotiationForm()
+    form = NegotiationForm(request.POST or None)
+    
+    # Retrieve chat history from session
+    chat_history = request.session.get(f'chat_history_{slug}', [
+        # Updated initial greeting to be more human-like
+        {'role': 'ai', 'text': f"Hello! I'm the AI Negotiator. The original price for **{product.name}** is UGX {product.price:,.0f}. What is your first offer?"}
+    ])
+
+    if request.method == 'POST' and form.is_valid():
+        user_message = form.cleaned_data['user_message']
+        
+        # 1. Add user message to history
+        chat_history.append({'role': 'user', 'text': user_message})
+
+        # 2. Get AI response and add it to history
+        ai_response_text = get_ai_response(product, user_message, chat_history)
+        chat_history.append({'role': 'ai', 'text': ai_response_text})
+        
+        # Save updated chat history to session
+        request.session[f'chat_history_{slug}'] = chat_history
+        # This prevents the form resubmission on refresh
+        return redirect('eshop:ai_negotiation', slug=slug) 
+        
+    # Check for acceptance status for the template display
+    is_negotiation_active = product.negotiated_price and product.negotiated_price < product.price
 
     context = {
         'product': product,
-        'chat_history': chat_history,
         'form': form,
-        'current_price': product.price,
+        'chat_history': chat_history,
+        # Pass status to template for button control and price display
+        'is_negotiation_active': is_negotiation_active, 
     }
-    return render(request, 'eshop/ai_negotiation.html', context)
 
+    return render(request, 'eshop/ai_negotiation.html', context)
 
 @login_required
 def accept_negotiated_price(request, slug):
-    """
-    Handles the acceptance of the final negotiated price.
-    """
     product = get_object_or_404(Product, slug=slug)
     cart = get_user_cart(request)
-    
-    if product.negotiated_price:
-        # The price is agreed upon and saved to the product model
+
+    # Check if a negotiated price exists and is lower than the original price
+    if product.negotiated_price and product.negotiated_price <= product.price:
         
         # Optionally remove the item from the cart if it was already there (to enforce adding with the new price)
         try:
             cart_item = CartItem.objects.get(cart=cart, product=product)
-            cart_item.delete()
+            # Assuming price_at_purchase field exists on CartItem (or you'd need to create it for the negotiated price to persist)
+            # cart_item.price_at_purchase = product.negotiated_price 
+            cart_item.delete() 
         except CartItem.DoesNotExist:
             pass 
             
@@ -477,7 +530,7 @@ def accept_negotiated_price(request, slug):
         return redirect('eshop:product_detail', slug=slug)
 
     messages.error(request, "Oops! You must successfully negotiate a price with the bot first.")
-    return redirect('eshop:product_detail', slug=slug)
+    return redirect('eshop:ai_negotiation', slug=slug) # Redirect back to negotiation to continue
 
 
 # ------------------------------------
@@ -493,5 +546,5 @@ def export_products_json(request):
     products = Product.objects.all()
     data = serialize('json', products, fields=('name', 'description', 'price', 'is_negotiable', 'vendor_name', 'whatsapp_number', 'tiktok_url', 'language_tag'))
     response = HttpResponse(data, content_type='application/json')
-    response['Content-Disposition'] = 'attachment; filename="products_export.json"'
+    response['Content-Disposition'] = 'attachment; filename="products.json"'
     return response
