@@ -45,7 +45,7 @@
                     <input type="hidden" name="latitude" id="input_latitude" value="0.0000">
                     <input type="hidden" name="longitude" id="input_longitude" value="0.0000">
                     
-                    <input type="hidden" name="vendor_whatsapp" id="input_vendor_whatsapp" value="{{ vendor_whatsapp_number }}">
+                    <input type="hidden" name="vendor_whatsapp" id="input_vendor_whatsapp" value="">
 
                     <div>
                         <label for="address" class="block text-gray-300 font-medium mb-2">Street Address / Landmark</label>
@@ -79,6 +79,26 @@
 </div>
 
 <script>
+    // Function to get a query parameter value from the URL
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+    
+    // Set the vendor phone number from the URL into the hidden input field on page load
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const vendorPhone = getQueryParam('vendor_phone');
+        const inputField = document.getElementById('input_vendor_whatsapp');
+        
+        if (vendorPhone) {
+            // Clean the number before setting it
+            inputField.value = vendorPhone.replace(/[^0-9+]/g, ''); 
+        } else {
+            console.error("Vendor phone number not found in URL query parameters.");
+            // Keep the value empty, which will trigger an alert on form submission.
+        }
+    });
+
     // --- Geolocation Function (Retained) ---
     document.getElementById('locate-me-button').addEventListener('click', function() {
         const coordsDisplay = document.getElementById('selected-coords');
@@ -140,7 +160,7 @@
         const city = document.getElementById('city').value;
         const phone = document.getElementById('phone').value;
         
-        // <<< UPDATED LINE: Get vendor phone number from the hidden input
+        // Retrieve vendor phone number from the hidden input
         const vendorPhoneNumber = document.getElementById('input_vendor_whatsapp').value; 
 
         // Basic validation check
@@ -151,7 +171,7 @@
 
         // Add validation for the vendor number
         if (vendorPhoneNumber === '') {
-            alert('Error: Vendor contact information is missing. Cannot proceed with delivery.');
+            alert('Error: Vendor contact information is missing. Cannot proceed with delivery. Please return to the product page.');
             return;
         }
 
@@ -160,19 +180,20 @@
                             `*Delivery Address:* ${address}, ${city}\n` +
                             `*Contact Phone (Customer):* ${phone}\n` +
                             `*GPS Coordinates:* Lat: ${lat}, Lng: ${lng}\n` +
-                            `*Google Maps Link:* http://maps.google.com/?q=${lat},${lng}\n\n` +
+                            `*Google Maps Link:* https://maps.google.com/?q=${lat},${lng}\n\n` +
                             `Please confirm order details and arrange delivery. Thank you!`;
 
         // Encode the message to be safely included in the URL
         const message = encodeURIComponent(messageContent);
-        const whatsappUrl = `https://wa.me/${vendorPhoneNumber}?text=${message}`;
+        
+        // Remove non-numeric characters (except '+') from the number for wa.me link for safety
+        const cleanVendorPhoneNumber = vendorPhoneNumber.replace(/[\s+-]/g, '');
+        
+        const whatsappUrl = `https://wa.me/${cleanVendorPhoneNumber}?text=${message}`;
 
         // Redirect the user automatically to the vendor's WhatsApp chat
         window.location.href = whatsappUrl;
         
-        // NOTE: Because the form submit is prevented for the WhatsApp redirect, 
-        // the order details will NOT be saved to the backend URL ({% url 'eshop:process_delivery' %}).
-        // If the order needs to be saved to a database, an asynchronous AJAX call should be added here before the redirect.
     });
 </script>
 {% endblock %}
