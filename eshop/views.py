@@ -317,6 +317,54 @@ def round_price(price, product_price_ref):
     else:
          return price.quantize(Decimal('0.00')) 
 
+
+# NEW: Helper function to detect if the user's message is likely in Luganda
+def is_luganda(text):
+    """Simple heuristic to detect Luganda phrases related to negotiation."""
+    text_lower = text.lower()
+    luganda_keywords = [
+        'nsaba', 'nzikiriza', 'ogulire', 'kikula', 'kitono', 'wansi',
+        'ogatta', 'nsasule', 'mpola', 'sente', 'ogwa', 'tunda', 'muwendo',
+        'kundagaano', 'kankendeze' # Added common phrases
+    ]
+    # Check if a few common Luganda words are present
+    if sum(1 for keyword in luganda_keywords if keyword in text_lower) >= 2:
+        return True
+    return False
+
+# NEW: Simulated Luganda Responses for the fixed negotiation stages
+def get_luganda_response(stage, price_str, offer_text="omusaala gwo"):
+    """Returns a Luganda equivalent for the negotiation stage."""
+    # Ensure price_str is comma-formatted (like 100,000)
+    
+    if stage == 'accept':
+        return f"Wewawo! **UGX {price_str}** tukoze endagaano. Twagasseeko ogubadde ogw'oluvannyuma. Kanda ku 'Lock In' wansi ofune eky'omuzingo kino. 🎉"
+    elif stage == 'final_floor_rejection':
+        return f"Mpulidde {offer_text}, naye nsonyiwa, **UGX {price_str}** ogwo gwe musaala ogw'oluvannyuma nzekka gwe nsobola okuwa. Fuba okutuukirira. 🤝"
+    elif stage == 'initial_ask_counter': # 98%
+        return f"Mpulidde ekirowoozo kyo. Okusooka, nina okuwa **UGX {price_str}** (ekya 2% kiggyiddwako). Kiki eky'oluvannyuma ky’olina okuwa?"
+    elif stage == 'mid_ask_counter': # 95%
+        return f"Kuba nti obadde osaba, nkukendeezezzaako ku **UGX {price_str}** (ekya 5% kiggyiddwako). Oli kumpi n'omusaala ogw'oluvannyuma. Wandiwadde omuwendo ogusinga guno?"
+    elif stage == 'final_ask_counter': # 90%
+        return f"Kino kye kiggya eky'oluvannyuma! Omuwendo ogusembayo gw'oyinza okufuna gwe **UGX {price_str}** (ekya 10% kiggyiddwako). Gwe musaala ogw'oluvannyuma. Nzikiriza?"
+    elif stage == 'too_low_initial_counter':
+        return f"Nsonyiwa, {offer_text} guli wansi nnyo. Kyokka, nina okutandikira ku **UGX {price_str}** (2% off) okutandika endagaano. Fuba okukuwa omuwendo ogusinga."
+    elif stage == 'default_query':
+        return "Nkyasobola okutegeera kye wategeeza. Fuba okuwa omusaala ogw'enkyukakyuka (nga 'UGX 80,000') oba nsaba nkukendeezeeko omuwendo. Genda mu maaso."
+    elif stage == 'already_agreed':
+        return f"Tugenze! Twakkiriziganyizza ku **UGX {price_str}**. Kanda ku 'Lock In' wansi."
+    elif stage == 'too_high_offer':
+        return f"{offer_text} ogwo guli waggulu nnyo! Nnina okukuguliza ku **UGX {price_str}** ogw'oluvannyuma. Kanda ku 'Lock In' ofune eky'omuzingo. 😊"
+    elif stage == 'stage_one_offer': # Counter to price offer, move to 98%
+        return f"Mpulidde {offer_text}. Nga bwe tusalira, nina okuwa **UGX {price_str}** (2% off). Omusango gw’olina okuddamu?"
+    elif stage == 'stage_two_offer': # Counter to price offer, move to 95%
+        return f"Endagaano ennungi! Nkubuusa ku **UGX {price_str}** (5% off). Oli kumpi n'omusaala ogw'oluvannyuma. Omuwendo gwo oguddako gwa ssente mmeka?"
+    elif stage == 'final_offer': # Counter to price offer, move to 90%
+        return f"Nzigidde ebyo byonna byange! Omuwendo ogw'oluvannyuma gw'oyinza okufuna gwe **UGX {price_str}**. Gwe musaala ogw'oluvannyuma. Nzikiriza?"
+    
+    return "Error in translation simulation." # Should not happen
+
+
 # ------------------------------------
 # GEMINI API INTEGRATION POINT (Simulated)
 # ------------------------------------
@@ -332,10 +380,51 @@ def get_gemini_negotiation_response(product, user_message, chat_history):
     The logic is structured to strictly follow the user's rules: 
     Fixed drops at 2%, 5%, and 10% off the original price, and a 70% floor.
     FIXED: Stricter price parsing and defensive counter-offers.
+    NEW: Now handles basic language detection for a simulated Luganda response.
     """
     product_price = product.price
 
-    # Define fixed negotiation floors (based on user request: 2%, 5%, 10% off)
+    # 0. Detect Language Preference
+    is_luganda_session = is_luganda(user_message)
+
+    # --- Helper to generate the final response (in English or Luganda) ---
+    def generate_response(stage_key, price=None, raw_offer_text=None):
+        # Format the price for display
+        price_str = f"{price:,.0f}" if price is not None else "N/A"
+        
+        if is_luganda_session:
+            return get_luganda_response(stage_key, price_str, raw_offer_text)
+        
+        # English Responses
+        if stage_key == 'accept':
+            return f"Yes! **UGX {price_str}** is an agreement. We have a deal! I've locked in the final price for you. Please click the 'Lock In' button to grab it before someone else does! 🎉"
+        elif stage_key == 'final_floor_rejection':
+             return f"I appreciate the offer of **{raw_offer_text}**, but it's too low for us to even consider. My current price remains **UGX {price_str}**. You need to offer a number closer to that."
+        elif stage_key == 'initial_ask_counter':
+            return f"I hear you! Just for asking, I can start our negotiation at the 2% drop: **UGX {price_str}**. What is your counter-offer?"
+        elif stage_key == 'mid_ask_counter':
+             return f"Since you asked for the best price, I will drop it again to the 5% drop: **UGX {price_str}**. I have one final move after this. Can you offer a number closer to my final floor?"
+        elif stage_key == 'final_ask_counter':
+             return f"This is the last chance! The lowest price I can give you is the 10% final floor: **UGX {price_str}**. This is the final offer. What do you say?"
+        elif stage_key == 'default_query':
+            return "I'm not sure how to process that. To keep things moving, please make a clear price offer (e.g., 'UGX 80,000') or ask me to reduce the current price."
+        elif stage_key == 'already_agreed':
+            return f"We've already agreed on a sweet deal of **UGX {price_str}**! Go ahead and click the 'Lock In' button below to secure it. 🔒"
+        elif stage_key == 'too_low_initial_counter':
+            return f"I appreciate the offer of **{raw_offer_text}**, but it's far too low. I will, however, drop the price to **UGX {price_str}** (2% off) to start the negotiation. Please make me a better offer."
+        elif stage_key == 'too_high_offer':
+             return f"Your offer of {raw_offer_text} is actually higher than the original asking price! We'll happily sell it to you for the original **UGX {price_str}**. Click 'Lock In' to secure the deal. Thanks! 😊"
+        elif stage_key == 'stage_one_offer':
+            return f"I appreciate your offer of {raw_offer_text}. Since this is our first counter, I can drop it to **UGX {price_str}** (2% off). What is your next move to get to my final price?"
+        elif stage_key == 'stage_two_offer':
+            return f"That's a good move! I will drop the price to **UGX {price_str}** (5% off). This is the second stage. I have only one final move left. Will you make a better offer?"
+        elif stage_key == 'final_offer':
+             return f"I'm going all the way to my final floor for you! The lowest I can possibly go is **UGX {price_str}** (10% off). This is the absolute final price. Are you ready to lock it in? 🤝"
+        
+        return "An internal error occurred." # Fallback
+
+
+    # Define fixed negotiation floors (based on user request: 2%, 5%, and 10% off)
     VENDOR_MIN_ENGAGEMENT = product_price * Decimal('0.70')  # Absolute rejection floor (70%)
     
     # Target Prices (The AI's fixed offers, rounded for a natural feel)
@@ -348,7 +437,7 @@ def get_gemini_negotiation_response(product, user_message, chat_history):
     # 1. Check for acceptance status (already finalized)
     if product.negotiated_price and product.negotiated_price <= FINAL_FLOOR and product.negotiated_price < product_price:
         display_price = round_price(product.negotiated_price, product_price)
-        return f"We've already agreed on a sweet deal of **UGX {display_price:,.0f}**! Go ahead and click the 'Lock In' button below to secure it. 🔒"
+        return generate_response('already_agreed', display_price)
 
     # 2. Parse user offer - Robust Parsing (FIXED for stricter heuristic)
     offer = None
@@ -394,34 +483,34 @@ def get_gemini_negotiation_response(product, user_message, chat_history):
     if offer is None:
         user_msg_lower = user_message.lower()
         
-        # Check for generic requests for discount/final price
-        if any(phrase in user_msg_lower for phrase in ['reduce', 'lower', 'final price', 'best price', 'last price', 'discount']):
+        # Check for generic requests for discount/final price (includes Luganda keywords)
+        if any(phrase in user_msg_lower for phrase in ['reduce', 'lower', 'final price', 'best price', 'last price', 'discount', 'kundagaano', 'kankendeze', 'mpola', 'wansi']):
             
             # Determine the next price stage to counter with
             if last_ai_offer >= product_price * Decimal('0.99'): # Start: Move to 98%
                 new_price = STAGE_ONE_PRICE 
                 product.negotiated_price = new_price
                 product.save()
-                return f"I hear you! Just for asking, I can start our negotiation at the 2% drop: **UGX {new_price:,.0f}**. What is your counter-offer?"
+                return generate_response('initial_ask_counter', new_price)
             
             elif last_ai_offer > STAGE_TWO_PRICE + Decimal('1'): # At 98% range: Move to 95%
                  new_price = STAGE_TWO_PRICE 
                  product.negotiated_price = new_price
                  product.save()
-                 return f"Since you asked for the best price, I will drop it again to the 5% drop: **UGX {new_price:,.0f}**. I have one final move after this. Can you offer a number closer to my final floor?"
+                 return generate_response('mid_ask_counter', new_price)
 
             elif last_ai_offer > FINAL_FLOOR + Decimal('1'): # At 95% range: Move to 90% (Final)
                  new_price = FINAL_FLOOR
                  product.negotiated_price = new_price
                  product.save()
-                 return f"This is the last chance! The lowest price I can give you is the 10% final floor: **UGX {new_price:,.0f}**. This is the final offer. What do you say?"
+                 return generate_response('final_ask_counter', new_price)
             
             else: # Already at or below 90%
                 display_price = FINAL_FLOOR
-                return f"My apologies, but **UGX {display_price:,.0f}** is the absolute lowest I can go. You must meet me here to make the purchase."
+                return generate_response('final_floor_rejection', display_price, raw_offer_text)
 
         # Default fallback
-        return "I'm not sure how to process that. To keep things moving, please make a clear price offer (e.g., 'UGX 80,000') or ask me to reduce the current price."
+        return generate_response('default_query')
 
 
     # --- User made a valid price offer (offer is NOT None) ---
@@ -435,12 +524,12 @@ def get_gemini_negotiation_response(product, user_message, chat_history):
              display_floor = STAGE_ONE_PRICE
              product.negotiated_price = STAGE_ONE_PRICE
              product.save()
-             return f"I appreciate the offer of **{raw_offer_text}**, but it's far too low. I will, however, drop the price to **UGX {display_floor:,.0f}** (2% off) to start the negotiation. Please make me a better offer."
+             return generate_response('too_low_initial_counter', display_floor, raw_offer_text)
         
         else:
              # If AI has already made a move, defend the last price it offered. (No reset)
              display_floor = last_ai_offer
-             return f"I appreciate the offer of **{raw_offer_text}**, but it's too low for us to even consider. My current price remains **UGX {display_floor:,.0f}**. You need to offer a number closer to that."
+             return generate_response('final_floor_rejection', display_floor, raw_offer_text)
 
 
     # 3c. Offer is higher than the original price
@@ -448,7 +537,7 @@ def get_gemini_negotiation_response(product, user_message, chat_history):
         final_price = product_price
         product.negotiated_price = final_price
         product.save()
-        return f"Your offer of {raw_offer_text} is actually higher than the original asking price! We'll happily sell it to you for the original **UGX {final_price:,.0f}**. Click 'Lock In' to secure the deal. Thanks! 😊"
+        return generate_response('too_high_offer', final_price, raw_offer_text)
 
 
     # 3d. Offer MEETS OR EXCEEDS THE FINAL FLOOR (90%) - DEAL ACCEPTED
@@ -457,7 +546,7 @@ def get_gemini_negotiation_response(product, user_message, chat_history):
         final_price = round_price(final_price, product_price)
         product.negotiated_price = final_price
         product.save()
-        return f"Yes! **UGX {final_price:,.0f}** is an agreement. We have a deal! I've locked in the final price for you. Please click the 'Lock In' button to grab it before someone else does! 🎉"
+        return generate_response('accept', final_price)
     
     
     # 3e. Staged Negotiation Logic (User's offer is lower than 90% but higher than 70%)
@@ -467,26 +556,26 @@ def get_gemini_negotiation_response(product, user_message, chat_history):
         new_price = STAGE_ONE_PRICE # 98%
         product.negotiated_price = new_price
         product.save()
-        return f"I appreciate your offer of {raw_offer_text}. Since this is our first counter, I can drop it to **UGX {new_price:,.0f}** (2% off). What is your next move to get to my final price?"
+        return generate_response('stage_one_offer', new_price, raw_offer_text)
         
     # Current Price is at 98% (or slightly below): Move to 95%
     elif last_ai_offer > STAGE_TWO_PRICE + Decimal('1'):
         new_price = STAGE_TWO_PRICE # 95%
         product.negotiated_price = new_price
         product.save()
-        return f"That's a good move! I will drop the price to **UGX {new_price:,.0f}** (5% off). This is the second stage. I have only one final move left. Will you make a better offer?"
+        return generate_response('stage_two_offer', new_price, raw_offer_text)
 
     # Current Price is at 95% (or slightly below): Move to 90% (Final)
     elif last_ai_offer > FINAL_FLOOR + Decimal('1'):
         final_price = FINAL_FLOOR # 90%
         product.negotiated_price = final_price
         product.save()
-        return f"I'm going all the way to my final floor for you! The lowest I can possibly go is **UGX {final_price:,.0f}** (10% off). This is the absolute final price. Are you ready to lock it in? 🤝"
+        return generate_response('final_offer', final_price)
         
     # The price is already at the final floor (90%). Reiterate.
     else: 
         display_price = FINAL_FLOOR
-        return f"My apologies, but **UGX {display_price:,.0f}** is the absolute lowest I can go. You must meet me here to make the purchase."
+        return generate_response('final_floor_rejection', display_price, raw_offer_text)
 
 
 def get_ai_response(product, user_message, chat_history):
@@ -508,7 +597,7 @@ def ai_negotiation_view(request, slug):
     # Retrieve chat history from session
     chat_history = request.session.get(f'chat_history_{slug}', [
         # Updated initial greeting to be more human-like
-        {'role': 'ai', 'text': f"Hello! I'm the AI Negotiator, and I'm ready to find you a great price. The original price for **{product.name}** is UGX {product.price:,.0f}. What is your first offer?"}
+        {'role': 'ai', 'text': f"Hello! I'm the AI Negotiator, and I'm ready to find you a great price. The original price for **{product.name}** is UGX {product.price:,.0f}. What is your first offer? (I also speak Luganda!)"}
     ])
 
     if request.method == 'POST' and form.is_valid():
