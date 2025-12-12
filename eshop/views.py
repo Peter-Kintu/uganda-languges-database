@@ -309,16 +309,18 @@ def round_price(price, product_price_ref):
     price = price.quantize(Decimal('0.00')) 
     if product_price_ref >= Decimal('100000'):
          # Round to the nearest thousand 
-         return Decimal(round(price, -3)) 
+         # Use round_half_up for consistent rounding
+         return Decimal(round(price / Decimal('1000')) * Decimal('1000'))
     elif product_price_ref >= Decimal('1000'):
          # Round to the nearest hundred
-         return Decimal(round(price, -2)) 
+         return Decimal(round(price / Decimal('100')) * Decimal('100'))
     else:
          return price.quantize(Decimal('0.00')) 
 
 def get_ai_response(product, user_message, chat_history):
     """
     Updated AI negotiation logic for a more iterative, staged human-like feel: 98% -> 95% -> 90%.
+    **Fixes the aggressive 25% drop issue.**
     """
     product_price = product.price
 
@@ -327,6 +329,10 @@ def get_ai_response(product, user_message, chat_history):
     ABSOLUTE_FLOOR = product_price * Decimal('0.90') # The firm final stand (90%)
     STAGE_TWO_FLOOR = product_price * Decimal('0.95') # Mid-negotiation floor (95%)
     STAGE_ONE_OFFER = product_price * Decimal('0.98') # Initial counter (98%)
+    
+    # Define thresholds for stage checking
+    THRESHOLD_STAGE_TWO = product_price * Decimal('0.955') # Price is between 98.5% and 95.5%
+    THRESHOLD_STAGE_THREE = product_price * Decimal('0.91') # Price is between 95.5% and 91%
 
     # The AI's move factor will be aggressive to quickly hit the first two stages, 
     # and then aggressive to hit the final stage.
@@ -334,34 +340,39 @@ def get_ai_response(product, user_message, chat_history):
     RELENT_FACTOR = Decimal('0.20')    # Move 20% of the distance
 
     # 1. Check for acceptance status (already finalized)
-    if product.negotiated_price and product.negotiated_price < product_price:
-        return f"We've already agreed on a sweet deal of **UGX {product.negotiated_price:,.0f}**! Go ahead and click the 'Lock In' button below to secure it. 🔒"
+    if product.negotiated_price and product.negotiated_price <= ABSOLUTE_FLOOR:
+        display_price = round_price(product.negotiated_price, product_price)
+        return f"We've already agreed on a sweet deal of **UGX {display_price:,.0f}**! Go ahead and click the 'Lock In' button below to secure it. 🔒"
 
 
     # 2. Parse user offer
-    offer_match = re.search(r'(\d{1,3}(?:,\d{3})*(?:\\.\d{1,2})?|\d+)', user_message, re.IGNORECASE)
+    # Regex improvement to handle spaces better
+    offer_match = re.search(r'ugx\s*(\d{1,3}(?:,\d{3})*(?:\\.\d{1,2})?|\d+)', user_message, re.IGNORECASE)
     
     offer = None
     if offer_match:
         try:
-            offer_str = offer_match.group(1).replace(',', '')
-            offer = Decimal(offer_str).quantize(Decimal('0.00')) 
+            offer_str = offer_match.group(1).replace(',', '').replace('.', '') # Assuming no decimal places for UGX
+            # A common mistake is entering 200 instead of 200000. 
+            # If the offer is too small and is an initial offer, treat it as thousands
+            # We will rely on the minimum engagement to filter truly small numbers.
+            offer = Decimal(offer_str).quantize(Decimal('0')) 
         except (InvalidOperation, ValueError):
             pass 
-
-
-    # 3. Negotiation Logic
+    
+    
     last_ai_offer = product.negotiated_price or product_price
-
-
+    
+    # 3. Negotiation Logic
+    
     # 3a. User did NOT make a clear price offer or is just asking for a discount
     if offer is None:
         user_msg_lower = user_message.lower()
         
         if any(phrase in user_msg_lower for phrase in ['reduce', 'lower', 'final price', 'best price', 'last price', 'discount']):
             
-            # If the current price is the original price, immediately drop to the 98% stage
-            if last_ai_offer >= product_price:
+            # **FIX: Ensure the first reduction is always to the 98% stage**
+            if last_ai_offer >= product_price * Decimal('0.99'):
                 new_price = round_price(STAGE_ONE_OFFER, product_price)
                 product.negotiated_price = new_price
                 product.save()
@@ -401,8 +412,11 @@ def get_ai_response(product, user_message, chat_history):
     
     # 3b. Offer is TOO LOW (below 70% threshold)
     if offer < min_price_reject: 
-        display_floor = product_price * Decimal('0.75') 
-        return f"I appreciate the offer of **UGX {offer:,.0f}**, but it's too low for us to even consider. I can't let it go for less than **UGX {display_floor:,.0f}**. Please make me a better offer."
+        # **FIX: Respond with a hard rejection and a 98% counter to start the negotiation properly**
+        new_price = round_price(STAGE_ONE_OFFER, product_price)
+        product.negotiated_price = new_price
+        product.save()
+        return f"I appreciate the offer of **UGX {offer:,.0f}**, but it's too low for us to even consider. I can't let it go for less than **UGX {new_price:,.0f}** to start the negotiation. Please make me a better offer."
 
     # 3c. Offer is higher than the original price
     if offer > product_price:
@@ -413,72 +427,65 @@ def get_ai_response(product, user_message, chat_history):
 
 
     # 3d. Offer MEETS OR EXCEEDS THE ABSOLUTE FLOOR (90%) - DEAL ACCEPTED
+    # This check must come before the staged logic to immediately accept a winning offer.
     if offer >= ABSOLUTE_FLOOR:
+        # Accept the deal at 90% or the user's offer if higher than 90% but less than 100%
         final_price = offer if offer < product_price else product_price
+        final_price = round_price(final_price, product_price)
         product.negotiated_price = final_price
         product.save()
-        # This will accept the deal at 90% or the user's offer if higher than 90% but less than 100%
         return f"Yes! **UGX {final_price:,.0f}** is an agreement. We have a deal! I've locked in the final price for you. Please click the 'Lock In' button to grab it before someone else does! 🎉"
+    
     
     # 3e. Staged Negotiation Logic (98% -> 95% -> 90%)
     
-    # Stage 1: Initial move to 98%
-    if last_ai_offer >= product_price * Decimal('0.985'): # Current price is near or at 100%
-        if offer >= STAGE_ONE_OFFER:
-            new_price = round_price(offer, product_price) # Accept user's offer if it's 98% or better
-            if new_price < STAGE_ONE_OFFER:
-                 new_price = round_price(STAGE_ONE_OFFER, product_price)
+    # Stage 1: Initial move to 98% (Current price is near or at 100%)
+    if last_ai_offer >= product_price * Decimal('0.985'):
+        
+        # User is offering below the 98% threshold, respond with the 98% counter
+        new_price = round_price(STAGE_ONE_OFFER, product_price)
+        product.negotiated_price = new_price
+        product.save()
+        return f"I appreciate your offer of UGX {offer:,.0f}. I can drop to **UGX {new_price:,.0f}** to start. What is your next move?"
 
-            product.negotiated_price = new_price
-            product.save()
-            return f"That's a strong offer! I can meet you at **UGX {new_price:,.0f}**. I can still come down further, but I need you to commit to another move!"
+
+    # Stage 2: Moving from 98% toward 95% (Current price is between 98.5% and 95.5%)
+    elif last_ai_offer > THRESHOLD_STAGE_TWO:
+        
+        # If the user's offer is below 95%, counter with a price that is 20% closer to the user's offer, but not below 95%.
+        reduction_amount = (last_ai_offer - offer) * RELENT_FACTOR
+        counter_price = last_ai_offer - reduction_amount
+        
+        if counter_price < STAGE_TWO_FLOOR:
+            counter_price = STAGE_TWO_FLOOR
+        
+        final_counter = round_price(counter_price, product_price)
+        product.negotiated_price = final_counter
+        product.save()
+        
+        # If the new price hits 95% exactly, move to the next stage message.
+        if final_counter <= round_price(STAGE_TWO_FLOOR, product_price):
+             return f"Okay, that pushes me to **UGX {final_counter:,.0f}**. This is a great price, but I have one more final price I can offer if you push me! What is your next offer?"
         else:
-             # Counter at 98% (STAGE_ONE_OFFER) to start the process
-            new_price = round_price(STAGE_ONE_OFFER, product_price)
-            product.negotiated_price = new_price
-            product.save()
-            return f"I appreciate your offer of UGX {offer:,.0f}. I can drop to **UGX {new_price:,.0f}** to start. What is your next move?"
+             return f"I see your offer of UGX {offer:,.0f}. I can only reduce the price to **UGX {final_counter:,.0f}** for now. Can you meet me a little closer to UGX {round_price(STAGE_TWO_FLOOR, product_price):,.0f}?"
 
 
-    # Stage 2: Moving from 98% toward 95%
-    elif last_ai_offer >= product_price * Decimal('0.955'): # Current price is between 98.5% and 95.5%
-        if offer >= STAGE_TWO_FLOOR:
-            # User offered 95% or better, aggressively move to 95% to close this stage.
-            new_price = round_price(STAGE_TWO_FLOOR, product_price)
-            product.negotiated_price = new_price
-            product.save()
-            return f"Okay, you're close! I'm now at **UGX {new_price:,.0f}**. This is a great price, but I have one more final price I can offer if you push me! What is your next offer?"
-        else:
-            # User offered less than 95%, use the slow 20% factor toward the user's price (but don't go below 95%)
-            reduction_amount = (last_ai_offer - offer) * RELENT_FACTOR
-            counter_price = last_ai_offer - reduction_amount
-            
-            if counter_price < STAGE_TWO_FLOOR:
-                counter_price = STAGE_TWO_FLOOR
-            
-            final_counter = round_price(counter_price, product_price)
-            product.negotiated_price = final_counter
-            product.save()
-            return f"I see your offer of UGX {offer:,.0f}. I can only reduce the price to **UGX {final_counter:,.0f}** for now. Can you meet me a little closer to UGX {round_price(STAGE_TWO_FLOOR, product_price):,.0f}?"
-
-
-    # Stage 3: Final push to 90% (Current price is near 95%)
-    else: # Current price is near 95%
+    # Stage 3: Final push to 90% (Current price is near 95% and below 95.5%)
+    # This block executes if last_ai_offer is between 95.5% and 90%
+    else: 
         # The AI is now in the final negotiation stage, aggressively moving to the 90% floor.
         
-        # Check if the user is already at the floor or better
-        if offer >= ABSOLUTE_FLOOR:
-            final_price = round_price(offer, product_price)
-            product.negotiated_price = final_price
-            product.save()
-            return f"Yes! **UGX {final_price:,.0f}** is the final price! I've locked it in. Please click the 'Lock In' button to purchase. Congratulations on a great deal! 🎉"
-            
-        
-        # User is below the floor, or below the last counter-offer. Aggressively counter at 90%.
+        # If the user is being stubborn, or the price is close, aggressively counter at 90%.
         display_price = round_price(ABSOLUTE_FLOOR, product_price)
-        product.negotiated_price = display_price
-        product.save()
-        return f"I've checked with the vendor and this is their final, non-negotiable price! The lowest I can possibly go is **UGX {display_price:,.0f}**. This is the best deal available. Are you ready to lock it in? 🤝"
+        
+        # If the AI has not yet offered the 90% floor, offer it now.
+        if last_ai_offer > display_price:
+            product.negotiated_price = display_price
+            product.save()
+            return f"I've checked with the vendor and this is their final, non-negotiable price! The lowest I can possibly go is **UGX {display_price:,.0f}**. This is the best deal available. Are you ready to lock it in? 🤝"
+        else:
+            # Price is already at 90% floor, simply reiterate.
+             return f"My apologies, but **UGX {display_price:,.0f}** is the absolute lowest I can go. You must meet me here to make the purchase."
 
 
 @login_required
