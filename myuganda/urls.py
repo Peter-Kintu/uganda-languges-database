@@ -1,11 +1,10 @@
-# myuganda/urls.py
-
 from django.contrib import admin
 from django.urls import path, include, reverse_lazy # Import reverse_lazy
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 from django.views.generic.base import RedirectView # Import RedirectView
+from django.http import HttpResponse # ADDED THIS IMPORT
 from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap 
 
 sitemaps_dict = {
@@ -14,10 +13,14 @@ sitemaps_dict = {
     'jobs': JobPostSitemap,
 }
 
+def index_now_key(request):
+    key = "4f86e5cee78f493786d7e4b8ec9fdfdf"
+    return HttpResponse(key, content_type="text/plain")
+
 urlpatterns = [
     # 1. Root URLs for languages app (homepage) - Check this first for homepage
     path('', include('languages.urls')), 
-    
+
     # 2. FIX: Map the conventional Django login URL (/accounts/login/) 
     # to redirect to the named URL defined in settings.py (users:user_login).
     # This correctly handles the redirect from @login_required decorator.
@@ -27,10 +30,12 @@ urlpatterns = [
     path('', include('users.urls')), 
     
     path('admin/', admin.site.urls),
-  
+    
+    # IndexNow Key URL
+    path('4f86e5cee78f493786d7e4b8ec9fdfdf.txt', index_now_key),
+    
     path('eshop/', include('eshop.urls', namespace='eshop')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps_dict}, name='sitemap'),
-    
 ]
 
 if settings.DEBUG:
