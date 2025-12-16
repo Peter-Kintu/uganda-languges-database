@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -18,7 +18,6 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-(p31q0!)f868y09ivx%&d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-# Allowed Hosts
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 # --- PRODUCTION SECURITY & CSRF FIXES ---
@@ -26,8 +25,6 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 KOYEB_HOST = 'initial-danette-africana-60541726.koyeb.app'
 TRUSTED_HOSTS = [KOYEB_HOST]
-
-# Dynamically add hosts from environment
 env_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
 for host in env_hosts:
     clean_host = host.strip()
@@ -35,12 +32,7 @@ for host in env_hosts:
         TRUSTED_HOSTS.append(clean_host)
 
 CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in TRUSTED_HOSTS]
-CSRF_TRUSTED_ORIGINS.extend([
-    'http://127.0.0.1:8000', 
-    'http://localhost:8000',
-    'http://127.0.0.1',
-    'http://localhost'
-])
+CSRF_TRUSTED_ORIGINS.extend(['http://127.0.0.1:8000', 'http://localhost:8000', 'http://127.0.0.1', 'http://localhost'])
 
 # --- APPLICATION DEFINITION ---
 INSTALLED_APPS = [
@@ -53,9 +45,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
     'django.contrib.sites',
-    'django.contrib.humanize', # For template tags like 'intcomma'
+    'django.contrib.humanize', 
 
-    # Third-party apps
+    # Third-party
     'widget_tweaks',
     'cloudinary_storage',
     'cloudinary',
@@ -70,7 +62,7 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Place after SecurityMiddleware
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Crucial for Gunicorn/Render stability
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -130,14 +122,13 @@ STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-# Cloudinary Credentials
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-# Unified Storage Settings (Django 4.2+)
+# Modern Storage Settings (Replaces DEFAULT_FILE_STORAGE)
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -150,19 +141,18 @@ STORAGES = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
 
-# --- API KEYS ---
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# --- JAZZMIN SETTINGS (Enhanced Design) ---
+# --- JAZZMIN SETTINGS (Better Design) ---
 JAZZMIN_SETTINGS = {
     "site_title": "Uganda Language Admin",
     "site_header": "Uganda Languages",
     "site_brand": "Uganda Languages",
     "site_logo": "images/uganda_logo.png",
     "site_icon": "images/favicon.ico",
-    "welcome_sign": "Welcome to the Uganda Language Database — preserving local heritage.",
+    "welcome_sign": "Database Management System",
     "copyright": "Uganda Language Project",
-    "user_avatar": "avatar", # Assumes your CustomUser has an 'avatar' field
+    "user_avatar": "avatar", 
 
     "search_model": ["users.CustomUser", "languages.PhraseContribution", "languages.JobPost"],
 
@@ -188,33 +178,14 @@ JAZZMIN_SETTINGS = {
         "eshop.Product": "fas fa-shopping-cart",
         "eshop.Order": "fas fa-file-invoice-dollar",
     },
-    "default_icon_parents": "fas fa-chevron-circle-right",
-    "default_icon_children": "fas fa-dot-circle",
 }
 
-# Jazzmin UI Tweaks for a modern professional look
 JAZZMIN_UI_TWEAKS = {
-    "theme": "flatly",             # Professional clean theme
-    "dark_mode_theme": "darkly",   # Dark mode fallback
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "navbar-primary",
-    "accent": "accent-primary",
-    "navbar": "navbar-dark",
-    "no_navbar_border": True,
+    "theme": "flatly",
+    "dark_mode_theme": "darkly",
     "navbar_fixed": True,
-    "layout_boxed": False,
-    "footer_fixed": False,
     "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary",
-    "sidebar_nav_small_text": False,
-    "sidebar_disable_expand": False,
     "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": False,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": False,
     "theme_cls": "darkly",
     "button_classes": {
         "primary": "btn-primary",

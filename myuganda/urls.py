@@ -11,6 +11,7 @@ sitemaps_dict = {
     'static': StaticViewSitemap,
     'products': ProductSitemap,
     'jobs': JobPostSitemap,
+    
 }
 
 # Function to serve the IndexNow key directly from code
