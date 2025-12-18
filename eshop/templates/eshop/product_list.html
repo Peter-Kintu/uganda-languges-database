@@ -5,82 +5,84 @@
 {% block title %}Explore Africana Culture – My Market{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+<div class="bg-slate-50 min-h-screen">
+    <div class="container mx-auto px-2 sm:px-4 lg:px-8 py-4">
 
-    <header class="text-center mb-16 sm:mb-20 p-6 sm:p-12 bg-gray-900 rounded-3xl shadow-3xl border-b-8 border-indigo-700/50 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1517483010476-02431711831c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTY5OTh8MHwxfHNlYXJjaHw3fHdhbGxwYXBlciUyMHBhdHRlcm58ZW58MHx8fHwxNzAzMzc3NzMzfDA&ixlib=rb-4.0.3&q=80&w=1080')] bg-repeat bg-cover"></div>
-        
-        <div class="relative z-10">
-            <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white leading-snug mb-4 sm:mb-5 tracking-tight drop-shadow-lg">
-                The Global Marketplace for <span class="text-indigo-400">African Heritage</span>
-            </h1>
-            <p class="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl sm:max-w-4xl mx-auto mb-6 sm:mb-10 font-light">
-                Every purchase supports a <strong>culture</strong>, shares a <strong>story</strong>, and empowers a <strong>creator</strong>.
-            </p>
-            <a href="{% url 'eshop:add_product' %}" class="inline-block bg-green-500 hover:bg-green-600 text-gray-900 font-black py-3 px-8 sm:py-4 sm:px-12 rounded-full text-base sm:text-xl transition-all duration-400 transform hover:scale-105 shadow-2xl shadow-green-500/50 ring-4 ring-green-500/30">
-                List Your Own Treasure →
-            </a>
-        </div>
-    </header>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
-        {% for product in products %}
-        <div class="bg-gray-800 rounded-2xl shadow-4xl transform hover:shadow-indigo-500/40 transition-all duration-500 overflow-hidden group border-2 border-gray-700 hover:border-indigo-500 relative">
-            
-            <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative h-60 sm:h-72">
-                {% if product.video %}
-                    <video class="w-full h-full object-cover" controls>
-                        <source src="{{ product.video.url }}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                {% elif product.image %}
-                  {% cloudinary_url product.image.public_id width=600 height=500 crop='fill' as image_url %}
-                  <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                {% else %}
-                    <div class="w-full h-full bg-gray-700 flex items-center justify-center text-gray-400 font-medium text-lg">No Visual Media</div>
-                {% endif %}
-                
-                <div class="absolute top-3 right-3 bg-indigo-600 text-white font-extrabold px-4 py-1.5 rounded-full shadow-2xl transform rotate-3 group-hover:rotate-0 transition-transform duration-300 ring-2 ring-white/50 text-sm sm:text-base">
-                    <span class="block leading-none">UGX {{ product.price|floatformat:0 }}</span>
+        <header class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="text-center sm:text-left">
+                    <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                        African Heritage Marketplace
+                    </h1>
+                    <p class="text-[11px] sm:text-xs text-slate-500 font-medium">
+                        Empowering creators, sharing stories.
+                    </p>
                 </div>
-            </a>
-            
-            <div class="p-4 sm:p-6">
-                <a href="{% url 'eshop:product_detail' product.slug %}">
-                    <h3 class="text-lg sm:text-xl font-bold text-white mb-2 group-hover:text-indigo-400 transition-colors duration-300 line-clamp-2">{{ product.name }}</h3>
-                </a>
+                <div>
+                    <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-6 rounded-lg transition-all shadow-sm active:scale-95">
+                        Sell a Product
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+            {% for product in products %}
+            <div class="group bg-white rounded-xl border border-slate-200 flex flex-col hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300">
                 
-                <div class="text-gray-400 text-xs sm:text-sm mb-4 flex justify-between items-center">
-                    <span>Vendor: <span class="text-indigo-300 font-medium">{{ product.vendor_name }}</span></span>
-                    {% if product.is_negotiable %}
-                        <span class="text-yellow-400 font-semibold text-xs bg-gray-700 px-2 py-1 rounded-full border border-yellow-400/50 shadow-inner">🤝 Negotiable</span>
+                <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-square overflow-hidden bg-slate-50 rounded-t-xl">
+                    {% if product.video %}
+                        <video class="w-full h-full object-cover">
+                            <source src="{{ product.video.url }}" type="video/mp4">
+                        </video>
+                    {% elif product.image %}
+                      {% cloudinary_url product.image.public_id width=400 height=400 crop='fill' as image_url %}
+                      <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-slate-400 text-[10px] uppercase font-bold tracking-widest">No Image</div>
                     {% endif %}
-                </div>
-
-                <div class="space-y-2 sm:space-y-3">
-                    <a href="{% url 'eshop:product_detail' product.slug %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2.5 sm:py-3.5 rounded-xl transition-all duration-300 block transform hover:scale-[1.01] shadow-xl shadow-indigo-600/30 text-sm sm:text-base">
-                        View Details
-                    </a>
-                    <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 sm:py-3.5 rounded-xl transition-all duration-300 block transform hover:scale-[1.01] text-sm sm:text-base">
-                        + Add to Cart
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="col-span-full text-center p-10 sm:p-20 bg-gray-800 rounded-3xl shadow-2xl border-4 border-dashed border-indigo-500/50">
-            <svg class="w-12 h-12 sm:w-20 sm:h-20 text-indigo-400 mx-auto mb-4 sm:mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 011-1h1a2 2 0 100-4H7a1 1 0 01-1-1V7a1 1 0 011-1h3a1 1 0 011 1v1z"></path>
-            </svg>
-            <h3 class="text-2xl sm:text-4xl text-white font-extrabold mb-2 sm:mb-3">No Treasures Listed Yet.</h3>
-            <p class="text-base sm:text-xl text-indigo-300 font-medium mb-6 sm:mb-8">Be the first to list a product and share your culture with the world!</p>
-            <div class="mt-4 sm:mt-6">
-                <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-8 sm:py-4 sm:px-10 rounded-full transition-colors duration-300 transform hover:scale-105 shadow-xl text-sm sm:text-base">
-                    List a Product Now
                 </a>
+                
+                <div class="p-3 sm:p-4 flex flex-col flex-grow">
+                    <a href="{% url 'eshop:product_detail' product.slug %}" class="block mb-1">
+                        <h3 class="text-xs sm:text-sm font-semibold text-slate-800 line-clamp-2 leading-tight group-hover:text-indigo-600 transition-colors">
+                            {{ product.name }}
+                        </h3>
+                    </a>
+                    
+                    <p class="text-[10px] text-slate-400 mb-3 font-medium uppercase tracking-tighter">
+                        Vendor: <span class="text-slate-600">{{ product.vendor_name }}</span>
+                    </p>
+
+                    <div class="mt-auto">
+                        <div class="flex items-baseline text-slate-900 mb-2">
+                            <span class="text-[9px] font-black mr-0.5 text-slate-500">UGX</span>
+                            <span class="text-base sm:text-lg font-bold leading-none">{{ product.price|floatformat:0 }}</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between gap-2 mt-2">
+                            {% if product.is_negotiable %}
+                                <span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">
+                                    Negotiable
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-3">
+                            <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-slate-900 hover:bg-indigo-600 text-white py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-colors shadow-sm">
+                                + Add to Cart
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
+            {% empty %}
+            <div class="col-span-full text-center py-24 bg-white rounded-2xl border border-slate-200">
+                <p class="text-slate-400 font-medium italic">No treasures listed yet.</p>
+                <a href="{% url 'eshop:add_product' %}" class="mt-2 inline-block text-indigo-600 font-bold hover:underline text-sm">Be the first to list →</a>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>
 {% endblock %}
