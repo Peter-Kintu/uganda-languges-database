@@ -5,22 +5,22 @@
 {% block title %}Explore Africana Culture – My Market{% endblock %}
 
 {% block content %}
-<div class="bg-slate-50 min-h-screen">
-    <div class="container mx-auto px-2 sm:px-4 lg:px-8 py-4">
+<div class="bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-2 sm:px-4 lg:px-8 py-6">
 
-        <header class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div class="px-5 py-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <header class="mb-8 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-5 sm:px-10 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="text-center sm:text-left">
-                    <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                         African Heritage Marketplace
                     </h1>
-                    <p class="text-[11px] sm:text-xs text-slate-500 font-medium">
-                        Empowering creators, sharing stories.
+                    <p class="text-xs sm:text-sm text-indigo-300 font-medium opacity-80">
+                        Connecting culture with the global community.
                     </p>
                 </div>
                 <div>
-                    <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-6 rounded-lg transition-all shadow-sm active:scale-95">
-                        Sell a Product
+                    <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
+                        + Sell a Product
                     </a>
                 </div>
             </div>
@@ -28,9 +28,9 @@
 
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
             {% for product in products %}
-            <div class="group bg-white rounded-xl border border-slate-200 flex flex-col hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300">
+            <div class="group bg-gray-800 rounded-2xl border border-gray-700 flex flex-col hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
                 
-                <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-square overflow-hidden bg-slate-50 rounded-t-xl">
+                <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-square overflow-hidden bg-gray-900 rounded-t-2xl">
                     {% if product.video %}
                         <video class="w-full h-full object-cover">
                             <source src="{{ product.video.url }}" type="video/mp4">
@@ -39,47 +39,47 @@
                       {% cloudinary_url product.image.public_id width=400 height=400 crop='fill' as image_url %}
                       <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105">
                     {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-slate-400 text-[10px] uppercase font-bold tracking-widest">No Image</div>
+                        <div class="w-full h-full flex items-center justify-center text-gray-600 text-[10px] uppercase font-bold tracking-widest">No Image</div>
                     {% endif %}
                 </a>
                 
                 <div class="p-3 sm:p-4 flex flex-col flex-grow">
                     <a href="{% url 'eshop:product_detail' product.slug %}" class="block mb-1">
-                        <h3 class="text-xs sm:text-sm font-semibold text-slate-800 line-clamp-2 leading-tight group-hover:text-indigo-600 transition-colors">
+                        <h3 class="text-xs sm:text-sm font-bold text-gray-100 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors">
                             {{ product.name }}
                         </h3>
                     </a>
                     
-                    <p class="text-[10px] text-slate-400 mb-3 font-medium uppercase tracking-tighter">
-                        Vendor: <span class="text-slate-600">{{ product.vendor_name }}</span>
+                    <p class="text-[10px] text-gray-500 mb-3 font-medium uppercase tracking-wider">
+                        By <span class="text-indigo-300">{{ product.vendor_name }}</span>
                     </p>
 
                     <div class="mt-auto">
-                        <div class="flex items-baseline text-slate-900 mb-2">
-                            <span class="text-[9px] font-black mr-0.5 text-slate-500">UGX</span>
-                            <span class="text-base sm:text-lg font-bold leading-none">{{ product.price|floatformat:0 }}</span>
+                        <div class="flex items-baseline text-green-400 mb-2">
+                            <span class="text-[9px] font-black mr-0.5 opacity-80">UGX</span>
+                            <span class="text-base sm:text-lg font-extrabold leading-none">{{ product.price|floatformat:0 }}</span>
                         </div>
                         
-                        <div class="flex items-center justify-between gap-2 mt-2">
+                        <div class="flex items-center gap-2 mt-1 min-h-[20px]">
                             {% if product.is_negotiable %}
-                                <span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">
+                                <span class="text-[9px] font-bold text-indigo-300 bg-indigo-900/40 px-2 py-0.5 rounded-md border border-indigo-500/30">
                                     Negotiable
                                 </span>
                             {% endif %}
                         </div>
 
-                        <div class="mt-3">
-                            <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-slate-900 hover:bg-indigo-600 text-white py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-colors shadow-sm">
-                                + Add to Cart
+                        <div class="mt-4">
+                            <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all shadow-md active:bg-indigo-800">
+                                Add to Cart
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
             {% empty %}
-            <div class="col-span-full text-center py-24 bg-white rounded-2xl border border-slate-200">
-                <p class="text-slate-400 font-medium italic">No treasures listed yet.</p>
-                <a href="{% url 'eshop:add_product' %}" class="mt-2 inline-block text-indigo-600 font-bold hover:underline text-sm">Be the first to list →</a>
+            <div class="col-span-full text-center py-24 bg-gray-800 rounded-3xl border border-gray-700">
+                <p class="text-gray-500 font-medium italic">No treasures listed yet.</p>
+                <a href="{% url 'eshop:add_product' %}" class="mt-2 inline-block text-indigo-400 font-bold hover:underline text-sm">Be the first to list →</a>
             </div>
             {% endfor %}
         </div>
