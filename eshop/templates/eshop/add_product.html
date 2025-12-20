@@ -5,7 +5,6 @@
 {% block title %}Add a Product{% endblock %}
 
 {% block content %}
-
 <header class="relative bg-center bg-cover h-64 md:h-80" style="background-image: url('https://images.unsplash.com/photo-1542450893-a9d701dfc6a9?q=80&w=2940&auto=format&fit=crop');">
     <div class="absolute inset-0 bg-indigo-900/80 flex items-center justify-center">
         <div class="text-center text-white p-4">
@@ -41,48 +40,54 @@
 
             <div>
                 <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Description</label>
-                {{ form.description|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500 h-32"|attr:"placeholder:Describe your product, its history, materials, and significance..." }}
+                {{ form.description|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500 h-32" }}
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                <div>
-                    <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Price (in UGX)</label>
+                <div class="md:col-span-1">
+                    <label for="{{ form.currency.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Preferred Currency</label>
+                    {{ form.currency|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200" }}
+                </div>
+
+                <div class="md:col-span-1">
+                    <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Price</label>
                     <div class="flex items-center bg-gray-700 rounded-lg border border-gray-600 focus-within:ring-2 focus-within:ring-indigo-500 overflow-hidden">
-                        <span class="text-white font-bold text-lg px-4 py-3 bg-gray-900/50">UGX</span>
+                        <span id="currency-symbol-display" class="text-white font-bold text-lg px-4 py-3 bg-gray-900/50">UGX</span>
                         {{ form.price|attr:"class:w-full px-4 py-3 bg-transparent text-gray-200 border-none focus:ring-0 text-right font-extrabold" }}
                     </div>
-                    <p id="usd-conversion" class="text-sm text-green-400 mt-2 font-medium"></p>
                 </div>
 
                 <div class="flex items-center h-full pb-3">
                     {{ form.is_negotiable|attr:"class:h-6 w-6 text-indigo-600 border-gray-600 focus:ring-indigo-500 rounded bg-gray-700" }}
                     <label for="{{ form.is_negotiable.id_for_label }}" class="ml-3 text-lg text-gray-300 font-semibold cursor-pointer">Negotiable?</label>
                 </div>
-                
+            </div>
+
+            <div class="text-right">
+                <p id="usd-conversion" class="text-sm text-green-400 font-medium"></p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                 <div>
                     <label for="{{ form.vendor_name.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Your Vendor Name</label>
-                    {{ form.vendor_name|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"|attr:"placeholder:e.g., Maama Tendo Crafts" }}
+                    {{ form.vendor_name|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500" }}
+                </div>
+
+                <div>
+                    <label for="{{ form.whatsapp_number.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">WhatsApp Contact</label>
+                    {{ form.whatsapp_number|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500" }}
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="{{ form.whatsapp_number.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">WhatsApp Contact</label>
-                    {{ form.whatsapp_number|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"|attr:"placeholder:e.g., +256770123456" }}
-                    {% if form.whatsapp_number.help_text %}
-                        <p class="text-xs text-gray-500 mt-1">{{ form.whatsapp_number.help_text }}</p>
-                    {% endif %}
-                </div>
-
-                <div>
                     <label for="{{ form.tiktok_url.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">TikTok Video URL (Optional)</label>
-                    {{ form.tiktok_url|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"|attr:"placeholder:https://www.tiktok.com/@..." }}
+                    {{ form.tiktok_url|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500" }}
                 </div>
-            </div>
-
-            <div>
-                <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Image/Media</label>
-                {{ form.image|attr:"class:block w-full text-sm text-gray-300 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 transition-colors duration-200 bg-gray-700 rounded-lg p-2 border border-gray-600" }}
+                <div>
+                    <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Image/Media</label>
+                    {{ form.image|attr:"class:block w-full text-sm text-gray-300 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 bg-gray-700 rounded-lg p-2 border border-gray-600" }}
+                </div>
             </div>
             
             {% if form.errors %}
@@ -93,9 +98,6 @@
                             {% for error in field.errors %}
                                 <li><span class="font-semibold">{{ field.label }}:</span> {{ error }}</li>
                             {% endfor %}
-                        {% endfor %}
-                        {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -118,34 +120,44 @@
             return data.rates;
         } catch (error) {
             console.error("Failed to fetch exchange rates:", error);
-            return {};
+            return null;
         }
     }
 
     async function setupConverter() {
         const rates = await fetchRates();
         const priceInput = document.getElementById("id_price");
+        const currencySelect = document.getElementById("id_currency");
         const usdDisplay = document.getElementById("usd-conversion");
+        const symbolDisplay = document.getElementById("currency-symbol-display");
 
-        if (priceInput) {
+        if (priceInput && currencySelect && rates) {
             function updateConversion() {
                 const value = parseFloat(priceInput.value);
-                const ugxRate = rates["UGX"] || 3700;
+                const selectedCurrency = currencySelect.value;
+                
+                symbolDisplay.textContent = selectedCurrency;
 
-                if (!isNaN(value) && ugxRate) {
-                    const usd = value / ugxRate;
-                    usdDisplay.textContent = `Current Price ≈ USD ${usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                if (!isNaN(value)) {
+                    if (selectedCurrency === 'USD') {
+                        usdDisplay.textContent = "";
+                    } else {
+                        const rateToUsd = rates[selectedCurrency];
+                        if (rateToUsd) {
+                            const usdValue = value / rateToUsd;
+                            usdDisplay.textContent = `Value ≈ USD ${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                        }
+                    }
                 } else {
                     usdDisplay.textContent = "";
                 }
             }
 
             priceInput.addEventListener("input", updateConversion);
-            // Run once on load in case there's an initial value (e.g., form validation failure)
+            currencySelect.addEventListener("change", updateConversion);
             updateConversion(); 
         }
     }
-
     window.addEventListener("load", setupConverter);
 </script>
 {% endblock %}

@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load cloudinary %}
-
-{% block title %}Explore Africana Culture – My Market{% endblock %}
+{% load humanize %} {% block title %}Explore Africana Culture – My Market{% endblock %}
 
 {% block content %}
 <div class="bg-gray-900 min-h-screen">
@@ -85,8 +84,12 @@
 
                     <div class="mt-auto">
                         <div class="flex items-baseline text-green-400 mb-2">
-                            <span class="text-[9px] font-black mr-0.5 opacity-80">{{ product.get_currency_code }}</span>
-                            <span class="text-base sm:text-lg font-extrabold leading-none">{{ product.price|floatformat:0 }}</span>
+                            <span class="text-[9px] font-black mr-0.5 opacity-80">
+                                {{ product.get_currency_code }}
+                            </span>
+                            <span class="text-base sm:text-lg font-extrabold leading-none">
+                                {{ product.price|intcomma }}
+                            </span>
                         </div>
                         
                         <div class="flex items-center gap-2 mt-1 min-h-[20px]">

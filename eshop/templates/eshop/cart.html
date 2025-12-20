@@ -43,14 +43,14 @@
                     <div class="text-left flex flex-col items-start mt-4 sm:mt-0 sm:text-right sm:items-end">
                         <div class="mb-2">
                             <p class="text-2xl font-extrabold text-green-400">
-                                UGX {{ item.total_price|floatformat:0|intcomma }}
+                                <span class="text-xs opacity-70">{{ item.product.get_currency_code }}</span> {{ item.total_price|floatformat:0|intcomma }}
                             </p>
     
                             <p class="text-xs text-gray-500 mt-1">
                                 {% if item.product.negotiated_price %}
-                                    (UGX {{ item.product.negotiated_price|floatformat:0|intcomma }} per unit)
+                                    ({{ item.product.get_currency_code }} {{ item.product.negotiated_price|floatformat:0|intcomma }} per unit)
                                 {% else %}
-                                    (UGX {{ item.product.price|floatformat:0|intcomma }} per unit)
+                                    ({{ item.product.get_currency_code }} {{ item.product.price|floatformat:0|intcomma }} per unit)
                                 {% endif %}
                             </p>
                         </div>
@@ -73,12 +73,16 @@
 
                 <div class="flex justify-between items-center mb-6">
                     <p class="text-lg font-medium text-gray-400">Subtotal:</p>
-                    <p class="text-xl font-semibold text-white">UGX {{ cart_total|floatformat:0|intcomma }}</p>
+                    <p class="text-xl font-semibold text-white">
+                        {{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0|intcomma }}
+                    </p>
                 </div>
                 
                 <div class="pt-6 border-t border-gray-700 mb-8">
                     <h2 class="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-2">Grand Total</h2>
-                    <p class="text-4xl font-extrabold text-green-400 drop-shadow-lg">UGX {{ cart_total|floatformat:0|intcomma }}</p>
+                    <p class="text-4xl font-extrabold text-green-400 drop-shadow-lg">
+                        <span class="text-lg">{{ cart.items.first.product.get_currency_code }}</span> {{ cart_total|floatformat:0|intcomma }}
+                    </p>
                 </div>
                 
                 <div class="space-y-4">
