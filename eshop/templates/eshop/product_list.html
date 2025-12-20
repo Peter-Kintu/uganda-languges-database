@@ -1,119 +1,169 @@
 {% extends "base.html" %}
 {% load static %}
 {% load cloudinary %}
-{% load humanize %} {% block title %}Explore Africana Culture – My Market{% endblock %}
+{% load humanize %}
+
+{% block title %}Explore African Heritage Marketplace{% endblock %}
 
 {% block content %}
-<div class="bg-gray-900 min-h-screen">
-    <div class="container mx-auto px-2 sm:px-4 lg:px-8 py-6">
-
-        <header class="mb-8 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-            <div class="px-6 py-5 sm:px-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="text-center sm:text-left">
-                    <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                        African Heritage Marketplace
-                    </h1>
-                    <p class="text-xs sm:text-sm text-indigo-300 font-medium opacity-80">
-                        Connecting culture with the global community.
-                    </p>
+<div class="bg-gray-50 min-h-screen">
+    <div class="bg-gray-900 sticky top-0 z-50 shadow-md">
+        <div class="container mx-auto px-4 py-3">
+            <form method="GET" action="{% url 'eshop:product_list' %}" class="flex flex-col md:flex-row gap-2">
+                <div class="flex-grow flex shadow-sm rounded-lg overflow-hidden">
+                    <div class="hidden lg:flex items-center bg-gray-100 border-r border-gray-300 px-4 text-gray-600 text-xs font-semibold cursor-pointer hover:bg-gray-200">
+                        All <svg class="w-3 h-3 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search for anything African..." 
+                           class="flex-grow py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 px-6 py-2 transition-colors">
+                        <svg class="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </button>
                 </div>
-                <div>
-                    <a href="{% url 'eshop:add_product' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
-                        + Sell a Product
+                
+                <div class="flex gap-2">
+                    <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Country" 
+                           class="w-full md:w-32 py-2 px-3 text-xs rounded-lg bg-gray-800 border border-gray-700 text-white focus:ring-1 focus:ring-indigo-400">
+                    <a href="{% url 'eshop:add_product' %}" class="whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                        Sell Now
                     </a>
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 mt-6">
+        <div class="relative bg-gradient-to-r from-indigo-900 to-purple-900 rounded-2xl p-8 sm:p-12 overflow-hidden shadow-xl">
+            <div class="relative z-10 max-w-xl">
+                <span class="text-yellow-400 font-bold tracking-widest text-xs uppercase">Curated Collections</span>
+                <h2 class="text-3xl sm:text-5xl font-black text-white mt-2 mb-4 leading-tight">Authentic African Heritage.</h2>
+                <p class="text-indigo-100 text-sm sm:text-lg mb-6 opacity-90">Support local creators and discover unique treasures from across the continent.</p>
+                <div class="flex gap-4">
+                    <button class="bg-white text-indigo-900 px-6 py-3 rounded-full font-bold text-sm shadow-lg hover:bg-indigo-50 transition-all">Shop Best Sellers</button>
+                    <button class="border border-white/30 text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-white/10 transition-all">New Arrivals</button>
+                </div>
             </div>
+            <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+        </div>
+    </div>
 
-            <div class="px-6 pb-6 sm:px-10">
-                <form method="GET" action="{% url 'eshop:product_list' %}" class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div class="relative">
-                        <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products..." 
-                               class="w-full bg-gray-900/50 border border-gray-600 text-white text-xs rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
-                    </div>
-                    
-                    <div class="relative">
-                        <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Filter by Country..." 
-                               class="w-full bg-gray-900/50 border border-gray-600 text-white text-xs rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
-                    </div>
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
+            <h3 class="text-xl font-bold text-gray-800">Recommended for you</h3>
+            <span class="text-sm text-indigo-600 font-semibold hover:underline cursor-pointer">View all results</span>
+        </div>
 
-                    <div class="relative">
-                        <input type="text" name="vendor" value="{{ vendor_query|default:'' }}" placeholder="Filter by Vendor..." 
-                               class="w-full bg-gray-900/50 border border-gray-600 text-white text-xs rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
-                    </div>
-
-                    <button type="submit" class="bg-gray-700 hover:bg-indigo-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all border border-gray-600 hover:border-indigo-500 active:scale-95">
-                        Apply Filters
-                    </button>
-                </form>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
             {% for product in products %}
-            <div class="group bg-gray-800 rounded-2xl border border-gray-700 flex flex-col hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+            <div class="group bg-white rounded-xl border border-gray-200 flex flex-col hover:shadow-xl transition-all duration-300 relative overflow-hidden">
                 
-                <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-square overflow-hidden bg-gray-900 rounded-t-2xl">
+                <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-[4/5] overflow-hidden bg-gray-50 border-b border-gray-100">
                     {% if product.video %}
-                        <video class="w-full h-full object-cover">
+                        <video class="w-full h-full object-cover" muted onmouseover="this.play()" onmouseout="this.pause()">
                             <source src="{{ product.video.url }}" type="video/mp4">
                         </video>
                     {% elif product.image %}
-                      {% cloudinary_url product.image.public_id width=400 height=400 crop='fill' as image_url %}
-                      <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105">
+                      {% cloudinary_url product.image.public_id width=400 height=500 crop='fill' as image_url %}
+                      <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
                     {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-gray-600 text-[10px] uppercase font-bold tracking-widest">No Image</div>
+                        <div class="w-full h-full flex items-center justify-center text-gray-300 text-xs font-bold uppercase tracking-widest">No Preview</div>
                     {% endif %}
                     
-                    <div class="absolute top-2 left-2">
-                        <span class="bg-gray-900/80 text-indigo-300 text-[8px] font-bold px-2 py-1 rounded-md backdrop-blur-sm border border-gray-700">
+                    <div class="absolute top-3 left-3">
+                        <span class="bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-700 shadow-sm border border-gray-100">
                             {{ product.country }}
                         </span>
                     </div>
+
+                    <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                        <span class="bg-white text-gray-900 text-[10px] font-bold py-2 px-4 rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform">Quick View</span>
+                    </div>
                 </a>
                 
-                <div class="p-3 sm:p-4 flex flex-col flex-grow">
-                    <a href="{% url 'eshop:product_detail' product.slug %}" class="block mb-1">
-                        <h3 class="text-xs sm:text-sm font-bold text-gray-100 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors">
+                <div class="p-4 flex flex-col flex-grow">
+                    <p class="text-[10px] text-indigo-600 font-bold uppercase tracking-widest mb-1">{{ product.vendor_name }}</p>
+
+                    <a href="{% url 'eshop:product_detail' product.slug %}" class="block mb-2">
+                        <h3 class="text-sm font-medium text-gray-800 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
                             {{ product.name }}
                         </h3>
                     </a>
-                    
-                    <p class="text-[10px] text-gray-500 mb-3 font-medium uppercase tracking-wider">
-                        By <span class="text-indigo-300">{{ product.vendor_name }}</span>
-                    </p>
 
+                    <div class="flex items-center mb-3">
+                        <div class="flex text-yellow-400">
+                            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                            <svg class="w-3 h-3 fill-current opacity-30" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                        </div>
+                        <span class="text-[10px] text-gray-400 ml-1">(124)</span>
+                    </div>
+                    
                     <div class="mt-auto">
-                        <div class="flex items-baseline text-green-400 mb-2">
-                            <span class="text-[9px] font-black mr-0.5 opacity-80">
-                                {{ product.get_currency_code }}
-                            </span>
-                            <span class="text-base sm:text-lg font-extrabold leading-none">
-                                {{ product.price|intcomma }}
-                            </span>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-gray-500 line-through mb-[-4px]">{{ product.get_currency_code }} {{ product.price|add:"500"|intcomma }}</span>
+                            <div class="flex items-baseline text-gray-900">
+                                <span class="text-xs font-bold mr-1">{{ product.get_currency_code }}</span>
+                                <span class="text-xl font-black">{{ product.price|intcomma }}</span>
+                            </div>
                         </div>
                         
-                        <div class="flex items-center gap-2 mt-1 min-h-[20px]">
+                        <div class="mt-2 min-h-[20px]">
                             {% if product.is_negotiable %}
-                                <span class="text-[9px] font-bold text-indigo-300 bg-indigo-900/40 px-2 py-0.5 rounded-md border border-indigo-500/30">
-                                    Negotiable
+                                <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">
+                                    Offers Welcome
                                 </span>
                             {% endif %}
                         </div>
 
-                        <div class="mt-4">
-                            <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all shadow-md active:bg-indigo-800">
-                                Add to Cart
-                            </a>
-                        </div>
+                        <a href="{% url 'eshop:add_to_cart' product.id %}" class="mt-4 w-full block text-center bg-yellow-400 hover:bg-yellow-500 text-gray-900 py-2.5 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95">
+                            Add to Cart
+                        </a>
                     </div>
                 </div>
             </div>
             {% empty %}
-            <div class="col-span-full text-center py-24 bg-gray-800 rounded-3xl border border-gray-700">
-                <p class="text-gray-500 font-medium italic">No treasures found matching your search.</p>
-                <a href="{% url 'eshop:product_list' %}" class="mt-2 inline-block text-indigo-400 font-bold hover:underline text-sm">Clear all filters</a>
+            <div class="col-span-full text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
+                <div class="mb-4 flex justify-center">
+                    <svg class="w-12 h-12 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <p class="text-gray-500 font-medium">No products found matching your criteria.</p>
+                <a href="{% url 'eshop:product_list' %}" class="mt-3 inline-block text-indigo-600 font-bold hover:underline">Clear all filters</a>
             </div>
             {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white border-t border-gray-200 mt-12 py-10">
+        <div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-indigo-50 rounded-full text-indigo-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-800 text-sm">Secure Payments</h4>
+                    <p class="text-xs text-gray-500">Encrypted transactions</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-green-50 rounded-full text-green-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-800 text-sm">Fast Delivery</h4>
+                    <p class="text-xs text-gray-500">Ships across Africa & globally</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-yellow-50 rounded-full text-yellow-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-800 text-sm">100% Authentic</h4>
+                    <p class="text-xs text-gray-500">Verified African artisans</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
