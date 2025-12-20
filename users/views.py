@@ -35,7 +35,7 @@ def robots_txt(request):
 def user_login(request):
     """Handles user login."""
     if request.user.is_authenticated:
-        return redirect('languages:browse_job_listings')
+        return redirect('eshop:product_list')
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -46,7 +46,7 @@ def user_login(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Welcome back, {user.username}!")
-                return redirect(request.POST.get('next') or reverse('users:profile')) 
+                return redirect(request.POST.get('next') or reverse('eshop:product_list')) 
             else:
                 messages.error(request, "Invalid username or password.")
         else:
