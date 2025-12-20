@@ -8,53 +8,59 @@
 {% block content %}
 <div class="bg-[#0f172a] min-h-screen text-slate-200 font-sans">
     
+    <div class="bg-slate-950 text-slate-400 text-[10px] py-1.5 px-4 hidden md:flex justify-between items-center border-b border-slate-800">
+        <div class="flex gap-4">
+            <span>Deliver to <span class="text-slate-200 font-bold">Worldwide</span></span>
+        </div>
+        <div class="flex gap-4 uppercase tracking-wider font-semibold">
+            <a href="#" class="hover:text-white transition-colors">Customer Service</a>
+            <a href="#" class="hover:text-white transition-colors">Best Sellers</a>
+            <a href="{% url 'eshop:add_product' %}" class="text-indigo-400 font-bold hover:text-indigo-300 italic">Sell on Africana</a>
+        </div>
+    </div>
+
     <header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md shadow-xl">
         <div class="container mx-auto px-4 py-3">
-            
             <div class="flex items-center justify-between gap-4 mb-3">
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
-                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                        </svg>
-                    </div>
-                    <h1 class="text-xl font-black tracking-tighter uppercase">
-                        Africana<span class="text-indigo-500">.</span>
+                <a href="{% url 'eshop:product_list' %}" class="flex items-center gap-1 group whitespace-nowrap">
+                    <h1 class="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white">
+                        Africana<span class="text-indigo-500 text-3xl">.</span>
                     </h1>
-                </div>
+                </a>
+
+                <form method="GET" action="{% url 'eshop:product_list' %}" class="hidden md:flex flex-grow max-w-2xl">
+                    <div class="flex w-full group rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 bg-slate-800 border border-slate-700 shadow-inner">
+                        <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, crafts, or heritage..." 
+                               class="w-full bg-transparent text-white text-sm py-2.5 px-4 outline-none placeholder-slate-500">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 transition-all">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </button>
+                    </div>
+                </form>
 
                 <div class="flex items-center gap-2 sm:gap-4">
-                    <a href="{% url 'eshop:add_product' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold py-2 px-4 rounded-lg transition-all active:scale-95">
+                    <a href="{% url 'eshop:add_product' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold py-2 px-4 rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
                         + Start Selling
                     </a>
                 </div>
             </div>
 
-            <form method="GET" action="{% url 'eshop:product_list' %}" class="space-y-3">
-                <div class="flex flex-col md:flex-row gap-2">
-                    <div class="flex-grow relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        </span>
-                        <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, crafts, or heritage..." 
-                               class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-500 shadow-inner">
-                    </div>
-
-                    <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-                        <div class="flex-shrink-0 w-32 md:w-40">
-                            <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Country" 
-                                   class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                        <div class="flex-shrink-0 w-32 md:w-40">
-                            <input type="text" name="vendor" value="{{ vendor_query|default:'' }}" placeholder="Vendor" 
-                                   class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                        <button type="submit" class="flex-shrink-0 bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-5 py-2 rounded-lg font-bold text-xs transition-all active:scale-95 shadow-lg shadow-yellow-500/10">
-                            Apply
-                        </button>
-                    </div>
-                </div>
+            <form method="GET" action="{% url 'eshop:product_list' %}" class="md:hidden mb-3">
+                <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products..." 
+                       class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl py-2 px-4 focus:ring-2 focus:ring-indigo-500 outline-none">
             </form>
+
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-t border-slate-800 pt-2 mt-2">
+                <form method="GET" class="flex gap-2">
+                    <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Filter by Country" 
+                           class="bg-slate-800 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-32 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <input type="text" name="vendor" value="{{ vendor_query|default:'' }}" placeholder="Filter by Vendor" 
+                           class="bg-slate-800 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-32 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-lg shadow-yellow-500/10">
+                        Apply
+                    </button>
+                </form>
+            </div>
         </div>
     </header>
 
@@ -62,30 +68,25 @@
         <div class="flex items-center justify-between mb-8">
             <h3 class="text-lg sm:text-2xl font-black text-white flex items-center gap-3">
                 <span class="w-2 h-8 bg-indigo-500 rounded-full"></span>
-                Recommendations
+                Daily Deals & Recommendations
             </h3>
-            <span class="text-xs text-slate-500 font-bold uppercase tracking-widest bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700">
-                {{ products|length }} Items
+            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700">
+                {{ products|length }} Items Found
             </span>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
             {% for product in products %}
-            <div class="group bg-slate-800/30 rounded-2xl border border-slate-800/50 hover:border-indigo-500/50 hover:bg-slate-800/60 transition-all duration-300 flex flex-col relative overflow-hidden">
+            <div class="group bg-slate-800/30 rounded-2xl border border-slate-800/50 hover:border-indigo-500/50 hover:bg-slate-800/60 transition-all duration-300 flex flex-col relative overflow-hidden shadow-lg">
                 
                 <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-[4/5] overflow-hidden bg-slate-900">
-                    {% if product.video %}
-                        <video class="w-full h-full object-cover" muted onmouseover="this.play()" onmouseout="this.pause()" loop playsinline>
-                            <source src="{{ product.video.url }}" type="video/mp4">
-                        </video>
-                    {% elif product.image %}
+                    {% if product.image %}
                       {% cloudinary_url product.image.public_id width=500 height=600 crop='fill' as image_url %}
-                      <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100">
-                    {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-slate-700 text-[10px] font-bold uppercase">No Image</div>
+                      <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100">
                     {% endif %}
                     
-                    <div class="absolute top-2 left-2">
+                    <div class="absolute top-2 left-2 flex flex-col gap-1.5">
+                        <span class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase shadow-xl">-5%</span>
                         <span class="bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded-lg text-[9px] font-bold text-indigo-300 border border-white/5">
                             {{ product.country }}
                         </span>
@@ -93,7 +94,7 @@
                 </a>
                 
                 <div class="p-3 sm:p-4 flex flex-col flex-grow">
-                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1 truncate">{{ product.vendor_name }}</p>
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1 truncate">{{ product.vendor_name|default:"Anonymous Seller" }}</p>
 
                     <a href="{% url 'eshop:product_detail' product.slug %}" class="block mb-2">
                         <h3 class="text-xs sm:text-sm font-bold text-slate-200 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors h-8 sm:h-10">
@@ -102,20 +103,30 @@
                     </a>
 
                     <div class="mt-auto">
-                        <div class="flex items-baseline gap-1">
-                            <span class="text-[10px] sm:text-xs font-bold text-emerald-500">{{ product.get_currency_code }}</span>
-                            <span class="text-lg sm:text-2xl font-black text-white tracking-tighter">{{ product.price|intcomma }}</span>
+                        <div class="space-y-0.5 mb-2">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-bold text-emerald-500">{{ product.get_currency_code|default:"KES" }}</span>
+                                <span class="text-lg sm:text-2xl font-black text-white tracking-tighter">{{ product.price|intcomma }}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 flex items-center gap-1">
+                                <span class="text-[9px]">List:</span>
+                                <span class="line-through">
+                                    {{ product.get_currency_code|default:"KES" }} 
+                                    {% widthratio product.price 100 105 %}
+                                </span>
+                            </div>
                         </div>
                         
-                        <div class="mt-2 min-h-[20px]">
+                        <div class="mt-2 min-h-[20px] flex items-center gap-2">
                             {% if product.is_negotiable %}
-                                <span class="text-[8px] sm:text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20 uppercase">
+                                <span class="text-[8px] sm:text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20 uppercase tracking-tighter">
                                     🤝 Negotiable
                                 </span>
                             {% endif %}
+                            <span class="text-[8px] text-yellow-500/70 font-bold uppercase tracking-widest">Free Shipping</span>
                         </div>
 
-                        <a href="{% url 'eshop:add_to_cart' product.id %}" class="mt-3 w-full block text-center bg-slate-700 hover:bg-indigo-600 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border border-slate-600 active:scale-95">
+                        <a href="{% url 'eshop:add_to_cart' product.id %}" class="mt-4 w-full block text-center bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border border-indigo-500/20 active:scale-95 shadow-lg shadow-indigo-600/10">
                             Add to Cart
                         </a>
                     </div>
@@ -123,33 +134,36 @@
             </div>
             {% empty %}
             <div class="col-span-full text-center py-16 bg-slate-800/10 rounded-2xl border border-dashed border-slate-800">
-                <p class="text-slate-500 text-sm">No heritage items found.</p>
+                <p class="text-slate-500 text-sm">No heritage items found matching your filters.</p>
                 <a href="{% url 'eshop:product_list' %}" class="mt-2 inline-block text-indigo-500 text-xs font-bold hover:underline">Reset Filters</a>
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <div class="bg-slate-900/50 border-t border-slate-800 py-10 mt-12">
-        <div class="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
+    <div class="bg-slate-900/50 border-t border-slate-800 py-12 mt-12">
+        <div class="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-4 gap-8 text-center sm:text-left">
             <div class="flex flex-col items-center sm:items-start gap-2">
-                <h4 class="font-bold text-white text-xs uppercase tracking-widest text-indigo-500">Secure</h4>
-                <p class="text-[10px] text-slate-500">Payments are encrypted and held in escrow.</p>
+                <h4 class="font-bold text-white text-[10px] uppercase tracking-widest text-indigo-500">Secure Payments</h4>
+                <p class="text-[10px] text-slate-500">Verified escrow protection for all orders.</p>
             </div>
             <div class="flex flex-col items-center sm:items-start gap-2">
-                <h4 class="font-bold text-white text-xs uppercase tracking-widest text-emerald-500">AI Bargain</h4>
-                <p class="text-[10px] text-slate-500">Negotiate prices directly with our AI bot.</p>
+                <h4 class="font-bold text-white text-[10px] uppercase tracking-widest text-emerald-500">AI Bargaining</h4>
+                <p class="text-[10px] text-slate-500">Negotiate prices instantly with AI-verified vendors.</p>
             </div>
             <div class="flex flex-col items-center sm:items-start gap-2">
-                <h4 class="font-bold text-white text-xs uppercase tracking-widest text-yellow-500">Global</h4>
-                <p class="text-[10px] text-slate-500">Shipping from the continent to your door.</p>
+                <h4 class="font-bold text-white text-[10px] uppercase tracking-widest text-yellow-500">World Delivery</h4>
+                <p class="text-[10px] text-slate-500">From the African continent to your doorstep.</p>
+            </div>
+            <div class="flex flex-col items-center sm:items-start gap-2 border-l border-slate-800 pl-4 hidden sm:flex">
+                <h4 class="font-bold text-white text-[10px] uppercase tracking-widest">Africana Marketplace</h4>
+                <p class="text-[9px] text-slate-600 uppercase">© 2025 African Heritage Group</p>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Professional Hide Scrollbar Utility for the filter bar */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
