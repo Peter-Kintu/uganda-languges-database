@@ -24,11 +24,8 @@
                 </div>
 
                 <div class="flex items-center gap-2 sm:gap-4">
-                    <a href="{% url 'eshop:add_product' %}" class="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors">
-                        Sell on Africana
-                    </a>
                     <a href="{% url 'eshop:add_product' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold py-2 px-4 rounded-lg transition-all active:scale-95">
-                        Start Selling
+                        + Start Selling
                     </a>
                 </div>
             </div>
@@ -39,11 +36,11 @@
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </span>
-                        <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search heritage, crafts, art..." 
+                        <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, crafts, or heritage..." 
                                class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-500 shadow-inner">
                     </div>
 
-                    <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide no-scrollbar">
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
                         <div class="flex-shrink-0 w-32 md:w-40">
                             <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Country" 
                                    class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -52,8 +49,8 @@
                             <input type="text" name="vendor" value="{{ vendor_query|default:'' }}" placeholder="Vendor" 
                                    class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 outline-none">
                         </div>
-                        <button type="submit" class="flex-shrink-0 bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-4 py-2 rounded-lg font-bold text-xs transition-all active:scale-95 shadow-lg shadow-yellow-500/10">
-                            Filter
+                        <button type="submit" class="flex-shrink-0 bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-5 py-2 rounded-lg font-bold text-xs transition-all active:scale-95 shadow-lg shadow-yellow-500/10">
+                            Apply
                         </button>
                     </div>
                 </div>
@@ -61,42 +58,20 @@
         </div>
     </header>
 
-    <div class="container mx-auto px-4 mt-6">
-        <div class="relative bg-gradient-to-r from-indigo-900 via-slate-800 to-slate-900 rounded-[2rem] p-8 sm:p-12 overflow-hidden border border-slate-700/50 shadow-2xl">
-            <div class="relative z-10 max-w-xl">
-                <div class="inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 text-[10px] font-bold uppercase tracking-widest mb-6">
-                    <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
-                    Artisan Direct
-                </div>
-                <h2 class="text-4xl md:text-6xl font-black text-white leading-[0.9] mb-4">
-                    Authentic <br><span class="text-indigo-500">Heritage.</span>
-                </h2>
-                <p class="text-slate-400 text-sm md:text-lg mb-8 max-w-sm">Shop directly from the continent's finest artisans with AI-powered price negotiation.</p>
-                <div class="flex gap-4">
-                    <button class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20">Shop Now</button>
-                    <button class="bg-slate-700/50 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all backdrop-blur-md">Learn More</button>
-                </div>
-            </div>
-            <div class="absolute right-0 bottom-0 opacity-20 pointer-events-none">
-                 <svg class="w-64 h-64 text-indigo-500" fill="currentColor" viewBox="0 0 200 200"><path d="M44.7,-76.4C58.8,-69.2,71.8,-59.1,79.6,-45.8C87.4,-32.5,90.1,-16.3,88.5,-0.9C86.9,14.4,81,28.8,72.4,41.4C63.8,54.1,52.5,65,39.3,72.4C26.1,79.8,11,83.7,-3.7,90.1C-18.3,96.5,-32.5,105.4,-45.1,101.4C-57.7,97.3,-68.7,80.3,-76,64.2C-83.3,48.1,-87,32.9,-88.9,17.7C-90.8,2.5,-91,-12.7,-85.8,-25.9C-80.6,-39.1,-70,-50.2,-57.7,-58.3C-45.4,-66.4,-31.4,-71.4,-17.1,-76.2C-2.8,-81,11.3,-85.5,27.1,-83.6C42.9,-81.7,58.8,-73.4,44.7,-76.4Z" transform="translate(100 100)" /></svg>
-            </div>
-        </div>
-    </div>
-
-    <div class="container mx-auto px-4 py-12">
-        <div class="flex items-end justify-between mb-8">
-            <div>
-                <h3 class="text-2xl font-black text-white">Recommended for you</h3>
-                <p class="text-slate-500 text-sm">Based on trending heritage crafts</p>
-            </div>
-            <div class="bg-slate-800 px-3 py-1 rounded-full text-[10px] font-bold text-slate-400 border border-slate-700 uppercase">
-                {{ products|length }} Items Found
-            </div>
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-8">
+            <h3 class="text-lg sm:text-2xl font-black text-white flex items-center gap-3">
+                <span class="w-2 h-8 bg-indigo-500 rounded-full"></span>
+                Recommendations
+            </h3>
+            <span class="text-xs text-slate-500 font-bold uppercase tracking-widest bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700">
+                {{ products|length }} Items
+            </span>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-8">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
             {% for product in products %}
-            <div class="group bg-slate-800/20 rounded-[1.5rem] border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/40 transition-all duration-500 overflow-hidden flex flex-col">
+            <div class="group bg-slate-800/30 rounded-2xl border border-slate-800/50 hover:border-indigo-500/50 hover:bg-slate-800/60 transition-all duration-300 flex flex-col relative overflow-hidden">
                 
                 <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-[4/5] overflow-hidden bg-slate-900">
                     {% if product.video %}
@@ -105,103 +80,76 @@
                         </video>
                     {% elif product.image %}
                       {% cloudinary_url product.image.public_id width=500 height=600 crop='fill' as image_url %}
-                      <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                      <img src="{{ image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-slate-700 text-[10px] font-bold uppercase">No Image</div>
                     {% endif %}
                     
-                    <div class="absolute top-3 left-3 flex flex-col gap-2">
-                        <span class="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-[10px] font-bold text-white border border-white/10">
+                    <div class="absolute top-2 left-2">
+                        <span class="bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded-lg text-[9px] font-bold text-indigo-300 border border-white/5">
                             {{ product.country }}
                         </span>
                     </div>
-
-                    <div class="absolute bottom-4 right-4 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                        <div class="bg-white text-slate-900 p-3 rounded-full shadow-2xl">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        </div>
-                    </div>
                 </a>
                 
-                <div class="p-4 sm:p-5 flex flex-col flex-grow">
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest truncate max-w-[70%]">{{ product.vendor_name }}</p>
-                        <div class="flex items-center gap-1 text-yellow-500">
-                            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                            <span class="text-[10px] text-slate-400">4.8</span>
-                        </div>
-                    </div>
+                <div class="p-3 sm:p-4 flex flex-col flex-grow">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1 truncate">{{ product.vendor_name }}</p>
 
-                    <a href="{% url 'eshop:product_detail' product.slug %}" class="block mb-4">
-                        <h3 class="text-sm sm:text-base font-bold text-white line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors h-10 sm:h-12">
+                    <a href="{% url 'eshop:product_detail' product.slug %}" class="block mb-2">
+                        <h3 class="text-xs sm:text-sm font-bold text-slate-200 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors h-8 sm:h-10">
                             {{ product.name }}
                         </h3>
                     </a>
 
                     <div class="mt-auto">
-                        <div class="flex items-baseline gap-1 mb-3">
-                            <span class="text-xs font-bold text-emerald-500">{{ product.get_currency_code }}</span>
-                            <span class="text-2xl font-black text-white tracking-tighter">{{ product.price|intcomma }}</span>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-[10px] sm:text-xs font-bold text-emerald-500">{{ product.get_currency_code }}</span>
+                            <span class="text-lg sm:text-2xl font-black text-white tracking-tighter">{{ product.price|intcomma }}</span>
                         </div>
                         
-                        <div class="flex items-center gap-2">
-                            <a href="{% url 'eshop:add_to_cart' product.id %}" class="flex-grow bg-slate-700 hover:bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-600 active:scale-95 text-center">
-                                Add to Cart
-                            </a>
+                        <div class="mt-2 min-h-[20px]">
+                            {% if product.is_negotiable %}
+                                <span class="text-[8px] sm:text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20 uppercase">
+                                    🤝 Negotiable
+                                </span>
+                            {% endif %}
                         </div>
-                        
-                        {% if product.is_negotiable %}
-                        <div class="mt-3 text-center">
-                            <span class="text-[9px] font-bold text-indigo-300/80 uppercase tracking-tighter">
-                                ✨ AI Negotiation Available
-                            </span>
-                        </div>
-                        {% endif %}
+
+                        <a href="{% url 'eshop:add_to_cart' product.id %}" class="mt-3 w-full block text-center bg-slate-700 hover:bg-indigo-600 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border border-slate-600 active:scale-95">
+                            Add to Cart
+                        </a>
                     </div>
                 </div>
             </div>
             {% empty %}
-            <div class="col-span-full text-center py-20 bg-slate-800/10 rounded-[2rem] border border-dashed border-slate-800">
-                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-600">
-                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </div>
-                <h4 class="text-white font-bold">No products found</h4>
-                <p class="text-slate-500 text-sm mt-1">Try adjusting your filters or search terms.</p>
-                <a href="{% url 'eshop:product_list' %}" class="mt-6 inline-block bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold text-xs hover:bg-indigo-500">View All Products</a>
+            <div class="col-span-full text-center py-16 bg-slate-800/10 rounded-2xl border border-dashed border-slate-800">
+                <p class="text-slate-500 text-sm">No heritage items found.</p>
+                <a href="{% url 'eshop:product_list' %}" class="mt-2 inline-block text-indigo-500 text-xs font-bold hover:underline">Reset Filters</a>
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <div class="bg-slate-900 border-t border-slate-800 py-16">
-        <div class="container mx-auto px-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                <div class="group">
-                    <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-500 border border-indigo-500/20 mb-6 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                    </div>
-                    <h4 class="text-white font-bold text-lg mb-2">Buyer Protection</h4>
-                    <p class="text-slate-500 text-sm leading-relaxed">Your funds are held in escrow until you confirm receipt of your authentic artisan product.</p>
-                </div>
-                <div class="group">
-                    <div class="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-500/20 mb-6 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <h4 class="text-white font-bold text-lg mb-2">Direct Bargaining</h4>
-                    <p class="text-slate-500 text-sm leading-relaxed">Our AI allows you to negotiate prices in real-time, just like at a traditional local market.</p>
-                </div>
-                <div class="group">
-                    <div class="w-14 h-14 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/20 mb-6 group-hover:bg-yellow-500 group-hover:text-white transition-all duration-300">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </div>
-                    <h4 class="text-white font-bold text-lg mb-2">Pan-African Logistics</h4>
-                    <p class="text-slate-500 text-sm leading-relaxed">Connecting rural artisans with global shipping partners to bring heritage to your door.</p>
-                </div>
+    <div class="bg-slate-900/50 border-t border-slate-800 py-10 mt-12">
+        <div class="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
+            <div class="flex flex-col items-center sm:items-start gap-2">
+                <h4 class="font-bold text-white text-xs uppercase tracking-widest text-indigo-500">Secure</h4>
+                <p class="text-[10px] text-slate-500">Payments are encrypted and held in escrow.</p>
+            </div>
+            <div class="flex flex-col items-center sm:items-start gap-2">
+                <h4 class="font-bold text-white text-xs uppercase tracking-widest text-emerald-500">AI Bargain</h4>
+                <p class="text-[10px] text-slate-500">Negotiate prices directly with our AI bot.</p>
+            </div>
+            <div class="flex flex-col items-center sm:items-start gap-2">
+                <h4 class="font-bold text-white text-xs uppercase tracking-widest text-yellow-500">Global</h4>
+                <p class="text-[10px] text-slate-500">Shipping from the continent to your door.</p>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Professional Hide Scrollbar Utility */
+    /* Professional Hide Scrollbar Utility for the filter bar */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
