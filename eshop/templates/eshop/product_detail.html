@@ -40,7 +40,8 @@
                     <div class="mb-6 space-y-2 p-4 bg-gray-900 rounded-xl shadow-lg border border-indigo-500/50">
                         <p class="text-xl font-bold text-green-400">
                             Current Price: 
-                            <span class="text-3xl font-extrabold text-green-400 ml-1">UGX {{ product.price|floatformat:0|intcomma }}</span>
+                            <span class="text-[14px] font-black opacity-80 uppercase">{{ product.get_currency_code }}</span>
+                            <span class="text-3xl font-extrabold text-green-400 ml-1">{{ product.price|floatformat:0|intcomma }}</span>
                         </p>
                         {% if product.is_negotiable %}
                             <p class="text-sm font-extrabold text-yellow-400 animate-pulse bg-yellow-900/20 p-2 rounded inline-block">
