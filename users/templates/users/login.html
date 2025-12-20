@@ -22,31 +22,27 @@
             <div class="grid grid-cols-2 gap-8 max-w-md mt-12 border-t border-white/10 pt-12">
                 <div>
                     <h3 class="text-indigo-400 text-[10px] uppercase tracking-widest mb-3">01 / Private AI</h3>
-                    <p class="text-gray-500 text-[11px] leading-relaxed tracking-wide">A personal intelligence that understands your career DNA and negotiates on your behalf.</p>
+                    <p class="text-gray-500 text-[11px] leading-relaxed tracking-wide">A personal intelligence that understands your career DNA.</p>
                 </div>
                 <div>
                     <h3 class="text-indigo-400 text-[10px] uppercase tracking-widest mb-3">02 / eMarket</h3>
-                    <p class="text-gray-500 text-[11px] leading-relaxed tracking-wide">Sync your TikTok. Let our AI handle the sales, negotiation, and WhatsApp logistics.</p>
+                    <p class="text-gray-500 text-[11px] leading-relaxed tracking-wide">Sync your TikTok. Let AI handle the sales and logistics.</p>
                 </div>
             </div>
-        </div>
-
-        <div class="relative z-10 hidden lg:block">
-            <p class="text-[10px] uppercase tracking-[0.4em] text-gray-600">Secure Node: 4.022.AI</p>
         </div>
     </section>
 
     <section class="lg:w-5/12 w-full bg-[#0A0A0A] flex flex-col justify-center items-center px-8 py-20 relative">
         <div class="w-full max-w-sm">
             <header class="mb-12">
-                <h2 class="text-white text-3xl font-light tracking-tight mb-2">Welcome Back</h2>
-                <p class="text-gray-500 text-xs tracking-widest uppercase">Identify yourself to the system</p>
+                <h2 class="text-white text-4xl font-light tracking-tight mb-2">Login</h2>
+                <p class="text-indigo-500 text-[10px] tracking-[0.3em] uppercase font-bold">Enter your credentials to proceed</p>
             </header>
 
             {% if messages %}
                 <div class="mb-8 space-y-2">
                     {% for message in messages %}
-                        <div class="text-[10px] uppercase tracking-widest text-indigo-400 border border-indigo-400/20 bg-indigo-400/5 py-3 px-4 rounded-sm">
+                        <div class="text-[10px] uppercase tracking-widest text-red-400 border border-red-400/20 bg-red-400/5 py-3 px-4 rounded-sm">
                             {{ message }}
                         </div>
                     {% endfor %}
@@ -61,57 +57,25 @@
                     <label for="{{ field.id_for_label }}" class="block text-[9px] uppercase tracking-[0.4em] text-gray-500 mb-2 group-focus-within:text-indigo-400 transition-all">
                         {{ field.label }}
                     </label>
-                    
                     {{ field|add_class:"w-full bg-transparent border-b border-white/10 py-4 text-white text-sm tracking-[0.1em] focus:outline-none focus:border-indigo-500 transition-all duration-700 placeholder:text-transparent" }}
-                    
-                    {% for error in field.errors %}
-                        <p class="text-[9px] text-red-500 mt-2 uppercase tracking-tighter">{{ error }}</p>
-                    {% endfor %}
                 </div>
                 {% endfor %}
 
                 <div class="pt-6">
-                    <button type="submit" class="group relative w-full h-16 bg-white overflow-hidden transition-all duration-500 hover:bg-indigo-600">
-                        <span class="relative z-10 text-[11px] uppercase tracking-[0.6em] text-black group-hover:text-white transition-colors duration-500 font-bold">
-                            Initialize Session
-                        </span>
-                        <div class="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out"></div>
+                    <button type="submit" class="w-full h-16 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all duration-300 flex items-center justify-center space-x-3 group">
+                        <span class="text-[12px] uppercase tracking-[0.4em] font-black">Login to Africana</span>
+                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>
                 </div>
             </form>
 
-            <footer class="mt-20 pt-8 border-t border-white/5 flex justify-between items-center">
-                <a href="{% url 'users:user_register' %}" class="text-[10px] uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors">
+            <footer class="mt-20 pt-8 border-t border-white/5 flex flex-col gap-4 items-center">
+                <p class="text-gray-500 text-[11px] tracking-wide">Don't have an account?</p>
+                <a href="{% url 'users:user_register' %}" class="w-full text-center py-3 border border-indigo-500/30 text-indigo-400 text-[10px] uppercase tracking-[0.2em] rounded-lg hover:bg-indigo-500 hover:text-white transition-all">
                     Create New Account
-                </a>
-                <span class="h-4 w-[1px] bg-white/10"></span>
-                <a href="#" class="text-[10px] uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors">
-                    Forgot Key?
                 </a>
             </footer>
         </div>
     </section>
 </main>
-
-<style>
-    /* Premium Font Styling */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;600&family=Playfair+Display:italic,wght@400;700&display=swap');
-    
-    body { font-family: 'Inter', sans-serif; background: #0A0A0A; }
-    .font-serif { font-family: 'Playfair Display', serif; }
-
-    /* Custom Input Resets for Dark Mode Editorial Style */
-    input:-webkit-autofill {
-        -webkit-box-shadow: 0 0 0px 1000px #0A0A0A inset !important;
-        -webkit-text-fill-color: white !important;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateX(-20px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-    .animate-fade-in {
-        animation: fadeIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-</style>
-{% endblock content %}
+{% endblock %}
