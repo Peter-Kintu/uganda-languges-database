@@ -108,7 +108,7 @@ else:
 # --- AUTHENTICATION ---
 AUTH_USER_MODEL = 'users.CustomUser' 
 LOGIN_URL = reverse_lazy('users:user_login')
-LOGIN_REDIRECT_URL = reverse_lazy('eshop:product_list')
+LOGIN_REDIRECT_URL = reverse_lazy('languages:browse_job_listings')
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

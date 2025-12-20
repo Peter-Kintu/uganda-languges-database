@@ -22,9 +22,7 @@ urlpatterns = [
          TemplateView.as_view(template_name="googled5b56ec94e5b9cb2.html")),
 
     # 1. Root URLs for languages app
-    path('', include('eshop.urls', namespace='eshop')),
-
-    path('languages/', include('languages.urls', namespace='languages')),
+    path('', include('languages.urls')), 
 
     # 2. Login Redirects
     path('accounts/login/', RedirectView.as_view(url=reverse_lazy('users:user_login')), name='accounts_login_redirect'),
