@@ -10,7 +10,7 @@
     <div class="absolute inset-0 bg-indigo-900/80 flex items-center justify-center">
         <div class="text-center text-white p-4">
             <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-3 animate-fade-in-up">
-                Share Your product, Unlock Prosperity 🌍
+                Share Your Product, Unlock Prosperity 🌍
             </h1>
             <p class="text-lg md:text-2xl font-light text-indigo-200 animate-fade-in-up delay-150">
                 List a product and connect with a global community instantly.
@@ -47,16 +47,16 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                 <div>
                     <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Price (in UGX)</label>
-                    <div class="flex items-center space-x-2 bg-gray-700 rounded-lg border border-gray-600 focus-within:ring-2 focus-within:ring-indigo-500">
-                        <span class="text-white font-bold text-lg px-3 py-3 rounded-l-lg bg-gray-900/50">UGX</span>
-                        {{ form.price|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 text-right font-extrabold border-none" }}
+                    <div class="flex items-center bg-gray-700 rounded-lg border border-gray-600 focus-within:ring-2 focus-within:ring-indigo-500 overflow-hidden">
+                        <span class="text-white font-bold text-lg px-4 py-3 bg-gray-900/50">UGX</span>
+                        {{ form.price|attr:"class:w-full px-4 py-3 bg-transparent text-gray-200 border-none focus:ring-0 text-right font-extrabold" }}
                     </div>
                     <p id="usd-conversion" class="text-sm text-green-400 mt-2 font-medium"></p>
                 </div>
 
-                <div class="flex items-center">
-                    {{ form.is_negotiable|attr:"class:h-5 w-5 text-indigo-600 border-gray-600 focus:ring-indigo-500 rounded" }}
-                    <label for="{{ form.is_negotiable.id_for_label }}" class="ml-3 text-lg text-gray-300 font-semibold">Negotiable?</label>
+                <div class="flex items-center h-full pb-3">
+                    {{ form.is_negotiable|attr:"class:h-6 w-6 text-indigo-600 border-gray-600 focus:ring-indigo-500 rounded bg-gray-700" }}
+                    <label for="{{ form.is_negotiable.id_for_label }}" class="ml-3 text-lg text-gray-300 font-semibold cursor-pointer">Negotiable?</label>
                 </div>
                 
                 <div>
@@ -69,7 +69,9 @@
                 <div>
                     <label for="{{ form.whatsapp_number.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">WhatsApp Contact</label>
                     {{ form.whatsapp_number|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"|attr:"placeholder:e.g., +256770123456" }}
-                    <p class="text-xs text-gray-500 mt-1">{{ form.whatsapp_number.help_text }}</p>
+                    {% if form.whatsapp_number.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.whatsapp_number.help_text }}</p>
+                    {% endif %}
                 </div>
 
                 <div>
@@ -132,13 +134,14 @@
 
                 if (!isNaN(value) && ugxRate) {
                     const usd = value / ugxRate;
-                    usdDisplay.textContent = `Current Price ≈ USD ${usd.toFixed(2)}`;
+                    usdDisplay.textContent = `Current Price ≈ USD ${usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                 } else {
                     usdDisplay.textContent = "";
                 }
             }
 
             priceInput.addEventListener("input", updateConversion);
+            // Run once on load in case there's an initial value (e.g., form validation failure)
             updateConversion(); 
         }
     }
