@@ -57,9 +57,9 @@ class ProductForm(forms.ModelForm):
                 'vendor_name', 
                 'whatsapp_number', 
                 'tiktok_url', 
-                'image', 
-                'language_tag',  
-                'slug', 
+                'image',
+                'country',
+                'slug'
                 ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Describe your product...'}),

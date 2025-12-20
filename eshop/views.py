@@ -57,12 +57,21 @@ def get_user_cart(request):
 # ------------------------------------
 @login_required
 def product_list(request):
-    """
-    Displays the list of products for sale.
-    """
     products = Product.objects.all().order_by('-id')
-    
-    # Ensure cart context is available for base.html
+
+    # Search and Filter Logic
+    search_query = request.GET.get('search', '').strip()
+    country_query = request.GET.get('country', '').strip()
+    vendor_query = request.GET.get('vendor', '').strip()
+
+    if search_query:
+        products = products.filter(name__icontains=search_query)
+    if country_query:
+        products = products.filter(country__icontains=country_query)
+    if vendor_query:
+        products = products.filter(vendor_name__icontains=vendor_query)
+
+    products = products.order_by('-id')
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
     
@@ -70,7 +79,11 @@ def product_list(request):
         'products': products,
         'cart': cart,
         'cart_total': cart_total,
+        'search_query': search_query,
+        'country_query': country_query,
+        'vendor_query': vendor_query,
     })
+
 
 @login_required
 def add_product(request):
@@ -91,6 +104,7 @@ def add_product(request):
     return render(request, 'eshop/add_product.html', {
         'form': form
     })
+
 
 @login_required
 def product_detail(request, slug):
@@ -694,3 +708,9 @@ def export_products_json(request):
     response = HttpResponse(data, content_type='application/json')
     response['Content-Disposition'] = 'attachment; filename="products.json"'
     return response
+
+
+
+
+
+    

@@ -34,8 +34,8 @@
                 </div>
                 
                 <div>
-                    <label for="{{ form.language_tag.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Language/Culture Tag</label>
-                    {{ form.language_tag|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"|attr:"placeholder:e.g., Luganda, Acholi" }}
+                    <label for="{{ form.country.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Country of Origin</label>
+                    {{ form.country|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"|attr:"placeholder:e.g., Uganda, Kenya" }}
                 </div>
             </div>
 
@@ -109,27 +109,8 @@
 </div>
 
 <script>
-    // Currency conversion logic (unchanged functionality)
-    const AFRICAN_CURRENCIES = {
-        "Algerian Dinar": "DZD", "Angolan Kwanza": "AOA", "Botswana Pula": "BWP",
-        "Burundian Franc": "BIF", "Cabo Verdean Escudo": "CVE", "Comorian Franc": "KMF",
-        "Congolese Franc": "CDF", "Djiboutian Franc": "DJF", "Egyptian Pound": "EGP",
-        "Eritrean Nakfa": "ERN", "Ethiopian Birr": "ETB", "Gambian Dalasi": "GMD",
-        "Ghanaian Cedi": "GHS", "Guinean Franc": "GNF", "Kenyan Shilling": "KES",
-        "Lesotho Loti": "LSL", "Liberian Dollar": "LRD", "Libyan Dinar": "LYD",
-        "Malagasy Ariary": "MGA", "Malawian Kwacha": "MWK", "Mauritanian Ouguiya": "MRU",
-        "Mauritian Rupee": "MUR", "Moroccan Dirham": "MAD", "Mozambican Metical": "MZN",
-        "Namibian Dollar": "NAD", "Nigerian Naira": "NGN", "Rwandan Franc": "RWF",
-        "São Tomé and Príncipe Dobra": "STD", "Seychellois Rupee": "SCR", "Sierra Leonean Leone": "SLL",
-        "Somali Shilling": "SOS", "South African Rand": "ZAR", "South Sudanese Pound": "SSP",
-        "Sudanese Pound": "SDG", "Swazi Lilangeni": "SZL", "Tanzanian Shilling": "TZS", 
-        "Ugandan Shilling": "UGX",
-        "Zambian Kwacha": "ZMW", "Zimbabwean Dollar": "ZWL"
-    };
-
     async function fetchRates() {
         try {
-            // Note: This API endpoint is a mock/example. A real implementation needs a secure, rate-limited exchange rate service.
             const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
             const data = await response.json();
             return data.rates;
@@ -147,7 +128,7 @@
         if (priceInput) {
             function updateConversion() {
                 const value = parseFloat(priceInput.value);
-                const ugxRate = rates["UGX"] || 3700; // Use a fallback rate if API fails
+                const ugxRate = rates["UGX"] || 3700;
 
                 if (!isNaN(value) && ugxRate) {
                     const usd = value / ugxRate;
@@ -158,7 +139,7 @@
             }
 
             priceInput.addEventListener("input", updateConversion);
-            updateConversion(); // Initial call to set the display on page load
+            updateConversion(); 
         }
     }
 
