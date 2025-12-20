@@ -46,7 +46,7 @@ def user_login(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Welcome back, {user.username}!")
-                return redirect(request.POST.get('next') or reverse('users:profile')) 
+                return redirect(request.POST.get('next') or reverse('languages:browse_job_listings')) 
             else:
                 messages.error(request, "Invalid username or password.")
         else:
@@ -58,7 +58,7 @@ def user_login(request):
 def user_register(request):
     """Handles user registration."""
     if request.user.is_authenticated:
-        return redirect('users:profile')
+        return redirect('languages:browse_job_listings')
         
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
@@ -67,7 +67,7 @@ def user_register(request):
             # Auto-login the user after registration
             login(request, user)
             messages.success(request, "Registration successful. Welcome to Career Companion!")
-            return redirect('users:profile')
+            return redirect('languages:browse_job_listings')
         else:
             # Add form errors to messages
             for field, errors in form.errors.items():
