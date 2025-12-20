@@ -4,6 +4,8 @@ from django.utils.text import slugify
 from django.conf import settings
 from cloudinary.models import CloudinaryField
 
+# --- Product Model ---
+
 class Product(models.Model):
     # Media Fields
     image = CloudinaryField('image', blank=True, null=True)
@@ -18,6 +20,15 @@ class Product(models.Model):
     slug = models.SlugField(max_length=100, unique=True, blank=True)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    # Referral System Field
+    # This allows anyone who shares the link to earn a set amount from the vendor
+    referral_commission = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="The amount the vendor pays to the person who shared the link upon a successful sale."
+    )
     
     # Currency Settings
     CURRENCY_CHOICES = [
@@ -64,15 +75,11 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         """
         Custom save method to handle unique slug generation.
-        If the slug already exists, it appends a unique suffix.
         """
         if not self.slug:
-            # Generate initial slug from name
             base_slug = slugify(self.name)
             self.slug = base_slug
             
-            # Check for uniqueness and append unique ID if slug is taken
-            # exclude(pk=self.pk) allows updating an existing product without changing its slug
             while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
                 unique_suffix = uuid.uuid4().hex[:6]
                 self.slug = f"{base_slug}-{unique_suffix}"
@@ -103,11 +110,11 @@ class Cart(models.Model):
 
     @property
     def cart_total(self):
-        """Calculates total. Note: This assumes all items are in the same currency."""
+        """Calculates total based on individual item prices."""
         return sum(item.total_price for item in self.items.all())
 
     def get_cart_currency(self):
-        """Returns the currency code of the first item in the cart as a reference."""
+        """Returns the currency code of the first item in the cart."""
         first_item = self.items.first()
         if first_item:
             return first_item.product.get_currency_code()
@@ -131,9 +138,8 @@ class CartItem(models.Model):
     def total_price(self):
         """
         Calculates price. 
-        Crucial update: Uses negotiated_price if the AI discount was accepted.
+        Uses negotiated_price (AI) if available, otherwise standard price.
         """
-        # Priority: 1. Negotiated Price (AI) -> 2. Standard Price
         base_price = self.product.negotiated_price if self.product.negotiated_price else self.product.price
             
         if base_price:

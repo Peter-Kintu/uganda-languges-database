@@ -79,27 +79,25 @@
 </div>
 
 <script>
-    // Function to get a query parameter value from the URL
+    // Get Referrer from Django Session
+    const activeReferrer = "{{ request.session.active_referrer|default:'' }}";
+
     function getQueryParam(param) {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get(param);
     }
     
-    // Set the vendor phone number from the URL into the hidden input field on page load
     document.addEventListener('DOMContentLoaded', (event) => {
         const vendorPhone = getQueryParam('vendor_phone');
         const inputField = document.getElementById('input_vendor_whatsapp');
         
         if (vendorPhone) {
-            // Clean the number before setting it
             inputField.value = vendorPhone.replace(/[^0-9+]/g, ''); 
         } else {
             console.error("Vendor phone number not found in URL query parameters.");
-            // Keep the value empty, which will trigger an alert on form submission.
         }
     });
 
-    // --- Geolocation Function (Retained) ---
     document.getElementById('locate-me-button').addEventListener('click', function() {
         const coordsDisplay = document.getElementById('selected-coords');
         const mapMessage = document.getElementById('map-message');
@@ -113,45 +111,21 @@
                 function(position) {
                     const lat = position.coords.latitude.toFixed(4);
                     const lng = position.coords.longitude.toFixed(4);
-
-                    // 1. Update form inputs
                     latInput.value = lat;
                     lngInput.value = lng;
-
-                    // 2. Update display
                     coordsDisplay.textContent = `Lat: ${lat}, Lng: ${lng}`;
-                    
-                    // 3. Update map placeholder message
-                    mapMessage.innerHTML = `✅ **GPS Location Found!** You can still adjust the address details on the right, but the coordinates (${lat}, ${lng}) are ready to go.`;
+                    mapMessage.innerHTML = `✅ **GPS Location Found!** You are ready to proceed.`;
                 },
                 function(error) {
-                    let errorMessage = 'Location service denied or failed.';
-                    if (error.code === error.PERMISSION_DENIED) {
-                        errorMessage = '🛑 Permission Denied. Please enable location services for this browser/site.';
-                    } else if (error.code === error.POSITION_UNAVAILABLE) {
-                        errorMessage = '🛰️ Location unavailable. Try moving to an open area.';
-                    } else if (error.code === error.TIMEOUT) {
-                        errorMessage = 'Slow connection. Location request timed out.';
-                    }
-
                     coordsDisplay.textContent = 'Lat: 0.0000, Lng: 0.0000';
-                    mapMessage.innerHTML = `**Location Error:** ${errorMessage}`;
+                    mapMessage.innerHTML = `**Location Error:** GPS signal failed.`;
                 },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
-                }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
-        } else {
-            coordsDisplay.textContent = 'Lat: 0.0000, Lng: 0.0000';
-            mapMessage.innerHTML = 'Your browser does not support Geolocation.';
         }
     });
 
-    // --- New Automatic WhatsApp Redirect Logic (UPDATED) ---
     document.getElementById('delivery-form').addEventListener('submit', function(event) {
-        // Prevent the default form submission (which posts to the backend URL)
         event.preventDefault();
 
         const lat = document.getElementById('input_latitude').value;
@@ -159,41 +133,32 @@
         const address = document.getElementById('address').value;
         const city = document.getElementById('city').value;
         const phone = document.getElementById('phone').value;
-        
-        // Retrieve vendor phone number from the hidden input
         const vendorPhoneNumber = document.getElementById('input_vendor_whatsapp').value; 
 
-        // Basic validation check
         if (address === '' || city === '' || phone === '' || lat === '0.0000') {
-            alert('Please fill in the Street Address, City, Contact Phone, and use the "Use My Current GPS Location" button.');
+            alert('Please fill in all details and pinpoint your GPS location.');
             return;
         }
 
-        // Add validation for the vendor number
-        if (vendorPhoneNumber === '') {
-            alert('Error: Vendor contact information is missing. Cannot proceed with delivery. Please return to the product page.');
-            return;
-        }
-
-        // Construct the message with all delivery details and a direct Google Maps link
-        const messageContent = `*NEW DELIVERY ORDER (Automatic WhatsApp Link)*\n\n` +
+        // Referral logic: Construct message content
+        let messageContent = `*NEW DELIVERY ORDER (Africana Market)*\n\n` +
                             `*Delivery Address:* ${address}, ${city}\n` +
                             `*Contact Phone (Customer):* ${phone}\n` +
                             `*GPS Coordinates:* Lat: ${lat}, Lng: ${lng}\n` +
-                            `*Google Maps Link:* https://maps.google.com/?q=${lat},${lng}\n\n` +
-                            `Please confirm order details and arrange delivery. Thank you!`;
+                            `*Google Maps Link:* https://www.google.com/maps?q=${lat},${lng}\n`;
 
-        // Encode the message to be safely included in the URL
+        // Add Referrer if exists
+        if (activeReferrer !== '') {
+            messageContent += `\n*Referrer to Payout:* @${activeReferrer}\n`;
+        }
+
+        messageContent += `\nPlease confirm order details and arrange delivery. Thank you!`;
+
         const message = encodeURIComponent(messageContent);
-        
-        // Remove non-numeric characters (except '+') from the number for wa.me link for safety
         const cleanVendorPhoneNumber = vendorPhoneNumber.replace(/[\s+-]/g, '');
-        
         const whatsappUrl = `https://wa.me/${cleanVendorPhoneNumber}?text=${message}`;
 
-        // Redirect the user automatically to the vendor's WhatsApp chat
         window.location.href = whatsappUrl;
-        
     });
 </script>
 {% endblock %}

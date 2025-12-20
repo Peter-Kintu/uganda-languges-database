@@ -29,18 +29,18 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Name</label>
-                    {{ form.name|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"|attr:"placeholder:e.g., Hand-carved Luganda Drum" }}
+                    {{ form.name|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder:e.g., Hand-carved Luganda Drum" }}
                 </div>
                 
                 <div>
                     <label for="{{ form.country.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Country of Origin</label>
-                    {{ form.country|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"|attr:"placeholder:e.g., Uganda, Kenya" }}
+                    {{ form.country|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder:e.g., Uganda, Kenya" }}
                 </div>
             </div>
 
             <div>
                 <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Description</label>
-                {{ form.description|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500 h-32" }}
+                {{ form.description|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 h-32" }}
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -63,6 +63,28 @@
                 </div>
             </div>
 
+            <div class="p-6 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl mt-4">
+                <div class="flex items-center mb-4">
+                    <span class="text-2xl mr-3">🤝</span>
+                    <h3 class="text-xl font-bold text-indigo-300">Referral Program</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.referral_commission.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Referrer Payout (Commission)</label>
+                        <div class="flex items-center bg-gray-700 rounded-lg border border-gray-600 focus-within:ring-2 focus-within:ring-indigo-500 overflow-hidden">
+                            <span class="currency-symbol-sync text-white font-bold text-lg px-4 py-3 bg-gray-900/50">UGX</span>
+                            {{ form.referral_commission|attr:"class:w-full px-4 py-3 bg-transparent text-gray-200 border-none focus:ring-0 text-right font-bold" }}
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2 italic">Amount you will pay anyone who refers a buyer to this product.</p>
+                    </div>
+                    <div class="flex items-center">
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            Encourage others to share your link! When a sale is completed, you agree to pay this amount to the person who shared the link.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div class="text-right">
                 <p id="usd-conversion" class="text-sm text-green-400 font-medium"></p>
             </div>
@@ -70,19 +92,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                 <div>
                     <label for="{{ form.vendor_name.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Your Vendor Name</label>
-                    {{ form.vendor_name|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500" }}
+                    {{ form.vendor_name|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200" }}
                 </div>
 
                 <div>
                     <label for="{{ form.whatsapp_number.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">WhatsApp Contact</label>
-                    {{ form.whatsapp_number|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500" }}
+                    {{ form.whatsapp_number|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200" }}
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="{{ form.tiktok_url.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">TikTok Video URL (Optional)</label>
-                    {{ form.tiktok_url|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500" }}
+                    {{ form.tiktok_url|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200" }}
                 </div>
                 <div>
                     <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Image/Media</label>
@@ -129,14 +151,14 @@
         const priceInput = document.getElementById("id_price");
         const currencySelect = document.getElementById("id_currency");
         const usdDisplay = document.getElementById("usd-conversion");
-        const symbolDisplay = document.getElementById("currency-symbol-display");
+        const symbolDisplays = document.querySelectorAll(".currency-symbol-sync, #currency-symbol-display");
 
         if (priceInput && currencySelect && rates) {
             function updateConversion() {
                 const value = parseFloat(priceInput.value);
                 const selectedCurrency = currencySelect.value;
                 
-                symbolDisplay.textContent = selectedCurrency;
+                symbolDisplays.forEach(el => el.textContent = selectedCurrency);
 
                 if (!isNaN(value)) {
                     if (selectedCurrency === 'USD') {
