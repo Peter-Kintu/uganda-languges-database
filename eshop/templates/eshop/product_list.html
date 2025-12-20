@@ -8,74 +8,82 @@
 {% block content %}
 <div class="bg-gray-900 min-h-screen text-gray-100">
     
-    <header class="bg-gray-800/50 border-b border-gray-700 sticky top-0 z-50 backdrop-blur-md">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex flex-col lg:flex-row items-center justify-between gap-4 mb-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-indigo-600 p-2 rounded-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+    <header class="bg-gray-800/80 border-b border-gray-700 sticky top-0 z-50 backdrop-blur-xl">
+        <div class="container mx-auto px-4 py-3">
+            
+            <div class="flex items-center justify-between gap-4 mb-4">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="bg-indigo-600 p-1.5 sm:p-2 rounded-lg shrink-0">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
                     </div>
-                    <h1 class="text-xl font-black tracking-tighter uppercase">Africana <span class="text-indigo-500">Market</span></h1>
+                    <h1 class="text-lg sm:text-xl font-black tracking-tighter uppercase whitespace-nowrap">
+                        Africana <span class="text-indigo-500">Market</span>
+                    </h1>
                 </div>
-                <a href="{% url 'eshop:add_product' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-6 rounded-full transition-all shadow-lg active:scale-95">
-                    + Start Selling
+                
+                <a href="{% url 'eshop:add_product' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-xs font-bold py-2 px-4 sm:px-6 rounded-full transition-all shadow-lg active:scale-95 whitespace-nowrap">
+                    + <span class="hidden sm:inline">Start</span> Selling
                 </a>
             </div>
 
-            <form method="GET" action="{% url 'eshop:product_list' %}" class="grid grid-cols-1 md:grid-cols-4 gap-2">
-                <div class="relative group">
-                    <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products..." 
-                           class="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
-                </div>
-                
-                <div class="relative">
-                    <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Country..." 
-                           class="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
-                </div>
+            <form method="GET" action="{% url 'eshop:product_list' %}" class="flex flex-col gap-2">
+                <div class="grid grid-cols-12 gap-2">
+                    <div class="col-span-12 md:col-span-5 relative group">
+                        <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products..." 
+                               class="w-full bg-gray-900/50 border border-gray-700 text-white text-sm rounded-xl py-2 px-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-gray-500">
+                    </div>
+                    
+                    <div class="col-span-6 md:col-span-2 relative">
+                        <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Country" 
+                               class="w-full bg-gray-900/50 border border-gray-700 text-white text-sm rounded-xl py-2 px-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-gray-500">
+                    </div>
 
-                <div class="relative">
-                    <input type="text" name="vendor" value="{{ vendor_query|default:'' }}" placeholder="Vendor..." 
-                           class="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
-                </div>
+                    <div class="col-span-6 md:col-span-2 relative">
+                        <input type="text" name="vendor" value="{{ vendor_query|default:'' }}" placeholder="Vendor" 
+                               class="w-full bg-gray-900/50 border border-gray-700 text-white text-sm rounded-xl py-2 px-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-gray-500">
+                    </div>
 
-                <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-sm font-black py-2.5 px-4 rounded-xl transition-all shadow-md active:scale-95">
-                    Apply Filters
-                </button>
+                    <button type="submit" class="col-span-12 md:col-span-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-xs sm:text-sm font-black py-2 px-4 rounded-xl transition-all shadow-md active:scale-95">
+                        Apply Filters
+                    </button>
+                </div>
             </form>
         </div>
     </header>
 
-    <div class="container mx-auto px-4 mt-8">
-        <div class="relative bg-gradient-to-br from-indigo-900 via-gray-800 to-gray-900 rounded-3xl p-8 overflow-hidden border border-gray-700 shadow-2xl">
-            <div class="relative z-10 max-w-2xl">
-                <span class="text-indigo-400 font-bold tracking-widest text-[10px] uppercase bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Marketplace Exclusive</span>
-                <h2 class="text-4xl md:text-5xl font-black text-white mt-4 mb-4 leading-none">Heritage is <br><span class="text-indigo-500">Handmade.</span></h2>
-                <p class="text-gray-400 text-sm md:text-base mb-6 max-w-md">Discover authentic crafts directly from local artisans across the continent.</p>
-                <div class="flex gap-3">
-                    <button class="bg-white text-gray-900 px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-gray-200 transition-all">Trending Now</button>
-                    <button class="bg-gray-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-gray-600 transition-all">New Arrivals</button>
+    <div class="container mx-auto px-4 mt-6">
+        <div class="relative bg-gradient-to-br from-indigo-900 via-gray-800 to-gray-900 rounded-2xl p-6 sm:p-10 overflow-hidden border border-gray-700 shadow-2xl">
+            <div class="relative z-10 max-w-2xl text-center sm:text-left">
+                <span class="text-indigo-400 font-bold tracking-widest text-[9px] uppercase bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Marketplace Exclusive</span>
+                <h2 class="text-3xl md:text-5xl font-black text-white mt-4 mb-3 leading-tight">Heritage is <br class="hidden sm:block"><span class="text-indigo-500">Handmade.</span></h2>
+                <p class="text-gray-400 text-xs md:text-base mb-6 max-w-md mx-auto sm:mx-0">Discover authentic crafts directly from local artisans across the continent.</p>
+                <div class="flex justify-center sm:justify-start gap-3">
+                    <button class="bg-white text-gray-900 px-4 py-2 rounded-lg font-bold text-[10px] sm:text-xs hover:bg-gray-200 transition-all">Trending</button>
+                    <button class="bg-gray-700 text-white px-4 py-2 rounded-lg font-bold text-[10px] sm:text-xs hover:bg-gray-600 transition-all">New Arrivals</button>
                 </div>
             </div>
-            <div class="absolute -right-10 -top-10 w-64 h-64 bg-indigo-600/20 rounded-full blur-[100px]"></div>
+            <div class="absolute -right-10 -top-10 w-48 h-48 sm:w-64 sm:h-64 bg-indigo-600/10 rounded-full blur-[80px]"></div>
         </div>
     </div>
 
-    <div class="container mx-auto px-4 py-12">
-        <div class="flex items-center justify-between mb-8">
-            <h3 class="text-lg font-bold text-white flex items-center gap-2 uppercase tracking-wider">
-                <span class="w-8 h-[2px] bg-indigo-500"></span>
+    <div class="container mx-auto px-4 py-8 sm:py-12">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-sm sm:text-lg font-bold text-white flex items-center gap-2 uppercase tracking-wider">
+                <span class="w-4 sm:w-8 h-[2px] bg-indigo-500"></span>
                 Recommendations
             </h3>
-            <span class="text-xs text-gray-500 font-medium">{{ products|length }} items found</span>
+            <span class="text-[10px] sm:text-xs text-gray-500 font-medium">{{ products|length }} items</span>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
             {% for product in products %}
-            <div class="group bg-gray-800/40 rounded-2xl border border-gray-700/50 flex flex-col hover:border-indigo-500/50 hover:bg-gray-800 transition-all duration-300 relative overflow-hidden">
+            <div class="group bg-gray-800/40 rounded-xl sm:rounded-2xl border border-gray-700/50 flex flex-col hover:border-indigo-500/50 hover:bg-gray-800 transition-all duration-300 relative overflow-hidden">
                 
                 <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-[4/5] overflow-hidden bg-gray-900 border-b border-gray-700/30">
                     {% if product.video %}
-                        <video class="w-full h-full object-cover" muted onmouseover="this.play()" onmouseout="this.pause()" loop>
+                        <video class="w-full h-full object-cover" muted onmouseover="this.play()" onmouseout="this.pause()" loop playsinline>
                             <source src="{{ product.video.url }}" type="video/mp4">
                         </video>
                     {% elif product.image %}
@@ -85,86 +93,79 @@
                         <div class="w-full h-full flex items-center justify-center text-gray-700 text-[10px] font-bold uppercase">No Image</div>
                     {% endif %}
                     
-                    <div class="absolute top-3 left-3">
-                        <span class="bg-gray-900/80 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-indigo-300 border border-white/10">
+                    <div class="absolute top-2 left-2">
+                        <span class="bg-gray-900/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold text-indigo-300 border border-white/10">
                             {{ product.country }}
                         </span>
                     </div>
-
-                    <div class="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                        <div class="bg-indigo-600 text-white text-[10px] font-black py-2 rounded-lg text-center shadow-xl">VIEW DETAILS</div>
-                    </div>
                 </a>
                 
-                <div class="p-4 flex flex-col flex-grow">
-                    <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">{{ product.vendor_name }}</p>
+                <div class="p-3 sm:p-4 flex flex-col flex-grow">
+                    <p class="text-[8px] sm:text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 truncate">{{ product.vendor_name }}</p>
 
                     <a href="{% url 'eshop:product_detail' product.slug %}" class="block mb-2">
-                        <h3 class="text-sm font-bold text-gray-200 line-clamp-2 leading-snug group-hover:text-indigo-400 transition-colors">
+                        <h3 class="text-xs sm:text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors h-8 sm:h-10">
                             {{ product.name }}
                         </h3>
                     </a>
 
-                    <div class="flex items-center mb-3">
-                        <div class="flex text-yellow-500">
-                            {% for i in "12345" %}
-                            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                            {% endfor %}
-                        </div>
-                        <span class="text-[10px] text-gray-500 ml-2">(4.9)</span>
-                    </div>
-                    
                     <div class="mt-auto">
                         <div class="flex items-baseline gap-1">
-                            <span class="text-xs font-bold text-green-500">{{ product.get_currency_code }}</span>
-                            <span class="text-2xl font-black text-white tracking-tighter">{{ product.price|intcomma }}</span>
+                            <span class="text-[10px] sm:text-xs font-bold text-green-500">{{ product.get_currency_code }}</span>
+                            <span class="text-lg sm:text-2xl font-black text-white tracking-tighter">{{ product.price|intcomma }}</span>
                         </div>
                         
-                        <div class="mt-2 min-h-[22px]">
+                        <div class="mt-1 min-h-[18px]">
                             {% if product.is_negotiable %}
-                                <span class="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-md border border-indigo-500/20 uppercase">
+                                <span class="text-[8px] sm:text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 uppercase">
                                     🤝 Negotiable
                                 </span>
                             {% endif %}
                         </div>
 
-                        <a href="{% url 'eshop:add_to_cart' product.id %}" class="mt-4 w-full block text-center bg-gray-700 hover:bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold transition-all border border-gray-600 active:scale-95">
+                        <a href="{% url 'eshop:add_to_cart' product.id %}" class="mt-3 w-full block text-center bg-gray-700 hover:bg-indigo-600 text-white py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all border border-gray-600 active:scale-95">
                             Add to Cart
                         </a>
                     </div>
                 </div>
             </div>
             {% empty %}
-            <div class="col-span-full text-center py-24 bg-gray-800/20 rounded-3xl border border-dashed border-gray-700">
-                <p class="text-gray-500 font-medium">No results found. Try adjusting your search or filters.</p>
-                <a href="{% url 'eshop:product_list' %}" class="mt-4 inline-block text-indigo-500 font-bold hover:underline">Reset Filters</a>
+            <div class="col-span-full text-center py-16 bg-gray-800/20 rounded-2xl border border-dashed border-gray-700">
+                <p class="text-gray-500 text-sm">No results found.</p>
+                <a href="{% url 'eshop:product_list' %}" class="mt-2 inline-block text-indigo-500 text-xs font-bold hover:underline">Reset Filters</a>
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <div class="bg-gray-800/30 border-t border-gray-800 py-12">
-        <div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="flex flex-col items-center text-center">
-                <div class="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center mb-4 text-indigo-500 border border-indigo-500/20">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+    <div class="bg-gray-800/30 border-t border-gray-800 py-8 sm:py-12">
+        <div class="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+            <div class="flex flex-row sm:flex-col items-center gap-4 sm:text-center">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-500 border border-indigo-500/20 shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 </div>
-                <h4 class="font-bold text-white text-sm">Secure Transactions</h4>
-                <p class="text-xs text-gray-500 mt-1">Industry-standard encryption</p>
+                <div>
+                    <h4 class="font-bold text-white text-xs sm:text-sm">Secure Checkout</h4>
+                    <p class="text-[10px] text-gray-500">Encrypted payments</p>
+                </div>
             </div>
-            <div class="flex flex-col items-center text-center">
-                <div class="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mb-4 text-green-500 border border-green-500/20">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <div class="flex flex-row sm:flex-col items-center gap-4 sm:text-center">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 border border-green-500/20 shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
-                <h4 class="font-bold text-white text-sm">AI-Powered Bargaining</h4>
-                <p class="text-xs text-gray-500 mt-1">Negotiate directly for best prices</p>
+                <div>
+                    <h4 class="font-bold text-white text-xs sm:text-sm">AI Bargaining</h4>
+                    <p class="text-[10px] text-gray-500">Get the best price</p>
+                </div>
             </div>
-            <div class="flex flex-col items-center text-center">
-                <div class="w-12 h-12 bg-yellow-500/10 rounded-full flex items-center justify-center mb-4 text-yellow-500 border border-yellow-500/20">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+            <div class="flex flex-row sm:flex-col items-center gap-4 sm:text-center">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-500/10 rounded-full flex items-center justify-center text-yellow-500 border border-yellow-500/20 shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                 </div>
-                <h4 class="font-bold text-white text-sm">Pan-African Shipping</h4>
-                <p class="text-xs text-gray-500 mt-1">Connecting artisans to the globe</p>
+                <div>
+                    <h4 class="font-bold text-white text-xs sm:text-sm">Global Shipping</h4>
+                    <p class="text-[10px] text-gray-500">From Africa to you</p>
+                </div>
             </div>
         </div>
     </div>
