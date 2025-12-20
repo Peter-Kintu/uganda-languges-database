@@ -49,7 +49,7 @@
                 </div>
             {% endif %}
 
-            <form method="post" class="space-y-10">
+            <form method="post" class="space-y-8">
                 {% csrf_token %}
 
                 {% for field in form %}
@@ -61,19 +61,24 @@
                 </div>
                 {% endfor %}
 
-                <div class="pt-6">
+                <div class="pt-6 space-y-6">
                     <button type="submit" class="w-full h-16 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all duration-300 flex items-center justify-center space-x-3 group">
                         <span class="text-[12px] uppercase tracking-[0.4em] font-black">Login to Africana</span>
                         <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>
+
+                    <div class="text-center">
+                        <span class="text-gray-500 text-[10px] uppercase tracking-widest">New to the smart world?</span>
+                        <a href="{% url 'users:user_register' %}" class="block mt-2 text-indigo-400 hover:text-white text-[11px] font-bold uppercase tracking-[0.2em] transition-all">
+                            Create New Account →
+                        </a>
+                    </div>
                 </div>
             </form>
 
-            <footer class="mt-20 pt-8 border-t border-white/5 flex flex-col gap-4 items-center">
-                <p class="text-gray-500 text-[11px] tracking-wide">Don't have an account?</p>
-                <a href="{% url 'users:user_register' %}" class="w-full text-center py-3 border border-indigo-500/30 text-indigo-400 text-[10px] uppercase tracking-[0.2em] rounded-lg hover:bg-indigo-500 hover:text-white transition-all">
-                    Create New Account
-                </a>
+            <footer class="mt-24 pt-8 border-t border-white/5 flex justify-between items-center opacity-40 hover:opacity-100 transition-opacity">
+                <a href="#" class="text-[9px] uppercase tracking-[0.2em] text-gray-500 hover:text-white">Security Protocol</a>
+                <a href="#" class="text-[9px] uppercase tracking-[0.2em] text-gray-500 hover:text-white">Forgot Access Key?</a>
             </footer>
         </div>
     </section>
