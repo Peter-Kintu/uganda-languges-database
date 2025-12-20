@@ -20,6 +20,24 @@ class Product(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    country = models.CharField(max_length=50)
+
+    def get_currency_code(self):
+        """Maps the country field to its official currency code."""
+        currency_map = {
+            'Uganda': 'UGX',
+            'Kenya': 'KES',
+            'Tanzania': 'TZS',
+            'Rwanda': 'RWF',
+            'Nigeria': 'NGN',
+            'Ghana': 'GHS',
+            'South Africa': 'ZAR',
+            'Egypt': 'EGP',
+            'Zimbabwe': 'USD',  # Zimbabwe uses USD and ZiG
+            'USA': 'USD',
+        }
+        # Returns the code for the country, or 'UGX' as a safe default
+        return currency_map.get(self.country, 'UGX')
     is_negotiable = models.BooleanField(default=False)
     vendor_name = models.CharField(max_length=100, default='Anonymous Seller')
     
