@@ -18,9 +18,11 @@ import os
 # ------------------------------------
 
 def google_verification(request):
+    """Verifies site ownership for Google Search Console."""
     return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
 
 def robots_txt(request):
+    """Generates robots.txt for search engine crawlers."""
     lines = [
         "User-agent: *",
         "allow:",
@@ -51,8 +53,24 @@ def get_user_cart(request):
 # ------------------------------------
 # E-Shop Core Views
 # ------------------------------------
+# assuming you already have this helper
+
 @login_required
 def product_list(request):
+    # Capture and validate referrer
+    referrer = request.GET.get('ref')
+    if referrer:
+        try:
+            # Ensure referrer exists in User model
+            ref_user = User.objects.get(username=referrer)
+            # Prevent self-referral
+            if request.user.username != ref_user.username:
+                request.session['active_referrer'] = ref_user.username
+        except User.DoesNotExist:
+            # Ignore invalid referrer
+            request.session.pop('active_referrer', None)
+
+    """Lists all available products with search and filtering capabilities."""
     products = Product.objects.all().order_by('-id')
 
     # Search and Filter Logic
@@ -70,7 +88,7 @@ def product_list(request):
     products = products.order_by('-id')
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
-    
+
     return render(request, 'eshop/product_list.html', {
         'products': products,
         'cart': cart,
@@ -82,9 +100,7 @@ def product_list(request):
 
 @login_required
 def add_product(request):
-    """
-    Handles the form for adding a new product.
-    """
+    """Handles the form for vendors to add a new product."""
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
@@ -102,9 +118,7 @@ def add_product(request):
 
 @login_required
 def product_detail(request, slug):
-    """
-    Displays the details of a single product.
-    """
+    """Displays detailed information for a specific product."""
     product = get_object_or_404(Product, slug=slug)
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
@@ -117,9 +131,7 @@ def product_detail(request, slug):
     
 @login_required
 def add_to_cart(request, product_id):
-    """
-    Adds a product to the user's cart.
-    """
+    """Adds a specific product to the user's active shopping cart."""
     product = get_object_or_404(Product, id=product_id)
     cart = get_user_cart(request)
     
@@ -143,9 +155,7 @@ def add_to_cart(request, product_id):
 
 @login_required
 def view_cart(request):
-    """
-    Displays the user's shopping cart contents.
-    """
+    """Renders the shopping cart page."""
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
 
@@ -156,9 +166,7 @@ def view_cart(request):
 
 @login_required
 def remove_from_cart(request, item_id):
-    """
-    Removes a specific item from the cart.
-    """
+    """Removes an item entry from the user's cart."""
     cart = get_user_cart(request)
     try:
         item = CartItem.objects.get(id=item_id, cart=cart)
@@ -172,9 +180,7 @@ def remove_from_cart(request, item_id):
 
 @login_required
 def checkout_view(request):
-    """
-    Displays the checkout page for order confirmation.
-    """
+    """Prepares the order summary for final user confirmation."""
     cart = get_user_cart(request)
     if not cart.items.exists():
         messages.error(request, "Your cart is empty. Please add items to proceed to checkout.")
@@ -208,10 +214,12 @@ def checkout_view(request):
 
 @login_required
 def delivery_location_view(request):
+    """Renders the map view for selecting a delivery location."""
     return render(request, 'eshop/delivery_location.html')
 
 @login_required
 def process_delivery_location(request):
+    """Processes and saves delivery details into the session."""
     if request.method == 'POST':
         address = request.POST.get('address_line1', '').strip()
         city = request.POST.get('city', '').strip()
@@ -235,6 +243,7 @@ def process_delivery_location(request):
 
 @login_required
 def confirm_order_whatsapp(request):
+    """Finalizes order, clears cart, and redirects user to WhatsApp with order details."""
     cart = get_user_cart(request)
     delivery_details = request.session.pop('delivery_details', None) 
     
@@ -279,6 +288,7 @@ def confirm_order_whatsapp(request):
     message = "\n".join(lines)
     whatsapp_url = f"https://wa.me/{vendor_phone}?text={quote(message)}"
 
+    # Clear Cart and Mark as Inactive
     cart.items.all().delete()
     cart.is_active = False
     cart.save()
@@ -289,6 +299,7 @@ def confirm_order_whatsapp(request):
 # ------------------------------------
 
 def round_price(price, product_price_ref):
+    """Rounds prices based on magnitude for localized currency standards (e.g., UGX)."""
     price = price.quantize(Decimal('0.00')) 
     if product_price_ref >= Decimal('100000'):
          return Decimal(round(price / Decimal('1000')) * Decimal('1000'))
@@ -298,6 +309,7 @@ def round_price(price, product_price_ref):
          return price.quantize(Decimal('0.00')) 
 
 def is_luganda(text):
+    """Simple keyword-based detection for Luganda language."""
     text_lower = text.lower()
     luganda_keywords = [
         'nsaba', 'nzikiriza', 'ogulire', 'kikula', 'kitono', 'wansi',
@@ -309,15 +321,16 @@ def is_luganda(text):
     return False
 
 def get_luganda_response(stage, price_str, curr, offer_text="omusaala gwo"):
+    """Provides translated Luganda strings for the AI negotiator."""
     if stage == 'accept':
         return f"Wewawo! **{curr} {price_str}** tukoze endagaano. Twagasseeko ogubadde ogw'oluvannyuma. Kanda ku 'Lock In' wansi ofune eky'omuzingo kino. 🎉"
     elif stage == 'final_floor_rejection':
         return f"Mpulidde {offer_text}, naye nsonyiwa, **{curr} {price_str}** ogwo gwe musaala ogw'oluvannyuma nzekka gwe nsobola okuwa. Fuba okutuukirira. 🤝"
-    elif stage == 'initial_ask_counter': # 98%
+    elif stage == 'initial_ask_counter': 
         return f"Mpulidde ekirowoozo kyo. Okusooka, nina okuwa **{curr} {price_str}** (ekya 2% kiggyiddwako). Kiki eky'oluvannyuma ky’olina okuwa?"
-    elif stage == 'mid_ask_counter': # 95%
+    elif stage == 'mid_ask_counter':
         return f"Kuba nti obadde osaba, nkukendeezezzaako ku **{curr} {price_str}** (ekya 5% kiggyiddwako). Oli kumpi n'omusaala ogw'oluvannyuma. Wandiwadde omuwendo ogusinga guno?"
-    elif stage == 'final_ask_counter': # 90%
+    elif stage == 'final_ask_counter':
         return f"Kino kye kiggya eky'oluvannyuma! Omuwendo ogusembayo gw'oyinza okufuna gwe **{curr} {price_str}** (ekya 10% kiggyiddwako). Gwe musaala ogw'oluvannyuma. Nzikiriza?"
     elif stage == 'too_low_initial_counter':
         return f"Nsonyiwa, {offer_text} guli wansi nnyo. Kyokka, nina okutandikira ku **{curr} {price_str}** (2% off) okutandika endagaano. Fuba okukuwa omuwendo ogusinga."
@@ -336,6 +349,7 @@ def get_luganda_response(stage, price_str, curr, offer_text="omusaala gwo"):
     return "Error in translation simulation."
 
 def get_gemini_negotiation_response(request, product, user_message, chat_history):
+    """Main negotiation engine handling logic for price drops and deal closures."""
     product_price = product.price
     curr = product.get_currency_code()
     lang_key = f'negotiation_language_{product.slug}'
@@ -372,7 +386,7 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
         }
         return eng_responses.get(stage_key, "An internal error occurred.")
 
-    # Fixed floors
+    # Thresholds and Floors
     VENDOR_MIN_ENGAGEMENT = product_price * Decimal('0.70')
     FINAL_FLOOR = round_price(product_price * Decimal('0.90'), product_price)
     STAGE_TWO_PRICE = round_price(product_price * Decimal('0.95'), product_price)
@@ -396,6 +410,7 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
                 val = re.sub(r'[^\d]', '', val)
                 offer = Decimal(val).quantize(Decimal('0'))
             
+            # Smart correction for abbreviated large numbers (e.g., "50" for "50,000")
             if offer < Decimal('10000') and product_price >= Decimal('100000'):
                  if offer * Decimal('1000') >= product_price * Decimal('0.5'):
                      offer *= Decimal('1000')
@@ -455,10 +470,12 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
         return generate_response('final_floor_rejection', FINAL_FLOOR, raw_offer_text)
 
 def get_ai_response(request, product, user_message, chat_history):
+    """Wrapper function to trigger the AI negotiation response."""
     return get_gemini_negotiation_response(request, product, user_message, chat_history)
 
 @login_required
 def ai_negotiation_view(request, slug):
+    """View to handle the chat interface for AI price negotiation."""
     product = get_object_or_404(Product, slug=slug)
     curr = product.get_currency_code()
     if not product.is_negotiable:
@@ -490,10 +507,13 @@ def ai_negotiation_view(request, slug):
 
 @login_required
 def accept_negotiated_price(request, slug):
+    """Confirms the negotiated price, updates the cart item, and cleans up session data."""
     product = get_object_or_404(Product, slug=slug)
     curr = product.get_currency_code()
     cart = get_user_cart(request)
     if product.negotiated_price and product.negotiated_price <= product.price:
+        # Note: Cart logic may need adjustment if multiple quantities exist; 
+        # Here it ensures the negotiated price is applied to the product context.
         CartItem.objects.filter(cart=cart, product=product).delete() 
         request.session.pop(f'chat_history_{slug}', None)
         request.session.pop(f'negotiation_language_{slug}', None)
@@ -504,6 +524,7 @@ def accept_negotiated_price(request, slug):
 
 @login_required
 def export_products_json(request):
+    """Exports all products into a JSON file for backup or external use."""
     products = Product.objects.all()
     data = serialize('json', products, fields=('name', 'description', 'price', 'is_negotiable', 'vendor_name', 'whatsapp_number', 'tiktok_url', 'language_tag'))
     response = HttpResponse(data, content_type='application/json')

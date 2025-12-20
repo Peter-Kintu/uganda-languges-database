@@ -48,10 +48,14 @@ class NegotiationForm(forms.Form):
     )
 
 class ProductForm(forms.ModelForm):
-    """Form for vendors to list new products."""
+    """Form for vendors to list new products including referral rewards."""
+    
     whatsapp_number = forms.CharField(
         validators=[validate_african_number],
-        widget=forms.TextInput(attrs={'placeholder': '+256701234567'}),
+        widget=forms.TextInput(attrs={
+            'placeholder': '+256701234567',
+            'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
+        }),
         help_text="Include the full country code (e.g., +256). Only African numbers are accepted."
     )
 
@@ -62,6 +66,7 @@ class ProductForm(forms.ModelForm):
             'description',
             'price',
             'currency',
+            'referral_commission',  # Added for the referral system
             'is_negotiable',
             'vendor_name', 
             'whatsapp_number', 
@@ -71,12 +76,45 @@ class ProductForm(forms.ModelForm):
             'slug'
         ]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Describe your product...'}),
-            'name': forms.TextInput(attrs={'placeholder': 'e.g., Hand-carved Luganda Drum'}),
-            'country': forms.TextInput(attrs={'placeholder': 'e.g., Uganda'}),
-            'vendor_name': forms.TextInput(attrs={'placeholder': 'e.g., Maama Tendo Crafts'}),
-            'tiktok_url': forms.TextInput(attrs={'placeholder': 'https://www.tiktok.com/@yourprofile/video/...'}),
-            'slug': forms.TextInput(attrs={'placeholder': 'Leave blank to auto-generate'}),
+            'name': forms.TextInput(attrs={
+                'placeholder': 'e.g., Hand-carved Luganda Drum',
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 4, 
+                'placeholder': 'Describe your product...',
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
+            }),
+            'price': forms.NumberInput(attrs={
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500',
+                'placeholder': '0.00'
+            }),
+            'currency': forms.Select(attrs={
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
+            }),
+            'referral_commission': forms.NumberInput(attrs={
+                'placeholder': 'Amount to pay per referral',
+                'class': 'w-full px-4 py-3 bg-gray-700 border-indigo-500/50 rounded-lg text-emerald-400 focus:ring-emerald-500 font-bold'
+            }),
+            'country': forms.TextInput(attrs={
+                'placeholder': 'e.g., Uganda',
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
+            }),
+            'vendor_name': forms.TextInput(attrs={
+                'placeholder': 'e.g., Maama Tendo Crafts',
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
+            }),
+            'tiktok_url': forms.TextInput(attrs={
+                'placeholder': 'https://www.tiktok.com/@yourprofile/video/...',
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
+            }),
+            'slug': forms.TextInput(attrs={
+                'placeholder': 'Leave blank to auto-generate',
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500 italic text-sm'
+            }),
+            'is_negotiable': forms.CheckboxInput(attrs={
+                'class': 'w-6 h-6 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500'
+            }),
         }
 
     def clean_whatsapp_number(self):

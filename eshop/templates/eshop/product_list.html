@@ -91,6 +91,14 @@
                             {{ product.country }}
                         </span>
                     </div>
+
+                    {% if product.referral_commission > 0 %}
+                    <div class="absolute bottom-2 right-2">
+                        <span class="bg-emerald-500 text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase shadow-lg animate-pulse">
+                            Earn {{ product.get_currency_code }} {{ product.referral_commission|floatformat:0 }}
+                        </span>
+                    </div>
+                    {% endif %}
                 </a>
                 
                 <div class="p-3 sm:p-4 flex flex-col flex-grow">
@@ -108,13 +116,6 @@
                                 <span class="text-[10px] font-bold text-emerald-500">{{ product.get_currency_code|default:"KES" }}</span>
                                 <span class="text-lg sm:text-2xl font-black text-white tracking-tighter">{{ product.price|intcomma }}</span>
                             </div>
-                            <div class="text-[11px] text-slate-500 flex items-center gap-1">
-                                <span class="text-[9px]">List:</span>
-                                <span class="line-through">
-                                    {{ product.get_currency_code|default:"KES" }} 
-                                    {% widthratio product.price 100 105 %}
-                                </span>
-                            </div>
                         </div>
                         
                         <div class="mt-2 min-h-[20px] flex items-center gap-2">
@@ -123,12 +124,20 @@
                                     🤝 Negotiable
                                 </span>
                             {% endif %}
-                            <span class="text-[8px] text-yellow-500/70 font-bold uppercase tracking-widest">Free Shipping</span>
                         </div>
 
-                        <a href="{% url 'eshop:add_to_cart' product.id %}" class="mt-4 w-full block text-center bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border border-indigo-500/20 active:scale-95 shadow-lg shadow-indigo-600/10">
-                            Add to Cart
-                        </a>
+                        <div class="flex flex-col gap-2 mt-4">
+                            {% if user.is_authenticated and product.referral_commission > 0 %}
+                            <button onclick="copyRefLink('{{ request.scheme }}://{{ request.get_host }}{% url 'eshop:product_detail' product.slug %}?ref={{ user.username }}')" 
+                                    class="w-full bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 py-2 rounded-xl text-[10px] font-bold hover:bg-emerald-600 hover:text-white transition-all">
+                                📢 SHARE & EARN
+                            </button>
+                            {% endif %}
+
+                            <a href="{% url 'eshop:add_to_cart' product.id %}" class="w-full block text-center bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border border-indigo-500/20 active:scale-95 shadow-lg shadow-indigo-600/10">
+                                Add to Cart
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -163,8 +172,24 @@
     </div>
 </div>
 
+<script>
+function copyRefLink(link) {
+    navigator.clipboard.writeText(link).then(() => {
+        alert("Referral Link Copied! Share this with others. If they buy, the vendor will pay you your commission.");
+    });
+}
+</script>
+
 <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
 </style>
 {% endblock %}

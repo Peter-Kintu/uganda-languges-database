@@ -20,33 +20,63 @@
 
         <div class="text-left bg-gray-700 p-6 rounded-xl mb-10 border border-gray-600 shadow-inner">
             <h2 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Your Order Summary</h2>
+            
             <div class="flex justify-between text-lg text-gray-300 py-1">
                 <span>Total Items:</span>
                 <span class="font-semibold">{{ total_items_count|default:"0" }}</span>
             </div>
+            
             <div class="flex justify-between text-lg text-gray-300 py-1">
                 <span>Estimated Total:</span>
-
                 <span class="font-semibold text-green-400">
                     {{ cart.items.first.product.get_currency_code|default:"UGX" }} {{ cart_total|floatformat:0|intcomma }}
                 </span>
-
             </div>
-            <p class="text-sm text-yellow-400 mt-4 italic font-semibold"> A vendor will contact you to confirm the final price, delivery, and payment.
+
+            {% if request.session.active_referrer %}
+            <div class="flex justify-between text-sm text-indigo-400 py-1 mt-2 border-t border-gray-600 pt-2 italic">
+                <span>Referral Applied:</span>
+                <span>@{{ request.session.active_referrer }}</span>
+            </div>
+            {% endif %}
+
+            <p class="text-sm text-yellow-400 mt-4 italic font-semibold"> 
+                A vendor will contact you to confirm the final price, delivery, and payment.
             </p>
         </div>
 
         <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <a href="{% url 'eshop:delivery_location' %}?vendor_phone={{ vendor.phone_number }}" 
-               class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 px-8 rounded-xl transition-all duration-300 shadow-2xl shadow-indigo-600/50 transform hover:scale-[1.05] ring-4 ring-indigo-600/30"> Set Delivery Location Now 🗺️
+               class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 px-8 rounded-xl transition-all duration-300 shadow-2xl shadow-indigo-600/50 transform hover:scale-[1.05] ring-4 ring-indigo-600/30"> 
+                Set Delivery Location Now 🗺️
             </a>
 
-            <a href="https://wa.me/{{ vendor.phone_number }}?text={{ order_message|urlencode }}"
+            {% with referrer=request.session.active_referrer %}
+            <a href="https://wa.me/{{ vendor.phone_number }}?text={{ order_message|urlencode }}{% if referrer %}%0A%0A*Referrer%20to%20Payout:*%20@{{ referrer }}{% endif %}"
                target="_blank"
                class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 shadow-lg shadow-green-600/30 transform hover:scale-[1.03]">
-                   Contact Vendor via WhatsApp 💬
+                Contact Vendor via WhatsApp 💬
             </a>
+            {% endwith %}
         </div>
     </div>
 </div>
+
+<style>
+    @keyframes fade-in-down {
+        0% { opacity: 0; transform: translateY(-20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-down {
+        animation: fade-in-down 0.8s ease-out;
+    }
+    .animate-bounce-slow {
+        animation: bounce 3s infinite;
+    }
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+        40% {transform: translateY(-10px);}
+        60% {transform: translateY(-5px);}
+    }
+</style>
 {% endblock %}
