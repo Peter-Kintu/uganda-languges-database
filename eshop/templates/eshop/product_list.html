@@ -24,6 +24,29 @@
                     </a>
                 </div>
             </div>
+
+            <div class="px-6 pb-6 sm:px-10">
+                <form method="GET" action="{% url 'eshop:product_list' %}" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div class="relative">
+                        <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products..." 
+                               class="w-full bg-gray-900/50 border border-gray-600 text-white text-xs rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
+                    </div>
+                    
+                    <div class="relative">
+                        <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Filter by Country..." 
+                               class="w-full bg-gray-900/50 border border-gray-600 text-white text-xs rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
+                    </div>
+
+                    <div class="relative">
+                        <input type="text" name="vendor" value="{{ vendor_query|default:'' }}" placeholder="Filter by Vendor..." 
+                               class="w-full bg-gray-900/50 border border-gray-600 text-white text-xs rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-gray-500">
+                    </div>
+
+                    <button type="submit" class="bg-gray-700 hover:bg-indigo-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all border border-gray-600 hover:border-indigo-500 active:scale-95">
+                        Apply Filters
+                    </button>
+                </form>
+            </div>
         </header>
 
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
@@ -41,6 +64,12 @@
                     {% else %}
                         <div class="w-full h-full flex items-center justify-center text-gray-600 text-[10px] uppercase font-bold tracking-widest">No Image</div>
                     {% endif %}
+                    
+                    <div class="absolute top-2 left-2">
+                        <span class="bg-gray-900/80 text-indigo-300 text-[8px] font-bold px-2 py-1 rounded-md backdrop-blur-sm border border-gray-700">
+                            {{ product.country }}
+                        </span>
+                    </div>
                 </a>
                 
                 <div class="p-3 sm:p-4 flex flex-col flex-grow">
@@ -78,8 +107,8 @@
             </div>
             {% empty %}
             <div class="col-span-full text-center py-24 bg-gray-800 rounded-3xl border border-gray-700">
-                <p class="text-gray-500 font-medium italic">No treasures listed yet.</p>
-                <a href="{% url 'eshop:add_product' %}" class="mt-2 inline-block text-indigo-400 font-bold hover:underline text-sm">Be the first to list →</a>
+                <p class="text-gray-500 font-medium italic">No treasures found matching your search.</p>
+                <a href="{% url 'eshop:product_list' %}" class="mt-2 inline-block text-indigo-400 font-bold hover:underline text-sm">Clear all filters</a>
             </div>
             {% endfor %}
         </div>

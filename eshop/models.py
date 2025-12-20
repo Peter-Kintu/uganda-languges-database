@@ -29,8 +29,7 @@ class Product(models.Model):
     
   
     
-    # Cultural & Localization Tags
-    language_tag = models.CharField(max_length=50) # e.g., 'Luganda', 'Acholi'
+    country = models.CharField(max_length=50)
     
     
     def save(self, *args, **kwargs):
@@ -45,7 +44,6 @@ class Product(models.Model):
         ordering = ['name']
 
 # --- Cart and CartItem Models ---
-
 class Cart(models.Model):
     # session_key is used to identify the cart for anonymous users
     session_key = models.CharField(max_length=40, unique=True, db_index=True)
@@ -99,3 +97,4 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in Cart {self.cart.session_key}"
+

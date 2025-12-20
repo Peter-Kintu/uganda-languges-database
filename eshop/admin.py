@@ -10,13 +10,13 @@ class ProductAdmin(admin.ModelAdmin):
         'vendor_name',
         'price',
         'is_negotiable',
-        'language_tag',
+        'country',
         'whatsapp_number',
         'tiktok_url',
         'slug',
     )
-    list_filter = ('language_tag', 'is_negotiable')
-    search_fields = ('name', 'description', 'vendor_name', 'language_tag', 'whatsapp_number')
+    list_filter = ('country', 'is_negotiable')
+    search_fields = ('name', 'description', 'vendor_name', 'country', 'whatsapp_number')
     prepopulated_fields = {'slug': ('name',)}
     list_select_related = ()
     
