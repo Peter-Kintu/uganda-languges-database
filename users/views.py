@@ -63,22 +63,16 @@ def tts_proxy(request):
 # ==============================================================================
 
 def user_login(request):
-    """
-    Handles user login with robust redirects and template fallbacks.
-    Fixes the common 500 error by handling the 'next' parameter properly.
-    """
+    """Handles user login with robust redirects and template fallbacks."""
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
     
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            # Use form.get_user() for safer user retrieval
             user = form.get_user()
             login(request, user)
             messages.success(request, f"Welcome back, {user.username}!")
-            
-            # Check both POST and GET for the 'next' redirect parameter
             next_url = request.POST.get('next') or request.GET.get('next')
             return redirect(next_url or reverse('languages:browse_job_listings')) 
         else:
@@ -86,9 +80,7 @@ def user_login(request):
     else:
         form = AuthenticationForm()
             
-    # Always ensure the template has a 'form' variable even if logic fails above
     context = {'form': form, 'next': request.GET.get('next', '')}
-    
     try:
         return render(request, 'users/login.html', context)
     except TemplateDoesNotExist:
@@ -120,7 +112,6 @@ def user_register(request):
 
 @login_required
 def user_logout(request):
-    """Logs the user out and redirects to the login page."""
     logout(request)
     messages.info(request, "You have been logged out.")
     return redirect('users:user_login')
@@ -131,16 +122,11 @@ def user_logout(request):
 
 @login_required
 def user_profile(request):
-    """Displays user profile with career data and Referral Earnings."""
     user = request.user
-    
     experiences = Experience.objects.filter(user=user).order_by('-start_date')
     educations = Education.objects.filter(user=user).order_by('-end_date')
     skills = Skill.objects.filter(user=user)
     social_connections = SocialConnection.objects.filter(user=user)
-
-    # Referral Earnings Placeholder
-    total_referral_earnings = 0 
 
     context = {
         'user': user,
@@ -148,7 +134,7 @@ def user_profile(request):
         'educations': educations,
         'skills': skills,
         'social_connections': social_connections,
-        'total_referral_earnings': total_referral_earnings,
+        'total_referral_earnings': 0,
     }
     
     try:
@@ -158,7 +144,6 @@ def user_profile(request):
 
 @login_required
 def profile_edit(request):
-    """Handles editing user profile information."""
     user = request.user
     if request.method == 'POST':
         form = ProfileEditForm(request.POST, request.FILES, instance=user)
@@ -166,10 +151,6 @@ def profile_edit(request):
             form.save()
             messages.success(request, 'Your profile was successfully updated!')
             return redirect('users:profile')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = ProfileEditForm(instance=user)
         
@@ -183,30 +164,24 @@ def profile_edit(request):
 # ==============================================================================
 
 def _get_user_profile_data(user):
-    """Gathers profile data for AI context using getattr to prevent missing field crashes."""
+    """Gathers profile data for AI context."""
     return {
-        "username": user.username,
         "full_name": user.get_full_name() or user.username, 
         "location": getattr(user, 'location', 'Not provided'),
         "bio": getattr(user, 'about', 'Not provided'),
         "skills": [skill.name for skill in Skill.objects.filter(user=user)],
-        "referral_summary": {
-            "referral_link": f"https://africana.market/?ref={user.username}"
-        },
         "experiences": [
-            {
-                "title": getattr(exp, 'title', 'Employee'), 
-                "company": getattr(exp, 'company_name', 'Not specified')
-            }
+            {"title": getattr(exp, 'title', 'Employee'), "company": getattr(exp, 'company_name', 'Not specified')}
             for exp in Experience.objects.filter(user=user)
         ]
     }
 
 def _clean_history(messages):
-    """Standardizes chat history for the Gemini API format."""
+    """Standardizes chat history for the Gemini API format (role must be 'user' or 'model')."""
     cleaned = []
     for msg in messages:
-        role = "model" if msg.get("role", "").lower() == "ai" else "user"
+        # Convert JS role 'ai' to Gemini role 'model'
+        role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
         text_content = msg.get("text")
         if not text_content: continue
         
@@ -231,38 +206,50 @@ def gemini_proxy(request):
         if not api_key:
             return JsonResponse({"error": "API Key missing in environment settings."}, status=500)
 
-        profile_json = json.dumps(_get_user_profile_data(request.user))
-        system_instruction = (
-            "You are Career Companion AI. You help with CVs and interview prep. "
-            f"User Context: {profile_json}. "
+        # Prepare User Context
+        profile = _get_user_profile_data(request.user)
+        profile_summary = (
+            f"User: {profile['full_name']}. Bio: {profile['bio']}. "
+            f"Skills: {', '.join(profile['skills'])}."
         )
 
+        # Gemini v1beta Payload Structure
         payload = {
-            "system_instruction": {"parts": [{"text": system_instruction}]},
             "contents": _clean_history(contents),
-            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024}
+            "systemInstruction": {
+                "parts": [{"text": f"You are Career Companion AI. Help with CVs and interview prep for Africana. Context: {profile_summary}"}]
+            },
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 1024
+            }
         }
 
+        # URL for v1beta gemini-1.5-flash
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        resp = requests.post(url, json=payload, timeout=10)
+        
+        resp = requests.post(url, json=payload, timeout=15)
         
         if resp.status_code != 200:
-            return JsonResponse({"error": "AI Service Error", "details": resp.text}, status=resp.status_code)
+            return JsonResponse({"error": "AI Service Error", "details": resp.json()}, status=resp.status_code)
 
         result = resp.json()
-        text = result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No response.')
-        return JsonResponse({"text": text})
+        try:
+            text = result['candidates'][0]['content']['parts'][0]['text']
+            return JsonResponse({"text": text})
+        except (KeyError, IndexError):
+            return JsonResponse({"text": "I encountered an error processing that. Please try again."})
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
 def profile_ai(request):
-    """Renders the AI tools page with path fallback."""
+    """Renders the AI tools page."""
     try:
         return render(request, 'users/profile_ai.html', {'user': request.user})
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
-# ALIAS
+# ALIAS for the URL patterns
 ai_quiz_generator = profile_ai
