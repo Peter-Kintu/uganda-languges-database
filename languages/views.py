@@ -64,7 +64,7 @@ def get_top_recruiters(request, month=None, year=None, limit=10):
     """
     
     # Start with all validated posts
-    posts = JobPost.objects.filter(is_validated=True)
+    posts = JobPost.objects.all()
     
     # Filter by month and year if provided
     if month is not None and year is not None:
@@ -127,7 +127,7 @@ def featured_recruiter_view(request):
 @login_required
 def export_contributions_json(request):
     # Fetch only validated job posts
-    validated_posts = JobPost.objects.filter(is_validated=True).values(
+    validated_posts = JobPost.objects.all().values(
         'post_content', 
         'required_skills', 
         'job_category', 
@@ -210,7 +210,7 @@ def browse_job_listings(request):
         page = request.GET.get('page') # Get the page number
 
         # Start with all validated posts, ordered by recency
-        all_job_posts = JobPost.objects.filter(is_validated=True).order_by('-timestamp')
+        all_job_posts = JobPost.objects.all().order_by('-timestamp')
         
         # Apply category and search filters to the *entire* list before ranking
         job_posts_filtered = all_job_posts
