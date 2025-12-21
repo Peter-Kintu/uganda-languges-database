@@ -32,9 +32,11 @@ except ImportError:
 # ==============================================================================
 
 def google_verification(request):
+    """Verifies site ownership for Google Search Console."""
     return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
 
 def robots_txt(request):
+    """Generates robots.txt for search engine crawlers."""
     lines = [
         "User-agent: *",
         "Disallow: /admin/",
@@ -43,6 +45,7 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 def tts_proxy(request):
+    """Proxies TTS requests to avoid CORS issues."""
     text = request.GET.get('text', '')
     lang = request.GET.get('lang', 'en')
     if not text:
@@ -152,29 +155,29 @@ def profile_edit(request):
 # ==============================================================================
 
 def _get_user_profile_data(user):
+    """Gathers data to personalize AI responses."""
     return {
         "full_name": user.get_full_name() or user.username, 
-        "location": getattr(user, 'location', 'Not provided'),
-        "bio": getattr(user, 'about', 'Not provided'),
+        "bio": getattr(user, 'about', 'No bio provided'),
         "skills": [skill.name for skill in Skill.objects.filter(user=user)],
         "experiences": [
-            {"title": getattr(exp, 'title', 'Employee'), "company": getattr(exp, 'company_name', 'Not specified')}
+            f"{exp.title} at {exp.company_name}" 
             for exp in Experience.objects.filter(user=user)
         ]
     }
 
 def _clean_history(messages, system_prompt):
-    """Formats history for Gemini. Pre-pends system context to avoid 400 errors."""
+    """Prepares alternating turns for Gemini v1beta."""
     cleaned = []
     
-    # Pre-inject system identity
+    # 1. Inject Identity at the start
     cleaned.append({
         "role": "user",
-        "parts": [{"text": f"System Identity: {system_prompt}\nPlease adopt this persona."}]
+        "parts": [{"text": f"INSTRUCTIONS: {system_prompt}\nAdopt this persona for all future messages."}]
     })
     cleaned.append({
         "role": "model",
-        "parts": [{"text": "Understood. I am your Career Companion AI. How can I help you?"}]
+        "parts": [{"text": "I understand. I am now your Career Companion AI for Africana."}]
     })
 
     last_role = "model"
@@ -196,7 +199,7 @@ def _clean_history(messages, system_prompt):
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Proxy view to call Gemini v1 API."""
+    """Handles AI chat using the v1beta endpoint for maximum model compatibility."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
@@ -204,22 +207,24 @@ def gemini_proxy(request):
     api_key = raw_api_key.strip().replace('"', '').replace("'", "")
 
     if not api_key:
-        return JsonResponse({"error": "Server Configuration Error: API Key missing."}, status=500)
+        return JsonResponse({"error": "Server API Key is missing."}, status=500)
 
     try:
         data = json.loads(request.body)
         contents = data.get('contents', [])
         
+        # Build Profile Context
         profile = _get_user_profile_data(request.user)
         system_prompt = (
-            f"You are the Career Companion AI for Africana. "
-            f"User Profile: {profile['full_name']}, {profile['bio']}. "
-            f"Skills: {', '.join(profile['skills'])}."
+            f"You are the Career Companion AI for the Africana platform. "
+            f"User: {profile['full_name']}. Bio: {profile['bio']}. "
+            f"Skills: {', '.join(profile['skills'])}. History: {', '.join(profile['experiences'])}."
         )
 
-        # Using v1 stable endpoint
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+        # USE V1BETA: This is the version that contains the gemini-1.5-flash model.
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
+        # Omit 'system_instruction' to avoid the 400 error seen in v1beta
         payload = {
             "contents": _clean_history(contents, system_prompt),
             "generationConfig": {
@@ -232,14 +237,14 @@ def gemini_proxy(request):
         
         if resp.status_code != 200:
             print(f"DEBUG Error Detail: {resp.text}")
-            return JsonResponse({"error": "API Call Failed", "details": resp.json()}, status=resp.status_code)
+            return JsonResponse({"error": "AI Error", "details": resp.json()}, status=resp.status_code)
 
         result = resp.json()
         text = result['candidates'][0]['content']['parts'][0]['text']
         return JsonResponse({"text": text})
 
     except Exception as e:
-        print(f"DEBUG Exception: {str(e)}")
+        print(f"DEBUG Proxy Exception: {str(e)}")
         return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
