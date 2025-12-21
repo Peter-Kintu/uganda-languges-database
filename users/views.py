@@ -45,7 +45,7 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 def tts_proxy(request):
-    """Proxies TTS requests to avoid CORS issues with error handling."""
+    """Proxies TTS requests to avoid CORS issues."""
     text = request.GET.get('text', '')
     lang = request.GET.get('lang', 'en')
     if not text:
@@ -54,10 +54,9 @@ def tts_proxy(request):
     tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={text}&tl={lang}&client=tw-ob"
     try:
         response = requests.get(tts_url, stream=True, timeout=5)
-        response.raise_for_status()
         return HttpResponse(response.content, content_type="audio/mpeg")
     except Exception as e:
-        return JsonResponse({"error": "TTS Service Unavailable", "details": str(e)}, status=503)
+        return HttpResponse(f"Error: {str(e)}", status=500)
 
 # ==============================================================================
 # AUTHENTICATION VIEWS
@@ -65,44 +64,38 @@ def tts_proxy(request):
 
 def user_login(request):
     """
-    Hardened login view to prevent 500 errors in production.
-    Handles 'next' parameter from both GET and POST.
+    Handles user login with robust redirects and template fallbacks.
+    Fixes the common 500 error by handling the 'next' parameter properly.
     """
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
     
-    # Capture 'next' from either URL (GET) or form submission (POST)
-    next_url = request.POST.get('next') or request.GET.get('next') or ''
-    
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            user = form.get_user() # Recommended over manual authenticate()
-            if user:
-                login(request, user)
-                messages.success(request, f"Welcome back, {user.username}!")
-                # Redirect to 'next' URL if safe, otherwise default to job listings
-                return redirect(next_url if next_url else 'languages:browse_job_listings')
-            else:
-                messages.error(request, "Authentication failed.")
+            # Use form.get_user() for safer user retrieval
+            user = form.get_user()
+            login(request, user)
+            messages.success(request, f"Welcome back, {user.username}!")
+            
+            # Check both POST and GET for the 'next' redirect parameter
+            next_url = request.POST.get('next') or request.GET.get('next')
+            return redirect(next_url or reverse('languages:browse_job_listings')) 
         else:
             messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
             
-    context = {'form': form, 'next': next_url}
+    # Always ensure the template has a 'form' variable even if logic fails above
+    context = {'form': form, 'next': request.GET.get('next', '')}
     
-    # Try multiple paths to avoid TemplateDoesNotExist -> 500
     try:
         return render(request, 'users/login.html', context)
     except TemplateDoesNotExist:
-        try:
-            return render(request, 'login.html', context)
-        except TemplateDoesNotExist:
-            return HttpResponse("Login template not found. Check your directory structure.", status=500)
+        return render(request, 'login.html', context)
 
 def user_register(request):
-    """Handles user registration with robust validation error reporting."""
+    """Handles user registration and automatically logs them in."""
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
         
@@ -111,7 +104,7 @@ def user_register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, "Registration successful. Welcome!")
+            messages.success(request, "Registration successful. Welcome to Africana!")
             return redirect('languages:browse_job_listings')
         else:
             for field, errors in form.errors.items():
@@ -127,26 +120,35 @@ def user_register(request):
 
 @login_required
 def user_logout(request):
-    """Logs the user out and redirects safely."""
+    """Logs the user out and redirects to the login page."""
     logout(request)
     messages.info(request, "You have been logged out.")
     return redirect('users:user_login')
 
 # ==============================================================================
-# PROFILE & AI VIEWS
+# PROFILE & REFERRAL VIEWS
 # ==============================================================================
 
 @login_required
 def user_profile(request):
-    """Displays user profile with career data and safety fallbacks."""
+    """Displays user profile with career data and Referral Earnings."""
     user = request.user
+    
+    experiences = Experience.objects.filter(user=user).order_by('-start_date')
+    educations = Education.objects.filter(user=user).order_by('-end_date')
+    skills = Skill.objects.filter(user=user)
+    social_connections = SocialConnection.objects.filter(user=user)
+
+    # Referral Earnings Placeholder
+    total_referral_earnings = 0 
+
     context = {
         'user': user,
-        'experiences': Experience.objects.filter(user=user).order_by('-start_date'),
-        'educations': Education.objects.filter(user=user).order_by('-end_date'),
-        'skills': Skill.objects.filter(user=user),
-        'social_connections': SocialConnection.objects.filter(user=user),
-        'total_referral_earnings': 0, 
+        'experiences': experiences,
+        'educations': educations,
+        'skills': skills,
+        'social_connections': social_connections,
+        'total_referral_earnings': total_referral_earnings,
     }
     
     try:
@@ -154,25 +156,85 @@ def user_profile(request):
     except TemplateDoesNotExist:
         return render(request, 'profile.html', context)
 
+@login_required
+def profile_edit(request):
+    """Handles editing user profile information."""
+    user = request.user
+    if request.method == 'POST':
+        form = ProfileEditForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile was successfully updated!')
+            return redirect('users:profile')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.capitalize()}: {error}")
+    else:
+        form = ProfileEditForm(instance=user)
+        
+    try:
+        return render(request, 'users/profile_edit.html', {'form': form})
+    except TemplateDoesNotExist:
+        return render(request, 'profile_edit.html', {'form': form})
+
+# ==============================================================================
+# AI CHAT & CONTEXT UTILITIES
+# ==============================================================================
+
+def _get_user_profile_data(user):
+    """Gathers profile data for AI context using getattr to prevent missing field crashes."""
+    return {
+        "username": user.username,
+        "full_name": user.get_full_name() or user.username, 
+        "location": getattr(user, 'location', 'Not provided'),
+        "bio": getattr(user, 'about', 'Not provided'),
+        "skills": [skill.name for skill in Skill.objects.filter(user=user)],
+        "referral_summary": {
+            "referral_link": f"https://africana.market/?ref={user.username}"
+        },
+        "experiences": [
+            {
+                "title": getattr(exp, 'title', 'Employee'), 
+                "company": getattr(exp, 'company_name', 'Not specified')
+            }
+            for exp in Experience.objects.filter(user=user)
+        ]
+    }
+
+def _clean_history(messages):
+    """Standardizes chat history for the Gemini API format."""
+    cleaned = []
+    for msg in messages:
+        role = "model" if msg.get("role", "").lower() == "ai" else "user"
+        text_content = msg.get("text")
+        if not text_content: continue
+        
+        cleaned.append({
+            "role": role,
+            "parts": [{"text": text_content}]
+        })
+    return cleaned
+
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Proxies requests to Gemini API with robust JSON error handling."""
+    """Proxies chat requests to Gemini with integrated User context."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
     try:
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            return JsonResponse({"error": "Server configuration error: Missing API Key."}, status=500)
-
         data = json.loads(request.body)
         contents = data.get('contents', [])
-        
-        profile_data = _get_user_profile_data(request.user)
+        api_key = os.environ.get("GEMINI_API_KEY")
+
+        if not api_key:
+            return JsonResponse({"error": "API Key missing in environment settings."}, status=500)
+
+        profile_json = json.dumps(_get_user_profile_data(request.user))
         system_instruction = (
-            "You are Career Companion AI. Help with CVs and interviews. "
-            f"User Context: {json.dumps(profile_data)}. "
+            "You are Career Companion AI. You help with CVs and interview prep. "
+            f"User Context: {profile_json}. "
         )
 
         payload = {
@@ -185,36 +247,22 @@ def gemini_proxy(request):
         resp = requests.post(url, json=payload, timeout=10)
         
         if resp.status_code != 200:
-            return JsonResponse({"error": "AI Service unavailable", "details": resp.text}, status=resp.status_code)
+            return JsonResponse({"error": "AI Service Error", "details": resp.text}, status=resp.status_code)
 
         result = resp.json()
-        # Safe extraction using .get() to prevent KeyErrors
         text = result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No response.')
         return JsonResponse({"text": text})
 
     except Exception as e:
-        return JsonResponse({"error": "Internal Processing Error", "message": str(e)}, status=500)
-
-def _get_user_profile_data(user):
-    """Safely extracts profile data using getattr."""
-    return {
-        "username": user.username,
-        "full_name": user.get_full_name() or user.username, 
-        "location": getattr(user, 'location', 'Not provided'),
-        "bio": getattr(user, 'about', 'Not provided'),
-        "skills": [skill.name for skill in Skill.objects.filter(user=user)],
-    }
-
-def _clean_history(messages):
-    """Standardizes chat history."""
-    return [{"role": "model" if m.get("role") == "ai" else "user", "parts": [{"text": m.get("text", "")}]} for m in messages if m.get("text")]
+        return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
 def profile_ai(request):
-    """AI Career tools page with safety fallback."""
+    """Renders the AI tools page with path fallback."""
     try:
         return render(request, 'users/profile_ai.html', {'user': request.user})
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
+# ALIAS
 ai_quiz_generator = profile_ai
