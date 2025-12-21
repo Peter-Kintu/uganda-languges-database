@@ -27,10 +27,11 @@ User = get_user_model()
 
 # Safely import eshop models
 try:
-    from eshop.models import Product, CartItem 
+    from eshop.models import Product, CartItem, Order 
 except ImportError:
     Product = None
     CartItem = None
+    Order = None
 
 # ==============================================================================
 # UTILITY / INFRASTRUCTURE VIEWS
@@ -64,12 +65,18 @@ def tts_proxy(request):
         return HttpResponse(f"Error: {str(e)}", status=500)
 
 # ==============================================================================
-# AUTHENTICATION VIEWS
+# AUTHENTICATION VIEWS (With Referral Capture)
 # ==============================================================================
 
 def user_login(request):
+    # Capture referral if present in the login URL (for users who browse before logging in)
+    ref = request.GET.get('ref')
+    if ref:
+        request.session['referrer'] = ref
+
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
+        
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -82,6 +89,7 @@ def user_login(request):
             messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
+        
     context = {'form': form, 'next': request.GET.get('next', '')}
     try:
         return render(request, 'users/login.html', context)
@@ -89,13 +97,35 @@ def user_login(request):
         return render(request, 'login.html', context)
 
 def user_register(request):
+    # Capture referral link (?ref=james)
+    ref = request.GET.get('ref')
+    if ref:
+        request.session['referrer'] = ref
+
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
+    
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
+            
+            # Check session for a referrer and link it to the new user
+            referrer_username = request.session.get('referrer')
+            if referrer_username:
+                try:
+                    referrer_user = User.objects.get(username=referrer_username)
+                    user.referred_by = referrer_user
+                except User.DoesNotExist:
+                    pass # Referrer name was invalid or deleted
+            
+            user.save()
             login(request, user)
+            
+            # Cleanup session after successful registration
+            if 'referrer' in request.session:
+                del request.session['referrer']
+                
             messages.success(request, "Registration successful. Welcome to Africana!")
             return redirect('languages:browse_job_listings')
         else:
@@ -104,6 +134,7 @@ def user_register(request):
                     messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = CustomUserCreationForm()
+    
     try:
         return render(request, 'users/register.html', {'form': form})
     except TemplateDoesNotExist:
@@ -116,7 +147,7 @@ def user_logout(request):
     return redirect('users:user_login')
 
 # ==============================================================================
-# PROFILE MANAGEMENT
+# PROFILE & REFERRAL DASHBOARD
 # ==============================================================================
 
 @login_required
@@ -126,13 +157,31 @@ def user_profile(request):
     educations = Education.objects.filter(user=user).order_by('-end_date')
     skills = Skill.objects.filter(user=user)
     social_connections = SocialConnection.objects.filter(user=user)
+    
+    # REFERRAL LOGIC: Fetch successful referrals based on store orders
+    successful_referrals = []
+    referral_earnings = 0
+    if Order:
+        # Assuming your Order model has a 'referred_by' field (CharField) 
+        # that stores the username of the referrer
+        successful_referrals = Order.objects.filter(referred_by=user.username, status='Completed')
+        # Calculate Earnings (Example: 10,000 UGX per successful order)
+        referral_earnings = successful_referrals.count() * 10000 
+    
+    # Generate the unique referral link for this user
+    base_url = request.build_absolute_uri(reverse('users:user_register'))
+    referral_link = f"{base_url}?ref={user.username}"
+
     context = {
         'user': user,
         'experiences': experiences,
         'educations': educations,
         'skills': skills,
         'social_connections': social_connections,
-        'total_referral_earnings': 0,
+        'referral_link': referral_link,
+        'successful_referrals': successful_referrals,
+        'total_referral_earnings': referral_earnings,
+        'total_referral_count': successful_referrals.count() if Order else 0,
     }
     try:
         return render(request, 'users/profile.html', context)
@@ -210,12 +259,9 @@ def gemini_proxy(request):
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # 2025 FREE TIER STRATEGY: 
-        # 1. 'gemini-2.5-flash-lite' is preferred for its 1,500 RPD quota.
-        # 2. 'gemini-1.5-flash' is the fallback as it's the most reliable for unverified projects.
+        # 2025 FREE TIER STRATEGY: Fallback to 1.5 if 2.5 is unavailable
         models_to_try = ["gemini-2.5-flash-lite", "gemini-1.5-flash"]
         
-        last_error = ""
         for model_name in models_to_try:
             try:
                 response = client.models.generate_content(
@@ -229,19 +275,13 @@ def gemini_proxy(request):
                 )
                 if response.text:
                     return JsonResponse({"text": response.text, "model_used": model_name})
-            
             except Exception as model_e:
-                last_error = str(model_e)
-                # Check for 429 (Rate Limit) or 404 (Model not found for this key)
-                if any(x in last_error for x in ["429", "404", "RESOURCE_EXHAUSTED"]):
-                    print(f"DEBUG: Model {model_name} failed. Trying next fallback. Error: {last_error}")
+                # If quota exhausted (429) or model missing (404), try next model
+                if any(x in str(model_e) for x in ["429", "404", "RESOURCE_EXHAUSTED"]):
                     continue
                 raise model_e 
 
-        return JsonResponse({
-            "error": "Quota Exceeded",
-            "details": "The AI is currently busy handling other requests. Please wait 60 seconds."
-        }, status=429)
+        return JsonResponse({"error": "Quota Exceeded", "details": "The AI is currently busy. Please wait 60 seconds."}, status=429)
 
     except Exception as e:
         print(f"DEBUG Gemini Exception: {str(e)}")
@@ -255,5 +295,4 @@ def profile_ai(request):
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
-# Keep alias for backward compatibility
 ai_quiz_generator = profile_ai
