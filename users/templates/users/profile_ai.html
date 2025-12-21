@@ -263,6 +263,9 @@
         width: 44px;
         height: 44px;
         border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* --- MOBILE RESPONSIVENESS --- */
@@ -354,8 +357,6 @@
         getLocation();
         loadChatHistory();
         updateHistorySidebar();
-        
-        // Auto-focus input
         chatInput.focus();
     };
 
@@ -369,8 +370,16 @@
             navigator.geolocation.getCurrentPosition(pos => {
                 document.getElementById('userLocationDisplay').textContent = 
                     `Region: ${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`;
+            }, () => {
+                document.getElementById('userLocationDisplay').textContent = "Location access denied";
             });
         }
+    }
+
+    function loadChatHistory() {
+        chatLog.innerHTML = '';
+        const history = getSessionHistory(currentSessionId);
+        history.forEach(m => appendMessage(m.role, m.text));
     }
 
     // Chat Logic
@@ -386,6 +395,9 @@
         
         try {
             const history = getSessionHistory(currentSessionId);
+            
+            // FIX: Map "ai" role to "model" for Gemini API compatibility 
+            // and use the Django URL tag to fix 404s
             const response = await fetch('{% url "users:gemini_proxy" %}', {
                 method: 'POST',
                 headers: { 
@@ -393,9 +405,17 @@
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
                 body: JSON.stringify({
-                    contents: [...history, { role: 'user', text: text }]
+                    contents: history.map(m => ({
+                        role: m.role === 'ai' ? 'model' : 'user',
+                        text: m.text
+                    })).concat({ role: 'user', text: text })
                 })
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Server error");
+            }
 
             const data = await response.json();
             if (data.text) {
@@ -405,7 +425,8 @@
                 updateHistorySidebar();
             }
         } catch (e) {
-            appendMessage('ai', "Error connecting to AI. Please check your connection.");
+            console.error("Chat Error:", e);
+            appendMessage('ai', "Error: " + e.message);
         } finally {
             loadingIndicator.classList.add('hidden');
         }
@@ -437,7 +458,7 @@
         const list = document.getElementById('historyList');
         list.innerHTML = '';
         
-        Object.keys(sessions).reverse().forEach(id => {
+        Object.keys(sessions).sort().reverse().forEach(id => {
             const firstMsg = sessions[id][0]?.text || "New Conversation";
             const li = document.createElement('li');
             li.className = `history-item ${id === currentSessionId ? 'active' : ''}`;
