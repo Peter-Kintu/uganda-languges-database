@@ -1,14 +1,12 @@
 from django.urls import path
 from languages.views import robots_txt
-from .views import google_verification, tts_proxy
-from users.views import gemini_proxy
 from . import views
 
 app_name = 'users'
 
 urlpatterns = [
     # --- Infrastructure & SEO ---
-    path('googlec0826a61eabee54e.html', google_verification),
+    path('googlec0826a61eabee54e.html', views.google_verification),
     path("robots.txt", robots_txt),
 
     # --- Authentication ---
@@ -21,8 +19,7 @@ urlpatterns = [
     path('profile/edit/', views.profile_edit, name='profile_edit'),
 
     # --- AI Services & Career Tools ---
-    # This MUST match the fetch() call in your HTML
-    path("api/v1/gemini_proxy/", gemini_proxy, name="gemini_proxy"),
+    path("api/v1/gemini_proxy/", views.gemini_proxy, name="gemini_proxy"),
     path('profile/ai-companion/', views.profile_ai, name='profile_ai'),
-    path('api/v1/tts/', tts_proxy, name='tts_proxy'),
+    path('api/v1/tts/', views.tts_proxy, name='tts_proxy'),
 ]
