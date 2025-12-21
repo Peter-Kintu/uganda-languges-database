@@ -10,9 +10,8 @@
 
         <header class="pb-6 border-b border-gray-700 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div class="flex items-center space-x-6">
-                {% if user.profile_image.public_id %}
-                    {% cloudinary_url user.profile_image.public_id width=100 height=100 crop='fill' radius='max' as profile_image_url %}
-                    <img src="{{ profile_image_url }}" alt="{{ user.get_full_name|default:user.username }}" class="w-24 h-24 rounded-full object-cover border-4 border-indigo-500 shadow-lg">
+                {% if user.profile_image %}
+                    <img src="{{ user.profile_image.url }}" alt="{{ user.username }}" class="w-24 h-24 rounded-full object-cover border-4 border-indigo-500 shadow-lg">
                 {% else %}
                     <div class="w-24 h-24 rounded-full bg-indigo-600 flex items-center justify-center text-4xl text-white font-bold border-4 border-indigo-500 shadow-lg">
                         {{ user.username|slice:":1"|upper }}
@@ -39,13 +38,10 @@
 
             <div class="flex flex-col sm:flex-row gap-3">
                 <a href="{% url 'users:profile_edit' %}" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
                     Edit Profile
                 </a>
                 <a href="{% url 'users:profile_ai' %}" class="inline-flex items-center justify-center px-4 py-2 border border-indigo-500/50 text-sm font-medium rounded-full shadow-sm text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50 transition duration-150">
-                    <span class="mr-2">🤖</span> Career AI
+                    🤖 Career AI
                 </a>
             </div>
         </header>
@@ -64,64 +60,66 @@
                 <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700">
                     <p class="text-gray-400 text-sm uppercase font-bold tracking-widest mb-1">Your Referral Link</p>
                     <div class="flex items-center space-x-2">
-                        <input type="text" readonly value="{{ request.build_absolute_uri|slice:':-1' }}?ref={{ user.username }}" id="refLink" class="bg-gray-800 border-none text-indigo-300 text-xs rounded-lg block w-full p-2 focus:ring-0">
+                        <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}?ref={{ user.username }}" id="refLink" class="bg-gray-800 border-none text-indigo-300 text-xs rounded-lg block w-full p-2 focus:ring-0">
                         <button onclick="copyRefLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                             </svg>
                         </button>
                     </div>
-                    <p class="text-[10px] text-gray-500 mt-2 italic">Share this link. When someone buys, you earn the vendor's set commission!</p>
+                    <p class="text-[10px] text-gray-500 mt-2 italic">Earn commissions when others buy using your link.</p>
                 </div>
 
                 <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700 flex flex-col justify-center">
                     <p class="text-gray-400 text-sm uppercase font-bold tracking-widest mb-1">Estimated Earnings</p>
-                    <h3 class="text-3xl font-black text-green-400">UGX 0</h3>
-                    <p class="text-[10px] text-gray-500 italic">Earnings are updated once vendors confirm delivery.</p>
+                    <h3 class="text-3xl font-black text-green-400">
+                        UGX {{ user.total_referral_earnings|default:"0"|floatformat:0 }}
+                    </h3>
+                    <p class="text-[10px] text-gray-500 italic">Confirmed upon vendor delivery.</p>
                 </div>
             </div>
         </section>
 
+        {% if user.notifications.exists %}
+        <section class="mb-10 bg-gray-900/30 rounded-2xl border border-gray-700 p-6">
+            <h2 class="text-xl font-bold text-indigo-400 mb-4 flex items-center">
+                <span class="mr-2">🔔</span> Recent Activity
+            </h2>
+            <div class="space-y-3">
+                {% for alert in user.notifications.all|slice:":3" %}
+                <div class="p-4 rounded-xl bg-gray-800/40 border {% if not alert.is_read %}border-indigo-500/40 shadow-md{% else %}border-gray-700{% endif %} flex justify-between items-center">
+                    <div>
+                        <p class="text-white font-bold text-sm">{{ alert.title }}</p>
+                        <p class="text-gray-400 text-xs">{{ alert.message }}</p>
+                    </div>
+                    <span class="text-[10px] text-gray-600 font-medium">{{ alert.created_at|timesince }} ago</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
         <section class="mb-8">
-            <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">Bio / Summary</h2>
-            <p class="text-gray-300 leading-relaxed">{{ user.bio|default:"No detailed biography provided yet. Click 'Edit Profile' to add one and unlock more personalized AI features." }}</p>
+            <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">About</h2>
+            <p class="text-gray-300 leading-relaxed">{{ user.about|default:"No description provided yet." }}</p>
         </section>
 
         <section class="mb-8">
             <h2 class="text-2xl font-bold text-indigo-400 mb-4 border-b border-gray-700/50 pb-2">Work Experience</h2>
             <div class="space-y-6">
-                {% if experiences %}
-                    {% for exp in experiences %}
+                {% if user.experiences.all %}
+                    {% for exp in user.experiences.all %}
                         <div class="pl-4 border-l-4 border-indigo-600">
-                            <h3 class="text-xl font-semibold text-white">{{ exp.job_title }}</h3>
-                            <p class="text-gray-400">{{ exp.company }}</p>
+                            <h3 class="text-xl font-semibold text-white">{{ exp.title }}</h3>
+                            <p class="text-gray-400">{{ exp.company_name }}</p>
                             <p class="text-sm text-gray-500 mb-2">
-                                {{ exp.start_date|date:"F Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"F Y" }}{% else %}Present{% endif %}
+                                {{ exp.start_date|date:"M Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
                             </p>
-                            <p class="text-gray-300 text-sm">{{ exp.description|default:"No description provided." }}</p>
+                            <p class="text-gray-300 text-sm">{{ exp.description }}</p>
                         </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-400 italic">No work experience listed. Click 'Edit Profile' to add your professional history.</p>
-                {% endif %}
-            </div>
-        </section>
-
-        <section class="mb-8">
-            <h2 class="text-2xl font-bold text-indigo-400 mb-4 border-b border-gray-700/50 pb-2">Education</h2>
-            <div class="space-y-6">
-                {% if educations %}
-                    {% for edu in educations %}
-                        <div class="pl-4 border-l-4 border-indigo-600">
-                            <h3 class="text-xl font-semibold text-white">{{ edu.institution }}</h3>
-                            <p class="text-gray-400">{{ edu.degree }}</p>
-                            <p class="text-sm text-gray-500">
-                                {{ edu.start_date|date:"Y" }} - {% if edu.end_date %}{{ edu.end_date|date:"Y" }}{% else %}Ongoing{% endif %}
-                            </p>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-gray-400 italic">No educational background listed.</p>
+                    <p class="text-gray-400 italic">No work experience listed.</p>
                 {% endif %}
             </div>
         </section>
@@ -129,8 +127,8 @@
         <section>
             <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">Skills</h2>
             <div class="flex flex-wrap gap-2">
-                {% if skills %}
-                    {% for skill in skills %}
+                {% if user.skills.all %}
+                    {% for skill in user.skills.all %}
                         <span class="px-4 py-1 bg-indigo-600 text-white text-sm font-medium rounded-full shadow-md hover:bg-indigo-500 transition duration-200">
                             {{ skill.name }}
                         </span>
@@ -151,8 +149,8 @@
         copyText.setSelectionRange(0, 99999); 
         navigator.clipboard.writeText(copyText.value);
         
-        // Simple visual feedback
-        alert("Referral link copied to clipboard!");
+        // Visual feedback using a temporary alert or toast
+        alert("Referral link copied!");
     }
 </script>
 {% endblock content %}

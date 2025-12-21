@@ -11,9 +11,15 @@ from .models import Product, Cart, CartItem
 from django.utils import timezone
 from datetime import timedelta
 import re 
-import os 
+import os
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.db.models import Sum
+from .models import Order, OrderItem  
+from users.models import Notification
 
 
+User = get_user_model()
 # ------------------------------------
 # Helper Functions
 # ------------------------------------
@@ -30,16 +36,12 @@ def robots_txt(request):
         "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
-
 @login_required
 def get_user_cart(request):
-    """
-    Retrieves or creates the user's active cart based on the session key.
-    """
-    session_key = request.session.session_key
-    if not session_key:
+    """Retrieves or creates the user's active cart based on the session key."""
+    if not request.session.session_key:
         request.session.create()
-        session_key = request.session.session_key
+    session_key = request.session.session_key
     
     # Prune old, inactive carts (older than 7 days)
     one_week_ago = timezone.now() - timedelta(days=7)
@@ -58,20 +60,17 @@ def get_user_cart(request):
 
 @login_required
 def product_list(request):
-    # Capture and validate referrer
+    """Lists all available products with search and referral tracking."""
+    # Capture and validate referrer from URL (?ref=username)
     referrer = request.GET.get('ref')
     if referrer:
         try:
-            # Ensure referrer exists in User model
             ref_user = User.objects.get(username=referrer)
-            # Prevent self-referral
-            if request.user.username != ref_user.username:
+            if request.user != ref_user:
                 request.session['active_referrer'] = ref_user.username
         except User.DoesNotExist:
-            # Ignore invalid referrer
             request.session.pop('active_referrer', None)
 
-    """Lists all available products with search and filtering capabilities."""
     products = Product.objects.all().order_by('-id')
 
     # Search and Filter Logic
@@ -86,7 +85,6 @@ def product_list(request):
     if vendor_query:
         products = products.filter(vendor_name__icontains=vendor_query)
 
-    products = products.order_by('-id')
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
 
@@ -106,21 +104,27 @@ def add_product(request):
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             product = form.save()
-            messages.success(request, f"🎉 Great! Your product '{product.name}' is now listed. Sell with pride.")
+            messages.success(request, f"🎉 Product '{product.name}' is now live!")
             return redirect('eshop:product_list')
-        else:
-            messages.error(request, "Oops! Please correct the errors below and try again.")
     else:
         form = ProductForm()
-
-    return render(request, 'eshop/add_product.html', {
-        'form': form
-    })
+    return render(request, 'eshop/add_product.html', {'form': form})
 
 @login_required
 def product_detail(request, slug):
     """Displays detailed information for a specific product."""
     product = get_object_or_404(Product, slug=slug)
+    
+    # Check for referral link in URL
+    referrer_username = request.GET.get('ref')
+    
+    if referrer_username:
+        # Optimization: Only set the session if the referrer isn't the current user
+        if referrer_username != request.user.username:
+            request.session['active_referrer'] = referrer_username
+            # Set the referral to last for 48 hours (in seconds)
+            request.session.set_expiry(172800) 
+        
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
     
@@ -179,35 +183,95 @@ def remove_from_cart(request, item_id):
     
     return redirect('eshop:view_cart')
 
+
+
 @login_required
 def checkout_view(request):
-    """Prepares the order summary for final user confirmation."""
+    """Finalizes order record, attributes referral, and prepares vendor summary."""
     cart = get_user_cart(request)
-    if not cart.items.exists():
-        messages.error(request, "Your cart is empty. Please add items to proceed to checkout.")
+    
+    if not cart or not cart.items.exists():
+        messages.error(request, "Your cart is empty.")
         return redirect('eshop:product_list')
 
-    first_item = cart.items.first()
-    vendor_name = first_item.product.vendor_name
-    vendor_phone = first_item.product.whatsapp_number
     cart_total = cart.cart_total
-    total_items_count = cart.items.aggregate(total=Sum('quantity'))['total']
+    total_items_count = cart.items.aggregate(total=Sum('quantity'))['total'] or 0
+    first_item = cart.items.first()
+    
+    # 1. Retrieve Referrer from Session (captured in product_detail)
+    referrer_username = request.session.get('active_referrer')
+    referrer_user = None
+    if referrer_username:
+        referrer_user = User.objects.filter(username=referrer_username).first()
 
-    order_items = "\n".join([f"- {item.quantity} x {item.product.name} @ {item.product.get_currency_code()} {item.product.price}" for item in cart.items.all()])
-    
-    order_message = (
-        f"Hello {vendor_name},\n\n"
-        f"🎉 A new order has been confirmed!\n\n"
-        f"🛍️ Items:\n{order_items}\n\n"
-        f"💰 Total: {first_item.product.get_currency_code()} {cart_total:,.0f}\n"
-        f"📞 Buyer contact: A proud customer awaits. Please contact them for delivery and final payment."
-    )
-    
+    # 2. Database Transaction: Create the Order record
+    try:
+        with transaction.atomic():
+            # Create the main order
+            order = Order.objects.create(
+                buyer=request.user,
+                referrer=referrer_user,
+                total_amount=cart_total,
+                status='Pending' # Wait for vendor confirmation to mark 'Completed'
+            )
+
+            running_commission = 0
+            order_items_list = []
+
+            for item in cart.items.all():
+                # Snapshot the data in case product changes later
+                price = item.product.negotiated_price or item.product.price
+                commission = item.product.referral_commission * item.quantity
+                
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    quantity=item.quantity,
+                    price_at_purchase=price,
+                    commission_at_purchase=item.product.referral_commission
+                )
+                
+                running_commission += commission
+                order_items_list.append(f"- {item.quantity} x {item.product.name} @ {item.product.get_currency_code()} {price:,.0f}")
+
+            # Update order with final calculated commission
+            order.total_commission = running_commission
+            order.save()
+
+            # 3. Notification Logic (Initial "Pending" Alert)
+            if referrer_user:
+                Notification.objects.create(
+                    user=referrer_user,
+                    title="Referral tracked! 🎯",
+                    message=f"Someone is checking out {first_item.product.name} using your link. You'll earn commission once the vendor completes the sale!"
+                )
+
+            # 4. Prepare the WhatsApp Message
+            order_items_string = "\n".join(order_items_list)
+            order_message = (
+                f"Hello {item.product.vendor_name},\n\n"
+                f"🎉 New order confirmed via Africana AI!\n\n"
+                f"Order ID: #{order.id}\n"
+                f"🛍️ Items:\n{order_items_string}\n\n"
+                f"💰 Total: {first_item.product.get_currency_code()} {cart_total:,.0f}\n"
+                f"👤 Buyer: {request.user.get_full_name() or request.user.username}\n"
+                f"📞 Please contact me for delivery details."
+            )
+
+            # 5. Clear Cart & Referral Session
+            cart.items.all().delete()
+            if 'active_referrer' in request.session:
+                del request.session['active_referrer']
+
+    except Exception as e:
+        messages.error(request, f"An error occurred: {str(e)}")
+        return redirect('eshop:cart_detail')
+
     context = {
-        'cart': cart,
+        'order': order,
         'cart_total': cart_total,
         'total_items_count': total_items_count,
-        'vendor': {'name': vendor_name, 'phone_number': vendor_phone},
+        'vendor': {'name': first_item.product.vendor_name, 'phone_number': first_item.product.whatsapp_number},
         'order_message': order_message,
     }
 
@@ -241,63 +305,79 @@ def process_delivery_location(request):
         return redirect('eshop:confirm_order_whatsapp') 
         
     return redirect('eshop:delivery_location')
-
 @login_required
 def confirm_order_whatsapp(request):
-    """Finalizes order, clears cart, and redirects user to WhatsApp with order details."""
+    """Finalizes order in DB and redirects to WhatsApp."""
     cart = get_user_cart(request)
-    delivery_details = request.session.pop('delivery_details', None) 
-    
-    if not cart.items.exists():
-        messages.error(request, "Your cart is empty. Cannot confirm an empty order.")
+    delivery_details = request.session.pop('delivery_details', None)
+    referrer_username = request.session.get('active_referrer')
+
+    if not cart.items.exists() or not delivery_details:
+        messages.error(request, "Session expired or cart empty.")
         return redirect('eshop:product_list')
+
+    # 1. Determine Referrer
+    referrer = None
+    if referrer_username:
+        referrer = User.objects.filter(username=referrer_username).first()
+
+    # 2. Database Transaction for Order Consistency
+    with transaction.atomic():
+        order = Order.objects.create(
+            buyer=request.user,
+            referrer=referrer,
+            total_amount=cart.cart_total,
+            status='Completed' # Assuming immediate completion via WhatsApp
+        )
+
+        total_comm = 0
+        order_items_text = []
+        first_item = cart.items.first()
+
+        for item in cart.items.all():
+            comm_per_unit = item.product.referral_commission or 0
+            total_comm += (comm_per_unit * item.quantity)
+            
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price_at_purchase=item.product.negotiated_price or item.product.price,
+                commission_at_purchase=comm_per_unit
+            )
+            order_items_text.append(f"- {item.quantity} x {item.product.name}")
         
-    if not delivery_details:
-        messages.error(request, "Delivery details are missing. Please re-enter your location.")
-        return redirect('eshop:delivery_location')
+        order.total_commission = total_comm
+        order.save()
 
-    first_item = cart.items.first()
-    vendor_name = first_item.product.vendor_name
-    vendor_phone = first_item.product.whatsapp_number
+        # 3. Notification for the Referrer (if exists)
+        if referrer:
+            Notification.objects.create(
+                user=referrer,
+                title="Commission Earned! 💰",
+                message=f"Success! Someone bought from your link. You earned {first_item.product.get_currency_code()} {total_comm:,.0f}."
+            )
+
+    # 4. FIX FOR SYNTAX ERROR: Prepare Message Body separately
+    items_block = "\n".join(order_items_text)
     curr = first_item.product.get_currency_code()
+    
+    full_message = (
+        f"Hello {first_item.product.vendor_name},\n"
+        f"🎉 New order from Africana!\n\n"
+        f"📍 Deliver to: {delivery_details['address']}, {delivery_details['city']}\n"
+        f"📞 Contact: {delivery_details['phone']}\n\n"
+        f"🛍️ Items:\n{items_block}\n\n"
+        f"💰 Total: {curr} {order.total_amount:,.0f}"
+    )
 
-    lines = [
-        f"Hello {vendor_name},",
-        "🎉 A new order has been confirmed!",
-        "",
-        "📍 Delivery Address:",
-        f"Address: {delivery_details.get('address', 'N/A')}",
-        f"City: {delivery_details.get('city', 'N/A')}",
-        f"Coordinates: Lat {delivery_details.get('latitude', 'N/A')}, Lng {delivery_details.get('longitude', 'N/A')}",
-        "",
-        "📞 Buyer Contact:",
-        f"Phone: {delivery_details.get('phone', 'N/A')}",
-        "",
-        "🛍️ Items:",
-    ]
-    for item in cart.items.all():
-        if item.product:
-            lines.append(f"- {item.quantity} x {item.product.name} @ {curr} {item.product.price}")
-        else:
-             lines.append(f"- {item.quantity} x [UNAVAILABLE PRODUCT]")
+    whatsapp_url = f"https://wa.me/{first_item.product.whatsapp_number}?text={quote(full_message)}"
 
-    lines.append("")
-    lines.append(f"💰 Total: {curr} {cart.cart_total:,.0f}")
-    lines.append("")
-    lines.append("Please prepare for delivery. Africa thanks you.")
-
-    message = "\n".join(lines)
-    whatsapp_url = f"https://wa.me/{vendor_phone}?text={quote(message)}"
-
-    # Clear Cart and Mark as Inactive
+    # 5. Cleanup
     cart.items.all().delete()
-    cart.is_active = False
-    cart.save()
-    return redirect(whatsapp_url)
+    request.session.pop('active_referrer', None)
 
-# ------------------------------------
-# AI Negotiation Logic
-# ------------------------------------
+    return redirect(whatsapp_url)
 
 def round_price(price, product_price_ref):
     """Rounds prices based on magnitude for localized currency standards (e.g., UGX)."""

@@ -3,6 +3,8 @@ from django.db import models
 from django.utils.text import slugify
 from django.conf import settings
 from cloudinary.models import CloudinaryField
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # --- Product Model ---
 
@@ -22,12 +24,11 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Referral System Field
-    # This allows anyone who shares the link to earn a set amount from the vendor
     referral_commission = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
         default=0.00,
-        help_text="The amount the vendor pays to the person who shared the link upon a successful sale."
+        help_text="The amount paid to the referrer upon a successful sale."
     )
     
     # Currency Settings
@@ -51,39 +52,23 @@ class Product(models.Model):
     tiktok_url = models.URLField(max_length=200, null=True, blank=True)
 
     def get_currency_code(self):
-        """
-        Returns the manually selected currency. 
-        If it's the default, it tries to map based on country as a fallback.
-        """
         if self.currency and self.currency != 'UGX':
             return self.currency
             
         currency_map = {
-            'Uganda': 'UGX',
-            'Kenya': 'KES',
-            'Tanzania': 'TZS',
-            'Rwanda': 'RWF',
-            'Nigeria': 'NGN',
-            'Ghana': 'GHS',
-            'South Africa': 'ZAR',
-            'Egypt': 'EGP',
-            'Zimbabwe': 'USD',
-            'USA': 'USD',
+            'Uganda': 'UGX', 'Kenya': 'KES', 'Tanzania': 'TZS',
+            'Rwanda': 'RWF', 'Nigeria': 'NGN', 'Ghana': 'GHS',
+            'South Africa': 'ZAR', 'Egypt': 'EGP', 'Zimbabwe': 'USD', 'USA': 'USD',
         }
         return currency_map.get(self.country, self.currency)
 
     def save(self, *args, **kwargs):
-        """
-        Custom save method to handle unique slug generation.
-        """
         if not self.slug:
             base_slug = slugify(self.name)
             self.slug = base_slug
-            
             while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
                 unique_suffix = uuid.uuid4().hex[:6]
                 self.slug = f"{base_slug}-{unique_suffix}"
-                
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -101,30 +86,15 @@ class Cart(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
     
-    STATUS_CHOICES = [
-        ('open', 'Open'),
-        ('confirmed', 'Confirmed'),
-        ('expired', 'Expired'),
-    ]
+    STATUS_CHOICES = [('open', 'Open'), ('confirmed', 'Confirmed'), ('expired', 'Expired')]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
 
     @property
     def cart_total(self):
-        """Calculates total based on individual item prices."""
         return sum(item.total_price for item in self.items.all())
 
-    def get_cart_currency(self):
-        """Returns the currency code of the first item in the cart."""
-        first_item = self.items.first()
-        if first_item:
-            return first_item.product.get_currency_code()
-        return "UGX"
-    
-    def get_items_by_vendor(self, vendor_name):
-       return self.items.filter(product__vendor_name=vendor_name)
-
     def __str__(self):
-        return f"Cart {self.session_key} - Total Items: {self.items.count()}"
+        return f"Cart {self.session_key}"
 
 
 class CartItem(models.Model):
@@ -132,28 +102,63 @@ class CartItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     added_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     @property
     def total_price(self):
-        """
-        Calculates price. 
-        Uses negotiated_price (AI) if available, otherwise standard price.
-        """
-        base_price = self.product.negotiated_price if self.product.negotiated_price else self.product.price
-            
-        if base_price:
-            return base_price * self.quantity
-        return 0
-
-    def update_quantity(self, new_quantity):
-       if new_quantity > 0:
-            self.quantity = new_quantity
-            self.save()    
-
-    @property
-    def vendor(self):
-        return self.product.vendor_name
+        base_price = self.product.negotiated_price or self.product.price
+        return (base_price * self.quantity) if base_price else 0
 
     def __str__(self):
-        return f"{self.quantity} x {self.product.name} in Cart"
+        return f"{self.quantity} x {self.product.name}"
+
+
+# --- Order Models (The Referral Bridge) ---
+
+class Order(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
+    ]
+
+    # Links purchase to the buyer
+    buyer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='purchases'
+    )
+    
+    # Automatically tracks who gets the commission
+    referrer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='attributed_orders'
+    )
+    
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    total_commission = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        """Auto-assign referrer from buyer profile if not manually set."""
+        if not self.referrer and hasattr(self.buyer, 'referred_by'):
+            self.referrer = self.buyer.referred_by
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Order #{self.id} - {self.buyer.username}"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+    price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
+    commission_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
+
+
+    def __str__(self):
+        return f"{self.product.name} (Qty: {self.quantity})"
