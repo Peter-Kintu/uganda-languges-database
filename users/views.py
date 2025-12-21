@@ -63,10 +63,8 @@ def tts_proxy(request):
 # ==============================================================================
 
 def user_login(request):
-    """Handles user login with robust redirects and template fallbacks."""
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
-    
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -79,7 +77,6 @@ def user_login(request):
             messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
-            
     context = {'form': form, 'next': request.GET.get('next', '')}
     try:
         return render(request, 'users/login.html', context)
@@ -87,10 +84,8 @@ def user_login(request):
         return render(request, 'login.html', context)
 
 def user_register(request):
-    """Handles user registration and automatically logs them in."""
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
-        
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
@@ -104,7 +99,6 @@ def user_register(request):
                     messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = CustomUserCreationForm()
-        
     try:
         return render(request, 'users/register.html', {'form': form})
     except TemplateDoesNotExist:
@@ -127,7 +121,6 @@ def user_profile(request):
     educations = Education.objects.filter(user=user).order_by('-end_date')
     skills = Skill.objects.filter(user=user)
     social_connections = SocialConnection.objects.filter(user=user)
-
     context = {
         'user': user,
         'experiences': experiences,
@@ -136,7 +129,6 @@ def user_profile(request):
         'social_connections': social_connections,
         'total_referral_earnings': 0,
     }
-    
     try:
         return render(request, 'users/profile.html', context)
     except TemplateDoesNotExist:
@@ -153,7 +145,6 @@ def profile_edit(request):
             return redirect('users:profile')
     else:
         form = ProfileEditForm(instance=user)
-        
     try:
         return render(request, 'users/profile_edit.html', {'form': form})
     except TemplateDoesNotExist:
@@ -164,7 +155,6 @@ def profile_edit(request):
 # ==============================================================================
 
 def _get_user_profile_data(user):
-    """Gathers profile data for AI context."""
     return {
         "full_name": user.get_full_name() or user.username, 
         "location": getattr(user, 'location', 'Not provided'),
@@ -176,64 +166,75 @@ def _get_user_profile_data(user):
         ]
     }
 
-def _clean_history(messages):
-    """Standardizes chat history for Gemini (must alternate user/model)."""
+def _clean_history(messages, system_prompt):
+    """Prepares history. Injects system instructions as the first 'user' message."""
     cleaned = []
-    last_role = None
+    
+    # Inject system context as the very first turn
+    cleaned.append({
+        "role": "user",
+        "parts": [{"text": f"SYSTEM INSTRUCTIONS: {system_prompt}\n\nPlease acknowledge these instructions and help the user."}]
+    })
+    cleaned.append({
+        "role": "model",
+        "parts": [{"text": "Understood. I am your Career Companion AI. How can I help you today?"}]
+    })
+
+    last_role = "model"
     for msg in messages:
-        role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
-        text = msg.get("text")
-        if not text: continue
+        current_role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
+        text_content = msg.get("text")
+        if not text_content: continue
         
-        if role == last_role:
+        if current_role == last_role:
             if cleaned:
-                cleaned[-1]["parts"][0]["text"] += f"\n{text}"
+                cleaned[-1]["parts"][0]["text"] += f"\n{text_content}"
                 continue
+
+        cleaned.append({"role": current_role, "parts": [{"text": text_content}]})
+        last_role = current_role
         
-        cleaned.append({"role": role, "parts": [{"text": text}]})
-        last_role = role
     return cleaned
 
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Proxies chat requests to Gemini with stable v1 API."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
-    # 1. API Key Cleaning
-    raw_key = os.environ.get("GEMINI_API_KEY", "")
-    api_key = raw_key.strip().replace('"', '').replace("'", "")
+    raw_api_key = os.environ.get("GEMINI_API_KEY", "")
+    api_key = raw_api_key.strip().replace('"', '').replace("'", "")
 
     if not api_key:
-        return JsonResponse({"error": "API Key missing from server."}, status=500)
+        return JsonResponse({"error": "API Key missing"}, status=500)
 
     try:
         data = json.loads(request.body)
         contents = data.get('contents', [])
-
-        # 2. Build Context
+        
         profile = _get_user_profile_data(request.user)
-        profile_summary = (
-            f"User: {profile['full_name']}. Bio: {profile['bio']}. "
-            f"Skills: {', '.join(profile['skills'])}."
+        system_prompt = (
+            f"You are the Career Companion AI for Africana. "
+            f"The user's name is {profile['full_name']}. "
+            f"Bio: {profile['bio']}. Skills: {', '.join(profile['skills'])}."
         )
 
-        # 3. Payload with stable v1 endpoint
+        # Using v1 (Stable) to avoid model 404s
         url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
         
+        # We move system_instruction into the conversation history to avoid the 400 error
         payload = {
-            "contents": _clean_history(contents),
-            "system_instruction": {
-                "parts": [{"text": f"You are Career Companion AI for Africana. Context: {profile_summary}"}]
-            },
-            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024}
+            "contents": _clean_history(contents, system_prompt),
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 1024
+            }
         }
 
         resp = requests.post(url, json=payload, timeout=15)
         
         if resp.status_code != 200:
-            print(f"DEBUG: Google API Error: {resp.text}")
+            print(f"DEBUG Error Response: {resp.text}")
             return JsonResponse(resp.json(), status=resp.status_code)
 
         result = resp.json()
@@ -241,12 +242,10 @@ def gemini_proxy(request):
         return JsonResponse({"text": text})
 
     except Exception as e:
-        print(f"DEBUG: Proxy Exception: {str(e)}")
         return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
 def profile_ai(request):
-    """Renders the AI tools page."""
     try:
         return render(request, 'users/profile_ai.html', {'user': request.user})
     except TemplateDoesNotExist:
