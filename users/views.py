@@ -20,7 +20,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# Safely import eshop models to prevent crashes if the app is not fully linked
+# Safely import eshop models
 try:
     from eshop.models import Product, CartItem 
 except ImportError:
@@ -167,10 +167,10 @@ def _get_user_profile_data(user):
     }
 
 def _clean_history(messages, system_prompt):
-    """Prepares alternating turns for Gemini v1beta."""
+    """Prepares alternating turns for Gemini 3 (v1 stable)."""
     cleaned = []
     
-    # 1. Inject Identity at the start
+    # Inject Identity at the start using user/model exchange for prompt stability
     cleaned.append({
         "role": "user",
         "parts": [{"text": f"INSTRUCTIONS: {system_prompt}\nAdopt this persona for all future messages."}]
@@ -199,21 +199,21 @@ def _clean_history(messages, system_prompt):
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Handles AI chat using the v1beta endpoint for maximum model compatibility."""
+    """Handles AI chat using Gemini 3 Flash on the stable v1 endpoint."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
+    # API Key retrieval with cleanup for Render environment variables
     raw_api_key = os.environ.get("GEMINI_API_KEY", "")
     api_key = raw_api_key.strip().replace('"', '').replace("'", "")
 
     if not api_key:
-        return JsonResponse({"error": "Server API Key is missing."}, status=500)
+        return JsonResponse({"error": "Server API Key is missing on Render."}, status=500)
 
     try:
         data = json.loads(request.body)
         contents = data.get('contents', [])
         
-        # Build Profile Context
         profile = _get_user_profile_data(request.user)
         system_prompt = (
             f"You are the Career Companion AI for the Africana platform. "
@@ -221,23 +221,29 @@ def gemini_proxy(request):
             f"Skills: {', '.join(profile['skills'])}. History: {', '.join(profile['experiences'])}."
         )
 
-        # USE V1BETA: This is the version that contains the gemini-1.5-flash model.
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        # 2025 CONFIGURATION: Use v1 stable and gemini-3-flash
+        model_name = "gemini-3-flash"
+        url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={api_key}"
         
-        # Omit 'system_instruction' to avoid the 400 error seen in v1beta
         payload = {
             "contents": _clean_history(contents, system_prompt),
             "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 1024
+                "temperature": 1.0,  # Gemini 3 recommends temperature 1.0 for better reasoning
+                "maxOutputTokens": 2048,
+                "thinking_level": "low"  # New 2025 parameter for Flash series
             }
         }
 
-        resp = requests.post(url, json=payload, timeout=20)
+        resp = requests.post(url, json=payload, timeout=25)
         
         if resp.status_code != 200:
-            print(f"DEBUG Error Detail: {resp.text}")
-            return JsonResponse({"error": "AI Error", "details": resp.json()}, status=resp.status_code)
+            # Fallback for regional rollouts to the previous stable version
+            if resp.status_code == 404:
+                url = url.replace("gemini-3-flash", "gemini-2.5-flash")
+                resp = requests.post(url, json=payload, timeout=25)
+
+            if resp.status_code != 200:
+                return JsonResponse({"error": "AI Service unavailable", "details": resp.json()}, status=resp.status_code)
 
         result = resp.json()
         text = result['candidates'][0]['content']['parts'][0]['text']
@@ -245,7 +251,7 @@ def gemini_proxy(request):
 
     except Exception as e:
         print(f"DEBUG Proxy Exception: {str(e)}")
-        return JsonResponse({"error": str(e)}, status=500)
+        return JsonResponse({"error": "An internal error occurred while connecting to the AI."}, status=500)
 
 @login_required
 def profile_ai(request):
