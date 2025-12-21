@@ -7,17 +7,22 @@ from django.urls import reverse
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.template import TemplateDoesNotExist
 from datetime import datetime
 import json
 import os
 import requests
 
 # Import the Custom Forms and Models
-from .forms import CustomUserCreationForm, ProfileEditForm
 from .models import CustomUser, Experience, Education, Skill, SocialConnection 
+from .forms import CustomUserCreationForm, ProfileEditForm
 
-# Assuming referral logic relates to Product commissions in eshop
-from eshop.models import Product, CartItem 
+# Safely import eshop models to prevent crashes if the app is not fully linked
+try:
+    from eshop.models import Product, CartItem 
+except ImportError:
+    Product = None
+    CartItem = None
 
 # ==============================================================================
 # UTILITY / INFRASTRUCTURE VIEWS
@@ -31,15 +36,15 @@ def robots_txt(request):
     """Generates robots.txt for search engine crawlers."""
     lines = [
         "User-agent: *",
-        "allow:",
+        "Disallow: /admin/",
         "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 def tts_proxy(request):
     """
-    REQUIRED FIX: Proxies TTS requests to avoid CORS issues.
-    This resolves the ImportError in your urls.py.
+    FIX: Proxies TTS requests to avoid CORS issues.
+    This resolves the ImportError: cannot import name 'tts_proxy'.
     """
     text = request.GET.get('text', '')
     lang = request.GET.get('lang', 'en')
@@ -48,7 +53,7 @@ def tts_proxy(request):
     
     tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={text}&tl={lang}&client=tw-ob"
     try:
-        response = requests.get(tts_url, stream=True)
+        response = requests.get(tts_url, stream=True, timeout=5)
         return HttpResponse(response.content, content_type="audio/mpeg")
     except Exception as e:
         return HttpResponse(f"Error: {str(e)}", status=500)
@@ -122,9 +127,7 @@ def user_profile(request):
     skills = Skill.objects.filter(user=user)
     social_connections = SocialConnection.objects.filter(user=user)
 
-    # Referral Earnings Calculation
-    # Note: This logic assumes you will eventually have a 'ReferralReward' model.
-    # For now, we initialize it to 0 as a placeholder for the template.
+    # Referral Earnings Calculation (Placeholder for logic)
     total_referral_earnings = 0 
 
     context = {
@@ -172,7 +175,7 @@ def _get_user_profile_data(user):
             "referral_link": f"https://africana.market/?ref={user.username}"
         },
         "experiences": [
-            {"title": exp.job_title, "company": exp.company}
+            {"title": getattr(exp, 'job_title', 'Employee'), "company": exp.company}
             for exp in Experience.objects.filter(user=user)
         ]
     }
@@ -206,13 +209,13 @@ def gemini_proxy(request):
         api_key = os.environ.get("GEMINI_API_KEY")
 
         if not api_key:
-            return JsonResponse({"error": "API Key missing."}, status=500)
+            return JsonResponse({"error": "API Key missing in environment variables."}, status=500)
 
         profile_json = json.dumps(_get_user_profile_data(request.user))
         system_instruction = (
-            "You are Career Companion AI. You help with CVs and career strategy. "
+            "You are Career Companion AI. You help with CVs, interview prep and career strategy. "
             f"User Context: {profile_json}. "
-            "If asked about referrals, explain that they earn commissions by sharing links."
+            "If asked about referrals, explain that they earn commissions by sharing their link."
         )
 
         payload = {
@@ -221,11 +224,12 @@ def gemini_proxy(request):
             "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024}
         }
 
+        # Using v1beta for system_instruction support
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        resp = requests.post(url, json=payload)
+        resp = requests.post(url, json=payload, timeout=10)
         
         if resp.status_code != 200:
-            return JsonResponse({"error": "AI Error"}, status=resp.status_code)
+            return JsonResponse({"error": "Gemini API Error", "details": resp.text}, status=resp.status_code)
 
         result = resp.json()
         text = result['candidates'][0]['content']['parts'][0]['text']
@@ -236,5 +240,11 @@ def gemini_proxy(request):
 
 @login_required
 def profile_ai(request):
-    """Renders the AI Career tools page."""
-    return render(request, 'users/profile_ai.html', {'user': request.user})
+    """Renders the AI Career tools page with a safety fallback for template paths."""
+    try:
+        return render(request, 'users/profile_ai.html', {'user': request.user})
+    except TemplateDoesNotExist:
+        return render(request, 'profile_ai.html', {'user': request.user})
+
+# ALIAS: Fixes AttributeError by matching the name used in your urls.py
+ai_quiz_generator = profile_ai
