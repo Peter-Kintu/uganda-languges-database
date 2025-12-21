@@ -177,78 +177,63 @@ def _get_user_profile_data(user):
     }
 
 def _clean_history(messages):
-    """Standardizes history. Gemini requires alternating roles (user -> model)."""
+    """Standardizes chat history for Gemini (must alternate user/model)."""
     cleaned = []
     last_role = None
-    
     for msg in messages:
-        current_role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
-        text_content = msg.get("text")
-        if not text_content: 
-            continue
+        role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
+        text = msg.get("text")
+        if not text: continue
         
-        # Merge if consecutive roles are the same to avoid 400 error
-        if current_role == last_role:
+        if role == last_role:
             if cleaned:
-                cleaned[-1]["parts"][0]["text"] += f"\n{text_content}"
+                cleaned[-1]["parts"][0]["text"] += f"\n{text}"
                 continue
-
-        cleaned.append({
-            "role": current_role,
-            "parts": [{"text": text_content}]
-        })
-        last_role = current_role
         
+        cleaned.append({"role": role, "parts": [{"text": text}]})
+        last_role = role
     return cleaned
 
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Proxies chat requests to Gemini with integrated User context."""
+    """Proxies chat requests to Gemini with stable v1 API."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
-    # 1. Handle API Key
-    raw_api_key = os.environ.get("GEMINI_API_KEY", "")
-    api_key = raw_api_key.strip().replace('"', '').replace("'", "")
+    # 1. API Key Cleaning
+    raw_key = os.environ.get("GEMINI_API_KEY", "")
+    api_key = raw_key.strip().replace('"', '').replace("'", "")
 
     if not api_key:
-        return JsonResponse({
-            "error": "Configuration Error", 
-            "text": "The server's Gemini API Key is missing. Please check environment variables."
-        }, status=500)
+        return JsonResponse({"error": "API Key missing from server."}, status=500)
 
     try:
-        # 2. Extract History
         data = json.loads(request.body)
         contents = data.get('contents', [])
-        
-        # 3. Restored Profile Summary Logic
+
+        # 2. Build Context
         profile = _get_user_profile_data(request.user)
         profile_summary = (
             f"User: {profile['full_name']}. Bio: {profile['bio']}. "
-            f"Location: {profile['location']}. Skills: {', '.join(profile['skills'])}."
+            f"Skills: {', '.join(profile['skills'])}."
         )
 
-        # 4. Construct Payload
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        # 3. Payload with stable v1 endpoint
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
         
         payload = {
             "contents": _clean_history(contents),
             "system_instruction": {
-                "parts": [{"text": f"You are Career Companion AI. Help with CVs and interview prep. Context: {profile_summary}"}]
+                "parts": [{"text": f"You are Career Companion AI for Africana. Context: {profile_summary}"}]
             },
-            "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 1024
-            }
+            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024}
         }
 
-        # 5. API Call
         resp = requests.post(url, json=payload, timeout=15)
         
         if resp.status_code != 200:
-            print(f"DEBUG: Google API Response: {resp.text}")
+            print(f"DEBUG: Google API Error: {resp.text}")
             return JsonResponse(resp.json(), status=resp.status_code)
 
         result = resp.json()
@@ -267,5 +252,4 @@ def profile_ai(request):
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
-# ALIAS for the URL patterns
 ai_quiz_generator = profile_ai
