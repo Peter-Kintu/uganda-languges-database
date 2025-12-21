@@ -45,10 +45,7 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 def tts_proxy(request):
-    """
-    FIX: Proxies TTS requests to avoid CORS issues.
-    This resolves the ImportError: cannot import name 'tts_proxy'.
-    """
+    """Proxies TTS requests to avoid CORS issues."""
     text = request.GET.get('text', '')
     lang = request.GET.get('lang', 'en')
     if not text:
@@ -66,9 +63,10 @@ def tts_proxy(request):
 # ==============================================================================
 
 def user_login(request):
-    """Handles user login and redirects to the job listings page."""
+    """Handles user login with template fallback to prevent 500 errors."""
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
+    
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -86,7 +84,12 @@ def user_login(request):
             messages.error(request, "Invalid form submission.")
             
     form = AuthenticationForm()
-    return render(request, 'users/login.html', {'form': form})
+    
+    # FIX: Try both possible template paths to prevent 500 if folder structure is nested
+    try:
+        return render(request, 'users/login.html', {'form': form})
+    except TemplateDoesNotExist:
+        return render(request, 'login.html', {'form': form})
 
 def user_register(request):
     """Handles user registration and automatically logs them in."""
@@ -107,7 +110,10 @@ def user_register(request):
     else:
         form = CustomUserCreationForm()
         
-    return render(request, 'users/register.html', {'form': form})
+    try:
+        return render(request, 'users/register.html', {'form': form})
+    except TemplateDoesNotExist:
+        return render(request, 'register.html', {'form': form})
 
 @login_required
 def user_logout(request):
@@ -126,11 +132,11 @@ def user_profile(request):
     user = request.user
     
     experiences = Experience.objects.filter(user=user).order_by('-start_date')
-    educations = Education.objects.filter(user=user).order_by('-start_date')
+    educations = Education.objects.filter(user=user).order_by('-end_date')
     skills = Skill.objects.filter(user=user)
     social_connections = SocialConnection.objects.filter(user=user)
 
-    # Referral Earnings Calculation (Placeholder for logic)
+    # Referral Earnings Placeholder
     total_referral_earnings = 0 
 
     context = {
@@ -141,7 +147,11 @@ def user_profile(request):
         'social_connections': social_connections,
         'total_referral_earnings': total_referral_earnings,
     }
-    return render(request, 'users/profile.html', context)
+    
+    try:
+        return render(request, 'users/profile.html', context)
+    except TemplateDoesNotExist:
+        return render(request, 'profile.html', context)
 
 @login_required
 def profile_edit(request):
@@ -160,16 +170,18 @@ def profile_edit(request):
     else:
         form = ProfileEditForm(instance=user)
         
-    return render(request, 'users/profile_edit.html', {'form': form})
+    try:
+        return render(request, 'users/profile_edit.html', {'form': form})
+    except TemplateDoesNotExist:
+        return render(request, 'profile_edit.html', {'form': form})
 
 # ==============================================================================
 # AI CHAT & CONTEXT UTILITIES
 # ==============================================================================
 
 def _get_user_profile_data(user):
-    """Gathers profile and referral data for the AI context without crashing."""
-    # Note: Changed 'bio' to 'about', 'job_title' to 'title', and 'company' to 'company_name'
-    # to match your models.py definition.
+    """Gathers profile and referral data for the AI context WITHOUT crashing."""
+    # Field mapping: We use .about, .title, and .company_name to match models.py
     return {
         "username": user.username,
         "full_name": user.get_full_name() or user.username, 
@@ -230,7 +242,6 @@ def gemini_proxy(request):
             "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024}
         }
 
-        # Using v1beta for system_instruction support
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         resp = requests.post(url, json=payload, timeout=10)
         
@@ -252,5 +263,5 @@ def profile_ai(request):
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
-# ALIAS: Fixes AttributeError by matching the name used in your urls.py
+# ALIAS
 ai_quiz_generator = profile_ai
