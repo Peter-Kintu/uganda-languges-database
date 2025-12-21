@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Africana AI - Personalized Guidance{% endblock %}
+{% block title %}Africana AI - Career Companion{% endblock %}
 
 {% block content %}
 <style>
@@ -102,12 +102,6 @@
         border-top: 1px solid #1f2937;
     }
 
-    .utility-button-group {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.75rem;
-    }
-
     .action-icon-button {
         flex-shrink: 0; 
         width: 2.75rem; 
@@ -128,7 +122,7 @@
         filter: brightness(1.2);
     }
 
-    .action-icon-button.clear { background-color: #dc2626; }
+    .action-icon-button.clear { background-color: #dc2626; width: 100%; }
 
     /* --- CHAT AREA STYLING --- */
     .chat-main-area {
@@ -210,9 +204,13 @@
         border: 1px solid #374151;
     }
 
-    /* Style for markdown-like lists from AI */
-    .chat-message ul { margin-left: 1.5rem; margin-top: 0.5rem; }
-    .chat-message li { margin-bottom: 0.25rem; }
+    .chat-message.error {
+        align-self: center;
+        background-color: #7f1d1d;
+        color: #fca5a5;
+        border: 1px solid #b91c1c;
+        font-size: 0.85rem;
+    }
 
     .chat-input-area {
         padding: 1.5rem 2rem;
@@ -278,11 +276,10 @@
         <ul class="history-list" id="historyList"></ul>
 
         <div class="sidebar-footer">
-            <div class="utility-button-group">
-                <button onclick="clearChat()" class="action-icon-button clear" title="Clear All History" style="width: 100%;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 01 2-2h4a2 2 0 01 2 2v2"/></svg>
-                </button>
-            </div>
+            <button onclick="clearChat()" class="action-icon-button clear" title="Clear All History">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 01 2-2h4a2 2 0 01 2 2v2"/></svg>
+                <span class="ml-2 text-sm font-medium">Clear History</span>
+            </button>
             <p id="localTimeDisplay" class="text-[10px] text-gray-500 mt-4 text-center"></p>
             <p id="userLocationDisplay" class="text-[10px] text-gray-600 mt-1 text-center"></p>
         </div>
@@ -296,7 +293,9 @@
                 </button>
                 <h1>Career Companion AI</h1>
             </div>
-            <div class="text-[10px] text-indigo-400 font-mono hidden md:block px-3 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">GEMINI-3-FLASH</div>
+            <div class="text-[10px] text-indigo-400 font-mono hidden md:block px-3 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20 uppercase">
+                Flash-Lite 2.5
+            </div>
         </header>
 
         <div id="chatLog"></div>
@@ -362,7 +361,6 @@
         try {
             const history = getSessionHistory(currentSessionId);
             
-            // Note: History is sent as {role, text} objects which the backend handles via _clean_history
             const response = await fetch("{% url 'users:gemini_proxy' %}", {
                 method: 'POST',
                 headers: { 
@@ -374,9 +372,13 @@
 
             const data = await response.json();
 
+            if (response.status === 429) {
+                appendMessage('error', "⚠️ Quota Busy: The AI free tier is currently at capacity. Please wait 30 seconds before sending your next message.");
+                return;
+            }
+
             if (!response.ok) {
-                const errorMsg = data.details?.error?.message || data.error || "AI Service Timeout";
-                throw new Error(errorMsg);
+                throw new Error(data.details || data.error || "Connection Error");
             }
 
             if (data.text) {
@@ -387,7 +389,7 @@
             }
         } catch (e) {
             console.error("Chat Error:", e);
-            appendMessage('ai', "System Note: " + e.message);
+            appendMessage('error', "System Note: " + e.message);
         } finally {
             loadingIndicator.classList.add('hidden');
             chatLog.scrollTop = chatLog.scrollHeight;
@@ -397,13 +399,16 @@
     function appendMessage(role, text) {
         const div = document.createElement('div');
         div.className = `chat-message ${role}`;
-        const label = role === 'ai' ? 'Career AI' : 'You';
         
-        // Basic Markdown-to-HTML parser for 2025 responses (bold and lists)
+        let label = 'You';
+        if (role === 'ai') label = 'Career AI';
+        if (role === 'error') label = 'System';
+
+        // Enhanced 2025 Markdown Parser
         let formattedText = text
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-            .replace(/^\* (.*$)/gim, '<li>$1</li>')          // Bullet points
-            .replace(/\n/g, '<br>');                         // New lines
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^\* (.*$)/gim, '<li>$1</li>')
+            .replace(/\n/g, '<br>');
 
         if (formattedText.includes('<li>')) {
             formattedText = formattedText.replace(/(<li>.*<\/li>)/gms, '<ul>$1</ul>');
@@ -420,6 +425,7 @@
     }
 
     function saveMessage(id, role, text) {
+        if (role === 'error') return; // Don't save errors to history
         const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
         if (!sessions[id]) sessions[id] = [];
         sessions[id].push({ role, text });

@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import time
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -78,7 +79,7 @@ def user_login(request):
             next_url = request.POST.get('next') or request.GET.get('next')
             return redirect(next_url or reverse('languages:browse_job_listings')) 
         else:
-            messages.error("Invalid username or password.")
+            messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
     context = {'form': form, 'next': request.GET.get('next', '')}
@@ -179,7 +180,6 @@ def _format_history_for_sdk(messages):
         if not text:
             continue
             
-        # Merge consecutive turns with the same role to avoid API errors
         if formatted and formatted[-1]["role"] == role:
             formatted[-1]["parts"][0]["text"] += f"\n{text}"
         else:
@@ -189,49 +189,59 @@ def _format_history_for_sdk(messages):
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Handles AI chat using the official SDK (Dec 2025 Standard)."""
+    """Handles AI chat with a high-availability fallback for Free Tier users."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
-    # API Key cleanup from Render Dashboard
     raw_api_key = os.environ.get("GEMINI_API_KEY", "").strip().replace('"', '').replace("'", "")
     if not raw_api_key:
         return JsonResponse({"error": "Server API Key is missing on Render."}, status=500)
 
     try:
-        # Initialize official Client
         client = genai.Client(api_key=raw_api_key)
-        
         data = json.loads(request.body)
         raw_contents = data.get('contents', [])
         
-        # Build Profile Context as a System Instruction
         profile = _get_user_profile_data(request.user)
         system_instruction = (
             f"You are the Career Companion AI for Africana. "
             f"User: {profile['full_name']}. Bio: {profile['bio']}. "
             f"Skills: {', '.join(profile['skills'])}. History: {', '.join(profile['experiences'])}."
         )
-
-        # Reformat history for the SDK
         history = _format_history_for_sdk(raw_contents)
 
-        # Call the stable 2025 model: Gemini 2.0 Flash
-        # Note: 'thinking_level' removed to satisfy SDK schema validation
-        response = client.models.generate_content(
-            model="gemini-2.0-flash", 
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.7,
-                max_output_tokens=1024,
-            ),
-            contents=history
-        )
+        # 2025 FREE TIER STRATEGY: 
+        # 1. 'gemini-2.5-flash-lite' is preferred for its 1,500 RPD quota.
+        # 2. 'gemini-1.5-flash' is the fallback as it's the most reliable for unverified projects.
+        models_to_try = ["gemini-2.5-flash-lite", "gemini-1.5-flash"]
+        
+        last_error = ""
+        for model_name in models_to_try:
+            try:
+                response = client.models.generate_content(
+                    model=model_name, 
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.7,
+                        max_output_tokens=1024,
+                    ),
+                    contents=history
+                )
+                if response.text:
+                    return JsonResponse({"text": response.text, "model_used": model_name})
+            
+            except Exception as model_e:
+                last_error = str(model_e)
+                # Check for 429 (Rate Limit) or 404 (Model not found for this key)
+                if any(x in last_error for x in ["429", "404", "RESOURCE_EXHAUSTED"]):
+                    print(f"DEBUG: Model {model_name} failed. Trying next fallback. Error: {last_error}")
+                    continue
+                raise model_e 
 
-        if not response.text:
-            return JsonResponse({"error": "AI returned empty response"}, status=500)
-
-        return JsonResponse({"text": response.text})
+        return JsonResponse({
+            "error": "Quota Exceeded",
+            "details": "The AI is currently busy handling other requests. Please wait 60 seconds."
+        }, status=429)
 
     except Exception as e:
         print(f"DEBUG Gemini Exception: {str(e)}")
