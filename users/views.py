@@ -177,18 +177,28 @@ def _get_user_profile_data(user):
     }
 
 def _clean_history(messages):
-    """Standardizes chat history for the Gemini API format (role must be 'user' or 'model')."""
+    """Standardizes history. Gemini requires alternating roles (user -> model)."""
     cleaned = []
+    last_role = None
+    
     for msg in messages:
-        # Convert JS role 'ai' to Gemini role 'model'
-        role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
+        current_role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
         text_content = msg.get("text")
-        if not text_content: continue
+        if not text_content: 
+            continue
         
+        # Merge if consecutive roles are the same to avoid 400 error
+        if current_role == last_role:
+            if cleaned:
+                cleaned[-1]["parts"][0]["text"] += f"\n{text_content}"
+                continue
+
         cleaned.append({
-            "role": role,
+            "role": current_role,
             "parts": [{"text": text_content}]
         })
+        last_role = current_role
+        
     return cleaned
 
 @csrf_exempt
@@ -198,26 +208,35 @@ def gemini_proxy(request):
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
+    # 1. Handle API Key
+    raw_api_key = os.environ.get("GEMINI_API_KEY", "")
+    api_key = raw_api_key.strip().replace('"', '').replace("'", "")
+
+    if not api_key:
+        return JsonResponse({
+            "error": "Configuration Error", 
+            "text": "The server's Gemini API Key is missing. Please check environment variables."
+        }, status=500)
+
     try:
+        # 2. Extract History
         data = json.loads(request.body)
         contents = data.get('contents', [])
-        api_key = os.environ.get("GEMINI_API_KEY")
-
-        if not api_key:
-            return JsonResponse({"error": "API Key missing in environment settings."}, status=500)
-
-        # Prepare User Context
+        
+        # 3. Restored Profile Summary Logic
         profile = _get_user_profile_data(request.user)
         profile_summary = (
             f"User: {profile['full_name']}. Bio: {profile['bio']}. "
-            f"Skills: {', '.join(profile['skills'])}."
+            f"Location: {profile['location']}. Skills: {', '.join(profile['skills'])}."
         )
 
-        # Gemini v1beta Payload Structure
+        # 4. Construct Payload
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        
         payload = {
             "contents": _clean_history(contents),
-            "systemInstruction": {
-                "parts": [{"text": f"You are Career Companion AI. Help with CVs and interview prep for Africana. Context: {profile_summary}"}]
+            "system_instruction": {
+                "parts": [{"text": f"You are Career Companion AI. Help with CVs and interview prep. Context: {profile_summary}"}]
             },
             "generationConfig": {
                 "temperature": 0.7,
@@ -225,22 +244,19 @@ def gemini_proxy(request):
             }
         }
 
-        # URL for v1beta gemini-1.5-flash
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        
+        # 5. API Call
         resp = requests.post(url, json=payload, timeout=15)
         
         if resp.status_code != 200:
-            return JsonResponse({"error": "AI Service Error", "details": resp.json()}, status=resp.status_code)
+            print(f"DEBUG: Google API Response: {resp.text}")
+            return JsonResponse(resp.json(), status=resp.status_code)
 
         result = resp.json()
-        try:
-            text = result['candidates'][0]['content']['parts'][0]['text']
-            return JsonResponse({"text": text})
-        except (KeyError, IndexError):
-            return JsonResponse({"text": "I encountered an error processing that. Please try again."})
+        text = result['candidates'][0]['content']['parts'][0]['text']
+        return JsonResponse({"text": text})
 
     except Exception as e:
+        print(f"DEBUG: Proxy Exception: {str(e)}")
         return JsonResponse({"error": str(e)}, status=500)
 
 @login_required
