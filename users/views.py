@@ -69,7 +69,7 @@ def tts_proxy(request):
 # ==============================================================================
 
 def user_login(request):
-    # Capture referral if present in the login URL (for users who browse before logging in)
+    # Capture referral if present in the login URL
     ref = request.GET.get('ref')
     if ref:
         request.session['referrer'] = ref
@@ -97,7 +97,6 @@ def user_login(request):
         return render(request, 'login.html', context)
 
 def user_register(request):
-    # Capture referral link (?ref=james)
     ref = request.GET.get('ref')
     if ref:
         request.session['referrer'] = ref
@@ -110,23 +109,25 @@ def user_register(request):
         if form.is_valid():
             user = form.save(commit=False)
             
-            # Check session for a referrer and link it to the new user
+            # FIX: Use 'referrer' instead of 'referred_by'
             referrer_username = request.session.get('referrer')
             if referrer_username:
                 try:
                     referrer_user = User.objects.get(username=referrer_username)
-                    user.referred_by = referrer_user
+                    # Check if your CustomUser model has a 'referrer' field
+                    # If it's a field on the User model, set it here:
+                    if hasattr(user, 'referrer'):
+                        user.referrer = referrer_user
                 except User.DoesNotExist:
-                    pass # Referrer name was invalid or deleted
+                    pass 
             
             user.save()
             login(request, user)
             
-            # Cleanup session after successful registration
             if 'referrer' in request.session:
                 del request.session['referrer']
                 
-            messages.success(request, "Registration successful. Welcome to Africana!")
+            messages.success(request, "Registration successful. Welcome!")
             return redirect('languages:browse_job_listings')
         else:
             for field, errors in form.errors.items():
@@ -158,17 +159,18 @@ def user_profile(request):
     skills = Skill.objects.filter(user=user)
     social_connections = SocialConnection.objects.filter(user=user)
     
-    # REFERRAL LOGIC: Fetch successful referrals based on store orders
     successful_referrals = []
     referral_earnings = 0
-    if Order:
-        # Assuming your Order model has a 'referred_by' field (CharField) 
-        # that stores the username of the referrer
-        successful_referrals = Order.objects.filter(referred_by=user.username, status='Completed')
-        # Calculate Earnings (Example: 10,000 UGX per successful order)
-        referral_earnings = successful_referrals.count() * 10000 
     
-    # Generate the unique referral link for this user
+    if Order:
+        # FIX: Changed 'referred_by' to 'referrer'
+        # Also, check if your Order model links to User object or Username string
+        # If Order.referrer is a ForeignKey to User:
+        successful_referrals = Order.objects.filter(referrer=user, status='Completed')
+        
+        # Calculate Earnings using the total_commission sum
+        referral_earnings = successful_referrals.aggregate(Sum('total_commission'))['total_commission__sum'] or 0
+    
     base_url = request.build_absolute_uri(reverse('users:user_register'))
     referral_link = f"{base_url}?ref={user.username}"
 
@@ -196,7 +198,7 @@ def profile_edit(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Your profile was successfully updated!')
-            return redirect('users:profile')
+            return redirect('users:user_profile') # Fixed redirect name
     else:
         form = ProfileEditForm(instance=user)
     try:
@@ -205,11 +207,10 @@ def profile_edit(request):
         return render(request, 'profile_edit.html', {'form': form})
 
 # ==============================================================================
-# AI CHAT & CONTEXT UTILITIES
+# AI CHAT & CONTEXT UTILITIES (Keep your existing Gemini logic)
 # ==============================================================================
 
 def _get_user_profile_data(user):
-    """Gathers data to personalize AI responses."""
     return {
         "full_name": user.get_full_name() or user.username, 
         "bio": getattr(user, 'about', 'No bio provided'),
@@ -221,13 +222,11 @@ def _get_user_profile_data(user):
     }
 
 def _format_history_for_sdk(messages):
-    """Formats history into strict alternating user/model turns."""
     formatted = []
     for msg in messages:
         role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
         text = msg.get("text", "").strip()
-        if not text:
-            continue
+        if not text: continue
             
         if formatted and formatted[-1]["role"] == role:
             formatted[-1]["parts"][0]["text"] += f"\n{text}"
@@ -238,13 +237,12 @@ def _format_history_for_sdk(messages):
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Handles AI chat with a high-availability fallback for Free Tier users."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
     raw_api_key = os.environ.get("GEMINI_API_KEY", "").strip().replace('"', '').replace("'", "")
     if not raw_api_key:
-        return JsonResponse({"error": "Server API Key is missing on Render."}, status=500)
+        return JsonResponse({"error": "API Key missing"}, status=500)
 
     try:
         client = genai.Client(api_key=raw_api_key)
@@ -259,8 +257,7 @@ def gemini_proxy(request):
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # 2025 FREE TIER STRATEGY: Fallback to 1.5 if 2.5 is unavailable
-        models_to_try = ["gemini-2.5-flash-lite", "gemini-1.5-flash"]
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
         
         for model_name in models_to_try:
             try:
@@ -276,20 +273,17 @@ def gemini_proxy(request):
                 if response.text:
                     return JsonResponse({"text": response.text, "model_used": model_name})
             except Exception as model_e:
-                # If quota exhausted (429) or model missing (404), try next model
                 if any(x in str(model_e) for x in ["429", "404", "RESOURCE_EXHAUSTED"]):
                     continue
                 raise model_e 
 
-        return JsonResponse({"error": "Quota Exceeded", "details": "The AI is currently busy. Please wait 60 seconds."}, status=429)
+        return JsonResponse({"error": "Quota Exceeded"}, status=429)
 
     except Exception as e:
-        print(f"DEBUG Gemini Exception: {str(e)}")
-        return JsonResponse({"error": "AI Service Error", "details": str(e)}, status=400)
+        return JsonResponse({"error": str(e)}, status=400)
 
 @login_required
 def profile_ai(request):
-    """Renders the Career Companion UI."""
     try:
         return render(request, 'users/profile_ai.html', {'user': request.user})
     except TemplateDoesNotExist:

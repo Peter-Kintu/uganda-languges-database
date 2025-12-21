@@ -4,37 +4,49 @@ from django.core.exceptions import ValidationError
 from phonenumbers.phonenumberutil import country_code_for_region, region_code_for_number
 from .models import Product
 
+# --- Custom Validator ---
+
 def validate_african_number(value):
-    """Validates an African mobile number format using phonenumbers library."""
+    """
+    Validates an African mobile number format using the phonenumbers library.
+    Ensures the number is valid, possible, and belongs to an African country code.
+    """
     try:
-        # Ensure value has a plus sign for parsing
+        # Normalize: ensure value has a plus sign for parsing
         phone_to_parse = value if value.startswith('+') else '+' + value
         parsed_number = phonenumbers.parse(phone_to_parse, "ZZ")
 
-        is_valid_number = phonenumbers.is_valid_number(parsed_number)
-        is_possible_number = phonenumbers.is_possible_number(parsed_number)
+        if not phonenumbers.is_valid_number(parsed_number):
+            raise ValidationError("The number provided is not a valid phone number.")
 
+        if not phonenumbers.is_possible_number(parsed_number):
+            raise ValidationError("This number does not have a possible format.")
+
+        # Extract the country calling code (e.g., 256 for Uganda)
         region = region_code_for_number(parsed_number)
         code = country_code_for_region(region)
 
-        # Comprehensive list of African Country Calling Codes
+        # Comprehensive list of African Country Calling Codes (Zone 2)
+        # Includes common codes starting with 2 and specific regional ones
         african_country_codes = [
-            20, 27, 212, 213, 216, 218, 220, 221, 222, 223, 224, 225, 226,
+            20, 27, 211, 212, 213, 216, 218, 220, 221, 222, 223, 224, 225, 226,
             227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
             240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252,
             253, 254, 255, 256, 257, 258, 260, 261, 262, 263, 264, 265, 266,
-            267, 268, 269, 509, 599, 
+            267, 268, 269, 290, 291
         ]
 
-        if not is_valid_number or not is_possible_number or code not in african_country_codes:
+        if code not in african_country_codes:
             raise ValidationError(
-                "Please enter a valid African WhatsApp number. Include the full country code, e.g., +256701234567."
+                "Currently, we only support WhatsApp numbers from African countries."
             )
 
     except phonenumbers.NumberParseException:
         raise ValidationError(
             "Could not parse the phone number. Please include the full country code starting with +, e.g., +256701234567."
-        )   
+        )
+
+# --- Forms ---
 
 class NegotiationForm(forms.Form):
     """Form used in the AI price negotiation chat window."""
@@ -48,7 +60,7 @@ class NegotiationForm(forms.Form):
     )
 
 class ProductForm(forms.ModelForm):
-    """Form for vendors to list new products including referral rewards."""
+    """Form for vendors to list new products including referral rewards and AI settings."""
     
     whatsapp_number = forms.CharField(
         validators=[validate_african_number],
@@ -66,12 +78,13 @@ class ProductForm(forms.ModelForm):
             'description',
             'price',
             'currency',
-            'referral_commission',  # Added for the referral system
+            'referral_commission',
             'is_negotiable',
             'vendor_name', 
             'whatsapp_number', 
             'tiktok_url', 
             'image',
+            'video',  # Added video field
             'country',
             'slug'
         ]
@@ -94,7 +107,7 @@ class ProductForm(forms.ModelForm):
             }),
             'referral_commission': forms.NumberInput(attrs={
                 'placeholder': 'Amount to pay per referral',
-                'class': 'w-full px-4 py-3 bg-gray-700 border-indigo-500/50 rounded-lg text-emerald-400 focus:ring-emerald-500 font-bold'
+                'class': 'w-full px-4 py-3 bg-gray-800 border-emerald-500/50 rounded-lg text-emerald-400 focus:ring-emerald-500 font-bold'
             }),
             'country': forms.TextInput(attrs={
                 'placeholder': 'e.g., Uganda',
@@ -118,6 +131,7 @@ class ProductForm(forms.ModelForm):
         }
 
     def clean_whatsapp_number(self):
+        """Final cleanup of the phone number into E.164 format for the database."""
         value = self.cleaned_data.get('whatsapp_number')
         if not value:
             return value
@@ -129,4 +143,5 @@ class ProductForm(forms.ModelForm):
             parsed = phonenumbers.parse(value, None)
             return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
         except phonenumbers.NumberParseException:
+            # The validator would have already caught this, but safety first
             return value
