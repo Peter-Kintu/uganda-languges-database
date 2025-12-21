@@ -11,6 +11,7 @@
         color: #e5e7eb;
         height: 100vh;
         margin: 0;
+        overflow: hidden;
     }
 
     /* --- MAIN LAYOUT CONTAINER --- */
@@ -45,21 +46,6 @@
         display: none;
     }
 
-    .sidebar.is-collapsed .sidebar-header {
-        justify-content: center;
-    }
-    
-    .sidebar.is-collapsed .utility-button-group {
-        flex-direction: column;
-        gap: 1.25rem;
-        align-items: center;
-    }
-    
-    .sidebar.is-collapsed .history-item {
-        justify-content: center;
-        padding: 0.75rem 0;
-    }
-
     .sidebar-header {
         display: flex;
         justify-content: space-between;
@@ -70,11 +56,11 @@
     }
     
     .sidebar-header h2 {
-        font-size: 1.1rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
         font-weight: 700;
-        color: #9ca3af;
+        color: #6b7280;
     }
 
     .history-list {
@@ -96,6 +82,8 @@
         transition: all 0.2s;
         font-size: 0.9rem;
         border: 1px solid transparent;
+        white-space: nowrap;
+        overflow: hidden;
     }
 
     .history-item:hover {
@@ -104,15 +92,9 @@
     }
     
     .history-item.active {
-        background-color: #3730a3;
+        background-color: #312e81;
         color: #ffffff;
-        border-color: #4f46e5;
-    }
-
-    .history-item span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        border-color: #4338ca;
     }
 
     .sidebar-footer {
@@ -266,21 +248,18 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
     }
 
     /* --- MOBILE RESPONSIVENESS --- */
     @media (max-width: 768px) {
         .sidebar {
             position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
+            left: 0; top: 0; bottom: 0;
             transform: translateX(-100%);
             width: 280px;
         }
-        .sidebar.open {
-            transform: translateX(0);
-        }
+        .sidebar.open { transform: translateX(0); }
         .chat-message { max-width: 95%; }
     }
 </style>
@@ -298,17 +277,11 @@
 
         <div class="sidebar-footer">
             <div class="utility-button-group">
-                <button onclick="summarizeChat()" class="action-icon-button summarize" title="Summarize">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 00 2 2h12a2 2 0 00 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-                </button>
-                <button onclick="exportChat()" class="action-icon-button export" title="Export">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-                </button>
-                <button onclick="clearChat()" class="action-icon-button clear" title="Clear">
+                <button onclick="clearChat()" class="action-icon-button clear" title="Clear All History" style="width: 100%;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 01 2-2h4a2 2 0 01 2 2v2"/></svg>
                 </button>
             </div>
-            <p id="localTimeDisplay" class="text-xs text-gray-500 mt-4 text-center"></p>
+            <p id="localTimeDisplay" class="text-[10px] text-gray-500 mt-4 text-center"></p>
             <p id="userLocationDisplay" class="text-[10px] text-gray-600 mt-1 text-center"></p>
         </div>
     </aside>
@@ -321,7 +294,7 @@
                 </button>
                 <h1>Career Companion AI</h1>
             </div>
-            <div class="text-xs text-indigo-400 font-mono hidden md:block">MODEL: GEMINI-1.5-FLASH</div>
+            <div class="text-[10px] text-indigo-400 font-mono hidden md:block px-3 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">GEMINI-1.5-FLASH</div>
         </header>
 
         <div id="chatLog"></div>
@@ -334,55 +307,46 @@
                 </button>
             </div>
             <div id="loadingIndicator" class="hidden flex items-center justify-center gap-2 mt-3 text-indigo-400 text-sm">
-                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
-                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.3s]"></div>
-                <div class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.5s]"></div>
-                <span>AI is drafting response...</span>
+                <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></div>
+                <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.3s]"></div>
+                <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.5s]"></div>
+                <span class="text-[11px] font-medium">AI is thinking...</span>
             </div>
         </div>
     </main>
 </div>
 
+
+
 <script>
-    // State Management
     let currentSessionId = localStorage.getItem('lastSessionId') || 'session_' + Date.now();
     const chatInput = document.getElementById('chatInput');
     const chatLog = document.getElementById('chatLog');
     const loadingIndicator = document.getElementById('loadingIndicator');
 
-    // Initialization
     window.onload = () => {
         updateTime();
         setInterval(updateTime, 1000);
         getLocation();
-        loadChatHistory();
         updateHistorySidebar();
+        switchSession(currentSessionId);
         chatInput.focus();
     };
 
     function updateTime() {
-        const now = new Date();
-        document.getElementById('localTimeDisplay').textContent = now.toLocaleTimeString();
+        const display = document.getElementById('localTimeDisplay');
+        if(display) display.textContent = new Date().toLocaleTimeString();
     }
 
     function getLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(pos => {
-                document.getElementById('userLocationDisplay').textContent = 
-                    `Region: ${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`;
-            }, () => {
-                document.getElementById('userLocationDisplay').textContent = "Location access denied";
+                const display = document.getElementById('userLocationDisplay');
+                if(display) display.textContent = `Region: ${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`;
             });
         }
     }
 
-    function loadChatHistory() {
-        chatLog.innerHTML = '';
-        const history = getSessionHistory(currentSessionId);
-        history.forEach(m => appendMessage(m.role, m.text));
-    }
-
-    // Chat Logic
     async function typeQuery() {
         const text = chatInput.value.trim();
         if (!text) return;
@@ -390,34 +354,27 @@
         appendMessage('user', text);
         chatInput.value = '';
         chatInput.style.height = 'auto';
-
         loadingIndicator.classList.remove('hidden');
         
         try {
             const history = getSessionHistory(currentSessionId);
             
-            // FIX: Map "ai" role to "model" for Gemini API compatibility 
-            // and use the Django URL tag to fix 404s
-            const response = await fetch('{% url "users:gemini_proxy" %}', {
+            // Send to Django backend endpoint
+            const response = await fetch("{% url 'users:gemini_proxy' %}", {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
-                body: JSON.stringify({
-                    contents: history.map(m => ({
-                        role: m.role === 'ai' ? 'model' : 'user',
-                        text: m.text
-                    })).concat({ role: 'user', text: text })
-                })
+                body: JSON.stringify({ contents: history.concat({ role: 'user', text: text }) })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Server error");
+                throw new Error(data.details || data.error || "Communication error");
             }
 
-            const data = await response.json();
             if (data.text) {
                 appendMessage('ai', data.text);
                 saveMessage(currentSessionId, 'user', text);
@@ -429,18 +386,19 @@
             appendMessage('ai', "Error: " + e.message);
         } finally {
             loadingIndicator.classList.add('hidden');
+            chatLog.scrollTop = chatLog.scrollHeight;
         }
     }
 
     function appendMessage(role, text) {
         const div = document.createElement('div');
         div.className = `chat-message ${role}`;
-        div.innerHTML = `<div class="font-bold text-[10px] uppercase mb-1 opacity-50">${role}</div><div>${text}</div>`;
+        const label = role === 'ai' ? 'Career AI' : 'You';
+        div.innerHTML = `<div class="font-bold text-[10px] uppercase mb-1 opacity-50">${label}</div><div>${text}</div>`;
         chatLog.appendChild(div);
         chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    // Storage Helpers
     function getSessionHistory(id) {
         const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
         return sessions[id] || [];
@@ -456,6 +414,7 @@
     function updateHistorySidebar() {
         const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
         const list = document.getElementById('historyList');
+        if(!list) return;
         list.innerHTML = '';
         
         Object.keys(sessions).sort().reverse().forEach(id => {
@@ -488,7 +447,6 @@
         }
     }
 
-    // UI Events
     document.getElementById('sidebarToggle').onclick = () => {
         const sidebar = document.getElementById('sidebar');
         if (window.innerWidth > 768) {
