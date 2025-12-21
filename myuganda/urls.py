@@ -12,30 +12,29 @@ sitemaps_dict = {
     'static': StaticViewSitemap,
     'products': ProductSitemap,
     'jobs': JobPostSitemap,
-    
 }
-
-
 
 urlpatterns = [
     path("googled5b56ec94e5b9cb2.html",
          TemplateView.as_view(template_name="googled5b56ec94e5b9cb2.html")),
 
-    # 1. Root URLs for languages app
+    # 1. Admin
+    path('admin/', admin.site.urls),
+
+    # 2. Users (Authentication & Profile)
+    # Give this a prefix or ensure it's loaded before generic root paths
+    path('u/', include('users.urls')), 
+
+    # 3. Root/Languages App
     path('', include('languages.urls')), 
 
-    # 2. Login Redirects
+    # 4. Login Redirects (For third-party apps looking for default Django paths)
     path('accounts/login/', RedirectView.as_view(url=reverse_lazy('users:user_login')), name='accounts_login_redirect'),
     
-    # 3. User URLs
-    path('', include('users.urls')), 
-    
-    path('admin/', admin.site.urls),
-    
-    # IndexNow Key URL - Matches your file name 
-
-    
+    # 5. E-shop
     path('eshop/', include('eshop.urls', namespace='eshop')),
+    
+    # 6. SEO
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps_dict}, name='sitemap'),
 ]
 
