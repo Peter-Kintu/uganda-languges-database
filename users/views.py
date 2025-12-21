@@ -16,6 +16,9 @@ import requests
 # Import the Custom Forms and Models
 from .models import CustomUser, Experience, Education, Skill, SocialConnection 
 from .forms import CustomUserCreationForm, ProfileEditForm
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 # Safely import eshop models to prevent crashes if the app is not fully linked
 try:
@@ -164,18 +167,23 @@ def profile_edit(request):
 # ==============================================================================
 
 def _get_user_profile_data(user):
-    """Gathers profile and referral data for the AI context."""
+    """Gathers profile and referral data for the AI context without crashing."""
+    # Note: Changed 'bio' to 'about', 'job_title' to 'title', and 'company' to 'company_name'
+    # to match your models.py definition.
     return {
         "username": user.username,
         "full_name": user.get_full_name() or user.username, 
         "location": getattr(user, 'location', 'Not provided'),
-        "bio": getattr(user, 'bio', 'Not provided'),
+        "bio": getattr(user, 'about', 'Not provided'),
         "skills": [skill.name for skill in Skill.objects.filter(user=user)],
         "referral_summary": {
             "referral_link": f"https://africana.market/?ref={user.username}"
         },
         "experiences": [
-            {"title": getattr(exp, 'job_title', 'Employee'), "company": exp.company}
+            {
+                "title": getattr(exp, 'title', 'Employee'), 
+                "company": getattr(exp, 'company_name', 'Not specified')
+            }
             for exp in Experience.objects.filter(user=user)
         ]
     }
@@ -193,8 +201,6 @@ def _clean_history(messages):
             "parts": [{"text": text_content}]
         })
     return cleaned
-
-
 
 @csrf_exempt
 @login_required
