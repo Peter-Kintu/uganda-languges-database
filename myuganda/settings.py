@@ -13,7 +13,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-(p31q0!)f868y09ivx%&d&jjc&^jenjy6p2ozj%3pijiwm_2=f')
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-(p31q0!)f868y09ivx%&d&jjc&^jenjy6p2ozj%3pijiwm_2=f'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
@@ -32,7 +35,12 @@ for host in env_hosts:
         TRUSTED_HOSTS.append(clean_host)
 
 CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in TRUSTED_HOSTS]
-CSRF_TRUSTED_ORIGINS.extend(['http://127.0.0.1:8000', 'http://localhost:8000', 'http://127.0.0.1', 'http://localhost'])
+CSRF_TRUSTED_ORIGINS.extend([
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://127.0.0.1',
+    'http://localhost'
+])
 
 # --- APPLICATION DEFINITION ---
 INSTALLED_APPS = [
@@ -45,7 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
     'django.contrib.sites',
-    'django.contrib.humanize', 
+    'django.contrib.humanize',
 
     # Third-party
     'widget_tweaks',
@@ -55,7 +63,7 @@ INSTALLED_APPS = [
     # Local Apps
     'users',
     'eshop',
-    'languages', 
+    'languages',
 ]
 
 SITE_ID = 1
@@ -106,7 +114,7 @@ else:
     }
 
 # --- AUTHENTICATION ---
-AUTH_USER_MODEL = 'users.CustomUser' 
+AUTH_USER_MODEL = 'users.CustomUser'
 LOGIN_URL = reverse_lazy('users:user_login')
 LOGIN_REDIRECT_URL = reverse_lazy('languages:browse_job_listings')
 
@@ -118,7 +126,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # --- STATIC & MEDIA FILES ---
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
@@ -139,7 +147,7 @@ STORAGES = {
 }
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
@@ -152,7 +160,7 @@ JAZZMIN_SETTINGS = {
     "site_icon": "images/favicon.ico",
     "welcome_sign": "Database Management System",
     "copyright": "Uganda Language Project",
-    "user_avatar": "avatar", 
+    "user_avatar": "avatar",
 
     "search_model": ["users.CustomUser", "languages.PhraseContribution", "languages.JobPost"],
 

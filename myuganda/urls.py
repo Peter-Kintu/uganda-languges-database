@@ -23,7 +23,7 @@ urlpatterns = [
 
     # 2. Users (Authentication & Profile)
     # Give this a prefix or ensure it's loaded before generic root paths
-    path('u/', include('users.urls')), 
+    path('', include('users.urls')), 
 
     # 3. Root/Languages App
     path('', include('languages.urls')), 
