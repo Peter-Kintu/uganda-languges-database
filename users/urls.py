@@ -21,8 +21,8 @@ urlpatterns = [
     path('profile/edit/', views.profile_edit, name='profile_edit'),
 
     # --- AI Services & Career Tools ---
-    # Consider versioning your AI API for future stability
+    # This MUST match the fetch() call in your HTML
     path("api/v1/gemini_proxy/", gemini_proxy, name="gemini_proxy"),
-    path('profile/ai-companion/', views.profile_ai, name='profile_ai'), # Renamed for clarity
+    path('profile/ai-companion/', views.profile_ai, name='profile_ai'),
     path('api/v1/tts/', tts_proxy, name='tts_proxy'),
 ]
