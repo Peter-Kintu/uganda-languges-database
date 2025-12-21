@@ -78,7 +78,7 @@ def user_login(request):
             next_url = request.POST.get('next') or request.GET.get('next')
             return redirect(next_url or reverse('languages:browse_job_listings')) 
         else:
-            messages.error(request, "Invalid username or password.")
+            messages.error("Invalid username or password.")
     else:
         form = AuthenticationForm()
     context = {'form': form, 'next': request.GET.get('next', '')}
@@ -155,7 +155,7 @@ def profile_edit(request):
         return render(request, 'profile_edit.html', {'form': form})
 
 # ==============================================================================
-# AI CHAT (Gemini 3 Integration)
+# AI CHAT & CONTEXT UTILITIES
 # ==============================================================================
 
 def _get_user_profile_data(user):
@@ -186,8 +186,6 @@ def _format_history_for_sdk(messages):
             formatted.append({"role": role, "parts": [{"text": text}]})
     return formatted
 
-
-
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
@@ -201,7 +199,7 @@ def gemini_proxy(request):
         return JsonResponse({"error": "Server API Key is missing on Render."}, status=500)
 
     try:
-        # Initialize official 2025 Client
+        # Initialize official Client
         client = genai.Client(api_key=raw_api_key)
         
         data = json.loads(request.body)
@@ -218,14 +216,14 @@ def gemini_proxy(request):
         # Reformat history for the SDK
         history = _format_history_for_sdk(raw_contents)
 
-        # Call the stable 2025 model: Gemini 3 Flash
+        # Call the stable 2025 model: Gemini 2.0 Flash
+        # Note: 'thinking_level' removed to satisfy SDK schema validation
         response = client.models.generate_content(
-            model="gemini-3-flash", 
+            model="gemini-2.0-flash", 
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                temperature=0.8,
+                temperature=0.7,
                 max_output_tokens=1024,
-                thinking_level="low" # Optimized for Flash series
             ),
             contents=history
         )
@@ -247,5 +245,5 @@ def profile_ai(request):
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
-# Keep alias for backward compatibility if needed
+# Keep alias for backward compatibility
 ai_quiz_generator = profile_ai
