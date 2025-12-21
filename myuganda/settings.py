@@ -21,25 +21,29 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
+# --- ALLOWED HOSTS ---
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 # --- PRODUCTION SECURITY & CSRF FIXES ---
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-KOYEB_HOST = 'initial-danette-africana-60541726.koyeb.app'
-TRUSTED_HOSTS = [KOYEB_HOST]
+# Hardened CSRF origins to prevent "403 Forbidden" in production
+CSRF_TRUSTED_ORIGINS = [
+    'https://initial-danette-africana-60541726.koyeb.app',
+    'https://uganda-languges-database.onrender.com', # Added Render URL
+]
+
+# Dynamically add hosts from environment variables to trusted origins
 env_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
 for host in env_hosts:
     clean_host = host.strip()
-    if clean_host and clean_host != '*' and clean_host not in TRUSTED_HOSTS:
-        TRUSTED_HOSTS.append(clean_host)
+    if clean_host and clean_host != '*':
+        CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
 
-CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in TRUSTED_HOSTS]
+# Local development origins
 CSRF_TRUSTED_ORIGINS.extend([
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://127.0.0.1',
-    'http://localhost'
 ])
 
 # --- APPLICATION DEFINITION ---
@@ -59,6 +63,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'cloudinary_storage',
     'cloudinary',
+    'whitenoise.runserver_nostatic', # Better local static handling
 
     # Local Apps
     'users',
@@ -70,7 +75,7 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Crucial for Gunicorn/Render stability
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Crucial for Gunicorn stability
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -103,7 +108,11 @@ WSGI_APPLICATION = 'myuganda.wsgi.application'
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
     DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+        'default': dj_database_url.config(
+            default=DATABASE_URL, 
+            conn_max_age=600, 
+            ssl_require=True # Required for many production DB providers
+        )
     }
 else:
     DATABASES = {
@@ -136,13 +145,15 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-# Modern Storage Settings (Replaces DEFAULT_FILE_STORAGE)
+# Modern Storage Settings
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # Changed to CompressedStaticFilesStorage to prevent 500 errors 
+        # caused by missing manifest files for logos/icons.
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
@@ -151,7 +162,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# --- JAZZMIN SETTINGS (Better Design) ---
+# --- JAZZMIN SETTINGS ---
 JAZZMIN_SETTINGS = {
     "site_title": "Uganda Language Admin",
     "site_header": "Uganda Languages",
@@ -161,21 +172,17 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Database Management System",
     "copyright": "Uganda Language Project",
     "user_avatar": "avatar",
-
     "search_model": ["users.CustomUser", "languages.PhraseContribution", "languages.JobPost"],
-
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         {"name": "View Site", "url": "/", "new_window": True},
         {"model": "users.CustomUser"},
     ],
-
     "show_sidebar": True,
     "navigation_expanded": True,
     "order_with_respect_to": ["users", "languages", "eshop", "auth"],
     "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage"],
     "hide_models": ["auth.Group"],
-
     "icons": {
         "auth": "fas fa-users-cog",
         "users.CustomUser": "fas fa-user-shield",
