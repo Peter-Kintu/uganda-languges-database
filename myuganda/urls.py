@@ -22,10 +22,10 @@ urlpatterns = [
     # 1. Admin
     path("admin/", admin.site.urls),
 
-    # 2. Users (Authentication & Profile) under /users/
-    path("users/", include("users.urls")),
+    # 2. Users (Authentication & Profile) at root
+    path("", include("users.urls")),
 
-    # 3. Root/Languages App at /
+    # 3. Languages App at root (jobs, recruiters, etc.)
     path("", include("languages.urls")),
 
     # 4. Login Redirects (for third‑party apps expecting /accounts/login/)
