@@ -1,3 +1,6 @@
+import os
+import json
+import requests
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -9,11 +12,12 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.template import TemplateDoesNotExist
 from datetime import datetime
-import json
-import os
-import requests
 
-# Import the Custom Forms and Models
+# Official Google GenAI SDK imports (2025 Standard)
+from google import genai
+from google.genai import types
+
+# Custom Forms and Models
 from .models import CustomUser, Experience, Education, Skill, SocialConnection 
 from .forms import CustomUserCreationForm, ProfileEditForm
 from django.contrib.auth import get_user_model
@@ -40,7 +44,7 @@ def robots_txt(request):
     lines = [
         "User-agent: *",
         "Disallow: /admin/",
-        "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
+        "Sitemap: https://uganda-languges-database.onrender.com/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
@@ -111,7 +115,7 @@ def user_logout(request):
     return redirect('users:user_login')
 
 # ==============================================================================
-# PROFILE & REFERRAL VIEWS
+# PROFILE MANAGEMENT
 # ==============================================================================
 
 @login_required
@@ -151,7 +155,7 @@ def profile_edit(request):
         return render(request, 'profile_edit.html', {'form': form})
 
 # ==============================================================================
-# AI CHAT & CONTEXT UTILITIES
+# AI CHAT (Gemini 3 Integration)
 # ==============================================================================
 
 def _get_user_profile_data(user):
@@ -166,98 +170,82 @@ def _get_user_profile_data(user):
         ]
     }
 
-def _clean_history(messages, system_prompt):
-    """Prepares alternating turns for Gemini 3 (v1 stable)."""
-    cleaned = []
-    
-    # Inject Identity at the start using user/model exchange for prompt stability
-    cleaned.append({
-        "role": "user",
-        "parts": [{"text": f"INSTRUCTIONS: {system_prompt}\nAdopt this persona for all future messages."}]
-    })
-    cleaned.append({
-        "role": "model",
-        "parts": [{"text": "I understand. I am now your Career Companion AI for Africana."}]
-    })
-
-    last_role = "model"
+def _format_history_for_sdk(messages):
+    """Formats history into strict alternating user/model turns."""
+    formatted = []
     for msg in messages:
-        current_role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
-        text_content = msg.get("text")
-        if not text_content: continue
-        
-        if current_role == last_role:
-            if cleaned:
-                cleaned[-1]["parts"][0]["text"] += f"\n{text_content}"
-                continue
+        role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
+        text = msg.get("text", "").strip()
+        if not text:
+            continue
+            
+        # Merge consecutive turns with the same role to avoid API errors
+        if formatted and formatted[-1]["role"] == role:
+            formatted[-1]["parts"][0]["text"] += f"\n{text}"
+        else:
+            formatted.append({"role": role, "parts": [{"text": text}]})
+    return formatted
 
-        cleaned.append({"role": current_role, "parts": [{"text": text_content}]})
-        last_role = current_role
-        
-    return cleaned
+
 
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Handles AI chat using Gemini 3 Flash on the stable v1 endpoint."""
+    """Handles AI chat using the official SDK (Dec 2025 Standard)."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
-    # API Key retrieval with cleanup for Render environment variables
-    raw_api_key = os.environ.get("GEMINI_API_KEY", "")
-    api_key = raw_api_key.strip().replace('"', '').replace("'", "")
-
-    if not api_key:
+    # API Key cleanup from Render Dashboard
+    raw_api_key = os.environ.get("GEMINI_API_KEY", "").strip().replace('"', '').replace("'", "")
+    if not raw_api_key:
         return JsonResponse({"error": "Server API Key is missing on Render."}, status=500)
 
     try:
-        data = json.loads(request.body)
-        contents = data.get('contents', [])
+        # Initialize official 2025 Client
+        client = genai.Client(api_key=raw_api_key)
         
+        data = json.loads(request.body)
+        raw_contents = data.get('contents', [])
+        
+        # Build Profile Context as a System Instruction
         profile = _get_user_profile_data(request.user)
-        system_prompt = (
-            f"You are the Career Companion AI for the Africana platform. "
+        system_instruction = (
+            f"You are the Career Companion AI for Africana. "
             f"User: {profile['full_name']}. Bio: {profile['bio']}. "
             f"Skills: {', '.join(profile['skills'])}. History: {', '.join(profile['experiences'])}."
         )
 
-        # 2025 CONFIGURATION: Use v1 stable and gemini-3-flash
-        model_name = "gemini-3-flash"
-        url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={api_key}"
-        
-        payload = {
-            "contents": _clean_history(contents, system_prompt),
-            "generationConfig": {
-                "temperature": 1.0,  # Gemini 3 recommends temperature 1.0 for better reasoning
-                "maxOutputTokens": 2048,
-                "thinking_level": "low"  # New 2025 parameter for Flash series
-            }
-        }
+        # Reformat history for the SDK
+        history = _format_history_for_sdk(raw_contents)
 
-        resp = requests.post(url, json=payload, timeout=25)
-        
-        if resp.status_code != 200:
-            # Fallback for regional rollouts to the previous stable version
-            if resp.status_code == 404:
-                url = url.replace("gemini-3-flash", "gemini-2.5-flash")
-                resp = requests.post(url, json=payload, timeout=25)
+        # Call the stable 2025 model: Gemini 3 Flash
+        response = client.models.generate_content(
+            model="gemini-3-flash", 
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.8,
+                max_output_tokens=1024,
+                thinking_level="low" # Optimized for Flash series
+            ),
+            contents=history
+        )
 
-            if resp.status_code != 200:
-                return JsonResponse({"error": "AI Service unavailable", "details": resp.json()}, status=resp.status_code)
+        if not response.text:
+            return JsonResponse({"error": "AI returned empty response"}, status=500)
 
-        result = resp.json()
-        text = result['candidates'][0]['content']['parts'][0]['text']
-        return JsonResponse({"text": text})
+        return JsonResponse({"text": response.text})
 
     except Exception as e:
-        print(f"DEBUG Proxy Exception: {str(e)}")
-        return JsonResponse({"error": "An internal error occurred while connecting to the AI."}, status=500)
+        print(f"DEBUG Gemini Exception: {str(e)}")
+        return JsonResponse({"error": "AI Service Error", "details": str(e)}, status=400)
 
 @login_required
 def profile_ai(request):
+    """Renders the Career Companion UI."""
     try:
         return render(request, 'users/profile_ai.html', {'user': request.user})
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
+# Keep alias for backward compatibility if needed
 ai_quiz_generator = profile_ai
