@@ -134,7 +134,7 @@ class JobPost(models.Model):
 
     timestamp = models.DateTimeField(auto_now_add=True)
     is_validated = models.BooleanField(
-        default=False, 
+        default=True, 
         help_text=_("Marks if the job post has been reviewed and validated.")
     )
     # Renamed 'likes' to 'upvotes'
