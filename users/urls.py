@@ -22,7 +22,7 @@ urlpatterns = [
     # ai
     path("api/gemini_proxy/", gemini_proxy, name="gemini_proxy"),
      # AI Quiz Generator URL - FIXED
-    path('profile_ai/', views.ai_quiz_generator, name='profile_ai'),
+    path('profile_ai/', views.profile_ai, name='profile_ai'),
     
  
    
