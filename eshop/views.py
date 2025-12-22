@@ -567,7 +567,7 @@ def ai_negotiation_view(request, slug):
     chat_history = request.session.get(f'chat_history_{slug}', None)
     
     if chat_history is None:
-        initial_greeting = f"Hello! I'm the AI Negotiator, and I'm ready to find you a great price. The original price for **{product.name}** is {curr} {product.price:,.0f}. What is your first offer? (I also speak Luganda!)"
+        initial_greeting = f"Hello! I'm the AI Negotiator, and I'm ready to find you a great price. The original price for **{product.name}** is {curr} {product.price:,.0f}. What is your first offer?"
         chat_history = [{'role': 'ai', 'text': initial_greeting}]
 
     if request.method == 'POST' and form.is_valid():
