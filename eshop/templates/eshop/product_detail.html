@@ -73,7 +73,7 @@
                         <span class="bg-green-500 text-black text-[10px] font-black px-2 py-1 rounded">ACTIVE REWARD</span>
                     </div>
                     <p class="text-sm text-indigo-200 mb-4">
-                        Earn <span class="text-green-400 font-bold text-lg">UGX {{ product.referral_commission|default:"0"|intcomma }}</span> 
+                        Earn <span class="text-green-400 font-bold text-lg">{{ product.get_currency_code }} {{ product.referral_commission|default:"0"|intcomma }}</span>
                         for every buyer you refer to this product!
                     </p>
                     <div class="relative group">
@@ -93,8 +93,8 @@
                     <div class="mb-6">
                         <span class="text-gray-400 text-sm block mb-1">Price:</span>
                         <div class="flex items-baseline gap-1">
-                            <span class="text-gray-200 text-lg font-bold">UGX</span>
-                            <span class="text-4xl font-black text-white">{{ product.price|floatformat:0|intcomma }}</span>
+                            <span class="text-gray-200 text-lg font-bold">{{ product.get_currency_code }}</span>
+                          <span class="text-4xl font-black text-white">{{ product.price|floatformat:0|intcomma }}</span>
                         </div>
                         {% if product.is_negotiable %}
                         <div class="mt-3 flex items-center gap-2 text-yellow-500 bg-yellow-500/10 p-2 rounded-lg border border-yellow-500/20">
