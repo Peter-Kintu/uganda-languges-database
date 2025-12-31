@@ -260,7 +260,7 @@ def checkout_view(request):
             )
 
             # 5. Clear Cart & Referral Session
-            # cart.items.all().delete()
+            cart.items.all().delete()
             if 'active_referrer' in request.session:
                 del request.session['active_referrer']
 
