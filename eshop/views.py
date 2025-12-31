@@ -14,7 +14,6 @@ import re
 import os
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Sum
 from .models import Order, OrderItem  
 from users.models import Notification
 
@@ -261,7 +260,7 @@ def checkout_view(request):
             )
 
             # 5. Clear Cart & Referral Session
-            cart.items.all().delete()
+            # cart.items.all().delete()
             if 'active_referrer' in request.session:
                 del request.session['active_referrer']
 
@@ -279,10 +278,22 @@ def checkout_view(request):
 
     return render(request, 'eshop/checkout.html', context)
 
+# @login_required
+# def delivery_location_view(request):
+#     """Renders the map view for selecting a delivery location."""
+#     return render(request, 'eshop/delivery_location.html')
+
 @login_required
 def delivery_location_view(request):
-    """Renders the map view for selecting a delivery location."""
-    return render(request, 'eshop/delivery_location.html')
+    """Renders the map view for selecting a delivery location with cart data."""
+    cart = get_user_cart(request)
+    
+    # We pass the cart and the total so the JavaScript can 'see' them
+    context = {
+        'cart': cart,
+        'cart_total': cart.cart_total,
+    }
+    return render(request, 'eshop/delivery_location.html', context)
 
 @login_required
 def process_delivery_location(request):
