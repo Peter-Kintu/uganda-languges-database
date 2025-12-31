@@ -3,7 +3,6 @@
 {% block title %}Delivery Location Market{% endblock %}
 
 {% block content %}
-
 <div class="container mx-auto px-4 py-12">
     <div class="max-w-6xl mx-auto">
         <header class="text-center mb-10">
@@ -33,18 +32,45 @@
                 </div>
                 <div class="mt-4 p-4 bg-gray-700 rounded-xl border border-gray-600">
                     <p class="text-gray-300 font-semibold">Selected Coordinates:</p>
-                    <p class="text-sm text-green-400 font-bold" id="selected-coords">Lat: 0.0000, Lng: 0.0000</p>
+                    <p class="text-sm text-green-400 font-bold" id="selected-coords">Lat: 0.000000, Lng: 0.000000</p>
                 </div>
             </div>
 
             <div class="lg:col-span-1">
+                <div class="bg-gray-900/50 border border-indigo-500/30 rounded-2xl p-5 mb-6">
+                    <h2 class="text-xl font-bold text-indigo-400 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                        Order Summary
+                    </h2>
+                    <div class="space-y-3 mb-4">
+                        {% for item in cart.items.all %}
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-300">{{ item.quantity }}x {{ item.product.name }}</span>
+                            <span class="text-white font-mono">
+                                {{ item.product.get_currency_code }} 
+                                {% if item.product.negotiated_price %}
+                                    {{ item.product.negotiated_price|floatformat:0 }}
+                                {% else %}
+                                    {{ item.product.price|floatformat:0 }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="border-t border-gray-700 pt-3 flex justify-between items-center">
+                        <span class="text-gray-400 font-bold">Total:</span>
+                        <span class="text-xl font-black text-green-400">
+                            {{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0 }}
+                        </span>
+                    </div>
+                </div>
+
                 <h2 class="text-2xl font-bold text-white mb-4">Confirm Delivery Details</h2>
                 <form id="delivery-form" action="{% url 'eshop:process_delivery' %}" method="post" class="space-y-5">
                     {% csrf_token %}
                     
-                    <input type="hidden" name="latitude" id="input_latitude" value="0.0000">
-                    <input type="hidden" name="longitude" id="input_longitude" value="0.0000">
-                    
+                    <input type="hidden" name="latitude" id="input_latitude" value="0.000000">
+                    <input type="hidden" name="longitude" id="input_longitude" value="0.000000">
                     <input type="hidden" name="vendor_whatsapp" id="input_vendor_whatsapp" value="">
 
                     <div>
@@ -79,7 +105,6 @@
 </div>
 
 <script>
-    // Get Referrer from Django Session
     const activeReferrer = "{{ request.session.active_referrer|default:'' }}";
 
     function getQueryParam(param) {
@@ -93,8 +118,6 @@
         
         if (vendorPhone) {
             inputField.value = vendorPhone.replace(/[^0-9+]/g, ''); 
-        } else {
-            console.error("Vendor phone number not found in URL query parameters.");
         }
     });
 
@@ -104,23 +127,43 @@
         const latInput = document.getElementById('input_latitude');
         const lngInput = document.getElementById('input_longitude');
 
-        coordsDisplay.textContent = 'Locating... Please wait.';
+        coordsDisplay.textContent = '🛰️ Acquiring satellites... please wait.';
         
+        const geoOptions = {
+            enableHighAccuracy: true,
+            timeout: 10000, // 10 seconds for better satellite lock
+            maximumAge: 0
+        };
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function(position) {
-                    const lat = position.coords.latitude.toFixed(4);
-                    const lng = position.coords.longitude.toFixed(4);
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lng = position.coords.longitude.toFixed(6);
                     latInput.value = lat;
                     lngInput.value = lng;
                     coordsDisplay.textContent = `Lat: ${lat}, Lng: ${lng}`;
-                    mapMessage.innerHTML = `✅ **GPS Location Found!** You are ready to proceed.`;
+                    mapMessage.innerHTML = `✅ **GPS Location Found!** Accuracy: within ${Math.round(position.coords.accuracy)} meters.`;
                 },
                 function(error) {
-                    coordsDisplay.textContent = 'Lat: 0.0000, Lng: 0.0000';
-                    mapMessage.innerHTML = `**Location Error:** GPS signal failed.`;
+                    // Fallback to low accuracy if high accuracy fails (useful for indoor WiFi/IP)
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            const lat = position.coords.latitude.toFixed(6);
+                            const lng = position.coords.longitude.toFixed(6);
+                            latInput.value = lat;
+                            lngInput.value = lng;
+                            coordsDisplay.textContent = `Lat: ${lat}, Lng: ${lng}`;
+                            mapMessage.innerHTML = `⚠️ **Approximate Location Found.** Please verify your address.`;
+                        },
+                        function(error2) {
+                            coordsDisplay.textContent = 'Lat: 0.000000, Lng: 0.000000';
+                            mapMessage.innerHTML = `❌ **Error:** Please enable GPS/Location in your settings.`;
+                        },
+                        { enableHighAccuracy: false, timeout: 5000 }
+                    );
                 },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                geoOptions
             );
         }
     });
@@ -135,27 +178,35 @@
         const phone = document.getElementById('phone').value;
         const vendorPhoneNumber = document.getElementById('input_vendor_whatsapp').value; 
 
-        if (address === '' || city === '' || phone === '' || lat === '0.0000') {
-            alert('Please fill in all details and pinpoint your GPS location.');
+        if (address === '' || city === '' || phone === '' || lat === '0.000000') {
+            alert('Please click the "Locate Me" button and fill in your details.');
             return;
         }
 
-        // Referral logic: Construct message content
-        let messageContent = `*NEW DELIVERY ORDER (Africana Market)*\n\n` +
-                            `*Delivery Address:* ${address}, ${city}\n` +
-                            `*Contact Phone (Customer):* ${phone}\n` +
-                            `*GPS Coordinates:* Lat: ${lat}, Lng: ${lng}\n` +
-                            `*Google Maps Link:* https://www.google.com/maps?q=${lat},${lng}\n`;
+        let itemsList = "";
+        {% for item in cart.items.all %}
+            itemsList += "- {{ item.quantity }}x {{ item.product.name }} ({{ item.product.get_currency_code }} {% if item.product.negotiated_price %}{{ item.product.negotiated_price|floatformat:0 }}{% else %}{{ item.product.price|floatformat:0 }}{% endif %})\n";
+        {% endfor %}
 
-        // Add Referrer if exists
+        // Better Google Maps URL for exact pins
+        const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+
+        let messageContent = `*NEW DELIVERY ORDER (Africana Market)*\n\n` +
+                            `*🛍️ Items:*\n${itemsList}\n` +
+                            `*💰 Total:* {{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0 }}\n\n` +
+                            `*📍 Address:* ${address}, ${city}\n` +
+                            `*📞 Phone:* ${phone}\n` +
+                            `*🌍 GPS:* ${lat}, ${lng}\n` +
+                            `*🗺️ Map:* ${mapUrl}\n`;
+
         if (activeReferrer !== '') {
-            messageContent += `\n*Referrer to Payout:* @${activeReferrer}\n`;
+            messageContent += `\n*Referrer:* @${activeReferrer}\n`;
         }
 
-        messageContent += `\nPlease confirm order details and arrange delivery. Thank you!`;
+        messageContent += `\nPlease confirm order details and arrange delivery.`;
 
         const message = encodeURIComponent(messageContent);
-        const cleanVendorPhoneNumber = vendorPhoneNumber.replace(/[\s+-]/g, '');
+        const cleanVendorPhoneNumber = vendorPhoneNumber.replace(/[^0-9]/g, '');
         const whatsappUrl = `https://wa.me/${cleanVendorPhoneNumber}?text=${message}`;
 
         window.location.href = whatsappUrl;
