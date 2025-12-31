@@ -194,9 +194,11 @@ def checkout_view(request):
         messages.error(request, "Your cart is empty.")
         return redirect('eshop:product_list')
 
+    first_item = cart.items.first()
+    currency_code = first_item.product.get_currency_code() if first_item else "KES"
     cart_total = cart.cart_total
     total_items_count = cart.items.aggregate(total=Sum('quantity'))['total'] or 0
-    first_item = cart.items.first()
+   
     
     # 1. Retrieve Referrer from Session (captured in product_detail)
     referrer_username = request.session.get('active_referrer')
