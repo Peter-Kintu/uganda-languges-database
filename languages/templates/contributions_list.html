@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Job Listings | Global Job Board{% endblock %}
+{% block title %}{{ page_title|default:"Job Listings | Global Job Board" }}{% endblock %}
 
 {% block extra_head %}
     <style>
@@ -12,42 +12,32 @@
             color: #818cf8;
             border-bottom: 2px solid #818cf8;
         }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
-
-        /* Animation & Effects */
-        .job-card-hover {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .job-card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px -10px rgba(99, 102, 241, 0.5);
-            border-color: rgba(99, 102, 241, 0.5);
-        }
         
-        /* Line Clamping for consistent grid heights */
+        /* RESTORED ORIGINAL CARD DESIGN */
+        .job-card {
+            background-color: #1e293b; /* Original dark slate */
+            border: 1px solid #334155;
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .job-card:hover {
+            border-color: #6366f1;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.4);
+        }
         .line-clamp-2 {
-            overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
+           -webkit-box-orient: vertical;
+           -webkit-line-clamp: 2; /* Prefixed version for Safari/older Chrome */
+           line-clamp: 2;         /* Standard property for modern browsers */
+           overflow: hidden;
         }
-
-        /* Branding Badges */
-        .badge-local { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; }
-        .badge-monday { background-color: #00ca72; color: #000; }
+        /* Partner Branding */
         .badge-adzuna { background-color: #276ef1; color: #fff; }
-
-        /* Glassmorphism utility */
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        .badge-brighter { background-color: #00ca72; color: #000; }
+        .badge-local { background-color: #4f46e5; color: #fff; }
     </style>
 {% endblock %}
 
@@ -55,257 +45,121 @@
 <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     
     {% if selected_job %}
-        <a href="{% url 'languages:browse_job_listings' %}" class="group text-indigo-400 hover:text-indigo-300 font-medium mb-6 inline-flex items-center transition-colors">
-            <svg class="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        <a href="{% url 'languages:browse_job_listings' %}" class="text-indigo-400 hover:text-indigo-300 font-medium mb-6 inline-flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             Back to All Listings
         </a>
 
-        <div class="glass-panel rounded-3xl shadow-2xl p-6 md:p-12 border-2 border-indigo-500/30 overflow-hidden relative">
-            <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl"></div>
-            
-            <div class="relative z-10">
-                <div class="flex flex-col md:flex-row items-start justify-between gap-6 mb-8">
-                    <div class="flex items-start gap-6">
-                        {% if selected_job.company_logo_or_media %}
-                            <div class="flex-shrink-0">
-                                <img src="{{ selected_job.company_logo_or_media.url }}" class="h-24 w-24 object-contain rounded-2xl border border-gray-700 bg-white p-2">
-                            </div>
-                        {% endif %}
-                        <div>
-                            <h1 class="text-3xl md:text-4xl font-black text-white mb-2 leading-tight">{{ selected_job.post_content|truncatechars:100 }}</h1>
-                            <p class="text-2xl text-indigo-400 font-bold mb-4">{{ selected_job.recruiter_name }}</p>
-                            <div class="flex flex-wrap gap-3">
-                                <span class="badge-local px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">Local Partner</span>
-                                <span class="bg-gray-800 text-gray-300 px-4 py-1.5 rounded-full text-xs font-bold uppercase border border-gray-700">{{ selected_job.get_job_type_display }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-gray-400 text-sm font-medium flex items-center justify-end">
-                            <svg class="w-4 h-4 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m10.606-10.606L13.414 3.1a1.998 1.998 0 00-2.828 0l-4.243 4.243"></path></svg>
-                            {{ selected_job.recruiter_location }}
-                        </p>
+        <div class="bg-slate-800 rounded-3xl shadow-2xl p-6 md:p-10 border border-slate-700">
+            <div class="flex flex-col md:flex-row items-start justify-between gap-6 mb-8">
+                <div class="flex items-start gap-6">
+                    {% if selected_job.company_logo_or_media %}
+                        <img src="{{ selected_job.company_logo_or_media.url }}" class="h-20 w-20 object-contain rounded-xl bg-white p-1">
+                    {% endif %}
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-1">{{ selected_job.post_content|truncatechars:100 }}</h1>
+                        <p class="text-xl text-indigo-400 font-semibold">{{ selected_job.recruiter_name }}</p>
                     </div>
                 </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 border-t border-gray-700/50 pt-10">
-                    <div class="lg:col-span-2 space-y-8">
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-4 flex items-center">
-                                <span class="w-2 h-8 bg-indigo-500 rounded-full mr-3"></span>Full Job Description
-                            </h3>
-                            <div class="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">
-                                {{ selected_job.post_content }}
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-4 flex items-center">
-                                <span class="w-2 h-8 bg-cyan-500 rounded-full mr-3"></span>Skills & Requirements
-                            </h3>
-                            <p class="text-gray-300 text-lg italic">{{ selected_job.required_skills }}</p>
-                        </div>
-                    </div>
-
-                    <div class="lg:col-span-1">
-                        <div class="bg-gray-900/50 p-6 rounded-2xl border border-indigo-500/20 sticky top-10">
-                            <h4 class="text-white font-bold mb-6 text-center uppercase tracking-widest text-sm">Action Center</h4>
-                            
-                            {% if selected_job.application_url %}
-                                <a href="{{ selected_job.application_url }}" target="_blank" class="w-full block text-center py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl transition shadow-lg mb-4">
-                                    APPLY ON COMPANY SITE
-                                </a>
-                            {% else %}
-                                <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" 
-                                        class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition shadow-lg mb-4">
-                                    EASY APPLY NOW
-                                </button>
-                            {% endif %}
-
-                            <form method="post" action="{% url 'languages:upvote_job_application' pk=selected_job.pk %}" class="upvote-form">
-                                {% csrf_token %}
-                                <button type="submit" class="w-full flex items-center justify-center gap-2 py-3 border border-gray-700 text-gray-400 hover:text-indigo-400 hover:border-indigo-400 rounded-xl transition">
-                                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                                    <span class="upvote-count font-bold">{{ selected_job.upvotes }} Upvotes</span>
-                                </button>
-                            </form>
-                            <p class="text-center text-gray-500 text-xs mt-6 uppercase tracking-tighter">Listing ID: #JB-{{ selected_job.pk|add:1000 }}</p>
-                        </div>
-                    </div>
+            </div>
+            
+            <div class="border-t border-slate-700 pt-8 mt-8">
+                <p class="text-slate-300 leading-relaxed whitespace-pre-wrap mb-8">{{ selected_job.post_content }}</p>
+                <div class="flex flex-wrap gap-4">
+                    {% if selected_job.application_url %}
+                        <a href="{{ selected_job.application_url }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition">Apply Externally</a>
+                    {% else %}
+                        <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" 
+                                class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl transition">Easy Apply</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
     {% else %}
         <header class="mb-12">
-            <h1 class="text-5xl font-black text-white mb-4 tracking-tight">{{ page_title }}</h1>
-            <p class="text-gray-400 text-lg mb-8 max-w-3xl">Connecting skilled talent with local opportunities and global technology partners.</p>
-
-            <form method="get" action="{% url 'languages:browse_job_listings' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-800 p-4 rounded-3xl border border-gray-700 shadow-xl">
-                <div class="md:col-span-2 relative">
-                    <input type="search" name="q" placeholder="Job title, skills, or company..." value="{{ search_query }}" class="w-full pl-12 pr-4 py-4 bg-gray-900 border-none rounded-2xl text-white focus:ring-2 focus:ring-indigo-500">
-                    <svg class="w-6 h-6 absolute left-4 top-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </div>
-                <select name="category" class="py-4 bg-gray-900 border-none rounded-2xl text-white focus:ring-2 focus:ring-indigo-500">
-                    <option value="all">All Industries</option>
-                    {% for category_key, category_label in job_categories %}
-                        <option value="{{ category_key }}" {% if category_key == selected_category %}selected{% endif %}>{{ category_label }}</option>
+            <h1 class="text-4xl font-extrabold text-white mb-6 text-center">Explore Opportunities</h1>
+            <form method="get" action="{% url 'languages:browse_job_listings' %}" class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-800 p-3 rounded-2xl border border-slate-700 shadow-lg">
+                <input type="search" name="q" placeholder="Keywords..." value="{{ search_query }}" class="md:col-span-2 bg-slate-900 border-none rounded-xl text-white px-4 py-3">
+                <select name="category" class="bg-slate-900 border-none rounded-xl text-white px-4 py-3">
+                    <option value="all">All Categories</option>
+                    {% for key, val in job_categories %}
+                        <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg active:scale-95">Search Jobs</button>
+                <button type="submit" class="bg-indigo-600 text-white font-bold rounded-xl py-3 hover:bg-indigo-700 transition">Search</button>
             </form>
         </header>
 
-        {% if user.is_authenticated and job_posts.number == 1 and recommended_jobs_count > 0 %}
-        <section class="mb-16">
-            <div class="flex items-center gap-4 mb-8">
-                <h2 class="text-2xl font-bold text-white uppercase tracking-widest">Matched For You</h2>
-                <div class="h-[1px] flex-grow bg-gradient-to-r from-indigo-500 to-transparent"></div>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {% for job in job_posts %}
-                    {% if forloop.counter <= recommended_jobs_count %}
-                    <div class="glass-panel rounded-3xl p-1 border-2 border-indigo-500/50 hover:border-indigo-500 transition-all">
-                        <div class="bg-gray-900/40 rounded-[22px] p-6 h-full flex flex-col justify-between">
-                            <div class="flex items-start gap-4 mb-4">
-                                {% if job.company_logo_or_media %}
-                                    <img src="{{ job.company_logo_or_media.url }}" class="h-14 w-14 object-contain rounded-xl bg-white p-1">
-                                {% endif %}
-                                <div class="flex-grow min-w-0">
-                                    <div class="flex justify-between">
-                                        <span class="text-xs font-black text-indigo-400 uppercase tracking-tighter">Direct Match</span>
-                                        <span class="text-xs text-gray-500">{{ job.timestamp|date:"M d" }}</span>
-                                    </div>
-                                    <h3 class="text-xl font-bold text-white truncate">{{ job.post_content|truncatechars:50 }}</h3>
-                                    <p class="text-sm text-gray-400">{{ job.recruiter_name }} • {{ job.recruiter_location }}</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-2 mb-6">
-                                <span class="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest">{{ job.get_job_type_display }}</span>
-                                <span class="bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest">{{ job.get_job_category_display }}</span>
-                            </div>
-                            <a href="?job_id={{ job.pk }}" class="w-full block text-center py-3 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white font-bold rounded-xl transition">View Full Match</a>
-                        </div>
+            {% for job in job_posts %}
+                <div class="job-card p-6 rounded-2xl">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="badge-local text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">Local</span>
+                        
+                        <form action="{% url 'languages:upvote_job_application' job.pk %}" method="POST" class="upvote-form">
+                            {% csrf_token %}
+                            <button type="submit" class="flex items-center gap-1 text-slate-500 hover:text-indigo-400 transition-colors">
+                                <span class="upvote-count text-xs font-bold">{{ job.upvotes }}</span>
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 9.4a2 2 0 00-.8.933z"></path></svg>
+                            </button>
+                        </form>
                     </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-        </section>
-        {% endif %}
-
-        <section>
-            <div class="flex items-center gap-4 mb-8">
-                <h2 class="text-2xl font-bold text-white uppercase tracking-widest">Global Postings</h2>
-                <div class="h-[1px] flex-grow bg-gradient-to-r from-gray-700 to-transparent"></div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {% for job in job_posts %}
-                    {% if not user.is_authenticated or job_posts.number != 1 or forloop.counter > recommended_jobs_count %}
-                    <div class="glass-panel rounded-3xl p-6 job-card-hover border border-gray-800 flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="badge-local px-3 py-1 rounded-full text-[10px] font-black uppercase">Local</span>
-                                <span class="text-gray-500 text-[10px]">{{ job.timestamp|timesince }} ago</span>
-                            </div>
-                            <h3 class="text-xl font-bold text-white mb-2 line-clamp-2 leading-snug">{{ job.post_content|truncatechars:70 }}</h3>
-                            <p class="text-indigo-400 text-xs font-bold mb-4 uppercase">{{ job.recruiter_name }}</p>
-                            <p class="text-gray-400 text-sm line-clamp-3 italic">"{{ job.required_skills }}"</p>
-                        </div>
-                        <div class="mt-8 pt-6 border-t border-gray-700/50 flex items-center justify-between">
-                            <span class="text-xs text-gray-500 font-medium">{{ job.recruiter_location }}</span>
-                            <a href="?job_id={{ job.pk }}" class="text-indigo-400 hover:text-white text-sm font-black uppercase tracking-widest transition-colors">Details &rarr;</a>
-                        </div>
+                    
+                    <h3 class="text-xl font-bold text-white mb-1 line-clamp-2">
+                        <a href="?job_id={{ job.pk }}" class="hover:text-indigo-400 transition-colors">{{ job.post_content|truncatechars:60 }}</a>
+                    </h3>
+                    <p class="text-indigo-400 font-semibold text-sm mb-3">{{ job.recruiter_name }}</p>
+                    
+                    <div class="mt-auto pt-4 border-t border-slate-700/50 flex justify-between items-center">
+                        <span class="text-slate-500 text-[10px] font-medium uppercase tracking-tighter">{{ job.recruiter_location }}</span>
+                        <a href="?job_id={{ job.pk }}" class="text-indigo-400 hover:text-white text-xs font-bold uppercase">Details &rarr;</a>
                     </div>
-                    {% endif %}
-                {% endfor %}
+                </div>
+            {% endfor %}
 
-                {% for job in monday_jobs %}
-                    <div class="glass-panel rounded-3xl p-6 border-l-4 border-green-500 job-card-hover flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="badge-monday px-3 py-1 rounded-full text-[10px] font-black uppercase">Monday API</span>
-                                <span class="text-gray-500 text-[10px]">Managed</span>
-                            </div>
-                            <h3 class="text-xl font-bold text-white mb-2">{{ job.name|default:"Professional Role" }}</h3>
-                            <p class="text-green-500 text-xs font-bold mb-4 uppercase">Global Partner</p>
-                            <p class="text-gray-400 text-sm">Automated recruitment listing processed via Monday.com integration for verified companies.</p>
-                        </div>
-                        <div class="mt-8">
-                            <a href="{{ job.application_url|default:'#' }}" target="_blank" class="w-full block text-center py-3 bg-gray-900 border border-green-500/30 text-green-500 hover:bg-green-500 hover:text-black font-black rounded-xl transition uppercase text-xs tracking-widest">Apply on Monday</a>
-                        </div>
+            {% for job in monday_jobs %}
+                <div class="job-card p-6 rounded-2xl border-l-4 border-green-500">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="badge-brighter text-[10px] font-black px-2 py-1 rounded-md uppercase">BrighterMonday</span>
                     </div>
-                {% endfor %}
-
-                {% for job in adzuna_jobs %}
-                    <div class="glass-panel rounded-3xl p-6 border-l-4 border-blue-500 job-card-hover flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="badge-adzuna px-3 py-1 rounded-full text-[10px] font-black uppercase">Adzuna Feed</span>
-                                <span class="text-gray-500 text-[10px]">External</span>
-                            </div>
-                            <h3 class="text-xl font-bold text-white mb-2 line-clamp-2 leading-tight">{{ job.title|safe }}</h3>
-                            <p class="text-blue-400 text-xs font-bold mb-2 uppercase">{{ job.company.display_name }}</p>
-                            <p class="text-gray-500 text-xs mb-4 italic">{{ job.location.display_name }}</p>
-                        </div>
-                        <div class="mt-auto">
-                            <a href="{{ job.redirect_url }}" target="_blank" class="w-full block text-center py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl transition shadow-lg text-xs uppercase tracking-widest">Apply via Global Feed</a>
-                        </div>
+                    <h3 class="text-xl font-bold text-white mb-1 line-clamp-2">{{ job.title|default:job.name }}</h3>
+                    <p class="text-green-500 font-bold text-xs mb-4 uppercase">External Partner</p>
+                    <div class="mt-auto">
+                        <a href="{{ job.url|default:job.application_url }}" target="_blank" class="w-full block text-center py-2 bg-slate-700 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition uppercase">Apply via Partner</a>
                     </div>
-                {% endfor %}
-            </div>
+                </div>
+            {% endfor %}
 
-            {% if job_posts.has_other_pages %}
-            <nav class="mt-20 flex justify-center items-center space-x-4">
-                {% if job_posts.has_previous %}
-                    <a href="?page={{ job_posts.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="w-12 h-12 flex items-center justify-center bg-gray-800 rounded-2xl text-white hover:bg-indigo-600 transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </a>
-                {% endif %}
-                
-                <span class="px-8 py-3 bg-gray-900 border border-gray-700 rounded-2xl text-white font-black text-sm uppercase tracking-widest">Page {{ job_posts.number }}</span>
-
-                {% if job_posts.has_next %}
-                    <a href="?page={{ job_posts.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="w-12 h-12 flex items-center justify-center bg-gray-800 rounded-2xl text-white hover:bg-indigo-600 transition">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </a>
-                {% endif %}
-            </nav>
-            {% endif %}
-        </section>
+            {% for job in adzuna_jobs %}
+                <div class="job-card p-6 rounded-2xl border-l-4 border-blue-500">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="badge-adzuna text-[10px] font-bold px-2 py-1 rounded-md uppercase">Adzuna</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1 line-clamp-2">{{ job.title|safe }}</h3>
+                    <p class="text-blue-400 font-bold text-xs mb-4">{{ job.company.display_name }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ job.redirect_url }}" target="_blank" class="w-full block text-center py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition uppercase">Quick Apply</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 </main>
 
-<div id="easyApplyModal" class="fixed inset-0 z-[100] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-gray-900 w-full max-w-xl rounded-[40px] shadow-2xl border border-indigo-500/30 overflow-hidden relative">
-        <div class="p-8 md:p-12 relative z-10">
-            <h2 id="modalJobTitle" class="text-3xl font-black text-white mb-2">Easy Apply</h2>
-            <p id="modalRecruiterName" class="text-indigo-400 font-bold mb-8 uppercase tracking-widest text-sm"></p>
-            
-            <div id="applicationActionMessage" class="hidden p-6 bg-indigo-500/10 rounded-3xl border border-indigo-500/20 text-indigo-100 mb-8 text-sm leading-relaxed"></div>
-            
-            <form id="easyApplyForm" class="space-y-6">
-                <div class="space-y-2">
-                    <label class="block text-xs font-black text-gray-500 uppercase tracking-widest ml-2">Your Professional CV</label>
-                    <div class="relative group">
-                        <input type="file" id="cvUpload" accept=".pdf,.doc,.docx" required 
-                               class="w-full bg-gray-800 border-2 border-gray-700 rounded-2xl px-4 py-8 text-sm text-gray-400 file:hidden cursor-pointer hover:border-indigo-500 transition-all text-center">
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-gray-500 group-hover:text-indigo-400">
-                            <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                            <span class="font-bold">Click or Drag PDF/Word Here</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                    <button type="button" onclick="closeEasyApplyModal()" class="flex-1 py-4 bg-gray-800 text-gray-400 font-black rounded-2xl hover:bg-gray-700 transition uppercase tracking-widest text-sm">Cancel</button>
-                    <button type="submit" class="flex-1 py-4 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition uppercase tracking-widest text-sm shadow-xl shadow-green-900/20">Submit Application</button>
-                </div>
-            </form>
-        </div>
+<div id="easyApplyModal" class="fixed inset-0 z-50 hidden bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-800 w-full max-w-lg rounded-3xl p-8 border border-slate-700 shadow-2xl relative">
+        <button onclick="closeEasyApplyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">&times;</button>
+        <h2 class="text-2xl font-bold text-white mb-6">Easy Apply</h2>
+        <div id="actionMessage" class="hidden text-center py-6"></div>
+        <form id="easyApplyForm" class="space-y-4">
+            <input type="text" placeholder="Full Name" required class="w-full bg-slate-900 border-none rounded-xl text-white p-3">
+            <input type="file" id="cvUpload" required class="w-full text-slate-400 text-sm">
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">Submit Application</button>
+        </form>
     </div>
 </div>
-
 {% endblock %}
 
 {% block footer_scripts %}
@@ -313,81 +167,47 @@
     let currentRecruiterEmail = '';
     let currentRecruiterWhatsApp = '';
 
-    const modal = document.getElementById('easyApplyModal');
-
-    function openEasyApplyModal(jobTitle, recruiterName, email, whatsapp) {
-        document.getElementById('modalJobTitle').textContent = jobTitle;
-        document.getElementById('modalRecruiterName').textContent = recruiterName;
+    function openEasyApplyModal(desc, name, email, whatsapp) {
         currentRecruiterEmail = email;
         currentRecruiterWhatsApp = whatsapp;
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+        document.getElementById('easyApplyModal').classList.remove('hidden');
     }
 
     function closeEasyApplyModal() {
-        modal.classList.add('hidden');
+        document.getElementById('easyApplyModal').classList.add('hidden');
         document.getElementById('easyApplyForm').classList.remove('hidden');
-        document.getElementById('applicationActionMessage').classList.add('hidden');
-        document.getElementById('easyApplyForm').reset();
-        document.body.style.overflow = 'auto';
+        document.getElementById('actionMessage').classList.add('hidden');
     }
 
     document.getElementById('easyApplyForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        const actionMessage = document.getElementById('actionMessage');
         const cvFile = document.getElementById('cvUpload').files[0];
-        const actionMessageDiv = document.getElementById('applicationActionMessage');
+        
         let instructions = '';
-
-        if (currentRecruiterEmail && currentRecruiterEmail !== 'None' && currentRecruiterEmail !== '') {
-            instructions = `
-                <div class='flex flex-col items-center text-center'>
-                    <div class='w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-4'>
-                        <svg class='w-6 h-6 text-black' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M5 13l4 4L19 7'></path></svg>
-                    </div>
-                    <p class='font-bold text-white text-lg mb-2'>File Ready for Email</p>
-                    <p class='mb-6 text-gray-400'>Please send your CV to: <span class='text-indigo-400 font-bold'>${currentRecruiterEmail}</span></p>
-                    <a href='mailto:${currentRecruiterEmail}?subject=Job Application: ${document.getElementById('modalJobTitle').textContent}' class='bg-white text-black px-6 py-2 rounded-full font-bold text-xs uppercase'>Compose Email Now</a>
-                </div>
-            `;
-        } else if (currentRecruiterWhatsApp && currentRecruiterWhatsApp !== 'None') {
-            const cleanPhone = currentRecruiterWhatsApp.replace(/\+/g, '').replace(/\s/g, '');
-            const waLink = `https://wa.me/${cleanPhone}?text=Hi, I am applying for: ${document.getElementById('modalJobTitle').textContent}`;
-            instructions = `
-                <div class='flex flex-col items-center text-center'>
-                    <p class='font-bold text-white mb-4'>Next Step: WhatsApp Submission</p>
-                    <p class='text-xs mb-6 text-gray-400'>1. Open the chat below.<br>2. **Attach** your file: <span class='text-white'>${cvFile.name}</span>.<br>3. Send the message.</p>
-                    <a href='${waLink}' target='_blank' class='bg-green-600 text-white px-8 py-3 rounded-full font-bold uppercase tracking-widest text-xs'>Open WhatsApp</a>
-                </div>
-            `;
-        } else {
-            instructions = "<p class='text-red-400 text-center font-bold'>Error: No direct application method found for this recruiter.</p>";
+        if (currentRecruiterEmail) {
+            instructions = `<p class='text-white mb-4'>Email your CV to: <b>${currentRecruiterEmail}</b></p>`;
+        } else if (currentRecruiterWhatsApp) {
+            instructions = `<a href='https://wa.me/${currentRecruiterWhatsApp}' class='bg-green-600 text-white px-6 py-2 rounded-lg'>Chat on WhatsApp</a>`;
         }
-
-        document.getElementById('easyApplyForm').classList.add('hidden');
-        actionMessageDiv.innerHTML = instructions;
-        actionMessageDiv.classList.remove('hidden');
+        
+        this.classList.add('hidden');
+        actionMessage.innerHTML = instructions;
+        actionMessage.classList.remove('hidden');
     });
 
-    // Handle AJAX Upvotes
+    // AJAX Upvotes
     document.querySelectorAll('.upvote-form').forEach(form => {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            const btn = this.querySelector('button');
-            const count = this.querySelector('.upvote-count');
-            
+            const countSpan = this.querySelector('.upvote-count');
             fetch(this.action, {
                 method: 'POST',
                 headers: { 'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value }
             }).then(r => r.json()).then(data => {
-                if(data.upvotes !== undefined) {
-                    count.textContent = `${data.upvotes} Upvotes`;
-                    btn.classList.add('text-indigo-400', 'border-indigo-400');
-                }
+                if(data.new_upvotes !== undefined) countSpan.textContent = data.new_upvotes;
             });
         });
     });
-
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => { if(e.target === modal) closeEasyApplyModal(); });
 </script>
-{% endblock footer_scripts %}
+{% endblock %}
