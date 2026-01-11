@@ -9,6 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib.auth import  logout  # Make sure 'logout' is imported
 from django.contrib import messages
+import requests
+import os
 # The import 'from users.models import Profile' has been removed to fix the ImportError.
 
 # Updated Imports: PhraseContributionForm -> JobPostForm, 
@@ -186,116 +188,250 @@ def post_job(request):
     return render(request, 'contribute.html', {'form': form})
 
 # View for browsing and searching job listings (was: 'browse')
+# @login_required
+# def browse_job_listings(request):
+#     # 1. Check for job detail request
+#     job_id = request.GET.get('job_id')
+#     selected_job = None
+    
+#     if job_id:
+#         try:
+#             # Fetch the specific job details if requested
+#             selected_job = get_object_or_404(JobPost, pk=job_id)
+#             # If a job is selected, we only need to render the detail view
+#             # and can skip the complex list/pagination logic.
+#         except ValueError:
+#             # Handle non-integer job_id values gracefully
+#             pass 
+
+#     # --- Only proceed with list/filter/pagination logic if no job is selected ---
+#     if selected_job is None:
+        # Get filters from the request
+        # category_filter = request.GET.get('category')
+        # search_query = request.GET.get('q')
+        # page = request.GET.get('page') # Get the page number
+
+        # # Start with all validated posts, ordered by recency
+        # all_job_posts = JobPost.objects.all().order_by('-timestamp')
+        
+        # # Apply category and search filters to the *entire* list before ranking
+        # job_posts_filtered = all_job_posts
+        
+        # # 1. Apply category filter
+        # if category_filter and category_filter != 'all':
+        #     job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
+            
+        # # 2. Apply search filter
+        # if search_query:
+            # Search across post_content (job description), required_skills, and recruiter_name
+        #     job_posts_filtered = job_posts_filtered.filter(
+        #         Q(post_content__icontains=search_query) |
+        #         Q(required_skills__icontains=search_query) |
+        #         Q(recruiter_name__icontains=search_query)
+        #     )
+
+        # # --- 3. Recommendation Logic (Prioritization) ---
+        # recommended_jobs = JobPost.objects.none() # Initialize an empty queryset
+
+        # if request.user.is_authenticated:
+        #     try:
+        #         # We try to access the related profile object using the most common related names:
+        #         user_profile = getattr(request.user, 'userprofile', None)
+        #         if user_profile is None:
+        #             user_profile = getattr(request.user, 'profile', None)
+                
+        #         # If a profile object was successfully retrieved
+        #         if user_profile and hasattr(user_profile, 'skills'):
+        #             user_skills_raw = user_profile.skills.split(',') if user_profile.skills else []
+        #             # Clean and lower-case the skills for matching
+        #             user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
+        #         else:
+        #             user_skills = []
+                    
+            # except Exception:
+            #     # Catch all exceptions during profile access to prevent a crash
+            #     user_skills = []
+
+            # if user_skills:
+            #     # Build a Q object for jobs where required_skills field contains any of the user's skills
+            #     skill_match_query = Q()
+            #     for skill in user_skills:
+            #         # Use Q(required_skills__icontains=skill) for case-insensitive partial match
+            #         skill_match_query |= Q(required_skills__icontains=skill)
+
+            #     # Separate recommended jobs from the filtered set
+            #     recommended_jobs = job_posts_filtered.filter(skill_match_query).distinct()
+                
+            #     # Identify other jobs that were filtered but didn't match skills (or haven't been recommended)
+            #     other_jobs = job_posts_filtered.exclude(pk__in=recommended_jobs.values_list('pk', flat=True))
+                
+            #     # Combine the two QuerySets: Recommended first, then others, maintaining order by timestamp
+            #     final_job_list = list(recommended_jobs.order_by('-timestamp')) + list(other_jobs.order_by('-timestamp'))
+                
+            # else:
+            #     # User is logged in but has no skills listed in their profile
+            #     final_job_list = list(job_posts_filtered)
+                
+        # else:
+        #     # User is not logged in
+        #     final_job_list = list(job_posts_filtered)
+            
+        # # --- 4. Pagination setup ---
+        # paginator = Paginator(final_job_list, 10) # Show 10 posts per page
+        
+        # try:
+        #     posts_on_page = paginator.page(page)
+        # except PageNotAnInteger:
+        #     posts_on_page = paginator.page(1)
+        # except EmptyPage:
+        #     posts_on_page = paginator.page(paginator.num_pages)
+
+        # # FIX: posts_on_page.object_list is a Python list, so we must manually extract pks
+        # posts_pk_list = [job.pk for job in posts_on_page.object_list]
+        
+        # # Set list context variables
+        # job_posts_context = posts_on_page
+        # recommended_jobs_count_context = recommended_jobs.count()
+        # is_recommended_page_context = True if recommended_jobs.filter(pk__in=posts_pk_list).exists() and posts_on_page.number == 1 else False
+        # category_filter = request.GET.get('category')
+        # search_query = request.GET.get('q')
+
+    # else:
+    #     # If a job is selected, use placeholder/defaults for list-only variables
+    #     job_posts_context = []
+    #     recommended_jobs_count_context = 0
+    #     is_recommended_page_context = False
+    #     category_filter = request.GET.get('category')
+    #     search_query = request.GET.get('q')
+
+    # context = {
+    #     'selected_job': selected_job, # <--- CRITICAL FOR DETAIL VIEW
+        
+    #     'job_posts': job_posts_context, # Paginated list containing recommended and other jobs
+    #     # Pass these for separate display in the template
+    #     'recommended_jobs_count': recommended_jobs_count_context, 
+    #     'is_recommended_page': is_recommended_page_context,
+        
+    #     'job_categories': JOB_CATEGORIES, 
+    #     'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
+    #     'search_query': search_query or '',
+    #     'page_title': "Job Listings"
+    # }
+    
+    # # If selected_job is present, update the page title for the detail view
+    # if selected_job:
+    #     context['page_title'] = f"Job: {selected_job.post_content[:40]}..."
+        
+    # return render(request, 'contributions_list.html', context)
+
+
+# View for handling upvotes (was: 'like_phrase')
+
+
+# Load API Credentials from Koyeb Environment Variables
+ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
+ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
+BRIGHTER_MONDAY_API_KEY = os.getenv("BRIGHTER_MONDAY_API_KEY") # Replacement for Jooble
+
 @login_required
 def browse_job_listings(request):
-    # 1. Check for job detail request
+    # 1. Check for job detail request (Original Logic Preserved)
     job_id = request.GET.get('job_id')
     selected_job = None
     
     if job_id:
         try:
-            # Fetch the specific job details if requested
             selected_job = get_object_or_404(JobPost, pk=job_id)
-            # If a job is selected, we only need to render the detail view
-            # and can skip the complex list/pagination logic.
         except ValueError:
-            # Handle non-integer job_id values gracefully
             pass 
 
-    # --- Only proceed with list/filter/pagination logic if no job is selected ---
-    if selected_job is None:
-        # Get filters from the request
-        category_filter = request.GET.get('category')
-        search_query = request.GET.get('q')
-        page = request.GET.get('page') # Get the page number
+    # --- Only proceed with list logic if no specific job is selected ---
+    adzuna_jobs = []
+    monday_jobs = [] # Updated from jooble_jobs
 
-        # Start with all validated posts, ordered by recency
+    if selected_job is None:
+        category_filter = request.GET.get('category')
+        search_query = request.GET.get('q') or "jobs" 
+        location = request.GET.get('where', 'Uganda')
+        page = request.GET.get('page', 1)
+
+        # A. LOCAL JOBS (Core Logic)
         all_job_posts = JobPost.objects.all().order_by('-timestamp')
-        
-        # Apply category and search filters to the *entire* list before ranking
         job_posts_filtered = all_job_posts
         
-        # 1. Apply category filter
         if category_filter and category_filter != 'all':
             job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
             
-        # 2. Apply search filter
-        if search_query:
-            # Search across post_content (job description), required_skills, and recruiter_name
+        if search_query and search_query != "jobs":
             job_posts_filtered = job_posts_filtered.filter(
                 Q(post_content__icontains=search_query) |
                 Q(required_skills__icontains=search_query) |
                 Q(recruiter_name__icontains=search_query)
             )
 
-        # --- 3. Recommendation Logic (Prioritization) ---
-        recommended_jobs = JobPost.objects.none() # Initialize an empty queryset
+        # Recommendation Logic (Original User-Skill Matching)
+        recommended_jobs = JobPost.objects.none()
+        user_skills = []
+        try:
+            user_profile = getattr(request.user, 'userprofile', getattr(request.user, 'profile', None))
+            if user_profile and hasattr(user_profile, 'skills'):
+                user_skills_raw = user_profile.skills.split(',') if user_profile.skills else []
+                user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
+        except Exception:
+            user_skills = []
 
-        if request.user.is_authenticated:
-            try:
-                # We try to access the related profile object using the most common related names:
-                user_profile = getattr(request.user, 'userprofile', None)
-                if user_profile is None:
-                    user_profile = getattr(request.user, 'profile', None)
-                
-                # If a profile object was successfully retrieved
-                if user_profile and hasattr(user_profile, 'skills'):
-                    user_skills_raw = user_profile.skills.split(',') if user_profile.skills else []
-                    # Clean and lower-case the skills for matching
-                    user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
-                else:
-                    user_skills = []
-                    
-            except Exception:
-                # Catch all exceptions during profile access to prevent a crash
-                user_skills = []
-
-            if user_skills:
-                # Build a Q object for jobs where required_skills field contains any of the user's skills
-                skill_match_query = Q()
-                for skill in user_skills:
-                    # Use Q(required_skills__icontains=skill) for case-insensitive partial match
-                    skill_match_query |= Q(required_skills__icontains=skill)
-
-                # Separate recommended jobs from the filtered set
-                recommended_jobs = job_posts_filtered.filter(skill_match_query).distinct()
-                
-                # Identify other jobs that were filtered but didn't match skills (or haven't been recommended)
-                other_jobs = job_posts_filtered.exclude(pk__in=recommended_jobs.values_list('pk', flat=True))
-                
-                # Combine the two QuerySets: Recommended first, then others, maintaining order by timestamp
-                final_job_list = list(recommended_jobs.order_by('-timestamp')) + list(other_jobs.order_by('-timestamp'))
-                
-            else:
-                # User is logged in but has no skills listed in their profile
-                final_job_list = list(job_posts_filtered)
-                
+        if user_skills:
+            skill_match_query = Q()
+            for skill in user_skills:
+                skill_match_query |= Q(required_skills__icontains=skill)
+            recommended_jobs = job_posts_filtered.filter(skill_match_query).distinct()
+            other_jobs = job_posts_filtered.exclude(pk__in=recommended_jobs.values_list('pk', flat=True))
+            final_job_list = list(recommended_jobs.order_by('-timestamp')) + list(other_jobs.order_by('-timestamp'))
         else:
-            # User is not logged in
             final_job_list = list(job_posts_filtered)
-            
-        # --- 4. Pagination setup ---
-        paginator = Paginator(final_job_list, 10) # Show 10 posts per page
-        
+
+        # B. EXTERNAL API WATERFALL (Adzuna + BrighterMonday)
+        if str(page) == '1':
+            # 1. Adzuna Fetch
+            if ADZUNA_APP_ID and ADZUNA_APP_KEY:
+                try:
+                    adzuna_url = "https://api.adzuna.com/v1/api/jobs/ug/search/1"
+                    params = {
+                        "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
+                        "results_per_page": 5, "what": search_query, "where": location
+                    }
+                    response = requests.get(adzuna_url, params=params, timeout=5)
+                    if response.status_code == 200:
+                        adzuna_jobs = response.json().get('results', [])
+                except Exception:
+                    pass
+
+            # 2. BrighterMonday Integration (Replacing Jooble)
+            if BRIGHTER_MONDAY_API_KEY:
+                try:
+                    # Using BrighterMonday's search endpoint for localized results
+                    monday_url = "https://api.brightermonday.co.ug/v1/jobs"
+                    headers = {"Authorization": f"Bearer {BRIGHTER_MONDAY_API_KEY}"}
+                    m_params = {"q": search_query, "location": location, "limit": 5}
+                    response = requests.get(monday_url, headers=headers, params=m_params, timeout=5)
+                    if response.status_code == 200:
+                        monday_jobs = response.json().get('data', [])
+                except Exception:
+                    pass
+
+        # C. Pagination
+        paginator = Paginator(final_job_list, 10)
         try:
             posts_on_page = paginator.page(page)
-        except PageNotAnInteger:
+        except (PageNotAnInteger, EmptyPage):
             posts_on_page = paginator.page(1)
-        except EmptyPage:
-            posts_on_page = paginator.page(paginator.num_pages)
 
-        # FIX: posts_on_page.object_list is a Python list, so we must manually extract pks
         posts_pk_list = [job.pk for job in posts_on_page.object_list]
-        
-        # Set list context variables
         job_posts_context = posts_on_page
         recommended_jobs_count_context = recommended_jobs.count()
         is_recommended_page_context = True if recommended_jobs.filter(pk__in=posts_pk_list).exists() and posts_on_page.number == 1 else False
-        category_filter = request.GET.get('category')
-        search_query = request.GET.get('q')
-
+    
     else:
-        # If a job is selected, use placeholder/defaults for list-only variables
         job_posts_context = []
         recommended_jobs_count_context = 0
         is_recommended_page_context = False
@@ -303,27 +439,19 @@ def browse_job_listings(request):
         search_query = request.GET.get('q')
 
     context = {
-        'selected_job': selected_job, # <--- CRITICAL FOR DETAIL VIEW
-        
-        'job_posts': job_posts_context, # Paginated list containing recommended and other jobs
-        # Pass these for separate display in the template
+        'selected_job': selected_job,
+        'job_posts': job_posts_context,
+        'adzuna_jobs': adzuna_jobs, 
+        'monday_jobs': monday_jobs,  # Renamed for template clarity
         'recommended_jobs_count': recommended_jobs_count_context, 
         'is_recommended_page': is_recommended_page_context,
-        
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
-        'search_query': search_query or '',
-        'page_title': "Job Listings"
+        'search_query': search_query if search_query != "jobs" else '',
+        'page_title': f"Job: {selected_job.post_content[:40]}..." if selected_job else "Job Listings"
     }
     
-    # If selected_job is present, update the page title for the detail view
-    if selected_job:
-        context['page_title'] = f"Job: {selected_job.post_content[:40]}..."
-        
     return render(request, 'contributions_list.html', context)
-
-
-# View for handling upvotes (was: 'like_phrase')
 @require_POST
 @login_required
 def upvote_job_application(request, pk):
