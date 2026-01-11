@@ -7812,6 +7812,7 @@ data = {
  '1352872':{'en': 'Gainesville, FL'},
  '1352873':{'en': 'Ocala, FL'},
  '1352955':{'en': 'Gainesville, FL'},
+ '1353':{'en': 'Wisconsin'},
  '1354':{'en': 'Quebec'},
  '1360':{'en': 'Washington State'},
  '1360210':{'en': 'Camas, WA'},
@@ -10018,5 +10019,4 @@ data = {
  '1414481':{'en': 'Milwaukee, WI'},
  '1414482':{'en': 'Milwaukee, WI'},
  '1414483':{'en': 'Milwaukee, WI'},
- '1414486':{'en': 'Milwaukee, WI'},
 }
