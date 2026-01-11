@@ -247,6 +247,9 @@ def post_job(request):
         #             user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
         #         else:
         #             user_skills = []
+      
+    
+    
                     
             # except Exception:
             #     # Catch all exceptions during profile access to prevent a crash
@@ -327,97 +330,93 @@ def post_job(request):
 
 # View for handling upvotes (was: 'like_phrase')
 
-
-# Load API Credentials from Koyeb Environment Variables
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
-BRIGHTER_MONDAY_API_KEY = os.getenv("BRIGHTER_MONDAY_API_KEY") # Replacement for Jooble
+CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
 
+# Load API Credentials from Koyeb Environment Variables
 @login_required
 def browse_job_listings(request):
-    # 1. Check for job detail request (Original Logic Preserved)
     job_id = request.GET.get('job_id')
     selected_job = None
     
     if job_id:
         try:
             selected_job = get_object_or_404(JobPost, pk=job_id)
-        except ValueError:
+        except (ValueError, JobPost.DoesNotExist):
             pass 
 
-    # --- Only proceed with list logic if no specific job is selected ---
     adzuna_jobs = []
-    monday_jobs = [] # Updated from jooble_jobs
+    careerjet_jobs = []
 
     if selected_job is None:
         category_filter = request.GET.get('category')
         search_query = request.GET.get('q') or "jobs" 
-        location = request.GET.get('where', 'Uganda')
+        # FIX: Ensure location is never empty for external APIs
+        location = request.GET.get('where') or "Uganda"
         page = request.GET.get('page', 1)
 
-        # A. LOCAL JOBS (Core Logic)
-        all_job_posts = JobPost.objects.all().order_by('-timestamp')
-        job_posts_filtered = all_job_posts
-        
+        # A. LOCAL JOBS 
+        job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
         if category_filter and category_filter != 'all':
             job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
-            
         if search_query and search_query != "jobs":
             job_posts_filtered = job_posts_filtered.filter(
                 Q(post_content__icontains=search_query) |
-                Q(required_skills__icontains=search_query) |
                 Q(recruiter_name__icontains=search_query)
             )
 
-        # Recommendation Logic (Original User-Skill Matching)
-        recommended_jobs = JobPost.objects.none()
-        user_skills = []
-        try:
-            user_profile = getattr(request.user, 'userprofile', getattr(request.user, 'profile', None))
-            if user_profile and hasattr(user_profile, 'skills'):
-                user_skills_raw = user_profile.skills.split(',') if user_profile.skills else []
-                user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
-        except Exception:
-            user_skills = []
+        final_job_list = list(job_posts_filtered)
 
-        if user_skills:
-            skill_match_query = Q()
-            for skill in user_skills:
-                skill_match_query |= Q(required_skills__icontains=skill)
-            recommended_jobs = job_posts_filtered.filter(skill_match_query).distinct()
-            other_jobs = job_posts_filtered.exclude(pk__in=recommended_jobs.values_list('pk', flat=True))
-            final_job_list = list(recommended_jobs.order_by('-timestamp')) + list(other_jobs.order_by('-timestamp'))
-        else:
-            final_job_list = list(job_posts_filtered)
-
-        # B. EXTERNAL API WATERFALL (Adzuna + BrighterMonday)
+        # B. EXTERNAL API WATERFALL
         if str(page) == '1':
-            # 1. Adzuna Fetch
+            # 1. Adzuna
             if ADZUNA_APP_ID and ADZUNA_APP_KEY:
                 try:
                     adzuna_url = "https://api.adzuna.com/v1/api/jobs/ug/search/1"
                     params = {
-                        "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
-                        "results_per_page": 5, "what": search_query, "where": location
+                        "app_id": ADZUNA_APP_ID,
+                        "app_key": ADZUNA_APP_KEY,
+                        "results_per_page": 5,
+                        "what": search_query,
+                        "where": location, # ADDED THIS
+                        "content-type": "application/json"
                     }
                     response = requests.get(adzuna_url, params=params, timeout=5)
                     if response.status_code == 200:
                         adzuna_jobs = response.json().get('results', [])
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Adzuna Error: {e}")
 
-            # 2. BrighterMonday Integration (Replacing Jooble)
-            if BRIGHTER_MONDAY_API_KEY:
+            # 2. Careerjet
+            if CAREERJET_API_KEY:
                 try:
-                    # Using BrighterMonday's search endpoint for localized results
-                    monday_url = "https://api.brightermonday.co.ug/v1/jobs"
-                    headers = {"Authorization": f"Bearer {BRIGHTER_MONDAY_API_KEY}"}
-                    m_params = {"q": search_query, "location": location, "limit": 5}
-                    response = requests.get(monday_url, headers=headers, params=m_params, timeout=5)
-                    if response.status_code == 200:
-                        monday_jobs = response.json().get('data', [])
-                except Exception:
-                    pass
+                    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+                    user_ip = x_forwarded.split(',')[0] if x_forwarded else request.META.get('REMOTE_ADDR', '1.1.1.1')
+                    user_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
+
+                    cj_params = {
+                        'locale_code': 'en_GB',  # GB is more stable for international search than en_UG
+                        'keywords': search_query,
+                        'location': location,
+                        'user_ip': user_ip,
+                        'user_agent': user_agent,
+                        'page_size': 5,
+                    }
+
+                    cj_response = requests.get(
+                        'https://search.api.careerjet.net/v4/query',
+                        params=cj_params,
+                        auth=(CAREERJET_API_KEY, ''),
+                        headers={'Referer': request.build_absolute_uri()},
+                        timeout=5
+                    )
+                    if cj_response.status_code == 200:
+                        cj_data = cj_response.json()
+                        if cj_data.get('type') == 'JOBS':
+                            careerjet_jobs = cj_data.get('jobs', [])
+                except Exception as e:
+                    print(f"Careerjet Error: {e}")
 
         # C. Pagination
         paginator = Paginator(final_job_list, 10)
@@ -426,15 +425,10 @@ def browse_job_listings(request):
         except (PageNotAnInteger, EmptyPage):
             posts_on_page = paginator.page(1)
 
-        posts_pk_list = [job.pk for job in posts_on_page.object_list]
         job_posts_context = posts_on_page
-        recommended_jobs_count_context = recommended_jobs.count()
-        is_recommended_page_context = True if recommended_jobs.filter(pk__in=posts_pk_list).exists() and posts_on_page.number == 1 else False
     
     else:
         job_posts_context = []
-        recommended_jobs_count_context = 0
-        is_recommended_page_context = False
         category_filter = request.GET.get('category')
         search_query = request.GET.get('q')
 
@@ -442,16 +436,15 @@ def browse_job_listings(request):
         'selected_job': selected_job,
         'job_posts': job_posts_context,
         'adzuna_jobs': adzuna_jobs, 
-        'monday_jobs': monday_jobs,  # Renamed for template clarity
-        'recommended_jobs_count': recommended_jobs_count_context, 
-        'is_recommended_page': is_recommended_page_context,
+        'careerjet_jobs': careerjet_jobs,
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query if search_query != "jobs" else '',
-        'page_title': f"Job: {selected_job.post_content[:40]}..." if selected_job else "Job Listings"
+        'page_title': f"Job Search: {search_query}" if not selected_job else "Job Detail"
     }
-    
     return render(request, 'contributions_list.html', context)
+
+
 @require_POST
 @login_required
 def upvote_job_application(request, pk):
