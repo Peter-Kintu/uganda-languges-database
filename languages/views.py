@@ -334,9 +334,13 @@ ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
 CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
 
-# Load API Credentials from Koyeb Environment Variables
 @login_required
 def browse_job_listings(request):
+    """
+    View for browsing and searching job listings. 
+    Integrates local database results with external API backfills from Adzuna and Careerjet.
+    """
+    # 1. Handle single job detail view request
     job_id = request.GET.get('job_id')
     selected_job = None
     
@@ -349,18 +353,21 @@ def browse_job_listings(request):
     adzuna_jobs = []
     careerjet_jobs = []
 
+    # 2. Handle list view and search logic
     if selected_job is None:
         category_filter = request.GET.get('category')
         search_query = request.GET.get('q') or "jobs" 
-        # FIX: Ensure location is never empty for external APIs
         location = request.GET.get('where') or "Uganda"
         page = request.GET.get('page', 1)
 
-        # A. LOCAL JOBS 
+        # A. LOCAL DATABASE SEARCH
         job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
+        
         if category_filter and category_filter != 'all':
             job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
+            
         if search_query and search_query != "jobs":
+            # Search local jobs by content or recruiter name
             job_posts_filtered = job_posts_filtered.filter(
                 Q(post_content__icontains=search_query) |
                 Q(recruiter_name__icontains=search_query)
@@ -368,35 +375,36 @@ def browse_job_listings(request):
 
         final_job_list = list(job_posts_filtered)
 
-        # B. EXTERNAL API WATERFALL
+        # B. EXTERNAL API BACKFILL (Only on Page 1 to save API credits and speed up loading)
         if str(page) == '1':
-            # 1. Adzuna
+            # 1. Adzuna Integration
             if ADZUNA_APP_ID and ADZUNA_APP_KEY:
                 try:
                     adzuna_url = "https://api.adzuna.com/v1/api/jobs/ug/search/1"
-                    params = {
+                    adzuna_params = {
                         "app_id": ADZUNA_APP_ID,
                         "app_key": ADZUNA_APP_KEY,
                         "results_per_page": 5,
                         "what": search_query,
-                        "where": location, # ADDED THIS
+                        "where": location,
                         "content-type": "application/json"
                     }
-                    response = requests.get(adzuna_url, params=params, timeout=5)
+                    response = requests.get(adzuna_url, params=adzuna_params, timeout=5)
                     if response.status_code == 200:
                         adzuna_jobs = response.json().get('results', [])
                 except Exception as e:
-                    print(f"Adzuna Error: {e}")
+                    print(f"Adzuna API Error: {e}")
 
-            # 2. Careerjet
+            # 2. Careerjet Integration
             if CAREERJET_API_KEY:
                 try:
+                    # Get user metadata required by Careerjet API
                     x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
                     user_ip = x_forwarded.split(',')[0] if x_forwarded else request.META.get('REMOTE_ADDR', '1.1.1.1')
                     user_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
 
                     cj_params = {
-                        'locale_code': 'en_GB',  # GB is more stable for international search than en_UG
+                        'locale_code': 'en_GB', # Standard locale for broad compatibility
                         'keywords': search_query,
                         'location': location,
                         'user_ip': user_ip,
@@ -407,7 +415,7 @@ def browse_job_listings(request):
                     cj_response = requests.get(
                         'https://search.api.careerjet.net/v4/query',
                         params=cj_params,
-                        auth=(CAREERJET_API_KEY, ''),
+                        auth=(CAREERJET_API_KEY, ''), # Careerjet uses Key as username, empty password
                         headers={'Referer': request.build_absolute_uri()},
                         timeout=5
                     )
@@ -416,9 +424,9 @@ def browse_job_listings(request):
                         if cj_data.get('type') == 'JOBS':
                             careerjet_jobs = cj_data.get('jobs', [])
                 except Exception as e:
-                    print(f"Careerjet Error: {e}")
+                    print(f"Careerjet API Error: {e}")
 
-        # C. Pagination
+        # C. LOCAL PAGINATION
         paginator = Paginator(final_job_list, 10)
         try:
             posts_on_page = paginator.page(page)
@@ -428,10 +436,12 @@ def browse_job_listings(request):
         job_posts_context = posts_on_page
     
     else:
+        # Defaults for Detail View
         job_posts_context = []
         category_filter = request.GET.get('category')
         search_query = request.GET.get('q')
 
+    # 3. CONTEXT FOR TEMPLATE
     context = {
         'selected_job': selected_job,
         'job_posts': job_posts_context,
@@ -440,11 +450,10 @@ def browse_job_listings(request):
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query if search_query != "jobs" else '',
-        'page_title': f"Job Search: {search_query}" if not selected_job else "Job Detail"
+        'page_title': f"Job Search: {search_query}" if not selected_job else f"Job: {selected_job.post_content[:30]}..."
     }
+    
     return render(request, 'contributions_list.html', context)
-
-
 @require_POST
 @login_required
 def upvote_job_application(request, pk):

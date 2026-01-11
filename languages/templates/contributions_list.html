@@ -13,9 +13,9 @@
             border-bottom: 2px solid #818cf8;
         }
         
-        /* RESTORED ORIGINAL SLATE CARD DESIGN */
+        /* ORIGINAL SLATE CARD DESIGN */
         .job-card {
-            background-color: #1e293b; /* Original dark slate */
+            background-color: #1e293b; /* dark slate */
             border: 1px solid #334155;
             transition: all 0.3s ease;
             height: 100%;
@@ -28,18 +28,18 @@
             box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.4);
         }
 
-        /* STANDARD LINE-CLAMP COMPATIBILITY */
+        /* LINE-CLAMP FOR CLEAN GRIDS */
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-box-orient: vertical;
-            -webkit-line-clamp: 2; /* Legacy WebKit */
-            line-clamp: 2;         /* CSS Standard */
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
             overflow: hidden;
         }
 
         /* Partner Branding Badges */
         .badge-adzuna { background-color: #276ef1; color: #fff; }
-        .badge-brighter { background-color: #00ca72; color: #000; }
+        .badge-careerjet { background-color: #ff5a1f; color: #fff; }
         .badge-local { background-color: #4f46e5; color: #fff; }
     </style>
 {% endblock %}
@@ -48,6 +48,7 @@
 <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     
     {% if selected_job %}
+        {# SINGLE JOB VIEW #}
         <a href="{% url 'languages:browse_job_listings' %}" class="text-indigo-400 hover:text-indigo-300 font-medium mb-6 inline-flex items-center">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             Back to All Listings
@@ -70,7 +71,10 @@
                 <p class="text-slate-300 leading-relaxed whitespace-pre-wrap mb-8">{{ selected_job.post_content }}</p>
                 <div class="flex flex-wrap gap-4">
                     {% if selected_job.application_url %}
-                        <a href="{{ selected_job.application_url }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition">Apply Externally</a>
+                        <a href="{{ selected_job.application_url }}" 
+                           {% if selected_job.is_external %}onclick="trackClick('{{ selected_job.pk }}')"{% endif %}
+                           target="_blank" 
+                           class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition">Apply Externally</a>
                     {% else %}
                         <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" 
                                 class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl transition">Easy Apply</button>
@@ -80,6 +84,7 @@
         </div>
 
     {% else %}
+        {# LIST VIEW #}
         <header class="mb-12">
             <h1 class="text-4xl font-extrabold text-white mb-6 text-center">Explore Opportunities</h1>
             <form method="get" action="{% url 'languages:browse_job_listings' %}" class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-800 p-3 rounded-2xl border border-slate-700 shadow-lg">
@@ -96,11 +101,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
+            {# 1. LOCAL DATABASE JOBS #}
             {% for job in job_posts %}
                 <div class="job-card p-6 rounded-2xl">
                     <div class="flex justify-between items-start mb-4">
                         <span class="badge-local text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest">Local</span>
-                        
                         <form action="{% url 'languages:upvote_job_application' job.pk %}" method="POST" class="upvote-form">
                             {% csrf_token %}
                             <button type="submit" class="flex items-center gap-1 text-slate-500 hover:text-indigo-400 transition-colors">
@@ -109,12 +114,10 @@
                             </button>
                         </form>
                     </div>
-                    
                     <h3 class="text-xl font-bold text-white mb-1 line-clamp-2">
                         <a href="?job_id={{ job.pk }}" class="hover:text-indigo-400 transition-colors">{{ job.post_content|truncatechars:60 }}</a>
                     </h3>
                     <p class="text-indigo-400 font-semibold text-sm mb-3">{{ job.recruiter_name }}</p>
-                    
                     <div class="mt-auto pt-4 border-t border-slate-700/50 flex justify-between items-center">
                         <span class="text-slate-500 text-[10px] font-medium uppercase tracking-tighter">{{ job.recruiter_location }}</span>
                         <a href="?job_id={{ job.pk }}" class="text-indigo-400 hover:text-white text-xs font-bold uppercase">Details &rarr;</a>
@@ -122,19 +125,21 @@
                 </div>
             {% endfor %}
 
-            {% for job in monday_jobs %}
-                <div class="job-card p-6 rounded-2xl border-l-4 border-green-500">
+            {# 2. CAREERJET API BACKFILL #}
+            {% for job in careerjet_jobs %}
+                <div class="job-card p-6 rounded-2xl border-l-4 border-orange-500">
                     <div class="flex justify-between items-center mb-4">
-                        <span class="badge-brighter text-[10px] font-black px-2 py-1 rounded-md uppercase">BrighterMonday</span>
+                        <span class="badge-careerjet text-[10px] font-bold px-2 py-1 rounded-md uppercase">Careerjet</span>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-1 line-clamp-2">{{ job.title|default:job.name }}</h3>
-                    <p class="text-green-500 font-bold text-xs mb-4 uppercase">External Partner</p>
+                    <h3 class="text-xl font-bold text-white mb-1 line-clamp-2">{{ job.title|safe }}</h3>
+                    <p class="text-orange-400 font-bold text-xs mb-4 uppercase">{{ job.company }}</p>
                     <div class="mt-auto">
-                        <a href="{{ job.url|default:job.application_url }}" target="_blank" class="w-full block text-center py-2 bg-slate-700 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition uppercase">Apply via Partner</a>
+                        <a href="{{ job.url }}" target="_blank" class="w-full block text-center py-2 bg-slate-700 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition uppercase">Apply via Partner</a>
                     </div>
                 </div>
             {% endfor %}
 
+            {# 3. ADZUNA API BACKFILL #}
             {% for job in adzuna_jobs %}
                 <div class="job-card p-6 rounded-2xl border-l-4 border-blue-500">
                     <div class="flex justify-between items-center mb-4">
@@ -151,15 +156,16 @@
     {% endif %}
 </main>
 
+{# MODALS #}
 <div id="easyApplyModal" class="fixed inset-0 z-50 hidden bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-800 w-full max-w-lg rounded-3xl p-8 border border-slate-700 shadow-2xl relative">
-        <button onclick="closeEasyApplyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">&times;</button>
+        <button onclick="closeEasyApplyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl">&times;</button>
         <h2 class="text-2xl font-bold text-white mb-6">Easy Apply</h2>
         <div id="actionMessage" class="hidden text-center py-6"></div>
         <form id="easyApplyForm" class="space-y-4">
             <input type="text" placeholder="Full Name" required class="w-full bg-slate-900 border-none rounded-xl text-white p-3">
             <input type="file" id="cvUpload" required class="w-full text-slate-400 text-sm">
-            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">Submit Application</button>
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition">Submit Application</button>
         </form>
     </div>
 </div>
@@ -182,15 +188,25 @@
         document.getElementById('actionMessage').classList.add('hidden');
     }
 
+    // TRACK EXTERNAL CLICKS (PPC Revenue)
+    function trackClick(jobId) {
+        fetch(`/jobs/track-click/${jobId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+    }
+
     document.getElementById('easyApplyForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const actionMessage = document.getElementById('actionMessage');
-        
         let instructions = '';
-        if (currentRecruiterEmail) {
-            instructions = `<p class='text-white mb-4'>Email your CV to: <b>${currentRecruiterEmail}</b></p>`;
-        } else if (currentRecruiterWhatsApp) {
-            instructions = `<a href='https://wa.me/${currentRecruiterWhatsApp}' target='_blank' class='bg-green-600 text-white px-6 py-2 rounded-lg'>Chat on WhatsApp</a>`;
+        
+        if (currentRecruiterEmail && currentRecruiterEmail !== 'None') {
+            instructions = `<p class='text-white mb-4'>Please email your CV directly to:<br><b class='text-indigo-400'>${currentRecruiterEmail}</b></p>`;
+        } else if (currentRecruiterWhatsApp && currentRecruiterWhatsApp !== 'None') {
+            instructions = `<a href='https://wa.me/${currentRecruiterWhatsApp}' target='_blank' class='bg-green-600 text-white px-6 py-2 rounded-lg inline-block font-bold'>Chat on WhatsApp</a>`;
+        } else {
+            instructions = `<p class='text-yellow-400'>No direct contact provided. Please check the job details for application instructions.</p>`;
         }
         
         this.classList.add('hidden');
@@ -198,7 +214,7 @@
         actionMessage.classList.remove('hidden');
     });
 
-    // AJAX Upvotes
+    // AJAX UPVOTES
     document.querySelectorAll('.upvote-form').forEach(form => {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
