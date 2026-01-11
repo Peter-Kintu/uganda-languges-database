@@ -8,6 +8,13 @@ from django.views.generic import TemplateView
 
 from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap
 
+import requests
+from django.http import HttpResponse
+
+def show_ip(request):
+    ip = requests.get("https://api.ipify.org").text
+    return HttpResponse(f"My public IP is: {ip}")
+
 sitemaps_dict = {
     'static': StaticViewSitemap,
     'products': ProductSitemap,
@@ -38,6 +45,8 @@ urlpatterns = [
 
     # 6. SEO
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict}, name="sitemap"),
+
+    path("show-ip/", show_ip),
 ]
 
 # Static & media serving in development
