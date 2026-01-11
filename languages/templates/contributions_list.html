@@ -13,7 +13,7 @@
             border-bottom: 2px solid #818cf8;
         }
         
-        /* RESTORED ORIGINAL CARD DESIGN */
+        /* RESTORED ORIGINAL SLATE CARD DESIGN */
         .job-card {
             background-color: #1e293b; /* Original dark slate */
             border: 1px solid #334155;
@@ -27,14 +27,17 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.4);
         }
+
+        /* STANDARD LINE-CLAMP COMPATIBILITY */
         .line-clamp-2 {
             display: -webkit-box;
-           -webkit-box-orient: vertical;
-           -webkit-line-clamp: 2; /* Prefixed version for Safari/older Chrome */
-           line-clamp: 2;         /* Standard property for modern browsers */
-           overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2; /* Legacy WebKit */
+            line-clamp: 2;         /* CSS Standard */
+            overflow: hidden;
         }
-        /* Partner Branding */
+
+        /* Partner Branding Badges */
         .badge-adzuna { background-color: #276ef1; color: #fff; }
         .badge-brighter { background-color: #00ca72; color: #000; }
         .badge-local { background-color: #4f46e5; color: #fff; }
@@ -182,13 +185,12 @@
     document.getElementById('easyApplyForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const actionMessage = document.getElementById('actionMessage');
-        const cvFile = document.getElementById('cvUpload').files[0];
         
         let instructions = '';
         if (currentRecruiterEmail) {
             instructions = `<p class='text-white mb-4'>Email your CV to: <b>${currentRecruiterEmail}</b></p>`;
         } else if (currentRecruiterWhatsApp) {
-            instructions = `<a href='https://wa.me/${currentRecruiterWhatsApp}' class='bg-green-600 text-white px-6 py-2 rounded-lg'>Chat on WhatsApp</a>`;
+            instructions = `<a href='https://wa.me/${currentRecruiterWhatsApp}' target='_blank' class='bg-green-600 text-white px-6 py-2 rounded-lg'>Chat on WhatsApp</a>`;
         }
         
         this.classList.add('hidden');
