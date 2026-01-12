@@ -384,7 +384,7 @@ def browse_job_listings(request):
                     adzuna_params = {
                         "app_id": ADZUNA_APP_ID,
                         "app_key": ADZUNA_APP_KEY,
-                        "results_per_page": 5,
+                        "results_per_page": 150,
                         "what": search_query,
                         "where": location,
                         "content-type": "application/json"
@@ -409,7 +409,7 @@ def browse_job_listings(request):
                         'location': location,
                         'user_ip': user_ip,
                         'user_agent': user_agent,
-                        'page_size': 5,
+                        'page_size': 150,
                     }
 
                     cj_response = requests.get(
@@ -427,7 +427,7 @@ def browse_job_listings(request):
                     print(f"Careerjet API Error: {e}")
 
         # C. LOCAL PAGINATION
-        paginator = Paginator(final_job_list, 10)
+        paginator = Paginator(final_job_list, 150)
         try:
             posts_on_page = paginator.page(page)
         except (PageNotAnInteger, EmptyPage):
@@ -450,7 +450,7 @@ def browse_job_listings(request):
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query if search_query != "jobs" else '',
-        'page_title': f"Job Search: {search_query}" if not selected_job else f"Job: {selected_job.post_content[:30]}..."
+        'page_title': f"Job Search: {search_query}" if not selected_job else f"Job: {selected_job.post_content[:50]}..."
     }
     
     return render(request, 'contributions_list.html', context)
