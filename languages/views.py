@@ -188,11 +188,13 @@ def post_job(request):
     return render(request, 'contribute.html', {'form': form})
 
 
-# Environment Variables
+
+
+# --- Environment Variables ---
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
 CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
-EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY") # Optional: For currency conversion
+EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
     """Helper to fetch live exchange rates."""
@@ -221,17 +223,14 @@ def browse_job_listings(request):
 
     if selected_job is None:
         category_filter = request.GET.get('category')
-        # Improved defaults to avoid "Software Only" bias
         search_query = request.GET.get('q') or "hiring" 
         location_query = request.GET.get('where') or "Africa"
         page = request.GET.get('page', 1)
 
         # A. LOCAL DATABASE SEARCH
         job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
-        
         if category_filter and category_filter != 'all':
             job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
-            
         if search_query and search_query != "hiring":
             job_posts_filtered = job_posts_filtered.filter(
                 Q(post_content__icontains=search_query) |
@@ -240,81 +239,89 @@ def browse_job_listings(request):
             )
         final_job_list = list(job_posts_filtered)
 
-        # B. EXTERNAL API BACKFILL (African & High-Paying Global Markets)
+        # B. EXTERNAL API BACKFILL
         if str(page) == '1':
-            # 1. Expanded Country Mapping
             adzuna_country_map = {
-                # High Paying
                 'usa': 'us', 'united states': 'us', 'canada': 'ca', 
                 'uae': 'ae', 'dubai': 'ae', 'uk': 'gb', 'germany': 'de',
-                # African Hubs
                 'south africa': 'za', 'nigeria': 'ng', 'kenya': 'ke', 
                 'uganda': 'ug', 'egypt': 'eg', 'morocco': 'ma', 'ghana': 'gh'
             }
             
             loc_lower = location_query.lower()
-            adzuna_code = 'za' # Default African hub
+            adzuna_code = 'za' 
             for country, code in adzuna_country_map.items():
                 if country in loc_lower:
                     adzuna_code = code
                     break
 
-            # 2. Adzuna Integration
+            # 1. Adzuna Integration
             if ADZUNA_APP_ID and ADZUNA_APP_KEY:
                 try:
                     adzuna_url = f"https://api.adzuna.com/v1/api/jobs/{adzuna_code}/search/1"
                     adzuna_params = {
-                        "app_id": ADZUNA_APP_ID,
-                        "app_key": ADZUNA_APP_KEY,
-                        "results_per_page": 20,
-                        "what": search_query,
+                        "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
+                        "results_per_page": 20, "what": search_query,
                         "where": location_query if adzuna_code not in ['us', 'ca', 'ae'] else "",
                         "content-type": "application/json"
                     }
-                    # Exclude OfferZen to avoid the developer-only signup walls you saw earlier
                     if search_query == "hiring":
                         adzuna_params["what_exclude"] = "offerzen"
 
-                    response = requests.get(adzuna_url, params=adzuna_params, timeout=5)
-                    if response.status_code == 200:
-                        adzuna_jobs = response.json().get('results', [])
+                    res = requests.get(adzuna_url, params=adzuna_params, timeout=5)
+                    if res.status_code == 200:
+                        adzuna_jobs = res.json().get('results', [])
                 except Exception as e:
-                    print(f"Adzuna API Error: {e}")
+                    print(f"Adzuna Error: {e}")
 
-            # 3. Careerjet Integration (Global Locales)
+            # 2. Careerjet Integration (FIXED)
             if CAREERJET_API_KEY:
                 try:
-                    # Switch locale based on country
                     locale = 'en_GB'
                     if 'usa' in loc_lower: locale = 'en_US'
                     elif 'canada' in loc_lower: locale = 'en_CA'
                     elif 'uae' in loc_lower or 'dubai' in loc_lower: locale = 'en_AE'
                     elif 'south africa' in loc_lower: locale = 'en_ZA'
+                    elif 'uganda' in loc_lower: locale = 'en_UG'
+                    elif 'kenya' in loc_lower: locale = 'en_KE'
+                    elif 'nigeria' in loc_lower: locale = 'en_NG'
+
+                    # Get Correct IP and Agent
+                    x_f = request.META.get('HTTP_X_FORWARDED_FOR')
+                    u_ip = x_f.split(',')[0] if x_f else request.META.get('REMOTE_ADDR', '127.0.0.1')
+                    u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
 
                     cj_params = {
                         'locale_code': locale,
                         'keywords': search_query,
                         'location': location_query,
-                        'user_ip': request.META.get('REMOTE_ADDR', '1.1.1.1'),
-                        'user_agent': request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0'),
-                        'page_size': 20,
+                        'user_ip': u_ip,
+                        'user_agent': u_agent,
+                        'page_size': 25,
                     }
 
-                    cj_res = requests.get('https://search.api.careerjet.net/v4/query', 
-                                         params=cj_params, auth=(CAREERJET_API_KEY, ''), timeout=5)
+                    # Careerjet REQUIREMENT: Referer Header
+                    cj_headers = {'Referer': request.build_absolute_uri()}
+
+                    # FIXED: Added headers=cj_headers to the request
+                    cj_res = requests.get(
+                        'https://search.api.careerjet.net/v4/query', 
+                        params=cj_params, 
+                        auth=(CAREERJET_API_KEY, ''), 
+                        headers=cj_headers, 
+                        timeout=5
+                    )
+                    
                     if cj_res.status_code == 200:
                         cj_data = cj_res.json()
                         if cj_data.get('type') == 'JOBS':
                             careerjet_jobs = cj_data.get('jobs', [])
                 except Exception as e:
-                    print(f"Careerjet API Error: {e}")
+                    print(f"Careerjet Error: {e}")
 
         # C. LOCAL PAGINATION
         paginator = Paginator(final_job_list, 20)
-        try:
-            posts_on_page = paginator.page(page)
-        except (PageNotAnInteger, EmptyPage):
-            posts_on_page = paginator.page(1)
+        posts_on_page = paginator.get_page(page)
         job_posts_context = posts_on_page
     
     else:
