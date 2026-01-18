@@ -27,18 +27,20 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 # --- PRODUCTION SECURITY & CSRF FIXES ---
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Hardened CSRF origins to prevent "403 Forbidden" in production
+# CSRF Trusted Origins Configuration
 CSRF_TRUSTED_ORIGINS = [
     'https://initial-danette-africana-60541726.koyeb.app',
-    'https://uganda-languges-database.onrender.com', # Added Render URL
+    'https://uganda-languges-database.onrender.com',
 ]
 
-# Dynamically add hosts from environment variables to trusted origins
-env_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
-for host in env_hosts:
+# Dynamically add hosts from DJANGO_ALLOWED_HOSTS to CSRF origins
+# This ensures that if you change hosts in your .env, CSRF doesn't break
+for host in ALLOWED_HOSTS:
     clean_host = host.strip()
     if clean_host and clean_host != '*':
+        # Add both http and https for maximum compatibility during transitions
         CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
+        CSRF_TRUSTED_ORIGINS.append(f"http://{clean_host}")
 
 # Local development origins
 CSRF_TRUSTED_ORIGINS.extend([
@@ -63,7 +65,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'cloudinary_storage',
     'cloudinary',
-    'whitenoise.runserver_nostatic', # Better local static handling
+    'whitenoise.runserver_nostatic',
 
     # Local Apps
     'users',
@@ -75,7 +77,7 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Crucial for Gunicorn stability
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -111,7 +113,7 @@ if DATABASE_URL:
         'default': dj_database_url.config(
             default=DATABASE_URL, 
             conn_max_age=600, 
-            ssl_require=True # Required for many production DB providers
+            ssl_require=True 
         )
     }
 else:
@@ -139,28 +141,37 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
+# --- CLOUDINARY ---
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-# Modern Storage Settings
+# --- API EXTERNAL CREDENTIALS ---
+ADZUNA_APP_ID = os.getenv('ADZUNA_APP_ID')
+ADZUNA_API_KEY = os.getenv('ADZUNA_API_KEY')
+
+# AliExpress (Fixed to prevent AttributeError)
+ALI_APP_KEY = os.getenv('ALI_APP_KEY', '524714')
+ALI_APP_SECRET = os.getenv('ALI_APP_SECRET', 'fallback_secret')
+ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID', 'default_tracking_id')
+
+# Google Gemini
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+# --- STORAGE BACKENDS ---
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # Changed to CompressedStaticFilesStorage to prevent 500 errors 
-        # caused by missing manifest files for logos/icons.
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # --- JAZZMIN SETTINGS ---
 JAZZMIN_SETTINGS = {
