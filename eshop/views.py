@@ -594,40 +594,22 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
 
     offer = None
     # Use regex to find the first number in the message
-    offer_match = re.search(r'([\d,\.]+\s*[km]?|\d+)', user_message, re.IGNORECASE)
-    # offer_match = re.search(r'(\d[\d,\.]*)', user_message)
+    # It will extract "200" from "200ugsh" or "100,000" from "100,000"
+    offer_match = re.search(r'(\d[\d,\.]*)', user_message)
     
     if offer_match:
         try:
-            # Step 1: Remove commas (e.g., "100,000" becomes "100000")
+            # Step 1: Remove commas and periods used for formatting
             val = offer_match.group(1).replace(',', '')
             
-            # Step 2: Convert strictly to the number typed
-            # We no longer multiply by 1000. If they type 10, it stays 10.
+            # Step 2: Convert strictly to the number typed. 
+            # If the user types 10, offer = 10. If they type 200, offer = 200.
             offer = Decimal(val).quantize(Decimal('0'))
             
             raw_offer_text = f"{curr} {offer:,.0f}" 
-        except: 
+        except (InvalidOperation, ValueError): 
             offer = None
-    # offer = None
-    # raw_offer_text = None 
-    # offer_match = re.search(r'([\d,\.]+\s*[km]?|\d+)', user_message, re.IGNORECASE)
     
-    # if offer_match:
-    #     try:
-    #         val = offer_match.group(1).lower().replace(',', '')
-    #         if 'm' in val: offer = Decimal(val.replace('m', '')) * 1000000
-    #         elif 'k' in val: offer = Decimal(val.replace('k', '')) * 1000
-    #         else:
-    #             val = re.sub(r'[^\d]', '', val)
-    #             offer = Decimal(val).quantize(Decimal('0'))
-            
-    #         # Smart correction for abbreviated large numbers (e.g., "50" for "50,000")
-    #         if offer < Decimal('10000') and product_price >= Decimal('100000'):
-    #              if offer * Decimal('1000') >= product_price * Decimal('0.5'):
-    #                  offer *= Decimal('1000')
-    #         raw_offer_text = f"{curr} {offer:,.0f}" 
-    #     except: offer = None
 
     if offer is None:
         user_msg_lower = user_message.lower()
@@ -765,3 +747,19 @@ def buy_now(request, product_id):
 
     # 3. Otherwise, proceed to your local WhatsApp delivery flow
     return redirect('eshop:delivery_location')
+
+
+def reset_negotiation(request, slug):
+    """Clears the chat history and negotiated price for a specific product session."""
+    # Define keys based on your naming convention
+    chat_key = f'chat_history_{slug}'
+    price_key = f'negotiated_price_{slug}'
+    
+    # Remove them from the session if they exist
+    if chat_key in request.session:
+        del request.session[chat_key]
+    if price_key in request.session:
+        del request.session[price_key]
+        
+    messages.info(request, "Negotiation history has been cleared.")
+    return redirect('eshop:ai_negotiation', slug=slug)  
