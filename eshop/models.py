@@ -19,12 +19,14 @@ class Product(models.Model):
         max_length=20, 
         choices=SOURCE_CHOICES, 
         default='local',
+        db_index=True,
         help_text="Where this product originates from."
     )
     external_id = models.CharField(
         max_length=200, 
         blank=True, 
         null=True,
+        db_index=True,
         help_text="ID from external marketplace (e.g., AliExpress productId, Jumia SKU)"
     )
     affiliate_url = models.URLField(
@@ -38,6 +40,9 @@ class Product(models.Model):
         null=True, 
         help_text="Direct URL for images from external marketplaces"
     )
+
+    # Tracking Metadata
+    last_synced = models.DateTimeField(auto_now=True, help_text="Last time this product was updated via API")
 
     # Media Fields
     image = CloudinaryField('image', blank=True, null=True)
@@ -106,6 +111,13 @@ class Product(models.Model):
 
     class Meta:
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['source', 'external_id'], 
+                name='unique_product_per_source',
+                condition=models.Q(external_id__isnull=False)
+            )
+        ]
 
 
 # --- Cart and CartItem Models ---
@@ -151,14 +163,12 @@ class Order(models.Model):
         ('Cancelled', 'Cancelled'),
     ]
 
-    # Links purchase to the buyer
     buyer = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
         related_name='purchases'
     )
     
-    # Automatically tracks who gets the commission
     referrer = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
@@ -173,7 +183,6 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        """Auto-assign referrer from buyer profile if not manually set."""
         if not self.referrer and hasattr(self.buyer, 'referred_by'):
             self.referrer = self.buyer.referred_by
         super().save(*args, **kwargs)
@@ -188,7 +197,6 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField()
     price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
     commission_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
-
 
     def __str__(self):
         return f"{self.product.name} (Qty: {self.quantity})"
