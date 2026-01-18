@@ -80,8 +80,10 @@
             <div class="group bg-slate-800/30 rounded-2xl border border-slate-800/50 hover:border-indigo-500/50 hover:bg-slate-800/60 transition-all duration-300 flex flex-col relative overflow-hidden shadow-lg">
                 
                 <a href="{% url 'eshop:product_detail' product.slug %}" class="block relative aspect-[4/5] overflow-hidden bg-slate-900">
-                    {% if product.image %}
-                        {# Check if image is a direct URL (AliExpress) or a Cloudinary object #}
+                    {# UPDATED IMAGE LOGIC FOR ALIEXPRESS #}
+                    {% if product.source == 'aliexpress' and product.image_url %}
+                        <img src="{{ product.image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100">
+                    {% elif product.image %}
                         {% if "http" in product.image.url %}
                             <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100">
                         {% else %}
@@ -95,7 +97,6 @@
                     <div class="absolute top-2 left-2 flex flex-col gap-1.5">
                         <span class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase shadow-xl">-5%</span>
                         
-                        {# Logic for AliExpress vs Local Badge #}
                         {% if product.source == 'aliexpress' %}
                             <span class="bg-orange-600 text-white px-2 py-0.5 rounded-lg text-[9px] font-bold border border-white/5">AliExpress</span>
                         {% else %}
@@ -146,7 +147,6 @@
                         </div>
 
                         <div class="flex flex-col gap-2 mt-4">
-                            {# Referral Link Logic #}
                             {% if user.is_authenticated and product.referral_commission > 0 %}
                             <button 
                                 type="button"
@@ -157,9 +157,8 @@
                             </button>
                             {% endif %}
 
-                            {# Dynamic Button Logic #}
                             {% if product.source == 'aliexpress' %}
-                                <a href="{{ product.affiliate_url }}" target="_blank" class="w-full block text-center bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border border-orange-500/20 active:scale-95 shadow-lg shadow-orange-600/10">
+                                <a href="{{ product.affiliate_url }}" target="_blank" rel="nofollow" class="w-full block text-center bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border border-orange-500/20 active:scale-95 shadow-lg shadow-orange-600/10">
                                     Buy on AliExpress
                                 </a>
                             {% else %}

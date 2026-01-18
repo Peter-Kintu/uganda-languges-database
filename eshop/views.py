@@ -24,8 +24,6 @@ User = get_user_model()
 # ------------------------------------
 from django.conf import settings
 
-
-
 @login_required
 def sync_aliexpress_products(request):
     """
@@ -36,7 +34,7 @@ def sync_aliexpress_products(request):
         messages.error(request, "Only admins can sync external products.")
         return redirect('eshop:product_list')
 
-    # Initialize the API using secure credentials from settings (Koyeb Environment Variables)
+    # Initialize the API using secure credentials
     api = AliexpressApi(
         settings.ALI_APP_KEY, 
         settings.ALI_APP_SECRET, 
@@ -46,35 +44,48 @@ def sync_aliexpress_products(request):
     )
 
     try:
-        # Fetching hot products (using the official AliExpress Affiliate API)
+        # Fetching hot products
         items = api.get_hotproducts(page_size=20)
         
+        if not items or not hasattr(items, 'products'):
+            messages.warning(request, "AliExpress returned no products at this time.")
+            return redirect('eshop:product_list')
+
         count = 0
         for item in items.products:
-            # Prevent duplicates using the external_id (AliExpress product_id)
-            obj, created = Product.objects.update_or_create(
-                external_id=str(item.product_id),
-                defaults={
-                    'name': item.product_title[:200],
-                    'description': f"AliExpress Global Product: {item.product_title}",
-                    'price': Decimal(str(item.target_sale_price)),
-                    'source': 'aliexpress',
-                    'affiliate_url': item.promotion_link,  # Your 'africana_ai' ID is embedded here
-                    'image_url': item.product_main_image_url,
-                    'vendor_name': 'AliExpress Global',
-                    'is_negotiable': False, # External prices are fixed
-                    'country': 'International',
-                    'whatsapp_number': 'EXTERNAL', # Marker for template logic
-                }
-            )
-            if created:
-                count += 1
+            try:
+                # Ensure price is a valid string/float before Decimal conversion
+                raw_price = getattr(item, 'target_sale_price', 0)
+                clean_price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
 
-        messages.success(request, f"Successfully imported {count} AliExpress products!")
+                # Update or create the product in the local DB
+                obj, created = Product.objects.update_or_create(
+                    external_id=str(item.product_id),
+                    defaults={
+                        'name': item.product_title[:200],
+                        'description': f"AliExpress Global Product: {item.product_title}",
+                        'price': clean_price,
+                        'source': 'aliexpress',
+                        'affiliate_url': item.promotion_link,
+                        'image_url': item.product_main_image_url,
+                        'vendor_name': 'AliExpress Global',
+                        'is_negotiable': False,
+                        'country': 'International',
+                        'whatsapp_number': 'EXTERNAL',
+                    }
+                )
+                if created:
+                    count += 1
+            except (InvalidOperation, ValueError, TypeError) as item_err:
+                # Skip individual items that have data errors (like bad price formats)
+                continue
+
+        messages.success(request, f"Successfully imported {count} new AliExpress products!")
     except Exception as e:
         messages.error(request, f"AliExpress Sync failed: {str(e)}")
 
     return redirect('eshop:product_list')
+
 
 def google_verification(request):
     """Verifies site ownership for Google Search Console."""
