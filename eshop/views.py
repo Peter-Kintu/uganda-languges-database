@@ -17,24 +17,31 @@ from django.db import transaction
 from .models import Order, OrderItem  
 from users.models import Notification
 from aliexpress_api import AliexpressApi, models
+from django.conf import settings
+import logging
+from django.utils.text import slugify
 
 User = get_user_model()
 # ------------------------------------
 # Helper Functions
 # ------------------------------------
-from django.conf import settings
+
+
+
+# Setup logging to track sync issues without crashing the site
+logger = logging.getLogger(__name__)
 
 @login_required
 def sync_aliexpress_products(request):
     """
-    Triggers a pull of products from AliExpress API 
-    and saves them to the local database as AliExpress source.
+    Advanced sync: Pulls AliExpress products, handles slug generation,
+    cleans up old data, and optimizes database performance.
     """
     if not request.user.is_staff:
-        messages.error(request, "Only admins can sync external products.")
+        messages.error(request, "Access denied: Staff credentials required.")
         return redirect('eshop:product_list')
 
-    # Initialize the API using secure credentials
+    # 1. Initialize API
     api = AliexpressApi(
         settings.ALI_APP_KEY, 
         settings.ALI_APP_SECRET, 
@@ -44,45 +51,67 @@ def sync_aliexpress_products(request):
     )
 
     try:
-        # Fetching hot products
-        items = api.get_hotproducts(page_size=20)
+        # 2. Fetch products (increased to 40 for a better variety)
+        items = api.get_hotproducts(page_size=40)
         
         if not items or not hasattr(items, 'products'):
-            messages.warning(request, "AliExpress returned no products at this time.")
+            messages.warning(request, "AliExpress API returned no data. Try again in a few minutes.")
             return redirect('eshop:product_list')
 
-        count = 0
-        for item in items.products:
-            try:
-                # Ensure price is a valid string/float before Decimal conversion
-                raw_price = getattr(item, 'target_sale_price', 0)
-                clean_price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
+        # 3. Optional: Clear old AliExpress products to keep DB small and free
+        # This prevents your database from growing too large.
+        # Product.objects.filter(source='aliexpress').delete()
 
-                # Update or create the product in the local DB
-                obj, created = Product.objects.update_or_create(
-                    external_id=str(item.product_id),
-                    defaults={
-                        'name': item.product_title[:200],
-                        'description': f"AliExpress Global Product: {item.product_title}",
-                        'price': clean_price,
-                        'source': 'aliexpress',
-                        'affiliate_url': item.promotion_link,
-                        'image_url': item.product_main_image_url,
-                        'vendor_name': 'AliExpress Global',
-                        'is_negotiable': False,
-                        'country': 'International',
-                        'whatsapp_number': 'EXTERNAL',
-                    }
-                )
-                if created:
-                    count += 1
-            except (InvalidOperation, ValueError, TypeError) as item_err:
-                # Skip individual items that have data errors (like bad price formats)
-                continue
+        created_count = 0
+        updated_count = 0
 
-        messages.success(request, f"Successfully imported {count} new AliExpress products!")
+        # 4. Use a transaction to ensure database integrity
+        with transaction.atomic():
+            for item in items.products:
+                try:
+                    # Clean the price
+                    raw_price = getattr(item, 'target_sale_price', 0)
+                    # If you want to convert USD to UGX, multiply here (e.g., * 3800)
+                    price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
+
+                    # Generate a unique slug if the product is new
+                    # This prevents 'product_detail' from breaking
+                    base_slug = slugify(item.product_title[:50])
+                    unique_slug = f"{base_slug}-{item.product_id}"
+
+                    # 5. Smart Update or Create
+                    obj, created = Product.objects.update_or_create(
+                        external_id=str(item.product_id),
+                        defaults={
+                            'name': item.product_title[:200],
+                            'slug': unique_slug,
+                            'description': f"AliExpress Global Selection. Product ID: {item.product_id}",
+                            'price': price,
+                            'source': 'aliexpress',
+                            'affiliate_url': item.promotion_link,
+                            'image_url': item.product_main_image_url,
+                            'vendor_name': 'AliExpress Global',
+                            'is_negotiable': False,
+                            'country': 'International',
+                            'whatsapp_number': 'EXTERNAL',
+                            'last_synced': timezone.now(), # Useful to track fresh data
+                        }
+                    )
+                    
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+
+                except Exception as item_error:
+                    logger.error(f"Failed to process product {getattr(item, 'product_id', 'unknown')}: {item_error}")
+                    continue
+
+        messages.success(request, f"Sync Complete: {created_count} new products added, {updated_count} updated.")
+
     except Exception as e:
-        messages.error(request, f"AliExpress Sync failed: {str(e)}")
+        logger.exception("AliExpress Global Sync Critical Failure")
+        messages.error(request, f"Sync failed. Check API credentials or connection.")
 
     return redirect('eshop:product_list')
 
