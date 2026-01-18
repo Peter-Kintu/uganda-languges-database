@@ -187,160 +187,26 @@ def post_job(request):
     # Renders the job post form page.
     return render(request, 'contribute.html', {'form': form})
 
-# View for browsing and searching job listings (was: 'browse')
-# @login_required
-# def browse_job_listings(request):
-#     # 1. Check for job detail request
-#     job_id = request.GET.get('job_id')
-#     selected_job = None
-    
-#     if job_id:
-#         try:
-#             # Fetch the specific job details if requested
-#             selected_job = get_object_or_404(JobPost, pk=job_id)
-#             # If a job is selected, we only need to render the detail view
-#             # and can skip the complex list/pagination logic.
-#         except ValueError:
-#             # Handle non-integer job_id values gracefully
-#             pass 
 
-#     # --- Only proceed with list/filter/pagination logic if no job is selected ---
-#     if selected_job is None:
-        # Get filters from the request
-        # category_filter = request.GET.get('category')
-        # search_query = request.GET.get('q')
-        # page = request.GET.get('page') # Get the page number
-
-        # # Start with all validated posts, ordered by recency
-        # all_job_posts = JobPost.objects.all().order_by('-timestamp')
-        
-        # # Apply category and search filters to the *entire* list before ranking
-        # job_posts_filtered = all_job_posts
-        
-        # # 1. Apply category filter
-        # if category_filter and category_filter != 'all':
-        #     job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
-            
-        # # 2. Apply search filter
-        # if search_query:
-            # Search across post_content (job description), required_skills, and recruiter_name
-        #     job_posts_filtered = job_posts_filtered.filter(
-        #         Q(post_content__icontains=search_query) |
-        #         Q(required_skills__icontains=search_query) |
-        #         Q(recruiter_name__icontains=search_query)
-        #     )
-
-        # # --- 3. Recommendation Logic (Prioritization) ---
-        # recommended_jobs = JobPost.objects.none() # Initialize an empty queryset
-
-        # if request.user.is_authenticated:
-        #     try:
-        #         # We try to access the related profile object using the most common related names:
-        #         user_profile = getattr(request.user, 'userprofile', None)
-        #         if user_profile is None:
-        #             user_profile = getattr(request.user, 'profile', None)
-                
-        #         # If a profile object was successfully retrieved
-        #         if user_profile and hasattr(user_profile, 'skills'):
-        #             user_skills_raw = user_profile.skills.split(',') if user_profile.skills else []
-        #             # Clean and lower-case the skills for matching
-        #             user_skills = [s.strip().lower() for s in user_skills_raw if s.strip()]
-        #         else:
-        #             user_skills = []
-      
-    
-    
-                    
-            # except Exception:
-            #     # Catch all exceptions during profile access to prevent a crash
-            #     user_skills = []
-
-            # if user_skills:
-            #     # Build a Q object for jobs where required_skills field contains any of the user's skills
-            #     skill_match_query = Q()
-            #     for skill in user_skills:
-            #         # Use Q(required_skills__icontains=skill) for case-insensitive partial match
-            #         skill_match_query |= Q(required_skills__icontains=skill)
-
-            #     # Separate recommended jobs from the filtered set
-            #     recommended_jobs = job_posts_filtered.filter(skill_match_query).distinct()
-                
-            #     # Identify other jobs that were filtered but didn't match skills (or haven't been recommended)
-            #     other_jobs = job_posts_filtered.exclude(pk__in=recommended_jobs.values_list('pk', flat=True))
-                
-            #     # Combine the two QuerySets: Recommended first, then others, maintaining order by timestamp
-            #     final_job_list = list(recommended_jobs.order_by('-timestamp')) + list(other_jobs.order_by('-timestamp'))
-                
-            # else:
-            #     # User is logged in but has no skills listed in their profile
-            #     final_job_list = list(job_posts_filtered)
-                
-        # else:
-        #     # User is not logged in
-        #     final_job_list = list(job_posts_filtered)
-            
-        # # --- 4. Pagination setup ---
-        # paginator = Paginator(final_job_list, 10) # Show 10 posts per page
-        
-        # try:
-        #     posts_on_page = paginator.page(page)
-        # except PageNotAnInteger:
-        #     posts_on_page = paginator.page(1)
-        # except EmptyPage:
-        #     posts_on_page = paginator.page(paginator.num_pages)
-
-        # # FIX: posts_on_page.object_list is a Python list, so we must manually extract pks
-        # posts_pk_list = [job.pk for job in posts_on_page.object_list]
-        
-        # # Set list context variables
-        # job_posts_context = posts_on_page
-        # recommended_jobs_count_context = recommended_jobs.count()
-        # is_recommended_page_context = True if recommended_jobs.filter(pk__in=posts_pk_list).exists() and posts_on_page.number == 1 else False
-        # category_filter = request.GET.get('category')
-        # search_query = request.GET.get('q')
-
-    # else:
-    #     # If a job is selected, use placeholder/defaults for list-only variables
-    #     job_posts_context = []
-    #     recommended_jobs_count_context = 0
-    #     is_recommended_page_context = False
-    #     category_filter = request.GET.get('category')
-    #     search_query = request.GET.get('q')
-
-    # context = {
-    #     'selected_job': selected_job, # <--- CRITICAL FOR DETAIL VIEW
-        
-    #     'job_posts': job_posts_context, # Paginated list containing recommended and other jobs
-    #     # Pass these for separate display in the template
-    #     'recommended_jobs_count': recommended_jobs_count_context, 
-    #     'is_recommended_page': is_recommended_page_context,
-        
-    #     'job_categories': JOB_CATEGORIES, 
-    #     'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
-    #     'search_query': search_query or '',
-    #     'page_title': "Job Listings"
-    # }
-    
-    # # If selected_job is present, update the page title for the detail view
-    # if selected_job:
-    #     context['page_title'] = f"Job: {selected_job.post_content[:40]}..."
-        
-    # return render(request, 'contributions_list.html', context)
-
-
-# View for handling upvotes (was: 'like_phrase')
-
+# Environment Variables
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
 CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
+EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY") # Optional: For currency conversion
+
+def get_exchange_rate(from_curr, to_curr="UGX"):
+    """Helper to fetch live exchange rates."""
+    if not EXCHANGE_RATE_API_KEY or from_curr == to_curr:
+        return 1.0
+    try:
+        url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/pair/{from_curr}/{to_curr}"
+        res = requests.get(url, timeout=2)
+        return res.json().get('conversion_rate', 1.0) if res.status_code == 200 else 1.0
+    except:
+        return 1.0
 
 @login_required
 def browse_job_listings(request):
-    """
-    View for browsing and searching job listings across Africa. 
-    Integrates local database results with dynamic external API backfills.
-    """
-    # 1. Handle single job detail view request
     job_id = request.GET.get('job_id')
     selected_job = None
     
@@ -353,10 +219,10 @@ def browse_job_listings(request):
     adzuna_jobs = []
     careerjet_jobs = []
 
-    # 2. Handle list view and search logic
     if selected_job is None:
         category_filter = request.GET.get('category')
-        search_query = request.GET.get('q') or "jobs" 
+        # Improved defaults to avoid "Software Only" bias
+        search_query = request.GET.get('q') or "hiring" 
         location_query = request.GET.get('where') or "Africa"
         page = request.GET.get('page', 1)
 
@@ -366,86 +232,78 @@ def browse_job_listings(request):
         if category_filter and category_filter != 'all':
             job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
             
-        if search_query and search_query != "jobs":
+        if search_query and search_query != "hiring":
             job_posts_filtered = job_posts_filtered.filter(
                 Q(post_content__icontains=search_query) |
                 Q(recruiter_name__icontains=search_query) |
                 Q(recruiter_location__icontains=location_query)
             )
-
         final_job_list = list(job_posts_filtered)
 
-        # B. EXTERNAL API BACKFILL (Optimized for African Countries)
+        # B. EXTERNAL API BACKFILL (African & High-Paying Global Markets)
         if str(page) == '1':
-            # --- Adzuna Country Mapping ---
-            # Adzuna uses specific subdomains for different African countries
+            # 1. Expanded Country Mapping
             adzuna_country_map = {
-                'south africa': 'za',
-                'nigeria': 'ng',
-                'kenya': 'ke',
-                'uganda': 'ug',
-                'egypt': 'eg',
-                'morocco': 'ma'
+                # High Paying
+                'usa': 'us', 'united states': 'us', 'canada': 'ca', 
+                'uae': 'ae', 'dubai': 'ae', 'uk': 'gb', 'germany': 'de',
+                # African Hubs
+                'south africa': 'za', 'nigeria': 'ng', 'kenya': 'ke', 
+                'uganda': 'ug', 'egypt': 'eg', 'morocco': 'ma', 'ghana': 'gh'
             }
             
-            # Default to 'za' (South Africa) if searching 'Africa' generally, 
-            # otherwise match the user input to a supported country code.
             loc_lower = location_query.lower()
-            adzuna_code = 'za' # Global fallback for the continent
+            adzuna_code = 'za' # Default African hub
             for country, code in adzuna_country_map.items():
                 if country in loc_lower:
                     adzuna_code = code
                     break
 
-            # 1. Adzuna Integration
+            # 2. Adzuna Integration
             if ADZUNA_APP_ID and ADZUNA_APP_KEY:
                 try:
                     adzuna_url = f"https://api.adzuna.com/v1/api/jobs/{adzuna_code}/search/1"
                     adzuna_params = {
                         "app_id": ADZUNA_APP_ID,
                         "app_key": ADZUNA_APP_KEY,
-                        "results_per_page": 50,
+                        "results_per_page": 20,
                         "what": search_query,
-                        "where": location_query if adzuna_code != 'za' or 'south africa' in loc_lower else "",
+                        "where": location_query if adzuna_code not in ['us', 'ca', 'ae'] else "",
                         "content-type": "application/json"
                     }
+                    # Exclude OfferZen to avoid the developer-only signup walls you saw earlier
+                    if search_query == "hiring":
+                        adzuna_params["what_exclude"] = "offerzen"
+
                     response = requests.get(adzuna_url, params=adzuna_params, timeout=5)
                     if response.status_code == 200:
                         adzuna_jobs = response.json().get('results', [])
                 except Exception as e:
                     print(f"Adzuna API Error: {e}")
 
-            # 2. Careerjet Integration (Pan-African Locale Support)
+            # 3. Careerjet Integration (Global Locales)
             if CAREERJET_API_KEY:
                 try:
-                    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-                    user_ip = x_forwarded.split(',')[0] if x_forwarded else request.META.get('REMOTE_ADDR', '1.1.1.1')
-                    user_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
-
-                    # Careerjet uses locales. en_GB is a good fallback for most English-speaking Africa.
-                    # We switch to fr_MA for francophone North Africa if detected.
+                    # Switch locale based on country
                     locale = 'en_GB'
-                    if any(x in loc_lower for x in ['morocco', 'algeria', 'tunisia', 'french']):
-                        locale = 'fr_MA'
+                    if 'usa' in loc_lower: locale = 'en_US'
+                    elif 'canada' in loc_lower: locale = 'en_CA'
+                    elif 'uae' in loc_lower or 'dubai' in loc_lower: locale = 'en_AE'
+                    elif 'south africa' in loc_lower: locale = 'en_ZA'
 
                     cj_params = {
                         'locale_code': locale,
                         'keywords': search_query,
                         'location': location_query,
-                        'user_ip': user_ip,
-                        'user_agent': user_agent,
-                        'page_size': 50,
+                        'user_ip': request.META.get('REMOTE_ADDR', '1.1.1.1'),
+                        'user_agent': request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0'),
+                        'page_size': 20,
                     }
 
-                    cj_response = requests.get(
-                        'https://search.api.careerjet.net/v4/query',
-                        params=cj_params,
-                        auth=(CAREERJET_API_KEY, ''),
-                        headers={'Referer': request.build_absolute_uri()},
-                        timeout=5
-                    )
-                    if cj_response.status_code == 200:
-                        cj_data = cj_response.json()
+                    cj_res = requests.get('https://search.api.careerjet.net/v4/query', 
+                                         params=cj_params, auth=(CAREERJET_API_KEY, ''), timeout=5)
+                    if cj_res.status_code == 200:
+                        cj_data = cj_res.json()
                         if cj_data.get('type') == 'JOBS':
                             careerjet_jobs = cj_data.get('jobs', [])
                 except Exception as e:
@@ -457,17 +315,14 @@ def browse_job_listings(request):
             posts_on_page = paginator.page(page)
         except (PageNotAnInteger, EmptyPage):
             posts_on_page = paginator.page(1)
-
         job_posts_context = posts_on_page
     
     else:
-        # Defaults for Detail View
         job_posts_context = []
         category_filter = request.GET.get('category')
         search_query = request.GET.get('q')
         location_query = request.GET.get('where')
 
-    # 3. CONTEXT FOR TEMPLATE
     context = {
         'selected_job': selected_job,
         'job_posts': job_posts_context,
@@ -475,11 +330,10 @@ def browse_job_listings(request):
         'careerjet_jobs': careerjet_jobs,
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
-        'search_query': search_query if search_query != "jobs" else '',
+        'search_query': search_query if search_query != "hiring" else '',
         'location_query': location_query,
-        'page_title': f"Jobs in {location_query}: {search_query}" if not selected_job else f"Job: {selected_job.post_content[:50]}..."
+        'page_title': f"Jobs in {location_query}"
     }
-    
     return render(request, 'contributions_list.html', context)
 
 @require_POST
