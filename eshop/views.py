@@ -591,25 +591,43 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
     if product.negotiated_price and product.negotiated_price <= FINAL_FLOOR and product.negotiated_price < product_price:
         return generate_response('already_agreed', round_price(product.negotiated_price, product_price))
 
+
     offer = None
-    raw_offer_text = None 
+    # Use regex to find the first number in the message
     offer_match = re.search(r'([\d,\.]+\s*[km]?|\d+)', user_message, re.IGNORECASE)
+    # offer_match = re.search(r'(\d[\d,\.]*)', user_message)
     
     if offer_match:
         try:
-            val = offer_match.group(1).lower().replace(',', '')
-            if 'm' in val: offer = Decimal(val.replace('m', '')) * 1000000
-            elif 'k' in val: offer = Decimal(val.replace('k', '')) * 1000
-            else:
-                val = re.sub(r'[^\d]', '', val)
-                offer = Decimal(val).quantize(Decimal('0'))
+            # Step 1: Remove commas (e.g., "100,000" becomes "100000")
+            val = offer_match.group(1).replace(',', '')
             
-            # Smart correction for abbreviated large numbers (e.g., "50" for "50,000")
-            if offer < Decimal('10000') and product_price >= Decimal('100000'):
-                 if offer * Decimal('1000') >= product_price * Decimal('0.5'):
-                     offer *= Decimal('1000')
+            # Step 2: Convert strictly to the number typed
+            # We no longer multiply by 1000. If they type 10, it stays 10.
+            offer = Decimal(val).quantize(Decimal('0'))
+            
             raw_offer_text = f"{curr} {offer:,.0f}" 
-        except: offer = None
+        except: 
+            offer = None
+    # offer = None
+    # raw_offer_text = None 
+    # offer_match = re.search(r'([\d,\.]+\s*[km]?|\d+)', user_message, re.IGNORECASE)
+    
+    # if offer_match:
+    #     try:
+    #         val = offer_match.group(1).lower().replace(',', '')
+    #         if 'm' in val: offer = Decimal(val.replace('m', '')) * 1000000
+    #         elif 'k' in val: offer = Decimal(val.replace('k', '')) * 1000
+    #         else:
+    #             val = re.sub(r'[^\d]', '', val)
+    #             offer = Decimal(val).quantize(Decimal('0'))
+            
+    #         # Smart correction for abbreviated large numbers (e.g., "50" for "50,000")
+    #         if offer < Decimal('10000') and product_price >= Decimal('100000'):
+    #              if offer * Decimal('1000') >= product_price * Decimal('0.5'):
+    #                  offer *= Decimal('1000')
+    #         raw_offer_text = f"{curr} {offer:,.0f}" 
+    #     except: offer = None
 
     if offer is None:
         user_msg_lower = user_message.lower()
