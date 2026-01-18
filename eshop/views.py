@@ -22,55 +22,57 @@ User = get_user_model()
 # ------------------------------------
 # Helper Functions
 # ------------------------------------
-from aliexpress_api import AliexpressApi, models
+from django.conf import settings
+
+
 
 @login_required
 def sync_aliexpress_products(request):
     """
-    Triggers a pull of trending products from AliExpress 
-    and saves them to the local database.
+    Triggers a pull of products from AliExpress API 
+    and saves them to the local database as AliExpress source.
     """
     if not request.user.is_staff:
         messages.error(request, "Only admins can sync external products.")
         return redirect('eshop:product_list')
 
-    # Initialize the API
-    # Replace 'YOUR_APP_SECRET' with the secret from your 'Manage' console
-    # Replace 'YOUR_TRACKING_ID' with your ID from portals.aliexpress.com
+    # Initialize the API using secure credentials from settings (Koyeb Environment Variables)
     api = AliexpressApi(
-        '524714', 
-        'YOUR_APP_SECRET', 
+        settings.ALI_APP_KEY, 
+        settings.ALI_APP_SECRET, 
         models.Language.EN, 
         models.Currency.USD, 
-        'YOUR_TRACKING_ID'
+        settings.ALI_TRACKING_ID
     )
 
     try:
-        # Fetch 20 hot products
-        # You can change keywords to 'African fashion' or 'electronics'
+        # Fetching hot products (using the official AliExpress Affiliate API)
         items = api.get_hotproducts(page_size=20)
         
         count = 0
         for item in items.products:
-            # We use update_or_create to prevent duplicate products
-            # We map 'item.product_id' to your 'vendor_name' as a reference
+            # Prevent duplicates using the external_id (AliExpress product_id)
             obj, created = Product.objects.update_or_create(
-                name=item.product_title[:200], # Limit to your model's max_length
+                external_id=str(item.product_id),
                 defaults={
-                    'description': f"AliExpress Product: {item.product_title}",
+                    'name': item.product_title[:200],
+                    'description': f"AliExpress Global Product: {item.product_title}",
                     'price': Decimal(str(item.target_sale_price)),
-                    'vendor_name': f"AliExpress_{item.product_id}",
-                    'whatsapp_number': '+256000000000', # Placeholder for AliExpress items
+                    'source': 'aliexpress',
+                    'affiliate_url': item.promotion_link,  # Your 'africana_ai' ID is embedded here
+                    'image_url': item.product_main_image_url,
+                    'vendor_name': 'AliExpress Global',
+                    'is_negotiable': False, # External prices are fixed
                     'country': 'International',
-                    'is_negotiable': False,
+                    'whatsapp_number': 'EXTERNAL', # Marker for template logic
                 }
             )
             if created:
                 count += 1
 
-        messages.success(request, f"Successfully imported {count} new products from AliExpress!")
+        messages.success(request, f"Successfully imported {count} AliExpress products!")
     except Exception as e:
-        messages.error(request, f"Sync failed: {str(e)}")
+        messages.error(request, f"AliExpress Sync failed: {str(e)}")
 
     return redirect('eshop:product_list')
 
@@ -675,3 +677,26 @@ def export_products_json(request):
     response = HttpResponse(data, content_type='application/json')
     response['Content-Disposition'] = 'attachment; filename="products.json"'
     return response
+
+@login_required
+def buy_now(request, product_id):
+    """
+    Decision logic: Redirect to WhatsApp for local items, 
+    or to the Affiliate Link for AliExpress items.
+    """
+    product = get_object_or_404(Product, id=product_id)
+
+    if product.source == 'aliexpress' and product.affiliate_url:
+        # 1. Track the 'Order' in your DB so you know someone clicked your link
+        Order.objects.create(
+            buyer=request.user,
+            total_amount=product.price,
+            status='Completed', # Mark as completed since you've fulfilled your part
+            total_commission=product.referral_commission # If defined
+        )
+        
+        # 2. Redirect the user to AliExpress to complete the purchase
+        return redirect(product.affiliate_url)
+
+    # 3. Otherwise, proceed to your local WhatsApp delivery flow
+    return redirect('eshop:delivery_location')
