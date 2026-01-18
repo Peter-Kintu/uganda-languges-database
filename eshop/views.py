@@ -16,12 +16,63 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from .models import Order, OrderItem  
 from users.models import Notification
-
+from aliexpress_api import AliexpressApi, models
 
 User = get_user_model()
 # ------------------------------------
 # Helper Functions
 # ------------------------------------
+from aliexpress_api import AliexpressApi, models
+
+@login_required
+def sync_aliexpress_products(request):
+    """
+    Triggers a pull of trending products from AliExpress 
+    and saves them to the local database.
+    """
+    if not request.user.is_staff:
+        messages.error(request, "Only admins can sync external products.")
+        return redirect('eshop:product_list')
+
+    # Initialize the API
+    # Replace 'YOUR_APP_SECRET' with the secret from your 'Manage' console
+    # Replace 'YOUR_TRACKING_ID' with your ID from portals.aliexpress.com
+    api = AliexpressApi(
+        '524714', 
+        'YOUR_APP_SECRET', 
+        models.Language.EN, 
+        models.Currency.USD, 
+        'YOUR_TRACKING_ID'
+    )
+
+    try:
+        # Fetch 20 hot products
+        # You can change keywords to 'African fashion' or 'electronics'
+        items = api.get_hotproducts(page_size=20)
+        
+        count = 0
+        for item in items.products:
+            # We use update_or_create to prevent duplicate products
+            # We map 'item.product_id' to your 'vendor_name' as a reference
+            obj, created = Product.objects.update_or_create(
+                name=item.product_title[:200], # Limit to your model's max_length
+                defaults={
+                    'description': f"AliExpress Product: {item.product_title}",
+                    'price': Decimal(str(item.target_sale_price)),
+                    'vendor_name': f"AliExpress_{item.product_id}",
+                    'whatsapp_number': '+256000000000', # Placeholder for AliExpress items
+                    'country': 'International',
+                    'is_negotiable': False,
+                }
+            )
+            if created:
+                count += 1
+
+        messages.success(request, f"Successfully imported {count} new products from AliExpress!")
+    except Exception as e:
+        messages.error(request, f"Sync failed: {str(e)}")
+
+    return redirect('eshop:product_list')
 
 def google_verification(request):
     """Verifies site ownership for Google Search Console."""

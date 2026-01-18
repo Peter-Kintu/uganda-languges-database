@@ -337,8 +337,8 @@ CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
 @login_required
 def browse_job_listings(request):
     """
-    View for browsing and searching job listings. 
-    Integrates local database results with external API backfills from Adzuna and Careerjet.
+    View for browsing and searching job listings across Africa. 
+    Integrates local database results with dynamic external API backfills.
     """
     # 1. Handle single job detail view request
     job_id = request.GET.get('job_id')
@@ -357,7 +357,7 @@ def browse_job_listings(request):
     if selected_job is None:
         category_filter = request.GET.get('category')
         search_query = request.GET.get('q') or "jobs" 
-        location = request.GET.get('where') or "Uganda"
+        location_query = request.GET.get('where') or "Africa"
         page = request.GET.get('page', 1)
 
         # A. LOCAL DATABASE SEARCH
@@ -367,26 +367,46 @@ def browse_job_listings(request):
             job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
             
         if search_query and search_query != "jobs":
-            # Search local jobs by content or recruiter name
             job_posts_filtered = job_posts_filtered.filter(
                 Q(post_content__icontains=search_query) |
-                Q(recruiter_name__icontains=search_query)
+                Q(recruiter_name__icontains=search_query) |
+                Q(recruiter_location__icontains=location_query)
             )
 
         final_job_list = list(job_posts_filtered)
 
-        # B. EXTERNAL API BACKFILL (Only on Page 1 to save API credits and speed up loading)
+        # B. EXTERNAL API BACKFILL (Optimized for African Countries)
         if str(page) == '1':
+            # --- Adzuna Country Mapping ---
+            # Adzuna uses specific subdomains for different African countries
+            adzuna_country_map = {
+                'south africa': 'za',
+                'nigeria': 'ng',
+                'kenya': 'ke',
+                'uganda': 'ug',
+                'egypt': 'eg',
+                'morocco': 'ma'
+            }
+            
+            # Default to 'za' (South Africa) if searching 'Africa' generally, 
+            # otherwise match the user input to a supported country code.
+            loc_lower = location_query.lower()
+            adzuna_code = 'za' # Global fallback for the continent
+            for country, code in adzuna_country_map.items():
+                if country in loc_lower:
+                    adzuna_code = code
+                    break
+
             # 1. Adzuna Integration
             if ADZUNA_APP_ID and ADZUNA_APP_KEY:
                 try:
-                    adzuna_url = "https://api.adzuna.com/v1/api/jobs/ug/search/1"
+                    adzuna_url = f"https://api.adzuna.com/v1/api/jobs/{adzuna_code}/search/1"
                     adzuna_params = {
                         "app_id": ADZUNA_APP_ID,
                         "app_key": ADZUNA_APP_KEY,
-                        "results_per_page": 150,
+                        "results_per_page": 50,
                         "what": search_query,
-                        "where": location,
+                        "where": location_query if adzuna_code != 'za' or 'south africa' in loc_lower else "",
                         "content-type": "application/json"
                     }
                     response = requests.get(adzuna_url, params=adzuna_params, timeout=5)
@@ -395,27 +415,32 @@ def browse_job_listings(request):
                 except Exception as e:
                     print(f"Adzuna API Error: {e}")
 
-            # 2. Careerjet Integration
+            # 2. Careerjet Integration (Pan-African Locale Support)
             if CAREERJET_API_KEY:
                 try:
-                    # Get user metadata required by Careerjet API
                     x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
                     user_ip = x_forwarded.split(',')[0] if x_forwarded else request.META.get('REMOTE_ADDR', '1.1.1.1')
                     user_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
 
+                    # Careerjet uses locales. en_GB is a good fallback for most English-speaking Africa.
+                    # We switch to fr_MA for francophone North Africa if detected.
+                    locale = 'en_GB'
+                    if any(x in loc_lower for x in ['morocco', 'algeria', 'tunisia', 'french']):
+                        locale = 'fr_MA'
+
                     cj_params = {
-                        'locale_code': 'en_GB', # Standard locale for broad compatibility
+                        'locale_code': locale,
                         'keywords': search_query,
-                        'location': location,
+                        'location': location_query,
                         'user_ip': user_ip,
                         'user_agent': user_agent,
-                        'page_size': 150,
+                        'page_size': 50,
                     }
 
                     cj_response = requests.get(
                         'https://search.api.careerjet.net/v4/query',
                         params=cj_params,
-                        auth=(CAREERJET_API_KEY, ''), # Careerjet uses Key as username, empty password
+                        auth=(CAREERJET_API_KEY, ''),
                         headers={'Referer': request.build_absolute_uri()},
                         timeout=5
                     )
@@ -427,7 +452,7 @@ def browse_job_listings(request):
                     print(f"Careerjet API Error: {e}")
 
         # C. LOCAL PAGINATION
-        paginator = Paginator(final_job_list, 150)
+        paginator = Paginator(final_job_list, 20)
         try:
             posts_on_page = paginator.page(page)
         except (PageNotAnInteger, EmptyPage):
@@ -440,6 +465,7 @@ def browse_job_listings(request):
         job_posts_context = []
         category_filter = request.GET.get('category')
         search_query = request.GET.get('q')
+        location_query = request.GET.get('where')
 
     # 3. CONTEXT FOR TEMPLATE
     context = {
@@ -450,10 +476,12 @@ def browse_job_listings(request):
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query if search_query != "jobs" else '',
-        'page_title': f"Job Search: {search_query}" if not selected_job else f"Job: {selected_job.post_content[:50]}..."
+        'location_query': location_query,
+        'page_title': f"Jobs in {location_query}: {search_query}" if not selected_job else f"Job: {selected_job.post_content[:50]}..."
     }
     
     return render(request, 'contributions_list.html', context)
+
 @require_POST
 @login_required
 def upvote_job_application(request, pk):

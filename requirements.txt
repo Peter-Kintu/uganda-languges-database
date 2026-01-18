@@ -14,3 +14,4 @@ google-genai
 django-humanize
 python-dotenv
 whitenoise
+python-aliexpress-api
