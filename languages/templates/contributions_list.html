@@ -95,11 +95,12 @@
     {% else %}
         {# LIST VIEW #}
         <header class="mb-12">
-            <h1 class="text-4xl font-extrabold text-white mb-6 text-center">Explore Opportunities</h1>
+            <h1 class="text-4xl font-extrabold text-white mb-6 text-center">Explore Global Opportunities</h1>
+            
             <form method="get" action="{% url 'languages:browse_job_listings' %}" class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-4 bg-slate-800 p-3 rounded-2xl border border-slate-700 shadow-lg">
-                <input type="search" name="q" placeholder="Keywords..." value="{{ search_query }}" class="md:col-span-2 bg-slate-900 border-none rounded-xl text-white px-4 py-3">
+                <input type="search" name="q" placeholder="Job Title, Keywords..." value="{{ search_query }}" class="md:col-span-2 bg-slate-900 border-none rounded-xl text-white px-4 py-3 focus:ring-2 focus:ring-indigo-500">
                 
-                <input type="text" name="where" placeholder="Location (e.g. UAE, USA)" value="{{ location_query }}" class="bg-slate-900 border-none rounded-xl text-white px-4 py-3">
+                <input type="text" name="where" placeholder="Location (e.g. Uganda, Kenya, USA)" value="{{ location_query }}" class="bg-slate-900 border-none rounded-xl text-white px-4 py-3 focus:ring-2 focus:ring-indigo-500">
                 
                 <select name="category" class="bg-slate-900 border-none rounded-xl text-white px-4 py-3">
                     <option value="all">All Categories</option>
@@ -145,12 +146,7 @@
                     </div>
                     <h3 class="text-xl font-bold text-white mb-1 line-clamp-2">{{ job.title|safe }}</h3>
                     <p class="text-orange-400 font-bold text-xs mb-1 uppercase">{{ job.company }}</p>
-                    
-                    <p class="text-slate-400 text-[10px] mb-4 flex items-center gap-1 italic uppercase">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        {{ job.location }}
-                    </p>
-
+                    <p class="text-slate-400 text-[10px] mb-4 uppercase italic">{{ job.location|default:"Global" }}</p>
                     <div class="mt-auto">
                         <a href="{{ job.url }}" target="_blank" class="w-full block text-center py-2 bg-slate-700 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition uppercase">Apply via Partner</a>
                     </div>
@@ -165,12 +161,7 @@
                     </div>
                     <h3 class="text-xl font-bold text-white mb-1 line-clamp-2">{{ job.title|safe }}</h3>
                     <p class="text-blue-400 font-bold text-xs mb-1">{{ job.company.display_name }}</p>
-                    
-                    <p class="text-slate-400 text-[10px] mb-4 flex items-center gap-1 italic uppercase">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        {{ job.location.display_name }}
-                    </p>
-
+                    <p class="text-slate-400 text-[10px] mb-4 uppercase italic">{{ job.location.display_name|default:"International" }}</p>
                     <div class="mt-auto">
                         <a href="{{ job.redirect_url }}" target="_blank" class="w-full block text-center py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition uppercase">Quick Apply</a>
                     </div>
