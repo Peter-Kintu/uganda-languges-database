@@ -9,6 +9,36 @@ from django.dispatch import receiver
 # --- Product Model ---
 
 class Product(models.Model):
+    # Marketplace Source Fields
+    SOURCE_CHOICES = [
+        ('local', 'Local Marketplace'),
+        ('aliexpress', 'AliExpress'),
+        ('jumia', 'Jumia'),
+    ]
+    source = models.CharField(
+        max_length=20, 
+        choices=SOURCE_CHOICES, 
+        default='local',
+        help_text="Where this product originates from."
+    )
+    external_id = models.CharField(
+        max_length=200, 
+        blank=True, 
+        null=True,
+        help_text="ID from external marketplace (e.g., AliExpress productId, Jumia SKU)"
+    )
+    affiliate_url = models.URLField(
+        max_length=1000, 
+        blank=True, 
+        null=True,
+        help_text="Affiliate link to redirect buyers to external marketplace"
+    )
+    image_url = models.URLField(
+        blank=True, 
+        null=True, 
+        help_text="Direct URL for images from external marketplaces"
+    )
+
     # Media Fields
     image = CloudinaryField('image', blank=True, null=True)
     video = CloudinaryField('video', resource_type='video', blank=True, null=True)
@@ -48,7 +78,7 @@ class Product(models.Model):
 
     # Vendor Information
     vendor_name = models.CharField(max_length=100, default='Anonymous Seller')
-    whatsapp_number = models.CharField(max_length=20)
+    whatsapp_number = models.CharField(max_length=20, blank=True, null=True)
     tiktok_url = models.URLField(max_length=200, null=True, blank=True)
 
     def get_currency_code(self):
