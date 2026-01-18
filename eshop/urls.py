@@ -27,6 +27,8 @@ urlpatterns = [
     
     # Negotiation Feature URLs
     path('product/<slug:slug>/negotiate/', views.ai_negotiation_view, name='ai_negotiation'),
+    path('product/<slug:slug>/negotiate/reset/', views.reset_negotiation, name='reset_negotiation'),
     path('product/<slug:slug>/accept-price/', views.accept_negotiated_price, name='accept_negotiated_price'),
     path('sync-aliexpress/', views.sync_aliexpress_products, name='sync_aliexpress'),
+    path('buy/<int:product_id>/', views.buy_now, name='buy_now'),
 ]

@@ -17,6 +17,18 @@
                     <span class="text-indigo-400">AI</span> Price Negotiator
                 </h1>
                 <p class="text-gray-400 text-sm">Bargaining for: <span class="text-indigo-300 font-semibold">{{ product.name }}</span></p>
+                
+                {# New Reset/Clear Button #}
+                <div class="mt-2">
+                    <a href="{% url 'eshop:reset_negotiation' product.slug %}" 
+                       onclick="return confirm('Reset this chat and start the bargaining from scratch?')"
+                       class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-300 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Clear History & Reset Price
+                    </a>
+                </div>
             </div>
             <div class="bg-gray-800/80 px-4 py-2 rounded-2xl border border-green-500/40 text-center">
                 <p class="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Original Price</p>
@@ -65,7 +77,6 @@
                 {% csrf_token %}
                 <div class="flex flex-col sm:flex-row gap-3 bg-gray-800 p-2 rounded-2xl border border-gray-700 focus-within:border-indigo-500 transition-all shadow-2xl">
                     <div class="flex-grow">
-                        {# We now use the classes defined in forms.py for stability #}
                         {{ form.user_message }}
                     </div>
                     <button type="submit" 
@@ -89,25 +100,24 @@
 
             {# Success/Lock-in Action #}
             <div class="mt-10 pt-6 border-t border-gray-800">
-                {% with final_price=product.negotiated_price|default:product.price %}
-                <div class="flex flex-col items-center">
-                    {% if is_negotiation_active %}
+                {% if is_negotiation_active %}
+                    <div class="flex flex-col items-center">
                         <div class="mb-4 px-4 py-2 bg-green-900/20 border border-green-500/30 rounded-full animate-bounce">
                             <span class="text-green-400 text-sm font-bold">✨ Great Deal Reached! ✨</span>
                         </div>
+                        {# Points to negotiated_price passed from session via view context #}
                         <a href="{% url 'eshop:accept_negotiated_price' product.slug %}" 
                            class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-black text-xl py-5 px-12 rounded-2xl transition-all duration-300 shadow-2xl shadow-green-600/40 transform hover:scale-[1.03] ring-4 ring-green-600/20 text-center">
-                            Accept {{ product.get_currency_code }} {{ final_price|floatformat:0|intcomma }} & Close Deal 🤝
+                            Accept {{ product.get_currency_code }} {{ negotiated_price|default:product.price|floatformat:0|intcomma }} & Close Deal 🤝
                         </a>
-                    {% else %}
-                        <div class="w-full bg-gray-800/50 p-6 rounded-2xl border border-gray-700 text-center opacity-60">
-                            <p class="text-gray-400 font-medium text-sm sm:text-base">
-                                The "Lock In" button will appear once the AI agrees to your price.
-                            </p>
-                        </div>
-                    {% endif %}
-                </div>
-                {% endwith %}
+                    </div>
+                {% else %}
+                    <div class="w-full bg-gray-800/50 p-6 rounded-2xl border border-gray-700 text-center opacity-60">
+                        <p class="text-gray-400 font-medium text-sm sm:text-base">
+                            The "Lock In" button will appear once the AI agrees to your price.
+                        </p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
