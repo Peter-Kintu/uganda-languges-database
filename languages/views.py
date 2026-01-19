@@ -192,10 +192,9 @@ def browse_job_listings(request):
                 except Exception as e:
                     print(f"Adzuna Error: {e}")
 
-            # --- 2. Careerjet Integration (FULLY UPDATED) ---
+            # --- 2. Careerjet Integration (FIXED FOR REVENUE) ---
             if CAREERJET_API_KEY:
-                # Map locale code for Careerjet based on location_query
-                cj_locale = 'en_ZA' # Default to South Africa
+                cj_locale = 'en_ZA' 
                 if 'uganda' in loc_lower: cj_locale = 'en_UG'
                 elif 'kenya' in loc_lower: cj_locale = 'en_KE'
                 elif 'usa' in loc_lower or 'states' in loc_lower: cj_locale = 'en_US'
@@ -209,8 +208,8 @@ def browse_job_listings(request):
                     u_ip = x_f.split(',')[0] if x_f else request.META.get('REMOTE_ADDR', '127.0.0.1')
                     u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
 
+                    # Note: 'affid' removed to comply with v4 documentation
                     cj_params = {
-                        'affid': CAREERJET_API_KEY, # Pass key as partner ID
                         'locale_code': cj_locale,
                         'keywords': search_query if search_query != "hiring" else "",
                         'location': location_query,
@@ -219,7 +218,8 @@ def browse_job_listings(request):
                         'page_size': 25,
                     }
 
-                    cj_headers = {'Referer': request.build_absolute_uri()}
+                    # Mandatory Referer header for tracking
+                    cj_headers = {'Referer': 'https://initial-danette-africana-60541726.koyeb.app/'}
 
                     cj_res = requests.get(
                         'https://search.api.careerjet.net/v4/query', 
