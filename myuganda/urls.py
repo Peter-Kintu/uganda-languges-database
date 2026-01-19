@@ -11,6 +11,15 @@ from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap
 import requests
 from django.http import HttpResponse
 
+def get_my_server_ip(request):
+    import requests
+    # This asks an external service what your server's public IP is
+    try:
+        ip = requests.get('https://api.ipify.org', timeout=5).text
+        return HttpResponse(f"Your Server IP is: {ip}. Copy this to Careerjet Dashboard!")
+    except:
+        return HttpResponse("Could not detect IP. Try again.")
+
 def show_ip(request):
     ip = requests.get("https://api.ipify.org").text
     return HttpResponse(f"My public IP is: {ip}")
@@ -47,6 +56,7 @@ urlpatterns = [
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict}, name="sitemap"),
 
     path("show-ip/", show_ip),
+    path('check-my-ip/', views.get_my_server_ip),
 ]
 
 # Static & media serving in development
