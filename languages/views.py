@@ -192,20 +192,20 @@ def browse_job_listings(request):
                 except Exception as e:
                     print(f"Adzuna Error: {e}")
 
-            # --- 2. Careerjet Integration (UPDATED FOR V4 COMPLIANCE) ---
+            # --- 2. Careerjet Integration (UPDATED FOR GLOBAL REVENUE) ---
             if CAREERJET_API_KEY:
-                # Map locales for Careerjet
-                cj_locale = 'en_ZA' 
+                # Default to UK (Global Fallback) as per documentation
+                cj_locale = 'en_GB' 
                 if 'uganda' in loc_lower: cj_locale = 'en_UG'
                 elif 'kenya' in loc_lower: cj_locale = 'en_KE'
-                elif any(x in loc_lower for x in ['usa', 'states']): cj_locale = 'en_US'
+                elif any(x in loc_lower for x in ['usa', 'united states']): cj_locale = 'en_US'
                 elif any(x in loc_lower for x in ['uae', 'dubai']): cj_locale = 'en_AE'
                 elif 'nigeria' in loc_lower: cj_locale = 'en_NG'
                 elif 'canada' in loc_lower: cj_locale = 'en_CA'
-                elif 'uk' in loc_lower: cj_locale = 'en_GB'
+                elif 'south africa' in loc_lower: cj_locale = 'en_ZA'
 
                 try:
-                    # Resolve real user IP and User-Agent (Mandatory for Careerjet v4)
+                    # Resolve real user IP for revenue validation
                     x_f = request.META.get('HTTP_X_FORWARDED_FOR')
                     u_ip = x_f.split(',')[0] if x_f else request.META.get('REMOTE_ADDR', '127.0.0.1')
                     u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
@@ -217,27 +217,27 @@ def browse_job_listings(request):
                         'user_ip': u_ip,
                         'user_agent': u_agent,
                         'page_size': 25,
+                        'sort': 'relevance', # Optimize for clicks
                     }
 
-                    # Mandatory Referer header
+                    # Critical: Referer must match your registered domain in Careerjet dashboard
                     cj_headers = {'Referer': request.build_absolute_uri('/')}
 
                     cj_res = requests.get(
                         'https://search.api.careerjet.net/v4/query', 
                         params=cj_params, 
-                        auth=(CAREERJET_API_KEY, ''), 
+                        auth=(CAREERJET_API_KEY, ''), # Basic Auth required for v4
                         headers=cj_headers, 
                         timeout=5
                     )
                     
                     if cj_res.status_code == 200:
                         cj_data = cj_res.json()
-                        # Handle direct job matches
                         if cj_data.get('type') == 'JOBS':
                             careerjet_jobs = cj_data.get('jobs', [])
-                        # Handle location ambiguity (e.g., if searching for "Africa" returns options)
+                        # Handle multiple location matches to ensure user finds the right global jobs
                         elif cj_data.get('type') == 'LOCATIONS' and cj_data.get('locations'):
-                            cj_params['location'] = cj_data['locations'][0]['name']
+                            cj_params['location'] = cj_data['locations'][0]
                             retry_res = requests.get(
                                 'https://search.api.careerjet.net/v4/query', 
                                 params=cj_params, 
