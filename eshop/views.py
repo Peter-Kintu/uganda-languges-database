@@ -47,18 +47,25 @@ def sync_aliexpress_products(request):
         # Hot-Selling Categories for Africa & Global Markets
         search_groups = [
             # --- Health & Beauty (High Repeat Orders) ---
+            {'query': 'tws wireless earbuds noise cancelling bluetooth', 'count': 10},
+            {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
+            {'query': 'series 9 smartwatch ultra waterproof', 'count': 10},
             {'query': 'ultrasonic teeth cleaner dental scaler', 'count': 10},
             {'query': 'vaseline intensive care whitening lotion', 'count': 10},
             {'query': 'organic hair growth oils for men women', 'count': 10},
+            {'query': 'facial cleansing brush electric waterproof', 'count': 10},
+            {'query': 'reusable makeup remover pads washable', 'count': 10},
             
             # --- Power & Energy (Massive Demand in Africa) ---
             {'query': 'hybrid solar inverter 5kw pure sine wave', 'count': 10},
             {'query': 'portable power station solar generator', 'count': 10},
+            {'query': '10000mah power bank fast charging dual usb', 'count': 10},
             
             # --- Tech & Gadgets (Hot Global Trend) ---
             {'query': 'android 5G smartphone unlocked global version', 'count': 10},
             {'query': 'series 9 smartwatch ultra waterproof', 'count': 10},
-            {'query': 'tws wireless earbuds noise cancelling bluetooth', 'count': 10},
+            {'query': 'smart home security camera wireless', 'count': 10},
+            {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
             
             # --- Fashion & Jewelry (High Margin) ---
             {'query': 'luxury gold jewelry sets dubai african style', 'count': 10},
