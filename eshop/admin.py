@@ -27,8 +27,8 @@ class ProductAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            # 1. Unique path 'sync-now/' prevents collision with your storefront 'sync-aliexpress/'
-            # 2. Using name='sync_aliexpress_admin_unique' allows referencing via 'admin:sync_aliexpress_admin_unique'
+            # 1. Path changed to 'sync-now/' to avoid clashing with the 'eshop/sync-aliexpress/' storefront URL
+            # 2. Name set to 'sync_aliexpress_admin_unique' to avoid reverse lookup conflicts in production
             path(
                 'sync-now/', 
                 self.admin_site.admin_view(sync_aliexpress_products), 
