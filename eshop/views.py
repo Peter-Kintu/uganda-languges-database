@@ -44,20 +44,22 @@ def sync_aliexpress_products(request):
             settings.ALI_TRACKING_ID
         )
 
-        # Diverse search groups for a well-rounded marketplace
+        # Expanded search groups for a massive variety
         search_groups = [
-            {'query': 'ultrasonic teeth cleaner oral hygiene', 'count': 10},
-            {'query': 'women skincare vaseline moisturizing cream', 'count': 10},
-            {'query': 'solar power energy system inverter', 'count': 10},
-            {'query': 'luxury mens watch jewelry', 'count': 10},
-            {'query': 'smartphone android electronics', 'count': 10},
+            {'query': 'ultrasonic teeth cleaner oral irrigator', 'count': 10}, # Dental
+            {'query': 'women vaseline moisturizing cream skincare', 'count': 10}, # Beauty
+            {'query': 'solar panel system inverter lithium battery', 'count': 10}, # Energy
+            {'query': 'luxury womens handbag designer style', 'count': 10}, # Fashion
+            {'query': 'mens smart watch waterproof fitness', 'count': 10}, # Tech Wearables
+            {'query': 'wireless earbuds noise cancelling bluetooth', 'count': 10}, # Audio
+            {'query': 'modern home decor led crystal lamps', 'count': 10}, # Home
+            {'query': 'kitchen gadgets electric multi cooker', 'count': 10}, # Kitchen
         ]
         
         created_count = 0
         updated_count = 0
 
         for group in search_groups:
-            # We use get_products to find specific relevant items
             items = api.get_products(
                 keywords=group['query'], 
                 page_size=group['count'], 
@@ -77,7 +79,6 @@ def sync_aliexpress_products(request):
                     price = Decimal(str(raw_price))
                     unique_slug = slugify(f"{item.product_title[:40]}-{item.product_id}")
 
-                    # Update or Create to avoid "Protected Foreign Key" errors
                     obj, created = Product.objects.update_or_create(
                         external_id=str(item.product_id),
                         defaults={
@@ -87,7 +88,7 @@ def sync_aliexpress_products(request):
                             'description': f"Global Quality Selection. ID: {item.product_id}",
                             'price': price,
                             'currency': 'USD',
-                            'affiliate_url': item.promotion_link,
+                            'affiliate_url': item.promotion_link, # Your commission link
                             'image_url': img_url,
                             'vendor_name': 'AliExpress Global',
                             'is_negotiable': False,
@@ -100,7 +101,7 @@ def sync_aliexpress_products(request):
                 except Exception:
                     continue
 
-        messages.success(request, f"Africana Updated! Added {created_count} items including Beauty & Dental care.")
+        messages.success(request, f"Marketplace Expanded! Added {created_count} new high-demand items.")
     except Exception as e:
         messages.error(request, f"Sync error: {str(e)}")
 
