@@ -183,7 +183,10 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Database Management System",
     "copyright": "Uganda Language Project",
     "user_avatar": None,  # Correctly set to None (no quotes)
-    "search_model": ["users.CustomUser", "languages.PhraseContribution", "languages.JobPost"],
+    
+    # FIXED: Changed dots to colons here to resolve the "Could not reverse url" error in logs
+    "search_model": ["users:CustomUser", "languages:PhraseContribution", "languages:JobPost"],
+    
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         
