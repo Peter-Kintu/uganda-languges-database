@@ -188,7 +188,7 @@ JAZZMIN_SETTINGS = {
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         
         # --- FIXED SYNC BUTTON URL ---
-        # Using 'sync-now' to match the updated Admin custom path
+        # Using '/admin/eshop/product/sync-now/' to match the unique path in admin.py
         {
             "name": "🔄 Sync AliExpress", 
             "url": "/admin/eshop/product/sync-now/", 
@@ -196,7 +196,9 @@ JAZZMIN_SETTINGS = {
         },
         
         {"name": "View Site", "url": "/", "new_window": True},
-        {"model": "users.CustomUser"},
+        
+        # FIXED: Changed dot to colon for the model reference to prevent NoReverseMatch
+        {"model": "users:CustomUser"},
     ],
     "show_sidebar": True,
     "navigation_expanded": True,
