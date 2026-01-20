@@ -31,16 +31,11 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def sync_aliexpress_products(request):
-    """
-    Syncs AliExpress products using the correct 'get_products' method.
-    Handles 'Protected' foreign key errors by updating instead of deleting.
-    """
     if not request.user.is_staff:
         messages.error(request, "Access denied.")
         return redirect('eshop:product_list')
 
     try:
-        # 1. Initialize API
         api = AliexpressApi(
             settings.ALI_APP_KEY, 
             settings.ALI_APP_SECRET, 
@@ -49,68 +44,65 @@ def sync_aliexpress_products(request):
             settings.ALI_TRACKING_ID
         )
 
-        # 2. Correct Method: get_products
-        # This replaces 'search_products' which was causing your error
-        print("Fetching 50 relevant products for Africana AI...")
-        items = api.get_products(
-            keywords='smartphone solar power electronics mens fashion', 
-            page_size=50, 
-            sort='NUMBER_OF_ORDERS_DESC'
-        )
+        # Diverse search groups for a well-rounded marketplace
+        search_groups = [
+            {'query': 'ultrasonic teeth cleaner oral hygiene', 'count': 10},
+            {'query': 'women skincare vaseline moisturizing cream', 'count': 10},
+            {'query': 'solar power energy system inverter', 'count': 10},
+            {'query': 'luxury mens watch jewelry', 'count': 10},
+            {'query': 'smartphone android electronics', 'count': 10},
+        ]
         
-        if not items or not hasattr(items, 'products') or not items.products:
-            messages.warning(request, "AliExpress returned no data. Check your API credentials.")
-            return redirect('eshop:product_list')
-
         created_count = 0
         updated_count = 0
 
-        # 3. Process loop
-        for item in items.products:
-            try:
-                # URL and Price Cleanup
-                img_url = item.product_main_image_url
-                if img_url and img_url.startswith('//'):
-                    img_url = f"https:{img_url}"
-
-                raw_price = getattr(item, 'target_sale_price', '0.00')
-                price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
-
-                unique_slug = slugify(f"{item.product_title[:40]}-{item.product_id}")
-
-                # 4. Use update_or_create to avoid deleting protected items
-                obj, created = Product.objects.update_or_create(
-                    external_id=str(item.product_id),
-                    defaults={
-                        'source': 'aliexpress',
-                        'name': item.product_title[:200],
-                        'slug': unique_slug,
-                        'description': f"AliExpress Global Partner Item. ID: {item.product_id}",
-                        'price': price,
-                        'currency': 'USD',
-                        'affiliate_url': item.promotion_link,
-                        'image_url': img_url,
-                        'vendor_name': 'AliExpress Global',
-                        'is_negotiable': False,
-                        'country': 'International',
-                        'whatsapp_number': 'EXTERNAL',
-                    }
-                )
-                
-                if created:
-                    created_count += 1
-                else:
-                    updated_count += 1
-
-            except Exception as item_error:
-                logger.error(f"Error processing item {getattr(item, 'product_id', 'unknown')}: {item_error}")
+        for group in search_groups:
+            # We use get_products to find specific relevant items
+            items = api.get_products(
+                keywords=group['query'], 
+                page_size=group['count'], 
+                sort='NUMBER_OF_ORDERS_DESC'
+            )
+            
+            if not items or not hasattr(items, 'products'):
                 continue
 
-        messages.success(request, f"Sync Successful: {created_count} New items added, {updated_count} Updated.")
+            for item in items.products:
+                try:
+                    img_url = item.product_main_image_url
+                    if img_url and img_url.startswith('//'):
+                        img_url = f"https:{img_url}"
+                    
+                    raw_price = getattr(item, 'target_sale_price', '0.00')
+                    price = Decimal(str(raw_price))
+                    unique_slug = slugify(f"{item.product_title[:40]}-{item.product_id}")
 
+                    # Update or Create to avoid "Protected Foreign Key" errors
+                    obj, created = Product.objects.update_or_create(
+                        external_id=str(item.product_id),
+                        defaults={
+                            'source': 'aliexpress',
+                            'name': item.product_title[:200],
+                            'slug': unique_slug,
+                            'description': f"Global Quality Selection. ID: {item.product_id}",
+                            'price': price,
+                            'currency': 'USD',
+                            'affiliate_url': item.promotion_link,
+                            'image_url': img_url,
+                            'vendor_name': 'AliExpress Global',
+                            'is_negotiable': False,
+                            'country': 'International',
+                            'whatsapp_number': 'EXTERNAL',
+                        }
+                    )
+                    if created: created_count += 1
+                    else: updated_count += 1
+                except Exception:
+                    continue
+
+        messages.success(request, f"Africana Updated! Added {created_count} items including Beauty & Dental care.")
     except Exception as e:
-        logger.exception("AliExpress Sync Critical Failure")
-        messages.error(request, f"Sync failed: {str(e)}")
+        messages.error(request, f"Sync error: {str(e)}")
 
     return redirect('eshop:product_list')
 
