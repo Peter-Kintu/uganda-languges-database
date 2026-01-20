@@ -29,7 +29,6 @@ User = get_user_model()
 # Setup logging to track sync issues without crashing the site
 logger = logging.getLogger(__name__)
 
-
 @login_required
 def sync_aliexpress_products(request):
     if not request.user.is_staff:
@@ -46,26 +45,28 @@ def sync_aliexpress_products(request):
             settings.ALI_TRACKING_ID
         )
 
-        # 2. Use Search instead of Hot Products for relevance
-        # We target tech and utility items popular in the African market
+        # --- NEW: CLEAR OLD DATA ---
+        # This removes the previous winter products so they don't clutter your shop
+        Product.objects.filter(source='aliexpress').delete()
+
+        # 2. Targeted Search for African Market
+        # keywords are now focused on things that sell in Africa
         print("Searching for 50 relevant products...")
         items = api.search_products(
-            keywords='smartphone solar electronics men fashion', 
-            page_size=50, # Set to 50 as requested
+            keywords='smartphone solar power electronics mens fashion', 
+            page_size=50, 
             sort='NUMBER_OF_ORDERS_DESC'
         )
         
         if not items or not hasattr(items, 'products') or not items.products:
-            messages.warning(request, "AliExpress returned no data. Try different keywords.")
+            messages.warning(request, "AliExpress returned no data. Try again.")
             return redirect('eshop:product_list')
 
         created_count = 0
-        updated_count = 0
 
         # 3. Process loop
         for item in items.products:
             try:
-                # Basic cleaning
                 img_url = item.product_main_image_url
                 if img_url and img_url.startswith('//'):
                     img_url = f"https:{img_url}"
@@ -73,40 +74,33 @@ def sync_aliexpress_products(request):
                 raw_price = getattr(item, 'target_sale_price', '0.00')
                 price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
 
+                # Unique slug for 50 items
                 unique_slug = slugify(f"{item.product_title[:40]}-{item.product_id}")
 
-                # Using update_or_create without a giant global transaction
-                obj, created = Product.objects.update_or_create(
+                Product.objects.create(
                     external_id=str(item.product_id),
                     source='aliexpress',
-                    defaults={
-                        'name': item.product_title[:200],
-                        'slug': unique_slug,
-                        'description': f"AliExpress Global Partner Item. ID: {item.product_id}",
-                        'price': price,
-                        'currency': 'USD',
-                        'affiliate_url': item.promotion_link,
-                        'image_url': img_url,
-                        'vendor_name': 'AliExpress Global',
-                        'is_negotiable': False,
-                        'country': 'International',
-                        'whatsapp_number': 'EXTERNAL',
-                    }
+                    name=item.product_title[:200],
+                    slug=unique_slug,
+                    description=f"Global Selection. ID: {item.product_id}",
+                    price=price,
+                    currency='USD',
+                    affiliate_url=item.promotion_link,
+                    image_url=img_url,
+                    vendor_name='AliExpress Global',
+                    is_negotiable=False,
+                    country='International',
+                    whatsapp_number='EXTERNAL',
                 )
-                
-                if created:
-                    created_count += 1
-                else:
-                    updated_count += 1
+                created_count += 1
 
             except Exception as item_error:
-                logger.error(f"Error on product {item.product_id}: {item_error}")
                 continue
 
-        messages.success(request, f"Successfully synced {created_count + updated_count} products (New: {created_count}).")
+        messages.success(request, f"Marketplace Updated! {created_count} new relevant items added.")
 
     except Exception as e:
-        logger.exception("AliExpress Sync Failed")
+        logger.exception("Sync Failed")
         messages.error(request, f"Sync error: {str(e)}")
 
     return redirect('eshop:product_list')
