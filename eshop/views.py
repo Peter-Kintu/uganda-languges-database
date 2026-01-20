@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def sync_aliexpress_products(request):
+    """
+    Syncs AliExpress products using the correct 'get_products' method.
+    Handles 'Protected' foreign key errors by updating instead of deleting.
+    """
     if not request.user.is_staff:
         messages.error(request, "Access denied.")
         return redirect('eshop:product_list')
@@ -45,29 +49,26 @@ def sync_aliexpress_products(request):
             settings.ALI_TRACKING_ID
         )
 
-        # 2. Targeted Search for African Market
-        # We fetch 50 items related to tech, solar, and fashion
-        print("Searching for 50 relevant products...")
-        items = api.search_products(
+        # 2. Correct Method: get_products
+        # This replaces 'search_products' which was causing your error
+        print("Fetching 50 relevant products for Africana AI...")
+        items = api.get_products(
             keywords='smartphone solar power electronics mens fashion', 
             page_size=50, 
             sort='NUMBER_OF_ORDERS_DESC'
         )
         
         if not items or not hasattr(items, 'products') or not items.products:
-            messages.warning(request, "AliExpress returned no data. Try again.")
+            messages.warning(request, "AliExpress returned no data. Check your API credentials.")
             return redirect('eshop:product_list')
 
-        # --- FIX: INSTEAD OF DELETE, WE MARK OLD PRODUCTS ---
-        # We don't delete to avoid the PROTECT error. 
-        # (Optional: you could add an 'is_active' field to your model to hide old ones)
-        
         created_count = 0
         updated_count = 0
 
-        # 3. Process loop using update_or_create
+        # 3. Process loop
         for item in items.products:
             try:
+                # URL and Price Cleanup
                 img_url = item.product_main_image_url
                 if img_url and img_url.startswith('//'):
                     img_url = f"https:{img_url}"
@@ -75,17 +76,16 @@ def sync_aliexpress_products(request):
                 raw_price = getattr(item, 'target_sale_price', '0.00')
                 price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
 
-                # Create a stable unique slug
                 unique_slug = slugify(f"{item.product_title[:40]}-{item.product_id}")
 
-                # Using update_or_create safely handles existing items
+                # 4. Use update_or_create to avoid deleting protected items
                 obj, created = Product.objects.update_or_create(
                     external_id=str(item.product_id),
                     defaults={
                         'source': 'aliexpress',
                         'name': item.product_title[:200],
                         'slug': unique_slug,
-                        'description': f"Global Selection. ID: {item.product_id}",
+                        'description': f"AliExpress Global Partner Item. ID: {item.product_id}",
                         'price': price,
                         'currency': 'USD',
                         'affiliate_url': item.promotion_link,
@@ -103,14 +103,14 @@ def sync_aliexpress_products(request):
                     updated_count += 1
 
             except Exception as item_error:
-                logger.error(f"Item error: {item_error}")
+                logger.error(f"Error processing item {getattr(item, 'product_id', 'unknown')}: {item_error}")
                 continue
 
-        messages.success(request, f"Marketplace Updated! {created_count} New, {updated_count} Updated.")
+        messages.success(request, f"Sync Successful: {created_count} New items added, {updated_count} Updated.")
 
     except Exception as e:
-        logger.exception("Sync Failed")
-        messages.error(request, f"Sync error: {str(e)}")
+        logger.exception("AliExpress Sync Critical Failure")
+        messages.error(request, f"Sync failed: {str(e)}")
 
     return redirect('eshop:product_list')
 
