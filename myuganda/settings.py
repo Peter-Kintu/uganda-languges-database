@@ -186,6 +186,14 @@ JAZZMIN_SETTINGS = {
     "search_model": ["users.CustomUser", "languages.PhraseContribution", "languages.JobPost"],
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
+        
+        # --- NEW SYNC BUTTON ADDED HERE ---
+        {
+            "name": "🔄 Sync AliExpress", 
+            "url": "/admin/eshop/product/sync-aliexpress/", 
+            "permissions": ["auth.view_user"]
+        },
+        
         {"name": "View Site", "url": "/", "new_window": True},
         {"model": "users.CustomUser"},
     ],
