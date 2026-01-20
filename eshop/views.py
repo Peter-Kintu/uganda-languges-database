@@ -45,12 +45,8 @@ def sync_aliexpress_products(request):
             settings.ALI_TRACKING_ID
         )
 
-        # --- NEW: CLEAR OLD DATA ---
-        # This removes the previous winter products so they don't clutter your shop
-        Product.objects.filter(source='aliexpress').delete()
-
         # 2. Targeted Search for African Market
-        # keywords are now focused on things that sell in Africa
+        # We fetch 50 items related to tech, solar, and fashion
         print("Searching for 50 relevant products...")
         items = api.search_products(
             keywords='smartphone solar power electronics mens fashion', 
@@ -62,9 +58,14 @@ def sync_aliexpress_products(request):
             messages.warning(request, "AliExpress returned no data. Try again.")
             return redirect('eshop:product_list')
 
+        # --- FIX: INSTEAD OF DELETE, WE MARK OLD PRODUCTS ---
+        # We don't delete to avoid the PROTECT error. 
+        # (Optional: you could add an 'is_active' field to your model to hide old ones)
+        
         created_count = 0
+        updated_count = 0
 
-        # 3. Process loop
+        # 3. Process loop using update_or_create
         for item in items.products:
             try:
                 img_url = item.product_main_image_url
@@ -74,30 +75,38 @@ def sync_aliexpress_products(request):
                 raw_price = getattr(item, 'target_sale_price', '0.00')
                 price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
 
-                # Unique slug for 50 items
+                # Create a stable unique slug
                 unique_slug = slugify(f"{item.product_title[:40]}-{item.product_id}")
 
-                Product.objects.create(
+                # Using update_or_create safely handles existing items
+                obj, created = Product.objects.update_or_create(
                     external_id=str(item.product_id),
-                    source='aliexpress',
-                    name=item.product_title[:200],
-                    slug=unique_slug,
-                    description=f"Global Selection. ID: {item.product_id}",
-                    price=price,
-                    currency='USD',
-                    affiliate_url=item.promotion_link,
-                    image_url=img_url,
-                    vendor_name='AliExpress Global',
-                    is_negotiable=False,
-                    country='International',
-                    whatsapp_number='EXTERNAL',
+                    defaults={
+                        'source': 'aliexpress',
+                        'name': item.product_title[:200],
+                        'slug': unique_slug,
+                        'description': f"Global Selection. ID: {item.product_id}",
+                        'price': price,
+                        'currency': 'USD',
+                        'affiliate_url': item.promotion_link,
+                        'image_url': img_url,
+                        'vendor_name': 'AliExpress Global',
+                        'is_negotiable': False,
+                        'country': 'International',
+                        'whatsapp_number': 'EXTERNAL',
+                    }
                 )
-                created_count += 1
+                
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
 
             except Exception as item_error:
+                logger.error(f"Item error: {item_error}")
                 continue
 
-        messages.success(request, f"Marketplace Updated! {created_count} new relevant items added.")
+        messages.success(request, f"Marketplace Updated! {created_count} New, {updated_count} Updated.")
 
     except Exception as e:
         logger.exception("Sync Failed")
