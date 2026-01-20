@@ -162,16 +162,15 @@ def browse_job_listings(request):
         # B. EXTERNAL API BACKFILL
         loc_lower = location_query.lower()
         
-        # --- 1. Adzuna Integration (Expanded for Africa) ---
+        # --- 1. Adzuna Integration (Expanded Africa Support) ---
         adzuna_country_map = {
-            'usa': 'us', 'united states': 'us', 'canada': 'ca', 
-            'uae': 'ae', 'dubai': 'ae', 'uk': 'gb', 'germany': 'de',
             'south africa': 'za', 'nigeria': 'ng', 'kenya': 'ke', 
             'uganda': 'ug', 'egypt': 'eg', 'morocco': 'ma',
-            'ghana': 'gh', 'ivory coast': 'ci', 'tanzania': 'tz'
+            'ghana': 'gh', 'ivory coast': 'ci', 'tanzania': 'tz',
+            'usa': 'us', 'uk': 'gb', 'uae': 'ae'
         }
         
-        adzuna_code = 'za' # Default to South Africa for broad searches
+        adzuna_code = 'za' # Default for Africa
         for country, code in adzuna_country_map.items():
             if country in loc_lower:
                 adzuna_code = code
@@ -182,20 +181,19 @@ def browse_job_listings(request):
                 adzuna_url = f"https://api.adzuna.com/v1/api/jobs/{adzuna_code}/search/{page}"
                 adzuna_params = {
                     "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
-                    "results_per_page": 20, "what": search_query,
-                    "where": location_query if adzuna_code not in ['us', 'ca', 'ae'] else "",
+                    "results_per_page": 15, "what": search_query,
+                    "where": location_query if adzuna_code not in ['us', 'gb'] else "",
                     "content-type": "application/json"
                 }
                 res = requests.get(adzuna_url, params=adzuna_params, timeout=5)
                 if res.status_code == 200:
                     adzuna_jobs = res.json().get('results', [])
-            except Exception as e:
-                print(f"Adzuna Error: {e}")
+            except: pass
 
-        # --- 2. Careerjet Integration (Expanded for Africa) ---
+        # --- 2. Careerjet Integration (Fix for missing jobs) ---
         if CAREERJET_API_KEY:
-            # Determine Locale
-            cj_locale = 'en_GB' # Default
+            # Map Locales
+            cj_locale = 'en_GB' 
             if 'uganda' in loc_lower: cj_locale = 'en_UG'
             elif 'kenya' in loc_lower: cj_locale = 'en_KE'
             elif 'nigeria' in loc_lower: cj_locale = 'en_NG'
@@ -204,19 +202,17 @@ def browse_job_listings(request):
             elif 'ethiopia' in loc_lower: cj_locale = 'en_ET'
             elif 'rwanda' in loc_lower: cj_locale = 'en_RW'
             elif 'tanzania' in loc_lower: cj_locale = 'en_TZ'
-            elif 'zimbabwe' in loc_lower: cj_locale = 'en_ZW'
-            elif any(x in loc_lower for x in ['usa', 'united states']): cj_locale = 'en_US'
-            elif 'africa' in loc_lower: cj_locale = 'en_ZA' # Use ZA as anchor for Africa searches
+            elif 'usa' in loc_lower: cj_locale = 'en_US'
+            elif 'africa' in loc_lower: cj_locale = 'en_ZA' # Anchor for general Africa
 
             try:
+                # Use a real public IP if Koyeb provides a local one to bypass bot filters
                 x_f = request.META.get('HTTP_X_FORWARDED_FOR')
-                u_ip = x_f.split(',')[0] if x_f else request.META.get('REMOTE_ADDR', '8.8.8.8')
-                u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
+                u_ip = x_f.split(',')[0] if x_f else "8.8.8.8" 
+                u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
 
-                # Fix for broad location "Africa" - Careerjet prefers country-specific or empty loc for broad
-                search_loc = location_query
-                if search_loc.lower() == "africa":
-                    search_loc = ""
+                # If searching "Africa", leave location blank to get country-wide results for the locale
+                search_loc = "" if "africa" in loc_lower else location_query
 
                 cj_params = {
                     'locale_code': cj_locale,
@@ -228,7 +224,7 @@ def browse_job_listings(request):
                     'page': page,
                 }
 
-                # CRITICAL: Referer must match your registered domain
+                # CRITICAL: Use your exact Koyeb domain as registered in Careerjet Partner Panel
                 cj_headers = {'Referer': 'https://initial-danette-africana-60541726.koyeb.app'}
 
                 cj_res = requests.get(
@@ -243,19 +239,18 @@ def browse_job_listings(request):
                     cj_data = cj_res.json()
                     if cj_data.get('type') == 'JOBS':
                         careerjet_jobs = cj_data.get('jobs', [])
-                    elif cj_data.get('type') == 'LOCATIONS' and cj_data.get('locations'):
-                        cj_params['location'] = cj_data['locations'][0]
-                        retry_res = requests.get(
-                            'https://search.api.careerjet.net/v4/query', 
-                            params=cj_params, 
-                            auth=(CAREERJET_API_KEY, ''), 
-                            headers=cj_headers, 
-                            timeout=5
-                        )
-                        if retry_res.status_code == 200:
-                            careerjet_jobs = retry_res.json().get('jobs', [])
+                    
+                    # If still empty, try one last time with a global fallback locale
+                    if not careerjet_jobs:
+                        cj_params['locale_code'] = 'en_US'
+                        cj_params['location'] = "" # Worldwide fallback
+                        retry = requests.get('https://search.api.careerjet.net/v4/query', 
+                                           params=cj_params, auth=(CAREERJET_API_KEY, ''), 
+                                           headers=cj_headers, timeout=5)
+                        careerjet_jobs = retry.json().get('jobs', []) if retry.status_code == 200 else []
+
             except Exception as e:
-                print(f"Careerjet Error: {e}")
+                print(f"CJ Error: {e}")
 
         # Local Pagination
         paginator = Paginator(final_job_list, 20)
