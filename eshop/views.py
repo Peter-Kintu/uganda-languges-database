@@ -49,7 +49,9 @@ def sync_aliexpress_products(request):
             # --- Health & Beauty (High Repeat Orders) ---
             {'query': 'tws wireless earbuds noise cancelling bluetooth', 'count': 10},
             {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
+            {'query': 'android 5G smartphone unlocked global version', 'count': 10},
             {'query': 'series 9 smartwatch ultra waterproof', 'count': 10},
+    
             {'query': 'ultrasonic teeth cleaner dental scaler', 'count': 10},
             {'query': 'vaseline intensive care whitening lotion', 'count': 10},
             {'query': 'organic hair growth oils for men women', 'count': 10},
@@ -62,8 +64,7 @@ def sync_aliexpress_products(request):
             {'query': '10000mah power bank fast charging dual usb', 'count': 10},
             
             # --- Tech & Gadgets (Hot Global Trend) ---
-            {'query': 'android 5G smartphone unlocked global version', 'count': 10},
-            {'query': 'series 9 smartwatch ultra waterproof', 'count': 10},
+           
             {'query': 'smart home security camera wireless', 'count': 10},
             {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
             
