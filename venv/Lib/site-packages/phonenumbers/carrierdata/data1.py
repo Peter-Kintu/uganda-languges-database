@@ -4,7 +4,7 @@ Auto-generated file, do not edit by hand.
 """
 from ..util import u
 
-# Copyright (C) 2011-2025 The Libphonenumber Authors
+# Copyright (C) 2011-2026 The Libphonenumber Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,12 @@ from ..util import u
 # limitations under the License.
 
 data = {
+ '553199789':{'en': 'Telemig Celular'},
+ '553199791':{'en': 'Telemig Celular'},
+ '553199792':{'en': 'Telemig Celular'},
+ '553199793':{'en': 'Telemig Celular'},
+ '553199794':{'en': 'Telemig Celular'},
+ '553199795':{'en': 'Telemig Celular'},
  '553199796':{'en': 'Telemig Celular'},
  '553199797':{'en': 'Telemig Celular'},
  '553199798':{'en': 'Telemig Celular'},
@@ -10013,10 +10019,4 @@ data = {
  '5730592':{'en': 'Tigo'},
  '5730593':{'en': 'Tigo'},
  '5730594':{'en': 'Tigo'},
- '5730595':{'en': 'Tigo'},
- '573102':{'en': 'Claro'},
- '573103':{'en': 'Claro'},
- '573104':{'en': 'Claro'},
- '573105':{'en': 'Claro'},
- '573106':{'en': 'Claro'},
 }
