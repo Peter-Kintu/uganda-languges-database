@@ -30,19 +30,14 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-
 @login_required
 def sync_aliexpress_products(request):
-    """
-    Pulls AliExpress products and saves them to the database.
-    Hardened against timeouts and memory exhaustion on free-tier hosting.
-    """
     if not request.user.is_staff:
-        messages.error(request, "Access denied: Staff credentials required.")
+        messages.error(request, "Access denied.")
         return redirect('eshop:product_list')
 
-    # 1. Initialize API using credentials from settings
     try:
+        # 1. Initialize API
         api = AliexpressApi(
             settings.ALI_APP_KEY, 
             settings.ALI_APP_SECRET, 
@@ -51,59 +46,53 @@ def sync_aliexpress_products(request):
             settings.ALI_TRACKING_ID
         )
 
-        # 2. Fetch products - Reduced page_size to 20 for memory safety
-        print("Connecting to AliExpress API...")
-        # Use a smaller batch to prevent Gunicorn SIGKILL (Out of Memory)
-        items = api.get_hotproducts(page_size=20) 
+        # 2. Use Search instead of Hot Products for relevance
+        # We target tech and utility items popular in the African market
+        print("Searching for 50 relevant products...")
+        items = api.search_products(
+            keywords='smartphone solar electronics men fashion', 
+            page_size=50, # Set to 50 as requested
+            sort='NUMBER_OF_ORDERS_DESC'
+        )
         
         if not items or not hasattr(items, 'products') or not items.products:
-            logger.warning("AliExpress API returned no products.")
-            messages.warning(request, "AliExpress API returned no data. Try again later.")
+            messages.warning(request, "AliExpress returned no data. Try different keywords.")
             return redirect('eshop:product_list')
 
         created_count = 0
         updated_count = 0
 
-        # 3. Process products individually
-        # Note: We removed the global transaction.atomic() to prevent DB locking during timeouts
+        # 3. Process loop
         for item in items.products:
             try:
-                # --- Data Cleaning & Safety ---
-                
-                # Ensure price is a valid Decimal
-                raw_price = getattr(item, 'target_sale_price', '0.00')
-                price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
-
-                # Fix protocol-relative image URLs
+                # Basic cleaning
                 img_url = item.product_main_image_url
                 if img_url and img_url.startswith('//'):
                     img_url = f"https:{img_url}"
 
-                # Generate a unique slug safely
-                base_slug = slugify(item.product_title[:30])
-                unique_slug = f"{base_slug}-{item.product_id}"
+                raw_price = getattr(item, 'target_sale_price', '0.00')
+                price = Decimal(str(raw_price)) if raw_price else Decimal('0.00')
 
-                # 4. Update or Create logic 
-                # Wrapped in a smaller atomic block for data integrity per-item
-                with transaction.atomic():
-                    obj, created = Product.objects.update_or_create(
-                        external_id=str(item.product_id),
-                        source='aliexpress',
-                        defaults={
-                            'name': item.product_title[:200],
-                            'slug': unique_slug,
-                            'description': f"AliExpress Global Selection. ID: {item.product_id}",
-                            'price': price,
-                            'currency': 'USD',
-                            'affiliate_url': item.promotion_link,
-                            'image_url': img_url,
-                            'vendor_name': 'AliExpress Global',
-                            'is_negotiable': False,
-                            'country': 'International',
-                            'whatsapp_number': 'EXTERNAL',
-                            'referral_commission': Decimal('1.00'),
-                        }
-                    )
+                unique_slug = slugify(f"{item.product_title[:40]}-{item.product_id}")
+
+                # Using update_or_create without a giant global transaction
+                obj, created = Product.objects.update_or_create(
+                    external_id=str(item.product_id),
+                    source='aliexpress',
+                    defaults={
+                        'name': item.product_title[:200],
+                        'slug': unique_slug,
+                        'description': f"AliExpress Global Partner Item. ID: {item.product_id}",
+                        'price': price,
+                        'currency': 'USD',
+                        'affiliate_url': item.promotion_link,
+                        'image_url': img_url,
+                        'vendor_name': 'AliExpress Global',
+                        'is_negotiable': False,
+                        'country': 'International',
+                        'whatsapp_number': 'EXTERNAL',
+                    }
+                )
                 
                 if created:
                     created_count += 1
@@ -111,16 +100,14 @@ def sync_aliexpress_products(request):
                     updated_count += 1
 
             except Exception as item_error:
-                # Logs individual failures and continues so the whole sync doesn't crash
-                logger.error(f"Error processing AliExpress product {getattr(item, 'product_id', 'unknown')}: {item_error}")
+                logger.error(f"Error on product {item.product_id}: {item_error}")
                 continue
 
-        # Final reporting
-        messages.success(request, f"Sync Complete: {created_count} new products added, {updated_count} updated.")
+        messages.success(request, f"Successfully synced {created_count + updated_count} products (New: {created_count}).")
 
     except Exception as e:
-        logger.exception("AliExpress Global Sync Critical Failure")
-        messages.error(request, f"Sync failed: {str(e)}. Try again or check server logs.")
+        logger.exception("AliExpress Sync Failed")
+        messages.error(request, f"Sync error: {str(e)}")
 
     return redirect('eshop:product_list')
 
