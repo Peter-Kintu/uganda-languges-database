@@ -4,7 +4,7 @@ Auto-generated file, do not edit by hand.
 """
 from ..util import u
 
-# Copyright (C) 2011-2025 The Libphonenumber Authors
+# Copyright (C) 2011-2026 The Libphonenumber Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,12 @@ from ..util import u
 # limitations under the License.
 
 data = {
+ '5730595':{'en': 'Tigo'},
+ '573102':{'en': 'Claro'},
+ '573103':{'en': 'Claro'},
+ '573104':{'en': 'Claro'},
+ '573105':{'en': 'Claro'},
+ '573106':{'en': 'Claro'},
  '573107':{'en': 'Claro'},
  '573108':{'en': 'Claro'},
  '5731091':{'en': 'Claro'},
@@ -1473,6 +1479,7 @@ data = {
  '658992':{'en': 'Simba'},
  '658993':{'en': 'Simba'},
  '658994':{'en': 'Simba'},
+ '658995':{'en': 'M1'},
  '659001':{'en': 'StarHub'},
  '659002':{'en': 'StarHub'},
  '659003':{'en': 'StarHub'},
@@ -3490,7 +3497,7 @@ data = {
  '8160100':{'en': 'Softbank'},
  '8160110':{'en': 'KDDI'},
  '8160120':{'en': 'Rakuten Communications'},
- '8160130':{'en': 'Okinawa Cellular'},
+ '8160130':{'en': 'KDDI'},
  '8160140':{'en': 'NTT Docomo'},
  '81701':{'en': 'Softbank'},
  '817010':{'en': 'NTT Docomo'},
@@ -3850,6 +3857,7 @@ data = {
  '850191':{'en': 'Koryolink'},
  '850192':{'en': 'Koryolink'},
  '850193':{'en': 'KPTC'},
+ '85240':{'en': 'China Mobile', 'zh': u('\u4e2d\u56fd\u79fb\u52a8')},
  '852440':{'en': 'China Mobile', 'zh': u('\u4e2d\u56fd\u79fb\u52a8')},
  '852441':{'en': 'HKT', 'zh': u('\u9999\u6e2f\u79fb\u52a8\u901a\u8baf')},
  '852442':{'en': 'Hutchison Telecom', 'zh': u('\u548c\u8a18\u96fb\u8a71\u6709\u9650\u516c\u53f8')},
@@ -4051,10 +4059,10 @@ data = {
  '852578':{'en': 'HKT', 'zh': u('\u9999\u6e2f\u79fb\u52a8\u901a\u8baf')},
  '852579':{'en': 'HKT', 'zh': u('\u9999\u6e2f\u79fb\u52a8\u901a\u8baf'), 'zh_Hant': u('\u9999\u6e2f\u79fb\u52d5\u901a\u8a0a')},
  '852590':{'en': 'HKT', 'zh': u('\u9999\u6e2f\u79fb\u52a8\u901a\u8baf'), 'zh_Hant': u('\u9999\u6e2f\u79fb\u52d5\u901a\u8a0a')},
- '8525906':{'en': '21Vianet', 'zh': '21Vianet', 'zh_Hant': '21Vianet'},
- '8525907':{'en': '21Vianet', 'zh': '21Vianet', 'zh_Hant': '21Vianet'},
- '8525908':{'en': 'Lycamobile', 'zh': 'Lycamobile', 'zh_Hant': 'Lycamobile'},
- '8525909':{'en': 'Lycamobile', 'zh': 'Lycamobile', 'zh_Hant': 'Lycamobile'},
+ '8525906':{'en': 'China Mobile', 'zh': u('\u4e2d\u56fd\u79fb\u52a8'), 'zh_Hant': '21Vianet'},
+ '8525907':{'en': 'China Mobile', 'zh': u('\u4e2d\u56fd\u79fb\u52a8'), 'zh_Hant': '21Vianet'},
+ '8525908':{'en': 'China Mobile', 'zh': u('\u4e2d\u56fd\u79fb\u52a8'), 'zh_Hant': 'Lycamobile'},
+ '8525909':{'en': 'China Mobile', 'zh': u('\u4e2d\u56fd\u79fb\u52a8'), 'zh_Hant': 'Lycamobile'},
  '852591':{'en': 'HKT', 'zh': u('\u9999\u6e2f\u79fb\u52a8\u901a\u8baf'), 'zh_Hant': u('\u9999\u6e2f\u79fb\u52d5\u901a\u8a0a')},
  '852592':{'en': 'HKT', 'zh': u('\u9999\u6e2f\u79fb\u52a8\u901a\u8baf'), 'zh_Hant': u('\u9999\u6e2f\u79fb\u52d5\u901a\u8a0a')},
  '852593':{'en': 'China Mobile', 'zh': u('\u4e2d\u56fd\u79fb\u52a8'), 'zh_Hant': u('\u4e2d\u570b\u79fb\u52d5')},
@@ -8384,6 +8392,7 @@ data = {
  '97059':{'en': 'Palestine Cellular Communications'},
  '97150':{'en': 'Etisalat'},
  '97152':{'en': 'du'},
+ '97153':{'en': 'Virgin Mobile'},
  '97154':{'en': 'Etisalat'},
  '97155':{'en': 'du'},
  '97156':{'en': 'Etisalat'},

@@ -4,7 +4,7 @@ Auto-generated file, do not edit by hand.
 """
 from ..util import u
 
-# Copyright (C) 2011-2025 The Libphonenumber Authors
+# Copyright (C) 2011-2026 The Libphonenumber Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,40 +19,6 @@ from ..util import u
 # limitations under the License.
 
 data = {
- '9171577':{'en': 'Arvi, Maharashtra'},
- '9171582':{'en': 'Deoli, Maharashtra'},
- '9171583':{'en': 'Deoli, Maharashtra'},
- '9171584':{'en': 'Deoli, Maharashtra'},
- '9171585':{'en': 'Deoli, Maharashtra'},
- '9171586':{'en': 'Deoli, Maharashtra'},
- '9171587':{'en': 'Deoli, Maharashtra'},
- '9171602':{'en': 'Jamai, Madhya Pradesh'},
- '9171603':{'en': 'Jamai, Madhya Pradesh'},
- '9171604':{'en': 'Jamai, Madhya Pradesh'},
- '9171605':{'en': 'Jamai, Madhya Pradesh'},
- '9171606':{'en': 'Jamai, Madhya Pradesh'},
- '9171607':{'en': 'Jamai, Madhya Pradesh'},
- '9171612':{'en': 'Parasia, Madhya Pradesh'},
- '9171613':{'en': 'Parasia, Madhya Pradesh'},
- '9171614':{'en': 'Parasia, Madhya Pradesh'},
- '9171615':{'en': 'Parasia, Madhya Pradesh'},
- '9171616':{'en': 'Parasia, Madhya Pradesh'},
- '9171617':{'en': 'Parasia, Madhya Pradesh'},
- '9171622':{'en': 'Chhindwara, Madhya Pradesh'},
- '9171623':{'en': 'Chhindwara, Madhya Pradesh'},
- '9171624':{'en': 'Chhindwara, Madhya Pradesh'},
- '9171625':{'en': 'Chhindwara, Madhya Pradesh'},
- '9171626':{'en': 'Chhindwara, Madhya Pradesh'},
- '9171627':{'en': 'Chhindwara, Madhya Pradesh'},
- '9171642':{'en': 'Pandhurna, Madhya Pradesh'},
- '9171643':{'en': 'Pandhurna, Madhya Pradesh'},
- '9171644':{'en': 'Pandhurna, Madhya Pradesh'},
- '9171645':{'en': 'Pandhurna, Madhya Pradesh'},
- '9171646':{'en': 'Pandhurna, Madhya Pradesh'},
- '9171647':{'en': 'Pandhurna, Madhya Pradesh'},
- '9171652':{'en': 'Saunsar, Madhya Pradesh'},
- '9171653':{'en': 'Saunsar, Madhya Pradesh'},
- '9171654':{'en': 'Saunsar, Madhya Pradesh'},
  '9171655':{'en': 'Saunsar, Madhya Pradesh'},
  '9171656':{'en': 'Saunsar, Madhya Pradesh'},
  '9171657':{'en': 'Saunsar, Madhya Pradesh'},

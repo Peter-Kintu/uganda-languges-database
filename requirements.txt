@@ -1,17 +1,23 @@
-Django>=4.2
+# Framework (Latest Version)
+Django
 gunicorn
+
+# Database (Neon.tech / Postgres)
 psycopg2-binary
 dj-database-url
-whitenoise
-django-jazzmin
-Pillow
 python-dotenv
+
+# Static Files & Security
+whitenoise
+django-cors-headers
+
+# Media (Cloudinary)
+Pillow
 cloudinary
 django-cloudinary-storage
+
+# Integrations
+python-aliexpress-api
+google-genai
 phonenumbers
 django-widget-tweaks
-google-genai
-django-humanize
-python-dotenv
-whitenoise
-python-aliexpress-api

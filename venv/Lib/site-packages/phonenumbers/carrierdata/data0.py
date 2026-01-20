@@ -4,7 +4,7 @@ Auto-generated file, do not edit by hand.
 """
 from ..util import u
 
-# Copyright (C) 2011-2025 The Libphonenumber Authors
+# Copyright (C) 2011-2026 The Libphonenumber Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1317,7 +1317,7 @@ data = {
  '25562':{'en': 'Viettel'},
  '25563':{'en': 'Viettel'},
  '25565':{'en': 'Yas'},
- '25566':{'en': 'SMILE'},
+ '25566':{'en': 'Airtel'},
  '25567':{'en': 'Yas'},
  '25568':{'en': 'Airtel'},
  '25569':{'en': 'Airtel'},
@@ -1347,6 +1347,7 @@ data = {
  '256790':{'en': 'MTN'},
  '256791':{'en': 'MTN'},
  '256792':{'en': 'MTN'},
+ '256793':{'en': 'MTN'},
  '256795':{'en': 'Airtel'},
  '256798':{'en': 'Africell'},
  '256799':{'en': 'Africell'},
@@ -2206,6 +2207,10 @@ data = {
  '3375632':{'en': 'Euroinformation Telecom'},
  '3375633':{'en': 'Euroinformation Telecom'},
  '3375634':{'en': 'Euroinformation Telecom'},
+ '3375636':{'en': 'Orange France'},
+ '3375637':{'en': 'Orange France'},
+ '3375638':{'en': 'Orange France'},
+ '3375639':{'en': 'Orange France'},
  '3375644':{'en': 'SFR'},
  '3375645':{'en': 'SFR'},
  '3375648':{'en': 'Bouygues'},
@@ -2379,8 +2384,7 @@ data = {
  '346047':{'en': 'Lebara'},
  '346048':{'en': 'Lebara'},
  '346049':{'en': 'Lebara'},
- '34605':{'en': 'Orange'},
- '3460529':{'en': 'MasMovil'},
+ '34605':{'en': 'Vodafone'},
  '34606':{'en': 'Movistar'},
  '34607':{'en': 'Vodafone'},
  '34608':{'en': 'Movistar'},
@@ -3492,6 +3496,7 @@ data = {
  '39377':{'en': 'Vodafone'},
  '393780':{'en': 'spusu'},
  '393784':{'en': 'Vodafone'},
+ '39379':{'en': 'Vodafone'},
  '3938':{'en': 'WIND'},
  '39383':{'en': 'Vodafone'},
  '3939':{'en': '3 Italia'},
@@ -3597,6 +3602,7 @@ data = {
  '417841':{'en': 'Sunrise'},
  '417842':{'en': 'Sunrise'},
  '417844':{'en': 'spusu'},
+ '417845':{'en': 'spusu'},
  '4178460':{'en': 'Tismi'},
  '4178461':{'en': 'Tismi'},
  '4178462':{'en': 'Tismi'},
@@ -10013,10 +10019,4 @@ data = {
  '553199786':{'en': 'Telemig Celular'},
  '553199787':{'en': 'Telemig Celular'},
  '553199788':{'en': 'Telemig Celular'},
- '553199789':{'en': 'Telemig Celular'},
- '553199791':{'en': 'Telemig Celular'},
- '553199792':{'en': 'Telemig Celular'},
- '553199793':{'en': 'Telemig Celular'},
- '553199794':{'en': 'Telemig Celular'},
- '553199795':{'en': 'Telemig Celular'},
 }

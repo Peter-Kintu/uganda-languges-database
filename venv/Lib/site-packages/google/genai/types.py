@@ -108,6 +108,20 @@ else:
     HttpxClient = None
     HttpxAsyncClient = None
 
+_is_aiohttp_imported = False
+if typing.TYPE_CHECKING:
+  from aiohttp import ClientSession
+
+  _is_aiohttp_imported = True
+else:
+  ClientSession: typing.Type = Any
+  try:
+    from aiohttp import ClientSession
+
+    _is_aiohttp_imported = True
+  except ImportError:
+    ClientSession = None
+
 logger = logging.getLogger('google_genai.types')
 _from_json_schema_warning_logged = False
 _json_schema_warning_logged = False
@@ -866,6 +880,17 @@ class VadSignalType(_common.CaseInSensitiveEnum):
   VAD_SIGNAL_TYPE_SOS = 'VAD_SIGNAL_TYPE_SOS'
   """Start of sentence signal."""
   VAD_SIGNAL_TYPE_EOS = 'VAD_SIGNAL_TYPE_EOS'
+  """End of sentence signal."""
+
+
+class VoiceActivityType(_common.CaseInSensitiveEnum):
+  """The type of the voice activity signal."""
+
+  TYPE_UNSPECIFIED = 'TYPE_UNSPECIFIED'
+  """The default is VOICE_ACTIVITY_TYPE_UNSPECIFIED."""
+  ACTIVITY_START = 'ACTIVITY_START'
+  """Start of sentence signal."""
+  ACTIVITY_END = 'ACTIVITY_END'
   """End of sentence signal."""
 
 
@@ -1924,6 +1949,10 @@ class HttpOptions(_common.BaseModel):
   httpx_async_client: Optional['HttpxAsyncClient'] = Field(
       default=None,
       description="""A custom httpx async client to be used for the request.""",
+  )
+  aiohttp_client: Optional['ClientSession'] = Field(
+      default=None,
+      description="""A custom aiohttp client session to be used for the request.""",
   )
 
 
@@ -16347,6 +16376,24 @@ VoiceActivityDetectionSignalOrDict = Union[
 ]
 
 
+class VoiceActivity(_common.BaseModel):
+  """Voice activity signal."""
+
+  voice_activity_type: Optional[VoiceActivityType] = Field(
+      default=None, description="""The type of the voice activity signal."""
+  )
+
+
+class VoiceActivityDict(TypedDict, total=False):
+  """Voice activity signal."""
+
+  voice_activity_type: Optional[VoiceActivityType]
+  """The type of the voice activity signal."""
+
+
+VoiceActivityOrDict = Union[VoiceActivity, VoiceActivityDict]
+
+
 class LiveServerMessage(_common.BaseModel):
   """Response message for API call."""
 
@@ -16379,7 +16426,13 @@ class LiveServerMessage(_common.BaseModel):
       )
   )
   voice_activity_detection_signal: Optional[VoiceActivityDetectionSignal] = (
-      Field(default=None, description="""Voice activity detection signal.""")
+      Field(
+          default=None,
+          description="""Voice activity detection signal. Allowlisted only.""",
+      )
+  )
+  voice_activity: Optional[VoiceActivity] = Field(
+      default=None, description="""Voice activity signal."""
   )
 
   @property
@@ -16478,7 +16531,10 @@ class LiveServerMessageDict(TypedDict, total=False):
   """Update of the session resumption state."""
 
   voice_activity_detection_signal: Optional[VoiceActivityDetectionSignalDict]
-  """Voice activity detection signal."""
+  """Voice activity detection signal. Allowlisted only."""
+
+  voice_activity: Optional[VoiceActivityDict]
+  """Voice activity signal."""
 
 
 LiveServerMessageOrDict = Union[LiveServerMessage, LiveServerMessageDict]

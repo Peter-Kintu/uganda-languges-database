@@ -10,9 +10,8 @@ PHONE_METADATA_MA = PhoneMetadata(id='MA', country_code=212, international_prefi
     voip=PhoneNumberDesc(national_number_pattern='(?:592(?:4[0-2]|93)|80[89]\\d\\d)\\d{4}', example_number='592401234', possible_length=(9,)),
     national_prefix='0',
     national_prefix_for_parsing='0',
-    number_format=[NumberFormat(pattern='(\\d{3})(\\d{2})(\\d{2})(\\d{2})', format='\\1 \\2 \\3 \\4', leading_digits_pattern=['5[45]'], national_prefix_formatting_rule='0\\1'),
-        NumberFormat(pattern='(\\d{4})(\\d{5})', format='\\1-\\2', leading_digits_pattern=['5(?:[19]|2[2-46-9]|3[3-9])|8(?:0[89]|92)'], national_prefix_formatting_rule='0\\1'),
-        NumberFormat(pattern='(\\d{2})(\\d{7})', format='\\1-\\2', leading_digits_pattern=['8'], national_prefix_formatting_rule='0\\1'),
-        NumberFormat(pattern='(\\d{3})(\\d{6})', format='\\1-\\2', leading_digits_pattern=['[5-7]'], national_prefix_formatting_rule='0\\1')],
+    number_format=[NumberFormat(pattern='(\\d{4})(\\d{5})', format='\\1-\\2', leading_digits_pattern=['892'], national_prefix_formatting_rule='0\\1'),
+        NumberFormat(pattern='(\\d{2})(\\d{7})', format='\\1-\\2', leading_digits_pattern=['8(?:0[0-7]|9)'], national_prefix_formatting_rule='0\\1'),
+        NumberFormat(pattern='(\\d)(\\d{2})(\\d{2})(\\d{2})(\\d{2})', format='\\1 \\2 \\3 \\4 \\5', leading_digits_pattern=['[5-8]'], national_prefix_formatting_rule='0\\1')],
     main_country_for_code=True,
     mobile_number_portable_region=True)

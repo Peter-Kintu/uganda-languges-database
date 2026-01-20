@@ -29,13 +29,14 @@ class Product(models.Model):
         db_index=True,
         help_text="ID from external marketplace (e.g., AliExpress productId, Jumia SKU)"
     )
-    affiliate_url = models.URLField(
-        max_length=1000, 
+    
+    # TextField used to handle long URLs without overwhelming Neon/Postgres
+    affiliate_url = models.TextField(
         blank=True, 
         null=True,
         help_text="Affiliate link to redirect buyers to external marketplace"
     )
-    image_url = models.URLField(
+    image_url = models.TextField(
         blank=True, 
         null=True, 
         help_text="Direct URL for images from external marketplaces"
