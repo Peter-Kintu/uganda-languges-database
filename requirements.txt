@@ -1,4 +1,4 @@
-# Framework (Latest Version)
+# Framework & Server
 Django
 gunicorn
 
@@ -8,7 +8,7 @@ dj-database-url
 python-dotenv
 
 # Static Files & Security
-whitenoise
+whitenoise[brotli]
 django-cors-headers
 
 # Media (Cloudinary)
@@ -16,8 +16,11 @@ Pillow
 cloudinary
 django-cloudinary-storage
 
-# Integrations
+# UI & Customization
+django-jazzmin
+django-widget-tweaks
+
+# Integrations & APIs
 python-aliexpress-api
 google-genai
 phonenumbers
-django-widget-tweaks
