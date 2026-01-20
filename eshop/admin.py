@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.urls import path
 from .models import Product
-from .views import export_products_json, sync_aliexpress_products # Import your sync view
+from .views import export_products_json, sync_aliexpress_products
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    change_list_template = "admin/eshop/product_change_list.html" # Custom template for the button
+    # This line requires the HTML file to exist in your templates folder
+    change_list_template = "admin/eshop/product_change_list.html" 
     
     list_display = (
         'name',
@@ -25,7 +26,6 @@ class ProductAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path('export-json/', self.admin_site.admin_view(export_products_json), name='eshop_product_export_json'),
-            # Add the sync path here
             path('sync-aliexpress/', self.admin_site.admin_view(sync_aliexpress_products), name='sync_aliexpress_admin'),
         ]
         return custom_urls + urls
