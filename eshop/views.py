@@ -44,26 +44,40 @@ def sync_aliexpress_products(request):
             settings.ALI_TRACKING_ID
         )
 
-        # Expanded search groups for a massive variety
+        # Hot-Selling Categories for Africa & Global Markets
         search_groups = [
-            {'query': 'ultrasonic teeth cleaner oral irrigator', 'count': 10}, # Dental
-            {'query': 'women vaseline moisturizing cream skincare', 'count': 10}, # Beauty
-            {'query': 'solar panel system inverter lithium battery', 'count': 10}, # Energy
-            {'query': 'luxury womens handbag designer style', 'count': 10}, # Fashion
-            {'query': 'mens smart watch waterproof fitness', 'count': 10}, # Tech Wearables
-            {'query': 'wireless earbuds noise cancelling bluetooth', 'count': 10}, # Audio
-            {'query': 'modern home decor led crystal lamps', 'count': 10}, # Home
-            {'query': 'kitchen gadgets electric multi cooker', 'count': 10}, # Kitchen
+            # --- Health & Beauty (High Repeat Orders) ---
+            {'query': 'ultrasonic teeth cleaner dental scaler', 'count': 10},
+            {'query': 'vaseline intensive care whitening lotion', 'count': 10},
+            {'query': 'organic hair growth oils for men women', 'count': 10},
+            
+            # --- Power & Energy (Massive Demand in Africa) ---
+            {'query': 'hybrid solar inverter 5kw pure sine wave', 'count': 10},
+            {'query': 'portable power station solar generator', 'count': 10},
+            
+            # --- Tech & Gadgets (Hot Global Trend) ---
+            {'query': 'android 5G smartphone unlocked global version', 'count': 10},
+            {'query': 'series 9 smartwatch ultra waterproof', 'count': 10},
+            {'query': 'tws wireless earbuds noise cancelling bluetooth', 'count': 10},
+            
+            # --- Fashion & Jewelry (High Margin) ---
+            {'query': 'luxury gold jewelry sets dubai african style', 'count': 10},
+            {'query': 'mens automatic mechanical wrist watch luxury', 'count': 10},
+            
+            # --- Home & Auto (Problem Solvers) ---
+            {'query': 'car diagnostic tool obd2 scanner professional', 'count': 10},
+            {'query': 'mini portable projector 4k home theater', 'count': 10},
         ]
         
         created_count = 0
         updated_count = 0
 
         for group in search_groups:
+            # Using the fixed get_products method
             items = api.get_products(
                 keywords=group['query'], 
                 page_size=group['count'], 
-                sort='NUMBER_OF_ORDERS_DESC'
+                sort='NUMBER_OF_ORDERS_DESC' # Ensures we only get the hot-selling ones
             )
             
             if not items or not hasattr(items, 'products'):
@@ -75,8 +89,7 @@ def sync_aliexpress_products(request):
                     if img_url and img_url.startswith('//'):
                         img_url = f"https:{img_url}"
                     
-                    raw_price = getattr(item, 'target_sale_price', '0.00')
-                    price = Decimal(str(raw_price))
+                    price = Decimal(str(getattr(item, 'target_sale_price', '0.00')))
                     unique_slug = slugify(f"{item.product_title[:40]}-{item.product_id}")
 
                     obj, created = Product.objects.update_or_create(
@@ -85,14 +98,14 @@ def sync_aliexpress_products(request):
                             'source': 'aliexpress',
                             'name': item.product_title[:200],
                             'slug': unique_slug,
-                            'description': f"Global Quality Selection. ID: {item.product_id}",
+                            'description': f"Global Hot-Seller. Top Rated. ID: {item.product_id}",
                             'price': price,
                             'currency': 'USD',
-                            'affiliate_url': item.promotion_link, # Your commission link
+                            'affiliate_url': item.promotion_link, # Your Commission Link
                             'image_url': img_url,
-                            'vendor_name': 'AliExpress Global',
+                            'vendor_name': 'Global Hot-Sellers',
                             'is_negotiable': False,
-                            'country': 'International',
+                            'country': 'Global',
                             'whatsapp_number': 'EXTERNAL',
                         }
                     )
@@ -101,7 +114,7 @@ def sync_aliexpress_products(request):
                 except Exception:
                     continue
 
-        messages.success(request, f"Marketplace Expanded! Added {created_count} new high-demand items.")
+        messages.success(request, f"Global Sync Complete! {created_count} hot-selling products added to your catalog.")
     except Exception as e:
         messages.error(request, f"Sync error: {str(e)}")
 
