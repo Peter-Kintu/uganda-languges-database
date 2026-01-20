@@ -47,6 +47,7 @@ def sync_aliexpress_products(request):
         # Hot-Selling Categories for Africa & Global Markets
         search_groups = [
             # --- Health & Beauty (High Repeat Orders) ---
+            {'query': 'tws wireless earbuds bluetooth', 'count': 10},
             {'query': 'ultrasonic teeth cleaner dental scaler', 'count': 10},
             {'query': 'vaseline intensive care whitening lotion', 'count': 10},
             {'query': 'organic hair growth oils for men women', 'count': 10},
