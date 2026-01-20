@@ -183,15 +183,12 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Database Management System",
     "copyright": "Uganda Language Project",
     "user_avatar": None,  # Correctly set to None (no quotes)
-    
-    # FIXED: Changed dots to colons here to resolve the "Could not reverse url" error in logs
-    "search_model": ["users:CustomUser", "languages:PhraseContribution", "languages:JobPost"],
-    
+    "search_model": ["users.CustomUser", "languages.PhraseContribution", "languages.JobPost"],
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         
         # --- FIXED SYNC BUTTON URL ---
-        # Using '/admin/eshop/product/sync-now/' to match the unique path in admin.py
+        # Using 'sync-now' to match the updated Admin custom path
         {
             "name": "🔄 Sync AliExpress", 
             "url": "/admin/eshop/product/sync-now/", 
@@ -199,9 +196,7 @@ JAZZMIN_SETTINGS = {
         },
         
         {"name": "View Site", "url": "/", "new_window": True},
-        
-        # FIXED: Changed dot to colon for the model reference to prevent NoReverseMatch
-        {"model": "users:CustomUser"},
+        {"model": "users.CustomUser"},
     ],
     "show_sidebar": True,
     "navigation_expanded": True,
