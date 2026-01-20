@@ -182,15 +182,16 @@ JAZZMIN_SETTINGS = {
     "site_icon": "images/favicon.ico",
     "welcome_sign": "Database Management System",
     "copyright": "Uganda Language Project",
-    "user_avatar": "avatar",
+    "user_avatar": None,  # Correctly set to None (no quotes)
     "search_model": ["users.CustomUser", "languages.PhraseContribution", "languages.JobPost"],
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         
-        # --- NEW SYNC BUTTON ADDED HERE ---
+        # --- FIXED SYNC BUTTON URL ---
+        # Using 'sync-now' to match the updated Admin custom path
         {
             "name": "🔄 Sync AliExpress", 
-            "url": "/admin/eshop/product/sync-aliexpress/", 
+            "url": "/admin/eshop/product/sync-now/", 
             "permissions": ["auth.view_user"]
         },
         
