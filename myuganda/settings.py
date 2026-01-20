@@ -182,13 +182,15 @@ JAZZMIN_SETTINGS = {
     "site_icon": "images/favicon.ico",
     "welcome_sign": "Database Management System",
     "copyright": "Uganda Language Project",
-    "user_avatar": None,  # Correctly set to None (no quotes)
-    "search_model": ["users.CustomUser", "languages.PhraseContribution", "languages.JobPost"],
+    "user_avatar": None,
+    
+    # 1. REDUCED SEARCH MODEL (Usually the cause of global 500s)
+    "search_model": ["auth.User"], 
+    
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         
-        # --- FIXED SYNC BUTTON URL ---
-        # Using 'sync-now' to match the updated Admin custom path
+        # 2. HARDCODED PATH (Safest for production)
         {
             "name": "🔄 Sync AliExpress", 
             "url": "/admin/eshop/product/sync-now/", 
@@ -196,11 +198,15 @@ JAZZMIN_SETTINGS = {
         },
         
         {"name": "View Site", "url": "/", "new_window": True},
-        {"model": "users.CustomUser"},
+        # Removed the {"model": "users:CustomUser"} line temporarily
     ],
+    
     "show_sidebar": True,
     "navigation_expanded": True,
-    "order_with_respect_to": ["users", "languages", "eshop", "auth"],
+    
+    # 3. SIMPLIFIED ORDERING
+    "order_with_respect_to": ["auth", "users", "languages", "eshop"],
+    
     "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage"],
     "hide_models": ["auth.Group"],
     "icons": {
@@ -231,5 +237,4 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
