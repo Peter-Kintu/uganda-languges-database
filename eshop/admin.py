@@ -21,19 +21,21 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description', 'vendor_name', 'country', 'whatsapp_number')
     prepopulated_fields = {'slug': ('name',)}
     
+    # Ensures efficient loading for the admin list view
     list_select_related = [] 
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            # 1. Path changed to 'sync-now/' to avoid clashing with the 'eshop/sync-aliexpress/' storefront URL
-            # 2. Name set to 'sync_aliexpress_admin_unique' to avoid reverse lookup conflicts
+            # 1. Unique path 'sync-now/' prevents collision with your storefront 'sync-aliexpress/'
+            # 2. Using name='sync_aliexpress_admin_unique' allows referencing via 'admin:sync_aliexpress_admin_unique'
             path(
                 'sync-now/', 
                 self.admin_site.admin_view(sync_aliexpress_products), 
                 name='sync_aliexpress_admin_unique'
             ),
             
+            # 3. Dedicated path for JSON export
             path(
                 'export-json/', 
                 self.admin_site.admin_view(export_products_json), 
