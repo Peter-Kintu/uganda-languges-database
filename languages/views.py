@@ -162,7 +162,7 @@ def browse_job_listings(request):
         # B. EXTERNAL API BACKFILL
         loc_lower = location_query.lower()
         
-        # --- 1. Adzuna Integration (Expanded Africa Support) ---
+        # --- 1. Adzuna Integration ---
         adzuna_country_map = {
             'south africa': 'za', 'nigeria': 'ng', 'kenya': 'ke', 
             'uganda': 'ug', 'egypt': 'eg', 'morocco': 'ma',
@@ -170,7 +170,7 @@ def browse_job_listings(request):
             'usa': 'us', 'uk': 'gb', 'uae': 'ae'
         }
         
-        adzuna_code = 'za' # Default for Africa
+        adzuna_code = 'za' 
         for country, code in adzuna_country_map.items():
             if country in loc_lower:
                 adzuna_code = code
@@ -190,7 +190,7 @@ def browse_job_listings(request):
                     adzuna_jobs = res.json().get('results', [])
             except: pass
 
-        # --- 2. Careerjet Integration (Fix for missing jobs) ---
+        # --- 2. Careerjet Integration (Updated for Revenue Tracking) ---
         if CAREERJET_API_KEY:
             # Map Locales
             cj_locale = 'en_GB' 
@@ -203,28 +203,31 @@ def browse_job_listings(request):
             elif 'rwanda' in loc_lower: cj_locale = 'en_RW'
             elif 'tanzania' in loc_lower: cj_locale = 'en_TZ'
             elif 'usa' in loc_lower: cj_locale = 'en_US'
-            elif 'africa' in loc_lower: cj_locale = 'en_ZA' # Anchor for general Africa
+            elif 'africa' in loc_lower: cj_locale = 'en_ZA'
 
             try:
-                # Use a real public IP if Koyeb provides a local one to bypass bot filters
-                x_f = request.META.get('HTTP_X_FORWARDED_FOR')
-                u_ip = x_f.split(',')[0] if x_f else "8.8.8.8" 
-                u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+                # FIX: Correctly extract the real visitor's IP address
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                if x_forwarded_for:
+                    u_ip = x_forwarded_for.split(',')[0].strip()
+                else:
+                    u_ip = request.META.get('REMOTE_ADDR')
+                
+                # FIX: Extract the real User Agent
+                u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
 
-                # If searching "Africa", leave location blank to get country-wide results for the locale
                 search_loc = "" if "africa" in loc_lower else location_query
 
                 cj_params = {
                     'locale_code': cj_locale,
                     'keywords': search_query if search_query != "hiring" else "",
                     'location': search_loc,
-                    'user_ip': u_ip,
-                    'user_agent': u_agent,
+                    'user_ip': u_ip,      # Verified real IP
+                    'user_agent': u_agent, # Verified browser
                     'page_size': 25,
                     'page': page,
                 }
 
-                # CRITICAL: Use your exact Koyeb domain as registered in Careerjet Partner Panel
                 cj_headers = {'Referer': 'https://initial-danette-africana-60541726.koyeb.app'}
 
                 cj_res = requests.get(
@@ -240,10 +243,9 @@ def browse_job_listings(request):
                     if cj_data.get('type') == 'JOBS':
                         careerjet_jobs = cj_data.get('jobs', [])
                     
-                    # If still empty, try one last time with a global fallback locale
                     if not careerjet_jobs:
                         cj_params['locale_code'] = 'en_US'
-                        cj_params['location'] = "" # Worldwide fallback
+                        cj_params['location'] = "" 
                         retry = requests.get('https://search.api.careerjet.net/v4/query', 
                                            params=cj_params, auth=(CAREERJET_API_KEY, ''), 
                                            headers=cj_headers, timeout=5)
