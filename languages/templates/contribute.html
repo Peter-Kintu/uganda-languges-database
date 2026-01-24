@@ -93,7 +93,6 @@
                 </div>
             </div>
             
-            {# NEW: Easy Apply Contact Fields #}
             <div class="grid grid-cols-1 gap-8 sm:grid-cols-2">
                 <div class="space-y-2">
                     <label for="{{ form.recruiter_email.id_for_label }}" class="block text-sm font-semibold text-indigo-300">
@@ -117,7 +116,6 @@
                     {% endfor %}
                 </div>
             </div>
-            {# END NEW EASY APPLY FIELDS #}
 
             <div class="grid grid-cols-1 gap-8 sm:grid-cols-2">
                 <div class="space-y-2">
@@ -150,10 +148,28 @@
             </div>
         </form>
     </div>
+
+    <div class="mt-12 text-center">
+        <h2 class="text-2xl font-bold text-white mb-6">Need help with your business or studies?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-indigo-900/30 border border-indigo-500 p-6 rounded-2xl text-left hover:bg-indigo-900/50 transition">
+                <span class="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full uppercase">Pro Choice</span>
+                <h3 class="text-white font-bold text-xl mt-2">Hire an Expert Developer</h3>
+                <p class="text-gray-300 text-sm mt-2">Scale your company with top-tier technical talent for complex projects.</p>
+                <a href="https://go.fiverr.com/visit/?bta=YOUR_ID&brand=fiverrhybrid&landingPage=https://www.fiverr.com/categories/programming-tech" target="_blank" class="inline-block mt-4 text-indigo-400 font-bold hover:underline">Browse Pro Experts &rarr;</a>
+            </div>
+
+            <div class="bg-green-900/30 border border-green-500 p-6 rounded-2xl text-left hover:bg-green-900/50 transition">
+                <span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full uppercase">Student Friendly</span>
+                <h3 class="text-white font-bold text-xl mt-2">Simple Tasks from $5</h3>
+                <p class="text-gray-300 text-sm mt-2">Get help with data entry, proofreading, or basic design at affordable rates.</p>
+                <a href="https://go.fiverr.com/visit/?bta=YOUR_ID&brand=fiverrhybrid&landingPage=https://www.fiverr.com/search/gigs?query=simple+tasks" target="_blank" class="inline-block mt-4 text-green-400 font-bold hover:underline">Explore Budget Tasks &rarr;</a>
+            </div>
+        </div>
+    </div>
 </main>
 
 <script>
-    // Simple script to fade out the success alert after a delay
     const successAlert = document.getElementById('success-alert');
     if (successAlert) {
         setTimeout(() => {
@@ -161,8 +177,8 @@
             successAlert.style.opacity = '0';
             setTimeout(() => {
                 successAlert.remove();
-            }, 1000); // Remove element after transition finishes
-        }, 5000); // Wait 5 seconds before starting fade
+            }, 1000);
+        }, 5000);
     }
 </script>
 {% endblock content %}
