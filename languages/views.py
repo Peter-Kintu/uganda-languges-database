@@ -146,6 +146,14 @@ def browse_job_listings(request):
     location_query = request.GET.get('where') or "Africa"
     page = request.GET.get('page', 1)
 
+    # --- SOLIDGIGS PARTNER DATA ---
+    display_query = search_query if search_query != "hiring" else "Freelance"
+    solidgigs_data = {
+        'name': f"Elite {display_query.title()} Roles",
+        'url': f"https://solidgigs.com?via=kintu92",
+        'query_used': display_query,
+    }
+
     if selected_job is None:
         # A. LOCAL DATABASE SEARCH
         job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
@@ -190,9 +198,8 @@ def browse_job_listings(request):
                     adzuna_jobs = res.json().get('results', [])
             except: pass
 
-        # --- 2. Careerjet Integration (Updated for Revenue Tracking) ---
+        # --- 2. Careerjet Integration ---
         if CAREERJET_API_KEY:
-            # Map Locales
             cj_locale = 'en_GB' 
             if 'uganda' in loc_lower: cj_locale = 'en_UG'
             elif 'kenya' in loc_lower: cj_locale = 'en_KE'
@@ -206,24 +213,21 @@ def browse_job_listings(request):
             elif 'africa' in loc_lower: cj_locale = 'en_ZA'
 
             try:
-                # FIX: Correctly extract the real visitor's IP address
                 x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
                 if x_forwarded_for:
                     u_ip = x_forwarded_for.split(',')[0].strip()
                 else:
                     u_ip = request.META.get('REMOTE_ADDR')
                 
-                # FIX: Extract the real User Agent
                 u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
-
                 search_loc = "" if "africa" in loc_lower else location_query
 
                 cj_params = {
                     'locale_code': cj_locale,
                     'keywords': search_query if search_query != "hiring" else "",
                     'location': search_loc,
-                    'user_ip': u_ip,      # Verified real IP
-                    'user_agent': u_agent, # Verified browser
+                    'user_ip': u_ip,
+                    'user_agent': u_agent,
                     'page_size': 25,
                     'page': page,
                 }
@@ -267,6 +271,7 @@ def browse_job_listings(request):
         'job_posts': job_posts_context,
         'adzuna_jobs': adzuna_jobs, 
         'careerjet_jobs': careerjet_jobs,
+        'solidgigs': solidgigs_data,
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query if search_query != "hiring" else '',
