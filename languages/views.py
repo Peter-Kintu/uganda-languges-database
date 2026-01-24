@@ -10,7 +10,10 @@ from django.contrib.auth import logout
 from django.contrib import messages
 import requests
 import os
+import random
 
+# Import utility functions for Fiverr Hybrid branding
+from .utils import generate_fiverr_link, is_fiverr_url
 from .forms import JobPostForm
 from .models import JobPost, JOB_CATEGORIES, JOB_TYPES, Applicant 
 
@@ -19,6 +22,8 @@ try:
 except ImportError:
     class Product:
         objects = None 
+
+# --- SEO & System Views ---
 
 def google_verification(request):
     return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
@@ -31,13 +36,145 @@ def robots_txt(request):
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
+# --- Core Job Views ---
+
 def job_post_detail(request, pk):
+    """
+    Processes the job detail page. If the job is an external Fiverr link,
+    it applies the Hybrid affiliate parameters.
+    """
     job_post = get_object_or_404(JobPost, pk=pk)
+    
+    # Process the URL if it's an external Fiverr link
+    affiliate_url = job_post.application_url
+    if job_post.is_external and is_fiverr_url(affiliate_url):
+        affiliate_url = generate_fiverr_link(affiliate_url)
+
     context = {
         'job_post': job_post,
+        'affiliate_url': affiliate_url, # Use this in the template button
         'page_title': f"Job: {job_post.post_content[:40]}...",
     }
     return render(request, 'job_post_detail.html', context)
+
+@login_required
+def browse_job_listings(request):
+    """
+    Hybrid View: Shows Local Database jobs + Fiverr Gigs + Careerjet API.
+    Adzuna logic has been removed.
+    """
+    job_id = request.GET.get('job_id')
+    selected_job = None
+    
+    if job_id:
+        try:
+            selected_job = get_object_or_404(JobPost, pk=job_id)
+        except (ValueError, JobPost.DoesNotExist):
+            pass 
+
+    fiverr_jobs = []
+    careerjet_jobs = []
+
+    category_filter = request.GET.get('category')
+    search_query = request.GET.get('q') or "hiring" 
+    location_query = request.GET.get('where') or "Africa"
+    page = request.GET.get('page', 1)
+
+    if selected_job is None:
+        # A. LOCAL DATABASE SEARCH
+        job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
+        if category_filter and category_filter != 'all':
+            job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
+        if search_query and search_query != "hiring":
+            job_posts_filtered = job_posts_filtered.filter(
+                Q(post_content__icontains=search_query) |
+                Q(recruiter_name__icontains=search_query) |
+                Q(recruiter_location__icontains=location_query)
+            )
+        final_job_list = list(job_posts_filtered)
+
+        # B. EXTERNAL API BACKFILL
+        loc_lower = location_query.lower()
+        
+        # --- 1. Fiverr Hybrid Integration ---
+        fiverr_api_key = os.getenv("FIVERR_API_KEY")
+        if fiverr_api_key:
+            try:
+                f_headers = {"Authorization": f"Bearer {fiverr_api_key}"}
+                search_term = search_query if search_query != "hiring" else "Language Services"
+                
+                # Pro Services (Higher Commission)
+                res = requests.get(
+                    "https://api.fiverr.com/v1/gigs/search", 
+                    params={"query": search_term, "limit": 6},
+                    headers=f_headers, timeout=5
+                )
+
+                if res.status_code == 200:
+                    raw_gigs = res.json().get('gigs', [])
+                    for gig in raw_gigs:
+                        # Apply Hybrid affiliate link to each gig
+                        gig['affiliate_link'] = generate_fiverr_link(gig.get('url'))
+                        fiverr_jobs.append(gig)
+                random.shuffle(fiverr_jobs)
+            except Exception as e:
+                print(f"Fiverr Error: {e}")
+
+        # --- 2. Careerjet Integration ---
+        CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
+        if CAREERJET_API_KEY:
+            cj_locale = 'en_GB' 
+            # Simple locale mapping for Africa
+            if 'uganda' in loc_lower: cj_locale = 'en_UG'
+            elif 'kenya' in loc_lower: cj_locale = 'en_KE'
+            elif 'nigeria' in loc_lower: cj_locale = 'en_NG'
+            elif 'south africa' in loc_lower: cj_locale = 'en_ZA'
+
+            try:
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                u_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
+                
+                cj_params = {
+                    'locale_code': cj_locale,
+                    'keywords': search_query if search_query != "hiring" else "",
+                    'location': "" if "africa" in loc_lower else location_query,
+                    'user_ip': u_ip,      
+                    'user_agent': request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0'), 
+                    'page_size': 25,
+                    'page': page,
+                }
+
+                cj_res = requests.get(
+                    'https://search.api.careerjet.net/v4/query', 
+                    params=cj_params, auth=(CAREERJET_API_KEY, ''), timeout=5
+                )
+                
+                if cj_res.status_code == 200:
+                    careerjet_jobs = cj_res.json().get('jobs', [])
+            except Exception as e:
+                print(f"CJ Error: {e}")
+
+        # Local Pagination
+        paginator = Paginator(final_job_list, 20)
+        job_posts_context = paginator.get_page(page)
+    
+    else:
+        job_posts_context = []
+
+    context = {
+        'selected_job': selected_job,
+        'job_posts': job_posts_context,
+        'fiverr_jobs': fiverr_jobs, 
+        'careerjet_jobs': careerjet_jobs,
+        'job_categories': JOB_CATEGORIES, 
+        'selected_category': category_filter or 'all',
+        'search_query': search_query if search_query != "hiring" else '',
+        'location_query': location_query,
+        'page_title': f"Jobs in {location_query}"
+    }
+    return render(request, 'contributions_list.html', context)
+
+# --- Recruiter, Profile & Logic Functions (Unchanged) ---
 
 @login_required
 def get_top_recruiters(request, month=None, year=None, limit=10):
@@ -112,9 +249,6 @@ def post_job(request):
         form = JobPostForm()
     return render(request, 'contribute.html', {'form': form})
 
-ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
-ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
-CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
@@ -126,149 +260,6 @@ def get_exchange_rate(from_curr, to_curr="UGX"):
         return res.json().get('conversion_rate', 1.0) if res.status_code == 200 else 1.0
     except:
         return 1.0
-
-@login_required
-def browse_job_listings(request):
-    job_id = request.GET.get('job_id')
-    selected_job = None
-    
-    if job_id:
-        try:
-            selected_job = get_object_or_404(JobPost, pk=job_id)
-        except (ValueError, JobPost.DoesNotExist):
-            pass 
-
-    fiverr_jobs = []
-    careerjet_jobs = []
-
-    category_filter = request.GET.get('category')
-    search_query = request.GET.get('q') or "hiring" 
-    location_query = request.GET.get('where') or "Africa"
-    page = request.GET.get('page', 1)
-
-    if selected_job is None:
-        # A. LOCAL DATABASE SEARCH
-        job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
-        if category_filter and category_filter != 'all':
-            job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
-        if search_query and search_query != "hiring":
-            job_posts_filtered = job_posts_filtered.filter(
-                Q(post_content__icontains=search_query) |
-                Q(recruiter_name__icontains=search_query) |
-                Q(recruiter_location__icontains=location_query)
-            )
-        final_job_list = list(job_posts_filtered)
-
-        # B. EXTERNAL API BACKFILL
-        loc_lower = location_query.lower()
-        
-        # --- 1. Fiverr Hybrid Integration (Pro + Entry Level Mix) ---
-        fiverr_api_key = os.getenv("FIVERR_API_KEY")
-        fiverr_affiliate_id = os.getenv("FIVERR_AFFILIATE_ID", "YOUR_AFFILIATE_ID")
-        
-        if fiverr_api_key:
-            try:
-                # We fetch two sets: Pro services for revenue, and simple tasks for students
-                f_headers = {"Authorization": f"Bearer {fiverr_api_key}"}
-                search_term = search_query if search_query != "hiring" else "Data Science"
-                
-                # Request A: Pro Services (High Commission)
-                pro_res = requests.get(
-                    "https://api.fiverr.com/v1/gigs/search", 
-                    params={"query": search_term, "filter": "pro_services", "limit": 4},
-                    headers=f_headers, timeout=5
-                )
-                
-                # Request B: Simple Tasks (Student Friendly)
-                simple_res = requests.get(
-                    "https://api.fiverr.com/v1/gigs/search", 
-                    params={"query": f"simple {search_term}", "limit": 4},
-                    headers=f_headers, timeout=5
-                )
-
-                raw_gigs = []
-                if pro_res.status_code == 200: raw_gigs.extend(pro_res.json().get('gigs', []))
-                if simple_res.status_code == 200: raw_gigs.extend(simple_res.json().get('gigs', []))
-
-                for gig in raw_gigs:
-                    # Generate Hybrid link for recurring commissions
-                    landing_url = gig.get('url')
-                    gig['affiliate_link'] = f"https://go.fiverr.com/visit/?bta={fiverr_affiliate_id}&brand=fiverrhybrid&landingPage={landing_url}"
-                    fiverr_jobs.append(gig)
-                
-                # Shuffle the mixture
-                import random
-                random.shuffle(fiverr_jobs)
-            except Exception as e:
-                print(f"Fiverr Error: {e}")
-
-        # --- 2. Careerjet Integration ---
-        if CAREERJET_API_KEY:
-            cj_locale = 'en_GB' 
-            if 'uganda' in loc_lower: cj_locale = 'en_UG'
-            elif 'kenya' in loc_lower: cj_locale = 'en_KE'
-            elif 'nigeria' in loc_lower: cj_locale = 'en_NG'
-            elif 'south africa' in loc_lower: cj_locale = 'en_ZA'
-            elif 'ghana' in loc_lower: cj_locale = 'en_GH'
-            elif 'ethiopia' in loc_lower: cj_locale = 'en_ET'
-            elif 'rwanda' in loc_lower: cj_locale = 'en_RW'
-            elif 'tanzania' in loc_lower: cj_locale = 'en_TZ'
-            elif 'usa' in loc_lower: cj_locale = 'en_US'
-            elif 'africa' in loc_lower: cj_locale = 'en_ZA'
-
-            try:
-                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-                u_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
-                u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
-                search_loc = "" if "africa" in loc_lower else location_query
-
-                cj_params = {
-                    'locale_code': cj_locale,
-                    'keywords': search_query if search_query != "hiring" else "",
-                    'location': search_loc,
-                    'user_ip': u_ip,      
-                    'user_agent': u_agent, 
-                    'page_size': 25,
-                    'page': page,
-                }
-
-                cj_headers = {'Referer': 'https://initial-danette-africana-60541726.koyeb.app'}
-
-                cj_res = requests.get(
-                    'https://search.api.careerjet.net/v4/query', 
-                    params=cj_params, 
-                    auth=(CAREERJET_API_KEY, ''), 
-                    headers=cj_headers, 
-                    timeout=5
-                )
-                
-                if cj_res.status_code == 200:
-                    cj_data = cj_res.json()
-                    if cj_data.get('type') == 'JOBS':
-                        careerjet_jobs = cj_data.get('jobs', [])
-            except Exception as e:
-                print(f"CJ Error: {e}")
-
-        # Local Pagination
-        paginator = Paginator(final_job_list, 20)
-        posts_on_page = paginator.get_page(page)
-        job_posts_context = posts_on_page
-    
-    else:
-        job_posts_context = []
-
-    context = {
-        'selected_job': selected_job,
-        'job_posts': job_posts_context,
-        'fiverr_jobs': fiverr_jobs, 
-        'careerjet_jobs': careerjet_jobs,
-        'job_categories': JOB_CATEGORIES, 
-        'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
-        'search_query': search_query if search_query != "hiring" else '',
-        'location_query': location_query,
-        'page_title': f"Jobs in {location_query}"
-    }
-    return render(request, 'contributions_list.html', context)
 
 @require_POST
 @login_required
