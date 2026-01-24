@@ -143,7 +143,7 @@ def browse_job_listings(request):
 
     category_filter = request.GET.get('category')
     search_query = request.GET.get('q') or "hiring" 
-    location_query = request.GET.get('where') or "Africa"
+    location_query = request.GET.get('where') or ""
     page = request.GET.get('page', 1)
 
     # --- SOLIDGIGS PARTNER DATA ---
