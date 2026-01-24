@@ -138,7 +138,7 @@ def browse_job_listings(request):
         except (ValueError, JobPost.DoesNotExist):
             pass 
 
-    adzuna_jobs = []
+    fiverr_jobs = []
     careerjet_jobs = []
 
     category_filter = request.GET.get('category')
@@ -162,37 +162,48 @@ def browse_job_listings(request):
         # B. EXTERNAL API BACKFILL
         loc_lower = location_query.lower()
         
-        # --- 1. Adzuna Integration ---
-        adzuna_country_map = {
-            'south africa': 'za', 'nigeria': 'ng', 'kenya': 'ke', 
-            'uganda': 'ug', 'egypt': 'eg', 'morocco': 'ma',
-            'ghana': 'gh', 'ivory coast': 'ci', 'tanzania': 'tz',
-            'usa': 'us', 'uk': 'gb', 'uae': 'ae'
-        }
+        # --- 1. Fiverr Hybrid Integration (Pro + Entry Level Mix) ---
+        fiverr_api_key = os.getenv("FIVERR_API_KEY")
+        fiverr_affiliate_id = os.getenv("FIVERR_AFFILIATE_ID", "YOUR_AFFILIATE_ID")
         
-        adzuna_code = 'za' 
-        for country, code in adzuna_country_map.items():
-            if country in loc_lower:
-                adzuna_code = code
-                break
-
-        if ADZUNA_APP_ID and ADZUNA_APP_KEY:
+        if fiverr_api_key:
             try:
-                adzuna_url = f"https://api.adzuna.com/v1/api/jobs/{adzuna_code}/search/{page}"
-                adzuna_params = {
-                    "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
-                    "results_per_page": 15, "what": search_query,
-                    "where": location_query if adzuna_code not in ['us', 'gb'] else "",
-                    "content-type": "application/json"
-                }
-                res = requests.get(adzuna_url, params=adzuna_params, timeout=5)
-                if res.status_code == 200:
-                    adzuna_jobs = res.json().get('results', [])
-            except: pass
+                # We fetch two sets: Pro services for revenue, and simple tasks for students
+                f_headers = {"Authorization": f"Bearer {fiverr_api_key}"}
+                search_term = search_query if search_query != "hiring" else "Data Science"
+                
+                # Request A: Pro Services (High Commission)
+                pro_res = requests.get(
+                    "https://api.fiverr.com/v1/gigs/search", 
+                    params={"query": search_term, "filter": "pro_services", "limit": 4},
+                    headers=f_headers, timeout=5
+                )
+                
+                # Request B: Simple Tasks (Student Friendly)
+                simple_res = requests.get(
+                    "https://api.fiverr.com/v1/gigs/search", 
+                    params={"query": f"simple {search_term}", "limit": 4},
+                    headers=f_headers, timeout=5
+                )
 
-        # --- 2. Careerjet Integration (Updated for Revenue Tracking) ---
+                raw_gigs = []
+                if pro_res.status_code == 200: raw_gigs.extend(pro_res.json().get('gigs', []))
+                if simple_res.status_code == 200: raw_gigs.extend(simple_res.json().get('gigs', []))
+
+                for gig in raw_gigs:
+                    # Generate Hybrid link for recurring commissions
+                    landing_url = gig.get('url')
+                    gig['affiliate_link'] = f"https://go.fiverr.com/visit/?bta={fiverr_affiliate_id}&brand=fiverrhybrid&landingPage={landing_url}"
+                    fiverr_jobs.append(gig)
+                
+                # Shuffle the mixture
+                import random
+                random.shuffle(fiverr_jobs)
+            except Exception as e:
+                print(f"Fiverr Error: {e}")
+
+        # --- 2. Careerjet Integration ---
         if CAREERJET_API_KEY:
-            # Map Locales
             cj_locale = 'en_GB' 
             if 'uganda' in loc_lower: cj_locale = 'en_UG'
             elif 'kenya' in loc_lower: cj_locale = 'en_KE'
@@ -206,24 +217,17 @@ def browse_job_listings(request):
             elif 'africa' in loc_lower: cj_locale = 'en_ZA'
 
             try:
-                # FIX: Correctly extract the real visitor's IP address
                 x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-                if x_forwarded_for:
-                    u_ip = x_forwarded_for.split(',')[0].strip()
-                else:
-                    u_ip = request.META.get('REMOTE_ADDR')
-                
-                # FIX: Extract the real User Agent
+                u_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
                 u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
-
                 search_loc = "" if "africa" in loc_lower else location_query
 
                 cj_params = {
                     'locale_code': cj_locale,
                     'keywords': search_query if search_query != "hiring" else "",
                     'location': search_loc,
-                    'user_ip': u_ip,      # Verified real IP
-                    'user_agent': u_agent, # Verified browser
+                    'user_ip': u_ip,      
+                    'user_agent': u_agent, 
                     'page_size': 25,
                     'page': page,
                 }
@@ -242,15 +246,6 @@ def browse_job_listings(request):
                     cj_data = cj_res.json()
                     if cj_data.get('type') == 'JOBS':
                         careerjet_jobs = cj_data.get('jobs', [])
-                    
-                    if not careerjet_jobs:
-                        cj_params['locale_code'] = 'en_US'
-                        cj_params['location'] = "" 
-                        retry = requests.get('https://search.api.careerjet.net/v4/query', 
-                                           params=cj_params, auth=(CAREERJET_API_KEY, ''), 
-                                           headers=cj_headers, timeout=5)
-                        careerjet_jobs = retry.json().get('jobs', []) if retry.status_code == 200 else []
-
             except Exception as e:
                 print(f"CJ Error: {e}")
 
@@ -265,7 +260,7 @@ def browse_job_listings(request):
     context = {
         'selected_job': selected_job,
         'job_posts': job_posts_context,
-        'adzuna_jobs': adzuna_jobs, 
+        'fiverr_jobs': fiverr_jobs, 
         'careerjet_jobs': careerjet_jobs,
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
