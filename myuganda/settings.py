@@ -33,12 +33,16 @@ CSRF_TRUSTED_ORIGINS = [
     'https://uganda-languges-database.onrender.com',
 ]
 
+# Dynamically add hosts from DJANGO_ALLOWED_HOSTS to CSRF origins
+# This ensures that if you change hosts in your .env, CSRF doesn't break
 for host in ALLOWED_HOSTS:
     clean_host = host.strip()
     if clean_host and clean_host != '*':
+        # Add both http and https for maximum compatibility during transitions
         CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
         CSRF_TRUSTED_ORIGINS.append(f"http://{clean_host}")
 
+# Local development origins
 CSRF_TRUSTED_ORIGINS.extend([
     'http://127.0.0.1:8000',
     'http://localhost:8000',
@@ -144,14 +148,11 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-# --- AFFILIATE & EXTERNAL API CREDENTIALS ---
+# --- API EXTERNAL CREDENTIALS ---
 ADZUNA_APP_ID = os.getenv('ADZUNA_APP_ID')
 ADZUNA_API_KEY = os.getenv('ADZUNA_API_KEY')
 
-# Fiverr Affiliate (Hybrid Model: CPA + Recurring Commission)
-FIVERR_BTA_ID = os.getenv('FIVERR_BTA_ID', 'YOUR_DEFAULT_ID') 
-
-# AliExpress
+# AliExpress (Fixed to prevent AttributeError)
 ALI_APP_KEY = os.getenv('ALI_APP_KEY', '524714')
 ALI_APP_SECRET = os.getenv('ALI_APP_SECRET', 'fallback_secret')
 ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID', 'default_tracking_id')
@@ -183,21 +184,27 @@ JAZZMIN_SETTINGS = {
     "copyright": "Uganda Language Project",
     "user_avatar": None,
     
-    "search_model": ["auth.User", "languages.JobPost"], 
+    # 1. REDUCED SEARCH MODEL (Usually the cause of global 500s)
+    "search_model": ["auth.User"], 
     
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
+        
+        # 2. HARDCODED PATH (Safest for production)
         {
             "name": "🔄 Sync AliExpress", 
             "url": "/admin/eshop/product/sync-now/", 
             "permissions": ["auth.view_user"]
         },
+        
         {"name": "View Site", "url": "/", "new_window": True},
+        # Removed the {"model": "users:CustomUser"} line temporarily
     ],
     
     "show_sidebar": True,
     "navigation_expanded": True,
     
+    # 3. SIMPLIFIED ORDERING
     "order_with_respect_to": ["auth", "users", "languages", "eshop"],
     
     "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage"],
@@ -205,8 +212,10 @@ JAZZMIN_SETTINGS = {
     "icons": {
         "auth": "fas fa-users-cog",
         "users.CustomUser": "fas fa-user-shield",
+        "languages.PhraseContribution": "fas fa-comments",
+        "languages.Translation": "fas fa-language",
         "languages.JobPost": "fas fa-briefcase",
-        "languages.Applicant": "fas fa-id-card-alt",
+        "languages.Recruiter": "fas fa-id-card-alt",
         "eshop.Product": "fas fa-shopping-cart",
         "eshop.Order": "fas fa-file-invoice-dollar",
     },
@@ -228,5 +237,4 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
