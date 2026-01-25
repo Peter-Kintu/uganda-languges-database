@@ -46,6 +46,12 @@ def sync_aliexpress_products(request):
 
         # Hot-Selling Categories for Africa & Global Markets
         search_groups = [
+
+            # --- Tech & Gadgets (Hot Global Trend) ---
+           
+            {'query': 'smart home security camera wireless', 'count': 10},
+            {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
+            
             # --- Health & Beauty (High Repeat Orders) ---
             {'query': 'tws wireless earbuds noise cancelling bluetooth', 'count': 10},
             {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
@@ -63,10 +69,6 @@ def sync_aliexpress_products(request):
             {'query': 'portable power station solar generator', 'count': 10},
             {'query': '10000mah power bank fast charging dual usb', 'count': 10},
             
-            # --- Tech & Gadgets (Hot Global Trend) ---
-           
-            {'query': 'smart home security camera wireless', 'count': 10},
-            {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
             
             # --- Fashion & Jewelry (High Margin) ---
             {'query': 'luxury gold jewelry sets dubai african style', 'count': 10},
