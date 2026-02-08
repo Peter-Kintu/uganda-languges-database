@@ -1,101 +1,164 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Delivery Location Market{% endblock %}
+{% block title %}Africana AI | Logistics Protocol{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-12">
-    <div class="max-w-6xl mx-auto">
-        <header class="text-center mb-10">
-            <h1 class="text-5xl font-extrabold text-indigo-400 mb-3 tracking-tight">
-                Where Should Your Item Arrive? 🗺️
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap');
+    
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #02040a; color: #cbd5e1; }
+    .font-heading { font-family: 'Space Grotesk', sans-serif; }
+    
+    .glass-card {
+        background: rgba(13, 15, 20, 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .gps-glow {
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+    }
+
+    input:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Animation for "Acquiring Satellites" */
+    @keyframes pulse-indigo {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    .loading-pulse { animation: pulse-indigo 2s infinite; }
+</style>
+
+<div class="min-h-screen pt-24 pb-12 px-4 relative overflow-hidden">
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
+    <div class="absolute top-20 right-[-10%] w-96 h-96 bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+    <div class="max-w-6xl mx-auto relative z-10">
+        <header class="text-center mb-12">
+            <div class="inline-block px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6">
+                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Logistics Protocol v4.0</span>
+            </div>
+            <h1 class="font-heading text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight">
+                Delivery <span class="text-indigo-500 italic">Coordinates.</span>
             </h1>
-            <p class="text-gray-300 text-xl max-w-3xl mx-auto">
-                Pinpoint your exact delivery location on the map and confirm your details.
+            <p class="text-slate-400 max-w-2xl mx-auto font-light">
+                Initialize your neural location node to bridge the gap between digital commerce and physical delivery.
             </p>
         </header>
 
-        <div class="bg-gray-800 rounded-3xl shadow-2xl p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 border border-gray-700">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <div class="lg:col-span-2">
-                <h2 class="text-2xl font-bold text-white mb-4">Select Delivery Point</h2>
-                
-                <button type="button" id="locate-me-button"
-                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg mb-4 transition-colors duration-200">
-                    <svg class="w-5 h-5 inline mr-2 -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m-4.243 0a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    Use My Current GPS Location
-                </button>
-                <div id="google-map-locator" class="w-full h-[450px] bg-gray-900 rounded-xl flex flex-col items-center justify-center border-4 border-indigo-500/50 shadow-inner shadow-indigo-900/50 p-6">
-                    <svg class="w-12 h-12 text-indigo-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m-4.243 0a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    <p class="text-gray-400 text-center text-lg italic p-4" id="map-message">
-                        press the green button to set your location 
-                    </p>
-                </div>
-                <div class="mt-4 p-4 bg-gray-700 rounded-xl border border-gray-600">
-                    <p class="text-gray-300 font-semibold">Selected Coordinates:</p>
-                    <p class="text-sm text-green-400 font-bold" id="selected-coords">Lat: 0.000000, Lng: 0.000000</p>
+            <div class="lg:col-span-7 space-y-6">
+                <div class="glass-card rounded-[2.5rem] p-8 border border-white/5 relative overflow-hidden">
+                    <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        Geospatial Uplink
+                    </h2>
+                    
+                    <button type="button" id="locate-me-button"
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-5 px-6 rounded-2xl mb-6 transition-all duration-300 flex items-center justify-center gap-3 group relative overflow-hidden">
+                        <span class="relative z-10 uppercase tracking-widest text-[11px]" id="btn-text">Establish GPS Link</span>
+                        <svg id="gps-icon" class="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m-4.243 0a8 8 0 1111.314 0z"></path>
+                        </svg>
+                        <div class="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    </button>
+
+                    <div id="google-map-locator" class="w-full h-[380px] bg-black/40 rounded-3xl flex flex-col items-center justify-center border border-white/10 shadow-inner relative group">
+                        <div class="absolute top-4 left-4 border-t border-l border-white/20 w-8 h-8"></div>
+                        <div class="absolute bottom-4 right-4 border-b border-r border-white/20 w-8 h-8"></div>
+                        
+                        <div id="status-icon" class="mb-4 p-4 rounded-full bg-indigo-500/5 border border-indigo-500/20">
+                            <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m-4.243 0a8 8 0 1111.314 0z"></path>
+                            </svg>
+                        </div>
+                        
+                        <p class="text-slate-500 text-center font-medium max-w-xs px-6 transition-all duration-500" id="map-message">
+                            Waiting for satellite synchronization. Click the button above to begin.
+                        </p>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-between p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                        <div>
+                            <p class="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Live Coordinates</p>
+                            <p class="text-sm text-indigo-400 font-mono font-bold" id="selected-coords">0.000000° N, 0.000000° E</p>
+                        </div>
+                        <div class="h-8 w-[1px] bg-white/10"></div>
+                        <div class="text-right">
+                            <p class="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Status</p>
+                            <p id="signal-status" class="text-xs font-bold text-red-500 uppercase tracking-tighter">Offline</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="lg:col-span-1">
-                <div class="bg-gray-900/50 border border-indigo-500/30 rounded-2xl p-5 mb-6">
-                    <h2 class="text-xl font-bold text-indigo-400 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                        Order Summary
+            <div class="lg:col-span-5 space-y-6">
+                <div class="glass-card rounded-[2.5rem] p-8 border border-indigo-500/20 shadow-[0_0_50px_rgba(79,70,229,0.1)]">
+                    <h2 class="text-xl font-bold text-white mb-6 flex items-center justify-between">
+                        Manifest Summary
+                        <span class="text-[10px] font-black bg-white/5 px-3 py-1 rounded-full text-slate-400">CART</span>
                     </h2>
-                    <div class="space-y-3 mb-4">
+                    
+                    <div class="space-y-4 mb-8">
                         {% for item in cart.items.all %}
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-300">{{ item.quantity }}x {{ item.product.name }}</span>
-                            <span class="text-white font-mono">
+                        <div class="flex justify-between items-start group">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-semibold text-slate-200 group-hover:text-indigo-400 transition-colors">{{ item.product.name }}</span>
+                                <span class="text-[10px] text-slate-500 uppercase font-bold">Qty: {{ item.quantity }}</span>
+                            </div>
+                            <span class="text-sm font-mono text-white">
                                 {{ item.product.get_currency_code }} 
-                                {% if item.product.negotiated_price %}
-                                    {{ item.product.negotiated_price|floatformat:0 }}
-                                {% else %}
-                                    {{ item.product.price|floatformat:0 }}
-                                {% endif %}
+                                {% if item.product.negotiated_price %}{{ item.product.negotiated_price|floatformat:0 }}{% else %}{{ item.product.price|floatformat:0 }}{% endif %}
                             </span>
                         </div>
                         {% endfor %}
                     </div>
-                    <div class="border-t border-gray-700 pt-3 flex justify-between items-center">
-                        <span class="text-gray-400 font-bold">Total:</span>
-                        <span class="text-xl font-black text-green-400">
+
+                    <div class="border-t border-white/10 pt-6 flex justify-between items-center">
+                        <span class="text-xs uppercase font-black tracking-[0.2em] text-slate-500">Total Settlement:</span>
+                        <span class="text-2xl font-black text-green-400 font-heading">
                             {{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0 }}
                         </span>
                     </div>
                 </div>
 
-                <h2 class="text-2xl font-bold text-white mb-4">Confirm Delivery Details</h2>
-                <form id="delivery-form" action="{% url 'eshop:process_delivery' %}" method="post" class="space-y-5">
+                <form id="delivery-form" action="{% url 'eshop:process_delivery' %}" method="post" class="space-y-4">
                     {% csrf_token %}
                     <input type="hidden" name="latitude" id="input_latitude" value="0.000000">
                     <input type="hidden" name="longitude" id="input_longitude" value="0.000000">
                     <input type="hidden" name="vendor_whatsapp" id="input_vendor_whatsapp" value="">
 
-                    <div>
-                        <label for="address" class="block text-gray-300 font-medium mb-2">Street Address / Landmark</label>
-                        <input type="text" id="address" name="address" required 
-                               class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
-                               placeholder="e.g., House #5, near Central Market">
-                    </div>
-                    
-                    <div>
-                        <label for="city" class="block text-gray-300 font-medium mb-2">City / Region</label>
-                        <input type="text" id="city" name="city" required 
-                               class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
-                               placeholder="e.g., Kampala">
-                    </div>
-
-                    <div>
-                        <label for="phone" class="block text-gray-300 font-medium mb-2">Contact Phone</label>
-                        <input type="tel" id="phone" name="phone" required 
-                               class="w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder-gray-500"
-                               placeholder="+256 770 000 000">
+                    <div class="space-y-4">
+                        <div class="relative group">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-2 block group-focus-within:text-indigo-400">Street / Landmark</label>
+                            <input type="text" id="address" name="address" required 
+                                class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none transition-all placeholder-slate-700"
+                                placeholder="e.g. Plot 4, Near Mall">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="group">
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-2 block">City</label>
+                                <input type="text" id="city" name="city" required 
+                                    class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none transition-all"
+                                    placeholder="Kampala">
+                            </div>
+                            <div class="group">
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-2 block">Phone</label>
+                                <input type="tel" id="phone" name="phone" required 
+                                    class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none transition-all"
+                                    placeholder="+256...">
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit" id="confirm-button" 
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 px-8 rounded-xl transition-colors duration-300 shadow-2xl shadow-indigo-600/50 transform hover:scale-[1.01] mt-6 ring-4 ring-indigo-600/30">
-                        Confirm Location & Continue
+                            class="w-full py-6 bg-white text-black hover:bg-indigo-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all duration-500 shadow-2xl transform active:scale-[0.98] mt-4">
+                        Confirm & Transact via WhatsApp
                     </button>
                 </form>
             </div>
@@ -120,29 +183,63 @@
     });
 
     document.getElementById('locate-me-button').addEventListener('click', function() {
-        const coordsDisplay = document.getElementById('selected-coords');
+        const btnText = document.getElementById('btn-text');
         const mapMessage = document.getElementById('map-message');
+        const statusIcon = document.getElementById('status-icon');
+        const coordsDisplay = document.getElementById('selected-coords');
+        const signalStatus = document.getElementById('signal-status');
+        
         const latInput = document.getElementById('input_latitude');
         const lngInput = document.getElementById('input_longitude');
 
-        coordsDisplay.textContent = '🛰️ Acquiring satellites...';
+        // Visual Start
+        btnText.textContent = 'Synchronizing...';
+        mapMessage.textContent = '🛰️ Establishing satellite connection. Please allow location access...';
+        mapMessage.classList.add('loading-pulse');
         
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude.toFixed(6);
-                    const lng = position.coords.longitude.toFixed(6);
-                    latInput.value = lat;
-                    lngInput.value = lng;
-                    coordsDisplay.textContent = `Lat: ${lat}, Lng: ${lng}`;
-                    mapMessage.innerHTML = `✅ **GPS Location Found!**`;
-                },
-                function(error) {
-                    mapMessage.innerHTML = `❌ **Error:** Please enable GPS.`;
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
+        if (!navigator.geolocation) {
+            mapMessage.innerHTML = '<span class="text-red-400">Browser does not support GPS.</span>';
+            return;
         }
+
+        // HTTPS Check (Common reason for failure)
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+            alert("Security Error: GPS requires a secure HTTPS connection.");
+            mapMessage.textContent = "Secure connection required for GPS.";
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude.toFixed(6);
+                const lng = position.coords.longitude.toFixed(6);
+                
+                latInput.value = lat;
+                lngInput.value = lng;
+                
+                // Update UI
+                coordsDisplay.textContent = `${lat}° N, ${lng}° E`;
+                signalStatus.textContent = 'Secured';
+                signalStatus.className = 'text-xs font-bold text-green-400 uppercase tracking-tighter';
+                
+                mapMessage.classList.remove('loading-pulse');
+                mapMessage.innerHTML = '<span class="text-white font-bold">Location Uplink Established!</span><br>Technical coordinates locked into manifest.';
+                statusIcon.innerHTML = `<svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                btnText.textContent = 'GPS Re-Sync';
+            },
+            function(error) {
+                console.error(error);
+                mapMessage.classList.remove('loading-pulse');
+                let errorMsg = "Uplink Failed.";
+                if(error.code === 1) errorMsg = "Access Denied. Please enable GPS.";
+                if(error.code === 2) errorMsg = "Signal Weak. Try moving outdoors.";
+                if(error.code === 3) errorMsg = "Timeout. Satellite link timed out.";
+                
+                mapMessage.innerHTML = `<span class="text-red-400 font-bold">${errorMsg}</span>`;
+                btnText.textContent = 'Retry Uplink';
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
     });
 
     document.getElementById('delivery-form').addEventListener('submit', function(event) {
@@ -156,17 +253,17 @@
         const vendorPhoneNumber = document.getElementById('input_vendor_whatsapp').value; 
 
         if (address === '' || city === '' || phone === '' || lat === '0.000000') {
-            alert('Please click the "Locate Me" button and fill in your details.');
+            alert('Please click "Establish GPS Link" first to lock your coordinates.');
             return;
         }
 
-        // --- UPDATED ITEMS LIST LOGIC ---
         let itemsList = "";
         {% for item in cart.items.all %}
             itemsList += "- {{ item.quantity }}x {{ item.product.name|escapejs }} ({{ item.product.get_currency_code|escapejs }} " +
                          "{% if item.product.negotiated_price %}{{ item.product.negotiated_price|floatformat:0 }}{% else %}{{ item.product.price|floatformat:0 }}{% endif %})\n";
         {% endfor %}
 
+        // Fixed Google Maps URL
         const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
 
         let messageContent = `*NEW DELIVERY ORDER (Africana AI)*\n\n` +
@@ -183,6 +280,12 @@
 
         const message = encodeURIComponent(messageContent);
         const cleanVendorPhoneNumber = vendorPhoneNumber.replace(/[^0-9]/g, '');
+        
+        if (!cleanVendorPhoneNumber) {
+            alert("Error: No vendor phone number found in system.");
+            return;
+        }
+        
         window.location.href = `https://wa.me/${cleanVendorPhoneNumber}?text=${message}`;
     });
 </script>
