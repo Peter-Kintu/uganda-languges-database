@@ -192,9 +192,9 @@
         const latInput = document.getElementById('input_latitude');
         const lngInput = document.getElementById('input_longitude');
 
-        // Visual Start
+        // Initial Visual Update upon click
         btnText.textContent = 'Synchronizing...';
-        mapMessage.textContent = '🛰️ Establishing satellite connection. Please allow location access...';
+        mapMessage.textContent = '🛰️ Satellite uplink requested. Please click "Allow" on the browser prompt to lock your coordinates.';
         mapMessage.classList.add('loading-pulse');
         
         if (!navigator.geolocation) {
@@ -202,13 +202,15 @@
             return;
         }
 
-        // HTTPS Check (Common reason for failure)
+        // HTTPS Check
         if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
             alert("Security Error: GPS requires a secure HTTPS connection.");
             mapMessage.textContent = "Secure connection required for GPS.";
+            mapMessage.classList.remove('loading-pulse');
             return;
         }
 
+        // Trigger native browser GPS prompt
         navigator.geolocation.getCurrentPosition(
             function(position) {
                 const lat = position.coords.latitude.toFixed(6);
@@ -217,7 +219,7 @@
                 latInput.value = lat;
                 lngInput.value = lng;
                 
-                // Update UI
+                // Success UI Update
                 coordsDisplay.textContent = `${lat}° N, ${lng}° E`;
                 signalStatus.textContent = 'Secured';
                 signalStatus.className = 'text-xs font-bold text-green-400 uppercase tracking-tighter';
@@ -231,12 +233,15 @@
                 console.error(error);
                 mapMessage.classList.remove('loading-pulse');
                 let errorMsg = "Uplink Failed.";
-                if(error.code === 1) errorMsg = "Access Denied. Please enable GPS.";
+                
+                // Specific error messages based on user action or system
+                if(error.code === 1) errorMsg = "Access Denied. Please enable GPS in your browser settings.";
                 if(error.code === 2) errorMsg = "Signal Weak. Try moving outdoors.";
                 if(error.code === 3) errorMsg = "Timeout. Satellite link timed out.";
                 
                 mapMessage.innerHTML = `<span class="text-red-400 font-bold">${errorMsg}</span>`;
                 btnText.textContent = 'Retry Uplink';
+                signalStatus.textContent = 'Offline';
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
@@ -263,7 +268,6 @@
                          "{% if item.product.negotiated_price %}{{ item.product.negotiated_price|floatformat:0 }}{% else %}{{ item.product.price|floatformat:0 }}{% endif %})\n";
         {% endfor %}
 
-        // Fixed Google Maps URL
         const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
 
         let messageContent = `*NEW DELIVERY ORDER (Africana AI)*\n\n` +
