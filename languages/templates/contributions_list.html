@@ -11,6 +11,7 @@
             --brand-glow: rgba(99, 102, 241, 0.15);
             --bg-dark: #020617;
             --card-bg: #0f172a;
+            --adzuna-blue: #3b82f6;
         }
 
         body {
@@ -41,7 +42,7 @@
             background: var(--card-bg);
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            border-radius: 24px;
+            border-radius: 32px;
         }
         .job-card:hover {
             transform: translateY(-8px) scale(1.01);
@@ -86,12 +87,17 @@
         }
         @keyframes pulse { 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
-        /* Typography fixes */
         .text-gradient {
             background: linear-gradient(to bottom right, #fff 30%, #94a3b8);
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .badge-adzuna {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--adzuna-blue);
+            border: 1px solid rgba(59, 130, 246, 0.2);
         }
     </style>
 {% endblock %}
@@ -191,9 +197,9 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-            {# PREMIUM CARD DESIGN #}
+            {# 1. PREMIUM CARD DESIGN #}
             {% if solidgigs %}
-            <div class="job-card premium-card p-8 rounded-[32px] flex flex-col group h-full">
+            <div class="job-card premium-card p-8 flex flex-col group h-full">
                 <div class="relative z-10 h-full flex flex-col">
                     <div class="flex justify-between items-start mb-8">
                         <div class="bg-indigo-500/20 text-indigo-300 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-tighter border border-indigo-500/30">Premium Partner</div>
@@ -217,9 +223,9 @@
             </div>
             {% endif %}
 
-            {# VERIFIED DATABASE JOBS #}
+            {# 2. VERIFIED DATABASE JOBS #}
             {% for job in job_posts %}
-                <div class="job-card p-8 rounded-[32px] flex flex-col h-full group">
+                <div class="job-card p-8 flex flex-col h-full group">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-2">
                              <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
@@ -248,15 +254,31 @@
                 </div>
             {% endfor %}
 
-            {# EXTERNAL PARTNER JOBS (Careerjet/Adzuna Mix) #}
+            {# 3. CAREERJET API MIX #}
             {% for job in careerjet_jobs %}
-                <div class="job-card p-8 rounded-[32px] flex flex-col border-t-4 border-orange-500 h-full">
+                <div class="job-card p-8 flex flex-col border-t-4 border-orange-500 h-full">
                     <span class="text-[10px] font-black text-orange-500 mb-6 uppercase tracking-[0.2em]">Aggregated Partner</span>
                     <h3 class="text-xl font-bold text-white mb-2">{{ job.title|safe }}</h3>
                     <p class="text-slate-500 font-bold text-xs uppercase mb-1">{{ job.company }}</p>
                     <p class="text-slate-600 text-[10px] mb-8 uppercase font-medium">{{ job.location|default:"Remote" }}</p>
                     <div class="mt-auto">
                         <a href="{{ job.url }}" target="_blank" class="w-full block text-center py-4 bg-slate-800 hover:bg-orange-600 text-white text-xs font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest">External Application</a>
+                    </div>
+                </div>
+            {% endfor %}
+
+            {# 4. ADZUNA API BACKFILL #}
+            {% for job in adzuna_jobs %}
+                <div class="job-card p-8 border-l-4 border-blue-500 flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="badge-adzuna text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">Global Node</span>
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2 line-clamp-2">{{ job.title|safe }}</h3>
+                    <p class="text-blue-400 font-bold text-xs uppercase mb-1">{{ job.company.display_name }}</p>
+                    <p class="text-slate-500 text-[10px] mb-8 uppercase font-medium italic">{{ job.location.display_name|default:"International" }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ job.redirect_url }}" target="_blank" class="w-full block text-center py-4 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-600/30 text-xs font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest">Initialize Apply</a>
                     </div>
                 </div>
             {% endfor %}
