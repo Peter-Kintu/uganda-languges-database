@@ -13,7 +13,7 @@
     :root {
         --accent: #6366f1;
         --bg-dark: #02040a;
-        --glass: rgba(255, 255, 255, 0.03);
+        --glass: rgba(255, 255, 255, 0.02);
     }
 
     body { 
@@ -25,173 +25,160 @@
 
     .font-heading { font-family: 'Space Grotesk', sans-serif; }
 
-    /* World-Class Background */
-    .mesh-background {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: 
-            radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-            radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
-        z-index: -1;
+    /* Cinematic Background */
+    .hero-visual-wrapper {
+        mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
     }
 
     .bg-grid {
-        background-size: 40px 40px;
+        background-size: 60px 60px;
         background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
                           linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
-        mask-image: radial-gradient(circle at center, black, transparent 90%);
     }
 
-    /* Bento Sophistication */
+    /* Magnetic Button Effect */
+    .btn-magnetic {
+        transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    /* World-Class Glassmorphism */
     .bento-panel {
         background: var(--glass);
-        backdrop-filter: blur(30px);
-        border: 1px solid rgba(255, 255, 255, 0.07);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 2.5rem;
         transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
     .bento-panel:hover {
         border-color: var(--accent);
-        background: rgba(255, 255, 255, 0.06);
-        box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5);
+        background: rgba(99, 102, 241, 0.05);
+        box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
+    }
+
+    /* Floating Image Parallax */
+    .parallax-img {
+        will-change: transform;
+        transition: transform 0.1s ease-out;
     }
 
     .gradient-text {
-        background: linear-gradient(to right, #fff, var(--accent), #60a5fa);
+        background: linear-gradient(to right, #fff, #6366f1, #3b82f6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        background-size: 200% auto;
+        animation: textShine 4s linear infinite;
     }
 
-    /* Floating Image Effects */
-    .floating-img {
-        border-radius: 2rem;
-        border: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-        transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    @keyframes textShine {
+        to { background-position: 200% center; }
     }
-
-    .hidden-state { display: none; }
 </style>
 
-<main class="relative">
-    <div class="mesh-background"></div>
+<main class="relative bg-[#02040a]">
     <div class="fixed inset-0 bg-grid pointer-events-none"></div>
+    <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[120px] rounded-full"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[120px] rounded-full"></div>
 
-    <nav class="fixed top-0 w-full z-[100] px-8 py-8 flex justify-between items-center transition-all duration-500" id="mainNav">
+    <nav class="fixed top-0 w-full z-[100] px-10 py-8 flex justify-between items-center transition-all duration-700" id="mainNav">
         <div class="flex items-center gap-4 group cursor-pointer">
-            <div class="w-10 h-10 bg-white flex items-center justify-center rotate-45 group-hover:rotate-[135deg] transition-all duration-700">
-                <span class="-rotate-45 group-hover:-rotate-[135deg] transition-all duration-700 font-black text-black text-lg">A</span>
+            <div class="w-12 h-12 bg-white flex items-center justify-center rotate-45 group-hover:rotate-[135deg] transition-all duration-700">
+                <span class="-rotate-45 group-hover:-rotate-[135deg] transition-all duration-700 font-black text-black text-xl">A</span>
             </div>
             <span class="tracking-[0.4em] text-[10px] font-black uppercase text-white">Africana <span class="text-indigo-500">AI</span></span>
         </div>
         
-        <div class="flex items-center gap-8">
-            <button onclick="openAuth('login')" class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-white transition-all">Portal Access</button>
-            <button onclick="openAuth('signup')" class="btn-magnetic bg-white text-black px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Join Network</button>
-        </div>
+        <button onclick="toggleLogin()" class="btn-magnetic bg-white text-black px-10 py-4 rounded-full font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform active:scale-95 shadow-2xl shadow-white/10">
+            Access Portal
+        </button>
     </nav>
 
-    <section class="relative min-h-screen flex items-center justify-center pt-32 pb-20">
-        <div class="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-            <div class="text-left">
-                <div class="reveal-up inline-flex items-center gap-3 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-8">
-                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                    <span class="text-[9px] font-black uppercase text-indigo-400 tracking-[0.4em]">Africana AI: Now Fully Implemented</span>
-                </div>
-
-                <h1 class="reveal-up font-heading text-6xl md:text-[6.5rem] font-bold text-white leading-[0.9] tracking-tighter mb-8">
-                    The Future Of <br>
-                    <span class="gradient-text">Effortless Commerce.</span>
-                </h1>
-
-                <p class="reveal-up text-slate-400 text-xl max-w-xl font-light leading-relaxed mb-12">
-                    As we finalize our world-class UI, we invite partners to <span class="text-white">advertise with us</span> across our ecosystem.
-                </p>
-
-                <div class="reveal-up flex flex-wrap gap-6">
-                    <button onclick="openAuth('signup')" class="btn-magnetic px-10 py-5 bg-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Get Started</button>
-                    <div class="flex items-center gap-4 px-6 py-4 bento-panel rounded-xl">
-                        <img src="{% static 'users/images/robot.png' %}" class="w-6 h-6 object-contain">
-                        <span class="text-[10px] font-black text-white uppercase tracking-widest">AI Agent Ready</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="relative h-[600px] hidden lg:block reveal-right">
-                <img src="{% static 'users/images/pic3.png' %}" class="floating-img absolute top-0 right-0 w-2/3 z-10 parallax-layer" data-speed="2">
-                <img src="{% static 'users/images/robot.png' %}" class="floating-img absolute bottom-10 left-0 w-1/2 z-20 parallax-layer" data-speed="4">
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-indigo-600/10 blur-[120px] rounded-full -z-10"></div>
-            </div>
+    <section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+        <div class="absolute inset-0 z-0 hero-visual-wrapper">
+            <img src="{% static 'users/images/pic3.png' %}" id="heroImage" class="w-full h-full object-cover opacity-30 grayscale parallax-img">
+            <div class="absolute inset-0 bg-gradient-to-b from-[#02040a] via-transparent to-[#02040a]"></div>
         </div>
-    </section>
 
-    <section class="py-40 px-6 container mx-auto">
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="reveal-up bento-panel p-10 rounded-[2.5rem]">
-                <div class="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-8">📢</div>
-                <h4 class="font-heading text-2xl font-bold text-white mb-4">Advertise With Us</h4>
-                <p class="text-slate-500 text-sm leading-relaxed mb-6">Want to get your brand in front of a tech-savvy audience? Contact us for placements on our landing and internal pages.</p>
-                <a href="mailto:ads@africana.ai" class="text-[10px] font-black uppercase text-indigo-400 tracking-widest hover:text-white">Inquire Now →</a>
+        <div class="relative z-10 text-center px-6">
+            <div class="reveal-up inline-flex items-center gap-3 px-6 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-10 backdrop-blur-xl">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                <span class="text-[10px] font-black uppercase text-indigo-400 tracking-[0.3em]">Neural Network v4.0.1</span>
             </div>
 
-            <div class="reveal-up bento-panel p-10 rounded-[2.5rem]" style="transition-delay: 0.1s">
-                <div class="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-8">💼</div>
-                <h4 class="font-heading text-2xl font-bold text-white mb-4">Get Your Dream Job</h4>
-                <p class="text-slate-500 text-sm leading-relaxed mb-6">Our labor engine syncs global roles from LinkedIn and Google directly to your dashboard.</p>
-                <img src="{% static 'users/images/job1.png' %}" class="w-full mt-4 rounded-xl opacity-50 grayscale hover:grayscale-0 transition-all">
-            </div>
+            <h1 class="reveal-up font-heading text-7xl md:text-[9rem] font-bold text-white leading-[0.85] tracking-tighter mb-10">
+                The Intelligence <br>
+                <span class="gradient-text">Of Global Exchange.</span>
+            </h1>
 
-            <div class="reveal-up bento-panel p-10 rounded-[2.5rem]" style="transition-delay: 0.2s">
-                <div class="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-8">🤖</div>
-                <h4 class="font-heading text-2xl font-bold text-white mb-4">Automate the Boring</h4>
-                <p class="text-slate-500 text-sm leading-relaxed mb-6">Post your products on TikTok and let <strong>Africana AI Koyeb</strong> do the boring work of negotiation for you.</p>
-                <div class="h-1 w-full bg-white/10 mt-6 rounded-full overflow-hidden">
-                    <div class="h-full bg-indigo-500 w-3/4 animate-pulse"></div>
+            <p class="reveal-up text-slate-400 text-xl md:text-2xl max-w-3xl mx-auto font-light leading-relaxed mb-16">
+                Redefining decentralized labor through <span class="text-white border-b border-indigo-500/30">Neural Negotiators</span>.
+            </p>
+
+            <div class="reveal-up flex flex-col sm:flex-row gap-8 items-center justify-center">
+                <button onclick="toggleLogin()" class="btn-magnetic px-14 py-7 bg-indigo-600 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all shadow-3xl shadow-indigo-600/40">
+                    Start Transacting
+                </button>
+                
+                <div class="flex items-center gap-5 p-5 bento-panel rounded-2xl border-white/5">
+                    <div class="flex -space-x-4">
+                        <img src="{% static 'users/images/collaboration.png' %}" class="w-12 h-12 rounded-full border-4 border-[#02040a] object-cover">
+                        <div class="w-12 h-12 rounded-full bg-indigo-600 border-4 border-[#02040a] flex items-center justify-center font-bold text-xs">AI</div>
+                    </div>
+                    <div class="text-left">
+                        <span class="block text-white font-black text-xs tracking-widest">12.4K NODES</span>
+                        <span class="text-[10px] text-indigo-400 font-bold uppercase">Network Integrity: 100%</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <div id="authModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/90 backdrop-blur-3xl" onclick="closeAuth()"></div>
-        <div class="w-full max-w-md relative z-[210] bento-panel p-12 rounded-[3rem] border-white/10">
-            
-            <div id="loginState">
-                <div class="text-center mb-12">
-                    <h2 class="font-heading text-4xl font-bold text-white tracking-tighter">Identity</h2>
-                    <p class="text-[9px] text-indigo-400 font-black uppercase tracking-[0.5em] mt-4">Secure Access Node</p>
-                </div>
-                <form class="space-y-6">
-                    <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4">Access Key</label>
-                        <input type="text" placeholder="Enter Username" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none focus:border-indigo-500 transition-all">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4">Passcode</label>
-                        <input type="password" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none focus:border-indigo-500 transition-all">
-                    </div>
-                    <button class="w-full py-5 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-indigo-600 hover:text-white transition-all">Authenticate</button>
-                </form>
-                <p class="text-center mt-8 text-[11px] text-slate-500">
-                    Don't have an account? <button onclick="toggleState('signup')" class="text-white font-bold hover:text-indigo-400">Sign Up</button>
+    <section id="jobs" class="py-40 px-6 max-w-7xl mx-auto">
+        <div class="grid lg:grid-cols-2 gap-32 items-center">
+            <div class="reveal-left">
+                <div class="w-20 h-[2px] bg-indigo-500 mb-10"></div>
+                <h2 class="text-indigo-500 font-black uppercase tracking-[0.5em] text-xs mb-6">Labor Engine</h2>
+                <h3 class="font-heading text-6xl md:text-7xl font-bold text-white mb-10 leading-tight">Global Jobs,<br>Local Context.</h3>
+                <p class="text-slate-400 text-xl leading-relaxed mb-12">
+                    Our neural agents aggregate opportunities from <strong>LinkedIn, Amazon, and Google</strong>, delivering them to your local dashboard.
                 </p>
+                
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="p-10 bento-panel group">
+                        <span class="block text-5xl font-bold text-white mb-3 group-hover:text-indigo-500 transition-colors">2M+</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Global Roles Syncing</span>
+                    </div>
+                    <div class="p-10 bento-panel group">
+                        <span class="block text-5xl font-bold text-white mb-3 group-hover:text-indigo-500 transition-colors">Live</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Sync Frequency</span>
+                    </div>
+                </div>
             </div>
 
-            <div id="signupState" class="hidden-state">
-                <div class="text-center mb-12">
-                    <h2 class="font-heading text-4xl font-bold text-white tracking-tighter">Initialize</h2>
-                    <p class="text-[9px] text-indigo-400 font-black uppercase tracking-[0.5em] mt-4">New Network Entity</p>
-                </div>
-                <form class="space-y-5">
-                    <input type="text" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none">
-                    <input type="email" placeholder="Email Address" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none">
-                    <input type="password" placeholder="Passcode" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none">
-                    <button class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em]">Establish Link</button>
-                </form>
-                <p class="text-center mt-8 text-[11px] text-slate-500">
-                    Existing node? <button onclick="toggleState('login')" class="text-white font-bold hover:text-indigo-400">Sign In</button>
-                </p>
+            <div class="reveal-right relative group">
+                <div class="absolute -inset-10 bg-indigo-600/20 blur-[100px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <img src="{% static 'users/images/jobs.png' %}" class="relative rounded-[3rem] border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] transform group-hover:scale-[1.03] group-hover:-rotate-2 transition-all duration-1000">
             </div>
+        </div>
+    </section>
+
+    <div id="loginModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-3xl" onclick="toggleLogin()"></div>
+        <div class="w-full max-w-lg relative z-[210] bento-panel p-12 border-white/10 overflow-hidden">
+            <div class="text-center mb-16">
+                <h2 class="font-heading text-5xl font-bold text-white">Identity</h2>
+                <p class="text-[10px] text-indigo-500 font-black uppercase tracking-[0.5em] mt-6">Secure Access Node</p>
+            </div>
+            <form method="post" class="space-y-8">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">{{ field.label }}</label>
+                    {{ field|add_class:"w-full bg-white/5 border border-white/10 rounded-2xl py-6 px-8 text-white outline-none focus:border-indigo-500 transition-all font-medium" }}
+                </div>
+                {% endfor %}
+                <button type="submit" class="w-full py-7 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-indigo-600 hover:text-white transition-all">Authenticate</button>
+            </form>
         </div>
     </div>
 </main>
@@ -199,60 +186,74 @@
 <script>
     gsap.registerPlugin(ScrollTrigger);
 
-    // Initial Load Animation
-    window.addEventListener('load', () => {
-        const tl = gsap.timeline();
-        tl.from(".reveal-up", { y: 50, opacity: 0, duration: 1, stagger: 0.15, ease: "expo.out" })
-          .from(".parallax-layer", { scale: 1.1, opacity: 0, duration: 2, ease: "power4.out" }, "-=1");
-    });
-
-    // World-Class Parallax
-    document.addEventListener('mousemove', (e) => {
-        const layers = document.querySelectorAll('.parallax-layer');
-        const x = (window.innerWidth - e.pageX * 2) / 100;
-        const y = (window.innerHeight - e.pageY * 2) / 100;
-
-        layers.forEach(layer => {
-            const speed = layer.getAttribute('data-speed');
-            gsap.to(layer, { x: x * speed, y: y * speed, duration: 1, ease: "power2.out" });
-        });
-    });
-
-    // Magnetic Buttons
+    // 1. MAGNETIC BUTTON EFFECT
     document.querySelectorAll('.btn-magnetic').forEach(btn => {
         btn.addEventListener('mousemove', (e) => {
             const rect = btn.getBoundingClientRect();
-            const x = (e.clientX - rect.left - rect.width/2) * 0.4;
-            const y = (e.clientY - rect.top - rect.height/2) * 0.4;
-            gsap.to(btn, { x, y, duration: 0.3 });
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            btn.style.transform = `translate(${x * 0.3}px, ${y * 0.5}px)`;
         });
         btn.addEventListener('mouseleave', () => {
-            gsap.to(btn, { x: 0, y: 0, duration: 0.6, ease: "elastic.out(1, 0.4)" });
+            btn.style.transform = `translate(0px, 0px)`;
         });
     });
 
-    // Auth Controls
-    function openAuth(mode) {
-        const modal = document.getElementById('authModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        toggleState(mode);
-    }
+    // 2. PARALLAX HERO IMAGE
+    document.addEventListener('mousemove', (e) => {
+        const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+        const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+        gsap.to("#heroImage", {
+            x: moveX * 2,
+            y: moveY * 2,
+            duration: 1,
+            ease: "power2.out"
+        });
+    });
 
-    function closeAuth() {
-        document.getElementById('authModal').classList.add('hidden');
-        document.getElementById('authModal').classList.remove('flex');
-    }
+    // 3. CINEMATIC SCROLL REVEALS
+    const revealConfigs = [
+        { el: '.reveal-up', y: 100, x: 0 },
+        { el: '.reveal-left', y: 0, x: -100 },
+        { el: '.reveal-right', y: 0, x: 100 }
+    ];
 
-    function toggleState(mode) {
-        const login = document.getElementById('loginState');
-        const signup = document.getElementById('signupState');
-        if(mode === 'signup') {
-            login.classList.add('hidden-state');
-            signup.classList.remove('hidden-state');
+    revealConfigs.forEach(config => {
+        gsap.utils.toArray(config.el).forEach(item => {
+            gsap.from(item, {
+                scrollTrigger: {
+                    trigger: item,
+                    start: "top 90%",
+                },
+                opacity: 0,
+                x: config.x,
+                y: config.y,
+                duration: 1.5,
+                ease: "expo.out",
+                stagger: 0.2
+            });
+        });
+    });
+
+    // 4. NAVBAR BLUR ON SCROLL
+    window.addEventListener('scroll', () => {
+        const nav = document.getElementById('mainNav');
+        if (window.scrollY > 50) {
+            nav.classList.add('backdrop-blur-xl', 'bg-black/20', 'py-4');
         } else {
-            signup.classList.add('hidden-state');
-            login.classList.remove('hidden-state');
+            nav.classList.remove('backdrop-blur-xl', 'bg-black/20', 'py-4');
+        }
+    });
+
+    function toggleLogin() {
+        const modal = document.getElementById('loginModal');
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            gsap.from("#loginModal .bento-panel", { scale: 0.8, opacity: 0, duration: 0.6, ease: "expo.out" });
+        } else {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
     }
 </script>
