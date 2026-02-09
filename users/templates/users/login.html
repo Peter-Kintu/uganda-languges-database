@@ -12,10 +12,8 @@
 <style>
     :root {
         --accent: #6366f1;
-        --accent-bright: #818cf8;
-        --bg-dark: #03040b;
-        --glass: rgba(255, 255, 255, 0.03);
-        --glass-border: rgba(255, 255, 255, 0.08);
+        --bg-dark: #02040a;
+        --glass: rgba(255, 255, 255, 0.02);
     }
 
     body { 
@@ -27,261 +25,235 @@
 
     .font-heading { font-family: 'Space Grotesk', sans-serif; }
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-dark); }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-
-    /* World Class Background */
-    .mesh-gradient {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: 
-            radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-            radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-            radial-gradient(circle at 50% 50%, rgba(2, 4, 10, 1) 0%, transparent 100%);
-        z-index: -1;
+    /* Cinematic Background */
+    .hero-visual-wrapper {
+        mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
     }
 
     .bg-grid {
-        background-size: 40px 40px;
-        background-image: linear-gradient(to right, rgba(255,255,255,0.01) 1px, transparent 1px),
-                          linear-gradient(to bottom, rgba(255,255,255,0.01) 1px, transparent 1px);
-        mask-image: radial-gradient(circle at center, black, transparent 80%);
+        background-size: 60px 60px;
+        background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
     }
 
-    /* Bento Box Design */
-    .bento-card {
+    /* Magnetic Button Effect */
+    .btn-magnetic {
+        transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    /* World-Class Glassmorphism */
+    .bento-panel {
         background: var(--glass);
-        backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border);
-        border-radius: 2rem;
-        transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 2.5rem;
+        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .bento-card:hover {
-        border-color: rgba(99, 102, 241, 0.4);
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-5px);
+    
+    .bento-panel:hover {
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.05);
+        box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
     }
 
-    /* Text Effects */
-    .text-glow {
-        text-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+    /* Floating Image Parallax */
+    .parallax-img {
+        will-change: transform;
+        transition: transform 0.1s ease-out;
     }
 
     .gradient-text {
-        background: linear-gradient(135deg, #fff 30%, #6366f1 100%);
+        background: linear-gradient(to right, #fff, #6366f1, #3b82f6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        background-size: 200% auto;
+        animation: textShine 4s linear infinite;
     }
 
-    /* Modern Inputs */
-    .modern-input {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        transition: all 0.3s ease;
+    @keyframes textShine {
+        to { background-position: 200% center; }
     }
-    .modern-input:focus {
-        background: rgba(99, 102, 241, 0.05);
-        border-color: var(--accent);
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
-    }
-
-    /* Cinematic Load Animation */
-    .reveal { opacity: 0; transform: translateY(20px); }
 </style>
 
-<div class="mesh-gradient"></div>
-<div class="fixed inset-0 bg-grid pointer-events-none"></div>
+<main class="relative bg-[#02040a]">
+    <div class="fixed inset-0 bg-grid pointer-events-none"></div>
+    <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[120px] rounded-full"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[120px] rounded-full"></div>
 
-<main class="relative z-10 selection:bg-indigo-500/30">
-    
-    <nav class="fixed top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-6xl z-[100] px-8 py-4 bento-card flex justify-between items-center rounded-full border-white/10">
-        <div class="flex items-center gap-3">
-            <div class="relative w-8 h-8 bg-white rounded-lg flex items-center justify-center group overflow-hidden">
-                <div class="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                <span class="relative z-10 font-black text-black group-hover:text-white text-xs">A</span>
+    <nav class="fixed top-0 w-full z-[100] px-10 py-8 flex justify-between items-center transition-all duration-700" id="mainNav">
+        <div class="flex items-center gap-4 group cursor-pointer">
+            <div class="w-12 h-12 bg-white flex items-center justify-center rotate-45 group-hover:rotate-[135deg] transition-all duration-700">
+                <span class="-rotate-45 group-hover:-rotate-[135deg] transition-all duration-700 font-black text-black text-xl">A</span>
             </div>
-            <span class="tracking-[0.2em] text-[10px] font-extrabold uppercase text-white">Africana <span class="text-indigo-500">AI</span></span>
+            <span class="tracking-[0.4em] text-[10px] font-black uppercase text-white">Africana <span class="text-indigo-500">AI</span></span>
         </div>
         
-        <div class="hidden md:flex items-center gap-8">
-            <a href="#jobs" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Neural Jobs</a>
-            <a href="#" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Ecosystem</a>
-        </div>
-
-        <button onclick="toggleLogin()" class="px-6 py-2 bg-indigo-600 rounded-full text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-lg shadow-indigo-500/20">
+        <button onclick="toggleLogin()" class="btn-magnetic bg-white text-black px-10 py-4 rounded-full font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform active:scale-95 shadow-2xl shadow-white/10">
             Access Portal
         </button>
     </nav>
 
-    <section class="min-h-screen flex flex-col items-center justify-center pt-20 px-6">
-        <div class="reveal hero-badge flex items-center gap-3 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-8 backdrop-blur-md">
-            <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-            </span>
-            <span class="text-[9px] font-black uppercase text-indigo-300 tracking-[0.3em]">System v4.0 Active</span>
+    <section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+        <div class="absolute inset-0 z-0 hero-visual-wrapper">
+            <img src="{% static 'users/images/pic3.png' %}" id="heroImage" class="w-full h-full object-cover opacity-30 grayscale parallax-img">
+            <div class="absolute inset-0 bg-gradient-to-b from-[#02040a] via-transparent to-[#02040a]"></div>
         </div>
-        
-        <h1 class="reveal font-heading text-6xl md:text-[7rem] font-bold text-white leading-[0.9] mb-8 tracking-tighter text-center">
-            The Intelligence of <br>
-            <span class="gradient-text">Global Exchange.</span>
-        </h1>
-        
-        <p class="reveal text-slate-400 text-lg md:text-xl mb-12 max-w-2xl text-center font-light leading-relaxed">
-            Autonomous <span class="text-white font-medium">Neural Negotiators</span> bridging the gap between global labor and decentralized commerce.
-        </p>
-        
-        <div class="reveal flex flex-col sm:flex-row gap-6 items-center">
-            <button onclick="toggleLogin()" class="group relative px-12 py-6 bg-white text-black rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] overflow-hidden transition-all hover:scale-105 active:scale-95">
-                <span class="relative z-10">Start Transacting</span>
-                <div class="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-            </button>
-            
-            <div class="flex items-center gap-4 px-6 py-4 bento-card rounded-2xl border-white/5">
-                <div class="flex -space-x-3">
-                    <div class="w-10 h-10 rounded-full bg-indigo-600 border-4 border-[#03040b] flex items-center justify-center text-[10px] font-bold">AI</div>
-                    <img src="{% static 'users/images/collaboration.png' %}" class="w-10 h-10 rounded-full border-4 border-[#03040b] object-cover">
-                </div>
-                <div class="flex flex-col">
-                    <span class="text-[10px] text-white font-black uppercase tracking-widest">12.4k Nodes</span>
-                    <span class="text-[9px] text-indigo-400 font-bold uppercase uppercase">Network Active</span>
+
+        <div class="relative z-10 text-center px-6">
+            <div class="reveal-up inline-flex items-center gap-3 px-6 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-10 backdrop-blur-xl">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                <span class="text-[10px] font-black uppercase text-indigo-400 tracking-[0.3em]">Neural Network v4.0.1</span>
+            </div>
+
+            <h1 class="reveal-up font-heading text-7xl md:text-[9rem] font-bold text-white leading-[0.85] tracking-tighter mb-10">
+                The Intelligence <br>
+                <span class="gradient-text">Of Global Exchange.</span>
+            </h1>
+
+            <p class="reveal-up text-slate-400 text-xl md:text-2xl max-w-3xl mx-auto font-light leading-relaxed mb-16">
+                Redefining decentralized labor through <span class="text-white border-b border-indigo-500/30">Neural Negotiators</span>.
+            </p>
+
+            <div class="reveal-up flex flex-col sm:flex-row gap-8 items-center justify-center">
+                <button onclick="toggleLogin()" class="btn-magnetic px-14 py-7 bg-indigo-600 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all shadow-3xl shadow-indigo-600/40">
+                    Start Transacting
+                </button>
+                
+                <div class="flex items-center gap-5 p-5 bento-panel rounded-2xl border-white/5">
+                    <div class="flex -space-x-4">
+                        <img src="{% static 'users/images/collaboration.png' %}" class="w-12 h-12 rounded-full border-4 border-[#02040a] object-cover">
+                        <div class="w-12 h-12 rounded-full bg-indigo-600 border-4 border-[#02040a] flex items-center justify-center font-bold text-xs">AI</div>
+                    </div>
+                    <div class="text-left">
+                        <span class="block text-white font-black text-xs tracking-widest">12.4K NODES</span>
+                        <span class="text-[10px] text-indigo-400 font-bold uppercase">Network Integrity: 100%</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section id="jobs" class="py-32 px-6 max-w-7xl mx-auto">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-            
-            <div class="reveal md:col-span-8 bento-card p-12 relative overflow-hidden group">
-                <div class="relative z-10">
-                    <h3 class="font-heading text-4xl md:text-5xl font-bold text-white mb-6">Global Labor <br>Engine.</h3>
-                    <p class="text-slate-400 text-lg max-w-md mb-10">Neural agents aggregate opportunities from LinkedIn, Amazon, and Google, syncing them with your local profile in real-time.</p>
-                    <div class="flex gap-4">
-                        <div class="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest">LinkedIn API</div>
-                        <div class="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest">Vector Match</div>
+    <section id="jobs" class="py-40 px-6 max-w-7xl mx-auto">
+        <div class="grid lg:grid-cols-2 gap-32 items-center">
+            <div class="reveal-left">
+                <div class="w-20 h-[2px] bg-indigo-500 mb-10"></div>
+                <h2 class="text-indigo-500 font-black uppercase tracking-[0.5em] text-xs mb-6">Labor Engine</h2>
+                <h3 class="font-heading text-6xl md:text-7xl font-bold text-white mb-10 leading-tight">Global Jobs,<br>Local Context.</h3>
+                <p class="text-slate-400 text-xl leading-relaxed mb-12">
+                    Our neural agents aggregate opportunities from <strong>LinkedIn, Amazon, and Google</strong>, delivering them to your local dashboard.
+                </p>
+                
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="p-10 bento-panel group">
+                        <span class="block text-5xl font-bold text-white mb-3 group-hover:text-indigo-500 transition-colors">2M+</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Global Roles Syncing</span>
                     </div>
-                </div>
-                <div class="absolute top-0 right-0 w-1/2 h-full opacity-20 group-hover:opacity-40 transition-opacity">
-                    <img src="{% static 'users/images/jobs.png' %}" class="w-full h-full object-cover rounded-l-[3rem]">
-                </div>
-            </div>
-
-            <div class="reveal md:col-span-4 bento-card p-10 flex flex-col justify-between border-indigo-500/20">
-                <div class="w-12 h-12 bg-indigo-600/20 rounded-2xl flex items-center justify-center text-indigo-500 mb-8">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <div>
-                    <span class="text-6xl font-bold text-white block mb-2 font-heading">2M+</span>
-                    <span class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Aggregated Roles</span>
-                </div>
-            </div>
-
-            <div class="reveal md:col-span-4 bento-card p-10">
-                <h4 class="text-white font-bold mb-4 uppercase text-[11px] tracking-widest">Realtime Sync</h4>
-                <div class="space-y-4">
-                    <div class="h-1 bg-white/5 rounded-full overflow-hidden">
-                        <div class="h-full bg-indigo-500 w-2/3 animate-pulse"></div>
-                    </div>
-                    <div class="flex justify-between text-[9px] font-bold text-slate-500 uppercase">
-                        <span>Scanning Nodes</span>
-                        <span class="text-indigo-400">Active</span>
+                    <div class="p-10 bento-panel group">
+                        <span class="block text-5xl font-bold text-white mb-3 group-hover:text-indigo-500 transition-colors">Live</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Sync Frequency</span>
                     </div>
                 </div>
             </div>
 
-            <div class="reveal md:col-span-8 bento-card p-10 flex items-center justify-between group">
-                <p class="text-slate-300 font-medium">Ready to deploy your neural negotiator?</p>
-                <button class="p-4 bg-white rounded-full text-black hover:bg-indigo-600 hover:text-white transition-all transform group-hover:rotate-12">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
+            <div class="reveal-right relative group">
+                <div class="absolute -inset-10 bg-indigo-600/20 blur-[100px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <img src="{% static 'users/images/jobs.png' %}" class="relative rounded-[3rem] border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] transform group-hover:scale-[1.03] group-hover:-rotate-2 transition-all duration-1000">
             </div>
-
         </div>
     </section>
 
     <div id="loginModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-[#02040a]/90 backdrop-blur-xl" onclick="toggleLogin()"></div>
-        
-        <div class="w-full max-w-lg relative z-[210] bento-card p-10 md:p-16 border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
-            <div class="text-center mb-12">
-                <h2 class="font-heading text-4xl font-bold text-white">Identity Sync</h2>
-                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.4em] mt-4">Authorized Personnel Only</p>
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-3xl" onclick="toggleLogin()"></div>
+        <div class="w-full max-w-lg relative z-[210] bento-panel p-12 border-white/10 overflow-hidden">
+            <div class="text-center mb-16">
+                <h2 class="font-heading text-5xl font-bold text-white">Identity</h2>
+                <p class="text-[10px] text-indigo-500 font-black uppercase tracking-[0.5em] mt-6">Secure Access Node</p>
             </div>
-
-            <form method="post" class="space-y-6">
+            <form method="post" class="space-y-8">
                 {% csrf_token %}
                 {% for field in form %}
-                <div class="space-y-2">
-                    <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-2">
-                        {{ field.label }}
-                    </label>
-                    <div class="relative">
-                        {{ field|add_class:"modern-input w-full rounded-2xl py-5 px-6 text-white outline-none placeholder-slate-700 font-medium" }}
-                    </div>
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">{{ field.label }}</label>
+                    {{ field|add_class:"w-full bg-white/5 border border-white/10 rounded-2xl py-6 px-8 text-white outline-none focus:border-indigo-500 transition-all font-medium" }}
                 </div>
                 {% endfor %}
-
-                <button type="submit" class="w-full py-6 bg-white text-black hover:bg-indigo-600 hover:text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] transition-all duration-500 shadow-xl">
-                    Initiate Connection
-                </button>
+                <button type="submit" class="w-full py-7 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-indigo-600 hover:text-white transition-all">Authenticate</button>
             </form>
-
-            <div class="mt-10 text-center">
-                <a href="{% url 'users:user_register' %}" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest hover:text-white transition-colors">
-                    New Node? <span class="text-indigo-400 border-b border-indigo-500/30 ml-2">Register Here</span>
-                </a>
-            </div>
         </div>
     </div>
 </main>
 
 <script>
-    // GSAP Cinematic Animations
     gsap.registerPlugin(ScrollTrigger);
 
-    window.addEventListener('load', () => {
-        // Initial Load Animation
-        gsap.to('.reveal', {
-            opacity: 1,
-            y: 0,
-            duration: 1.2,
-            stagger: 0.15,
-            ease: "power4.out"
+    // 1. MAGNETIC BUTTON EFFECT
+    document.querySelectorAll('.btn-magnetic').forEach(btn => {
+        btn.addEventListener('mousemove', (e) => {
+            const rect = btn.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            btn.style.transform = `translate(${x * 0.3}px, ${y * 0.5}px)`;
         });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.transform = `translate(0px, 0px)`;
+        });
+    });
 
-        // Scroll Trigger for Bento Cards
-        gsap.utils.toArray('.bento-card').forEach(card => {
-            gsap.from(card, {
+    // 2. PARALLAX HERO IMAGE
+    document.addEventListener('mousemove', (e) => {
+        const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+        const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+        gsap.to("#heroImage", {
+            x: moveX * 2,
+            y: moveY * 2,
+            duration: 1,
+            ease: "power2.out"
+        });
+    });
+
+    // 3. CINEMATIC SCROLL REVEALS
+    const revealConfigs = [
+        { el: '.reveal-up', y: 100, x: 0 },
+        { el: '.reveal-left', y: 0, x: -100 },
+        { el: '.reveal-right', y: 0, x: 100 }
+    ];
+
+    revealConfigs.forEach(config => {
+        gsap.utils.toArray(config.el).forEach(item => {
+            gsap.from(item, {
                 scrollTrigger: {
-                    trigger: card,
-                    start: "top bottom-=100",
-                    toggleActions: "play none none none"
+                    trigger: item,
+                    start: "top 90%",
                 },
                 opacity: 0,
-                y: 40,
-                duration: 1,
-                ease: "expo.out"
+                x: config.x,
+                y: config.y,
+                duration: 1.5,
+                ease: "expo.out",
+                stagger: 0.2
             });
         });
     });
 
+    // 4. NAVBAR BLUR ON SCROLL
+    window.addEventListener('scroll', () => {
+        const nav = document.getElementById('mainNav');
+        if (window.scrollY > 50) {
+            nav.classList.add('backdrop-blur-xl', 'bg-black/20', 'py-4');
+        } else {
+            nav.classList.remove('backdrop-blur-xl', 'bg-black/20', 'py-4');
+        }
+    });
+
     function toggleLogin() {
         const modal = document.getElementById('loginModal');
-        const isHidden = modal.classList.contains('hidden');
-        if (isHidden) {
+        if (modal.classList.contains('hidden')) {
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            gsap.fromTo("#loginModal .bento-card", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" });
-            document.body.style.overflow = 'hidden';
+            gsap.from("#loginModal .bento-panel", { scale: 0.8, opacity: 0, duration: 0.6, ease: "expo.out" });
         } else {
-            gsap.to("#loginModal .bento-card", { scale: 0.9, opacity: 0, duration: 0.3, onComplete: () => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                document.body.style.overflow = 'auto';
-            }});
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
     }
 </script>
