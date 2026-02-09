@@ -12,7 +12,6 @@
 <style>
     :root {
         --accent: #6366f1;
-        --accent-bright: #818cf8;
         --bg-dark: #02040a;
         --glass: rgba(255, 255, 255, 0.03);
     }
@@ -26,165 +25,171 @@
 
     .font-heading { font-family: 'Space Grotesk', sans-serif; }
 
-    /* World-Class Background Mesh */
-    .mesh-gradient {
+    /* World-Class Background */
+    .mesh-background {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: radial-gradient(circle at 50% -20%, #1e1b4b 0%, transparent 50%),
-                    radial-gradient(circle at 0% 100%, #0f172a 0%, transparent 50%);
+        background: 
+            radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+            radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
         z-index: -1;
     }
 
     .bg-grid {
-        background-size: 50px 50px;
-        background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
-                          linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
-        mask-image: radial-gradient(circle at center, black, transparent 80%);
+        background-size: 40px 40px;
+        background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+        mask-image: radial-gradient(circle at center, black, transparent 90%);
     }
 
-    /* Bento Box Sophistication */
+    /* Bento Sophistication */
     .bento-panel {
         background: var(--glass);
-        backdrop-filter: blur(25px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
     .bento-panel:hover {
         border-color: var(--accent);
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-5px);
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5);
     }
 
     .gradient-text {
-        background: linear-gradient(135deg, #fff 30%, var(--accent) 70%, #3b82f6);
+        background: linear-gradient(to right, #fff, var(--accent), #60a5fa);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        background-size: 200% auto;
     }
 
-    /* Custom Input Styling */
-    .auth-input {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-        transition: all 0.3s ease;
-    }
-
-    .auth-input:focus {
-        border-color: var(--accent) !important;
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    /* Floating Image Effects */
+    .floating-img {
+        border-radius: 2rem;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .hidden-state { display: none; }
 </style>
 
 <main class="relative">
-    <div class="mesh-gradient"></div>
+    <div class="mesh-background"></div>
     <div class="fixed inset-0 bg-grid pointer-events-none"></div>
 
-    <nav class="fixed top-0 w-full z-[100] px-6 md:px-12 py-6 flex justify-between items-center transition-all duration-500" id="mainNav">
-        <div class="flex items-center gap-3 group cursor-pointer">
+    <nav class="fixed top-0 w-full z-[100] px-8 py-8 flex justify-between items-center transition-all duration-500" id="mainNav">
+        <div class="flex items-center gap-4 group cursor-pointer">
             <div class="w-10 h-10 bg-white flex items-center justify-center rotate-45 group-hover:rotate-[135deg] transition-all duration-700">
                 <span class="-rotate-45 group-hover:-rotate-[135deg] transition-all duration-700 font-black text-black text-lg">A</span>
             </div>
-            <span class="tracking-[0.3em] text-[11px] font-bold uppercase text-white">Africana <span class="text-indigo-500">AI</span></span>
+            <span class="tracking-[0.4em] text-[10px] font-black uppercase text-white">Africana <span class="text-indigo-500">AI</span></span>
         </div>
         
-        <div class="flex items-center gap-6">
-            <button onclick="openAuth('login')" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Sign In</button>
-            <button onclick="openAuth('signup')" class="btn-magnetic bg-indigo-600 text-white px-8 py-3 rounded-full font-bold text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                Join Network
-            </button>
+        <div class="flex items-center gap-8">
+            <button onclick="openAuth('login')" class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-white transition-all">Portal Access</button>
+            <button onclick="openAuth('signup')" class="btn-magnetic bg-white text-black px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Join Network</button>
         </div>
     </nav>
 
-    <section class="relative min-h-screen flex items-center justify-center pt-20">
-        <div class="relative z-10 text-center px-6">
-            <div class="reveal-up inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span>
-                <span class="text-[9px] font-black uppercase text-indigo-300 tracking-[0.4em]">Engineered for Autonomy</span>
-            </div>
-
-            <h1 class="reveal-up font-heading text-6xl md:text-[8.5rem] font-bold text-white leading-[0.9] tracking-tighter mb-8">
-                The New Era of <br>
-                <span class="gradient-text">Human-AI Labor.</span>
-            </h1>
-
-            <p class="reveal-up text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-light mb-12">
-                Deploy <span class="text-white">Neural Negotiators</span> that find, vet, and secure global opportunities while you sleep.
-            </p>
-
-            <div class="reveal-up flex flex-wrap gap-6 justify-center">
-                <button onclick="openAuth('signup')" class="btn-magnetic px-12 py-6 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:invert transition-all">
-                    Initialize Profile
-                </button>
-                <div class="flex items-center gap-4 px-6 py-4 bento-panel rounded-xl">
-                    <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Active Nodes: 24,812</span>
+    <section class="relative min-h-screen flex items-center justify-center pt-32 pb-20">
+        <div class="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+            <div class="text-left">
+                <div class="reveal-up inline-flex items-center gap-3 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-8">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                    <span class="text-[9px] font-black uppercase text-indigo-400 tracking-[0.4em]">Africana AI: Now Fully Implemented</span>
                 </div>
-            </div>
-        </div>
-    </section>
 
-    <section class="py-32 px-6 max-w-7xl mx-auto">
-        <div class="grid lg:grid-cols-2 gap-20 items-center">
-            <div class="reveal-left">
-                <h2 class="text-indigo-500 font-bold uppercase tracking-[0.4em] text-[10px] mb-4">Autonomous Recruiting</h2>
-                <h3 class="font-heading text-5xl md:text-6xl font-bold text-white mb-8">Global Jobs. <br>AI Negotiation.</h3>
-                <p class="text-slate-400 text-lg leading-relaxed mb-10">
-                    Africana AI (Koyeb) doesn't just list jobs. It negotiates terms on TikTok, LinkedIn, and beyond using advanced behavioral models.
+                <h1 class="reveal-up font-heading text-6xl md:text-[6.5rem] font-bold text-white leading-[0.9] tracking-tighter mb-8">
+                    The Future Of <br>
+                    <span class="gradient-text">Effortless Commerce.</span>
+                </h1>
+
+                <p class="reveal-up text-slate-400 text-xl max-w-xl font-light leading-relaxed mb-12">
+                    As we finalize our world-class UI, we invite partners to <span class="text-white">advertise with us</span> across our ecosystem.
                 </p>
-                <div class="space-y-4">
-                    <div class="p-6 bento-panel rounded-2xl flex items-center justify-between">
-                        <span class="text-white font-bold">State Management</span>
-                        <span class="text-indigo-400 text-xs">Optimized v2.0</span>
+
+                <div class="reveal-up flex flex-wrap gap-6">
+                    <button onclick="openAuth('signup')" class="btn-magnetic px-10 py-5 bg-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Get Started</button>
+                    <div class="flex items-center gap-4 px-6 py-4 bento-panel rounded-xl">
+                        <img src="{% static 'users/images/robot.png' %}" class="w-6 h-6 object-contain">
+                        <span class="text-[10px] font-black text-white uppercase tracking-widest">AI Agent Ready</span>
                     </div>
                 </div>
             </div>
-            <div class="reveal-right">
-                <div class="relative rounded-[2.5rem] overflow-hidden border border-white/10">
-                    <img src="{% static 'users/images/jobs.png' %}" class="w-full grayscale hover:grayscale-0 transition-all duration-1000 scale-110 hover:scale-100">
+
+            <div class="relative h-[600px] hidden lg:block reveal-right">
+                <img src="{% static 'users/images/pic3.png' %}" class="floating-img absolute top-0 right-0 w-2/3 z-10 parallax-layer" data-speed="2">
+                <img src="{% static 'users/images/robot.png' %}" class="floating-img absolute bottom-10 left-0 w-1/2 z-20 parallax-layer" data-speed="4">
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-indigo-600/10 blur-[120px] rounded-full -z-10"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-40 px-6 container mx-auto">
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="reveal-up bento-panel p-10 rounded-[2.5rem]">
+                <div class="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-8">📢</div>
+                <h4 class="font-heading text-2xl font-bold text-white mb-4">Advertise With Us</h4>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6">Want to get your brand in front of a tech-savvy audience? Contact us for placements on our landing and internal pages.</p>
+                <a href="mailto:ads@africana.ai" class="text-[10px] font-black uppercase text-indigo-400 tracking-widest hover:text-white">Inquire Now →</a>
+            </div>
+
+            <div class="reveal-up bento-panel p-10 rounded-[2.5rem]" style="transition-delay: 0.1s">
+                <div class="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-8">💼</div>
+                <h4 class="font-heading text-2xl font-bold text-white mb-4">Get Your Dream Job</h4>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6">Our labor engine syncs global roles from LinkedIn and Google directly to your dashboard.</p>
+                <img src="{% static 'users/images/job1.png' %}" class="w-full mt-4 rounded-xl opacity-50 grayscale hover:grayscale-0 transition-all">
+            </div>
+
+            <div class="reveal-up bento-panel p-10 rounded-[2.5rem]" style="transition-delay: 0.2s">
+                <div class="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-8">🤖</div>
+                <h4 class="font-heading text-2xl font-bold text-white mb-4">Automate the Boring</h4>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6">Post your products on TikTok and let <strong>Africana AI Koyeb</strong> do the boring work of negotiation for you.</p>
+                <div class="h-1 w-full bg-white/10 mt-6 rounded-full overflow-hidden">
+                    <div class="h-full bg-indigo-500 w-3/4 animate-pulse"></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <div id="authModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 backdrop-blur-2xl">
-        <div class="absolute inset-0 bg-black/60" onclick="closeAuth()"></div>
-        
-        <div class="w-full max-w-md relative z-[210] bento-panel p-10 rounded-[3rem] border-white/10">
-            <button onclick="closeAuth()" class="absolute top-8 right-8 text-slate-500 hover:text-white">✕</button>
-
+    <div id="authModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-3xl" onclick="closeAuth()"></div>
+        <div class="w-full max-w-md relative z-[210] bento-panel p-12 rounded-[3rem] border-white/10">
+            
             <div id="loginState">
-                <div class="text-center mb-10">
-                    <h2 class="font-heading text-4xl font-bold text-white">Welcome Back</h2>
-                    <p class="text-[10px] text-indigo-400 font-black uppercase tracking-widest mt-4">Access Neutral Node</p>
+                <div class="text-center mb-12">
+                    <h2 class="font-heading text-4xl font-bold text-white tracking-tighter">Identity</h2>
+                    <p class="text-[9px] text-indigo-400 font-black uppercase tracking-[0.5em] mt-4">Secure Access Node</p>
                 </div>
-                <form method="post" class="space-y-5">
-                    {% csrf_token %}
-                    <input type="text" placeholder="Access Key / Email" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <input type="password" placeholder="Passcode" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <button class="w-full py-5 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Authenticate</button>
+                <form class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4">Access Key</label>
+                        <input type="text" placeholder="Enter Username" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none focus:border-indigo-500 transition-all">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-4">Passcode</label>
+                        <input type="password" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none focus:border-indigo-500 transition-all">
+                    </div>
+                    <button class="w-full py-5 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-indigo-600 hover:text-white transition-all">Authenticate</button>
                 </form>
-                <p class="text-center mt-8 text-xs text-slate-500">
-                    Don't have a node? <button onclick="toggleState('signup')" class="text-white font-bold hover:text-indigo-400">Create Account</button>
+                <p class="text-center mt-8 text-[11px] text-slate-500">
+                    Don't have an account? <button onclick="toggleState('signup')" class="text-white font-bold hover:text-indigo-400">Sign Up</button>
                 </p>
             </div>
 
             <div id="signupState" class="hidden-state">
-                <div class="text-center mb-10">
-                    <h2 class="font-heading text-4xl font-bold text-white">Join Network</h2>
-                    <p class="text-[10px] text-indigo-400 font-black uppercase tracking-widest mt-4">Initialize New Entity</p>
+                <div class="text-center mb-12">
+                    <h2 class="font-heading text-4xl font-bold text-white tracking-tighter">Initialize</h2>
+                    <p class="text-[9px] text-indigo-400 font-black uppercase tracking-[0.5em] mt-4">New Network Entity</p>
                 </div>
-                <form method="post" class="space-y-5">
-                    {% csrf_token %}
-                    <input type="text" placeholder="Full Name" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <input type="email" placeholder="Email Address" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <input type="password" placeholder="Secure Password" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <button class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Establish Connection</button>
+                <form class="space-y-5">
+                    <input type="text" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none">
+                    <input type="email" placeholder="Email Address" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none">
+                    <input type="password" placeholder="Passcode" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-white outline-none">
+                    <button class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em]">Establish Link</button>
                 </form>
-                <p class="text-center mt-8 text-xs text-slate-500">
-                    Already registered? <button onclick="toggleState('login')" class="text-white font-bold hover:text-indigo-400">Sign In</button>
+                <p class="text-center mt-8 text-[11px] text-slate-500">
+                    Existing node? <button onclick="toggleState('login')" class="text-white font-bold hover:text-indigo-400">Sign In</button>
                 </p>
             </div>
         </div>
@@ -194,28 +199,22 @@
 <script>
     gsap.registerPlugin(ScrollTrigger);
 
-    // World Class Staggered Entrance
-    window.addEventListener('DOMContentLoaded', () => {
+    // Initial Load Animation
+    window.addEventListener('load', () => {
         const tl = gsap.timeline();
-        tl.from(".reveal-up", {
-            y: 60, opacity: 0, duration: 1.2, stagger: 0.2, ease: "expo.out"
-        }).from("nav", {
-            y: -20, opacity: 0, duration: 1
-        }, "-=0.8");
+        tl.from(".reveal-up", { y: 50, opacity: 0, duration: 1, stagger: 0.15, ease: "expo.out" })
+          .from(".parallax-layer", { scale: 1.1, opacity: 0, duration: 2, ease: "power4.out" }, "-=1");
     });
 
-    // Scroll Animations
-    gsap.utils.toArray('.reveal-left').forEach(el => {
-        gsap.from(el, {
-            scrollTrigger: { trigger: el, start: "top 85%" },
-            x: -100, opacity: 0, duration: 1.5, ease: "power4.out"
-        });
-    });
+    // World-Class Parallax
+    document.addEventListener('mousemove', (e) => {
+        const layers = document.querySelectorAll('.parallax-layer');
+        const x = (window.innerWidth - e.pageX * 2) / 100;
+        const y = (window.innerHeight - e.pageY * 2) / 100;
 
-    gsap.utils.toArray('.reveal-right').forEach(el => {
-        gsap.from(el, {
-            scrollTrigger: { trigger: el, start: "top 85%" },
-            x: 100, opacity: 0, duration: 1.5, ease: "power4.out"
+        layers.forEach(layer => {
+            const speed = layer.getAttribute('data-speed');
+            gsap.to(layer, { x: x * speed, y: y * speed, duration: 1, ease: "power2.out" });
         });
     });
 
@@ -228,30 +227,26 @@
             gsap.to(btn, { x, y, duration: 0.3 });
         });
         btn.addEventListener('mouseleave', () => {
-            gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+            gsap.to(btn, { x: 0, y: 0, duration: 0.6, ease: "elastic.out(1, 0.4)" });
         });
     });
 
-    // State Management for Auth
+    // Auth Controls
     function openAuth(mode) {
         const modal = document.getElementById('authModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         toggleState(mode);
-        gsap.from("#authModal .bento-panel", { y: 50, opacity: 0, duration: 0.6, ease: "expo.out" });
     }
 
     function closeAuth() {
-        gsap.to("#authModal .bento-panel", { y: 50, opacity: 0, duration: 0.4, onComplete: () => {
-            document.getElementById('authModal').classList.add('hidden');
-            document.getElementById('authModal').classList.remove('flex');
-        }});
+        document.getElementById('authModal').classList.add('hidden');
+        document.getElementById('authModal').classList.remove('flex');
     }
 
     function toggleState(mode) {
         const login = document.getElementById('loginState');
         const signup = document.getElementById('signupState');
-        
         if(mode === 'signup') {
             login.classList.add('hidden-state');
             signup.classList.remove('hidden-state');
