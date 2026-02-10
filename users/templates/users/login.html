@@ -1,264 +1,1047 @@
 {% extends "base.html" %}
 {% load static %}
-{% load widget_tweaks %}
-
-{% block title %}Africana AI | The Global Standard{% endblock %}
 
 {% block content %}
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700;800&family=Space+Grotesk:wght@500;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    :root {
-        --accent: #6366f1;
-        --accent-bright: #818cf8;
-        --bg-dark: #02040a;
-        --glass: rgba(255, 255, 255, 0.03);
-    }
-
-    body { 
-        font-family: 'Plus Jakarta Sans', sans-serif; 
-        background-color: var(--bg-dark);
-        color: #f8fafc;
-        overflow-x: hidden;
-    }
-
-    .font-heading { font-family: 'Space Grotesk', sans-serif; }
-
-    /* World-Class Background Mesh */
-    .mesh-gradient {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: radial-gradient(circle at 50% -20%, #1e1b4b 0%, transparent 50%),
-                    radial-gradient(circle at 0% 100%, #0f172a 0%, transparent 50%);
-        z-index: -1;
-    }
-
-    .bg-grid {
-        background-size: 50px 50px;
-        background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
-                          linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
-        mask-image: radial-gradient(circle at center, black, transparent 80%);
-    }
-
-    /* Bento Box Sophistication */
-    .bento-panel {
-        background: var(--glass);
-        backdrop-filter: blur(25px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root { 
+        --accent: #6366f1; 
+        --bg-dark: #0f172a;
+        --text-light: #f8fafc;
+        --text-muted: #94a3b8;
+        --border-light: rgba(255, 255, 255, 0.08);
+        --gradient-1: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
     }
     
-    .bento-panel:hover {
-        border-color: var(--accent);
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-5px);
+    html { scroll-behavior: smooth; }
+    
+    body { 
+        background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a3e 100%);
+        font-family: 'Poppins', sans-serif; 
+        color: var(--text-light);
+        overflow-x: hidden;
+        min-height: 100vh;
     }
-
-    .gradient-text {
-        background: linear-gradient(135deg, #fff 30%, var(--accent) 70%, #3b82f6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-size: 200% auto;
+    
+    .font-heading { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -1px; }
+    
+    .hero { position: relative; min-height: 100vh; display: flex; align-items: center; padding: 80px 40px 60px; }
+    
+    .hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.15), transparent 70%);
+        border-radius: 50%;
+        z-index: 0;
     }
-
-    /* Custom Input Styling */
-    .auth-input {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-        transition: all 0.3s ease;
+    
+    .hero-content { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    
+    .hero h1 { font-size: 4rem; font-weight: 800; line-height: 1.1; margin-bottom: 24px; }
+    .hero h1 span { background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    
+    .hero p { font-size: 1.1rem; opacity: 0.8; line-height: 1.6; margin-bottom: 32px; max-width: 500px; }
+    
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 50px; font-size: 12px; font-weight: 600; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 1px; }
+    .badge-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    
+    .login-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); border: 1px solid var(--border-light); border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+    
+    .login-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; }
+    
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .form-input { width: 100%; padding: 12px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); border-radius: 10px; color: var(--text-light); font-size: 14px; transition: all 0.3s; }
+    .form-input:focus { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.5); outline: none; box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+    
+    .btn { background: var(--gradient-1); padding: 14px 28px; border: none; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; width: 100%; font-size: 14px; margin: 24px 0 16px; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4); }
+    
+    .signup-link { text-align: center; font-size: 14px; opacity: 0.7; }
+    .signup-link a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    
+    .section { max-width: 1200px; margin: 100px auto; padding: 0 40px; position: relative; z-index: 1; }
+    .section-heading { text-align: center; margin-bottom: 60px; }
+    .section-heading h2 { font-size: 3rem; font-weight: 800; margin-bottom: 16px; }
+    .section-heading p { font-size: 1.1rem; opacity: 0.7; max-width: 600px; margin: 0 auto; }
+    
+    .tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; margin-top: 60px; }
+    .tier { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 16px; padding: 36px; transition: all 0.4s; }
+    .tier:hover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.4); transform: translateY(-8px); box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2); }
+    .tier-icon { font-size: 3rem; margin-bottom: 16px; }
+    .tier h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+    .tier-price { font-size: 1rem; opacity: 0.7; margin-bottom: 24px; }
+    .tier ul { list-style: none; margin-bottom: 24px; }
+    .tier li { padding: 8px 0; opacity: 0.8; font-size: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+    .tier li::before { content: '✓ '; color: #10b981; font-weight: bold; margin-right: 8px; }
+    .tier a { display: block; padding: 10px; text-align: center; border: 1px solid var(--border-light); border-radius: 10px; color: white; text-decoration: none; font-weight: 600; background: rgba(99, 102, 241, 0.1); transition: all 0.3s; }
+    .tier a:hover { background: rgba(99, 102, 241, 0.2); }
+    
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-top: 60px; }
+    .stat { text-align: center; padding: 32px 24px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 16px; }
+    .stat-number { font-size: 2.5rem; font-weight: 800; background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-label { font-size: 0.9rem; opacity: 0.7; margin-top: 8px; }
+    
+    .pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-top: 60px; }
+    .pillar { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 16px; padding: 32px; transition: all 0.3s; }
+    .pillar:hover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.4); }
+    .pillar-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .pillar h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 12px; }
+    .pillar p { font-size: 0.95rem; opacity: 0.7; line-height: 1.5; }
+    
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 60px; }
+    .feature { background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-light); border-radius: 16px; padding: 28px; }
+    .feature h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
+    .feature p { font-size: 0.95rem; opacity: 0.7; line-height: 1.5; }
+    
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent); margin: 80px 0; }
+    
+    .footer-cta { text-align: center; padding: 60px 40px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent); border-radius: 20px; margin: 100px auto; max-width: 800px; }
+    .footer-cta h2 { font-size: 2.5rem; margin-bottom: 16px; }
+    .footer-cta p { font-size: 1.05rem; opacity: 0.8; margin-bottom: 32px; }
+    .footer-cta a { display: inline-block; padding: 16px 40px; background: var(--gradient-1); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.3s; }
+    .footer-cta a:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4); }
+    
+    @media (max-width: 768px) {
+        .hero-content { grid-template-columns: 1fr; }
+        .hero h1 { font-size: 2.5rem; }
+        .section-heading h2 { font-size: 2rem; }
+        .hero { padding: 60px 20px 40px; }
+        .section { padding: 0 20px; margin: 80px auto; }
     }
-
-    .auth-input:focus {
-        border-color: var(--accent) !important;
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
-    }
-
-    .hidden-state { display: none; }
 </style>
 
-<main class="relative">
-    <div class="mesh-gradient"></div>
-    <div class="fixed inset-0 bg-grid pointer-events-none"></div>
-
-    <nav class="fixed top-0 w-full z-[100] px-6 md:px-12 py-6 flex justify-between items-center transition-all duration-500" id="mainNav">
-        <div class="flex items-center gap-3 group cursor-pointer">
-            <div class="w-10 h-10 bg-white flex items-center justify-center rotate-45 group-hover:rotate-[135deg] transition-all duration-700">
-                <span class="-rotate-45 group-hover:-rotate-[135deg] transition-all duration-700 font-black text-black text-lg">A</span>
-            </div>
-            <span class="tracking-[0.3em] text-[11px] font-bold uppercase text-white">Africana <span class="text-indigo-500">AI</span></span>
-        </div>
-        
-        <div class="flex items-center gap-6">
-            <button onclick="openAuth('login')" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Sign In</button>
-            <button onclick="openAuth('signup')" class="btn-magnetic bg-indigo-600 text-white px-8 py-3 rounded-full font-bold text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                Join Network
-            </button>
-        </div>
-    </nav>
-
-    <section class="relative min-h-screen flex items-center justify-center pt-20">
-        <div class="relative z-10 text-center px-6">
-            <div class="reveal-up inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span>
-                <span class="text-[9px] font-black uppercase text-indigo-300 tracking-[0.4em]">Engineered for Autonomy</span>
-            </div>
-
-            <h1 class="reveal-up font-heading text-6xl md:text-[8.5rem] font-bold text-white leading-[0.9] tracking-tighter mb-8">
-                The New Era of <br>
-                <span class="gradient-text">Human-AI Labor.</span>
-            </h1>
-
-            <p class="reveal-up text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-light mb-12">
-                Deploy <span class="text-white">Neural Negotiators</span> that find, vet, and secure global opportunities while you sleep.
-            </p>
-
-            <div class="reveal-up flex flex-wrap gap-6 justify-center">
-                <button onclick="openAuth('signup')" class="btn-magnetic px-12 py-6 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:invert transition-all">
-                    Initialize Profile
-                </button>
-                <div class="flex items-center gap-4 px-6 py-4 bento-panel rounded-xl">
-                    <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Active Nodes: 24,812</span>
+<main>
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-content">
+            <div>
+                <div class="badge">
+                    <span class="badge-dot"></span>
+                    <span>Africa's First AI Commerce & Careers Platform</span>
+                </div>
+                
+                <h1>Empower Your <span>Economic Future</span> with AI</h1>
+                
+                <p>Join thousands of African entrepreneurs and job seekers using AI to sell products 24/7, land global opportunities, and build digital wealth—without marketing or negotiation skills.</p>
+                
+                <div style="display: flex; gap: 12px; margin-top: 32px;">
+                    <a href="#tiers" style="padding: 12px 24px; background: var(--gradient-1); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.3s;">Explore Plans</a>
+                    <a href="#learn" style="padding: 12px 24px; background: rgba(255, 255, 255, 0.1); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; border: 1px solid var(--border-light); transition: all 0.3s;">Learn More</a>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <section class="py-32 px-6 max-w-7xl mx-auto">
-        <div class="grid lg:grid-cols-2 gap-20 items-center">
-            <div class="reveal-left">
-                <h2 class="text-indigo-500 font-bold uppercase tracking-[0.4em] text-[10px] mb-4">Autonomous Recruiting</h2>
-                <h3 class="font-heading text-5xl md:text-6xl font-bold text-white mb-8">Global Jobs. <br>AI Negotiation.</h3>
-                <p class="text-slate-400 text-lg leading-relaxed mb-10">
-                    Africana AI (Koyeb) doesn't just list jobs. It negotiates terms on TikTok, LinkedIn, and beyond using advanced behavioral models.
-                </p>
-                <div class="space-y-4">
-                    <div class="p-6 bento-panel rounded-2xl flex items-center justify-between">
-                        <span class="text-white font-bold">State Management</span>
-                        <span class="text-indigo-400 text-xs">Optimized v2.0</span>
+            
+            <div class="login-card">
+                <h2>Start Your Journey</h2>
+                
+                <form method="POST" action="{% url 'users:user_login' %}">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label>Email or Username</label>
+                        <input type="text" name="username" class="form-input" placeholder="Enter your identifier" required>
                     </div>
-                </div>
-            </div>
-            <div class="reveal-right">
-                <div class="relative rounded-[2.5rem] overflow-hidden border border-white/10">
-                    <img src="{% static 'users/images/jobs.png' %}" class="w-full grayscale hover:grayscale-0 transition-all duration-1000 scale-110 hover:scale-100">
-                </div>
+                    
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" class="form-input" placeholder="••••••••" required>
+                    </div>
+                    
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 16px 0;">
+                        <input type="checkbox" style="width: 16px; height: 16px;">
+                        <span>Remember me</span>
+                    </label>
+                    
+                    <button type="submit" class="btn">🚀 Sign In</button>
+                </form>
+                
+                <div style="text-align: center; font-size: 13px; opacity: 0.7; margin: 16px 0;">or</div>
+                
+                <a href="{% url 'users:user_register' %}" style="display: block; padding: 12px; text-align: center; border: 1px solid var(--border-light); border-radius: 10px; color: var(--text-light); text-decoration: none; font-weight: 600; transition: all 0.3s; margin-bottom: 16px;">Create Free Account</a>
+                
+                <p style="text-align: center; font-size: 12px; opacity: 0.6;">50,000+ users already earning</p>
             </div>
         </div>
     </section>
 
-    <div id="authModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 backdrop-blur-2xl">
-        <div class="absolute inset-0 bg-black/60" onclick="closeAuth()"></div>
+    <div class="divider"></div>
+
+    <!-- MEMBERSHIP TIERS  -->
+    <section class="section" id="tiers">
+        <div class="section-heading">
+            <h2>Choose Your Path</h2>
+            <p>Start small and upgrade as you grow your business</p>
+        </div>
         
-        <div class="w-full max-w-md relative z-[210] bento-panel p-10 rounded-[3rem] border-white/10">
-            <button onclick="closeAuth()" class="absolute top-8 right-8 text-slate-500 hover:text-white">✕</button>
-
-            <div id="loginState">
-                <div class="text-center mb-10">
-                    <h2 class="font-heading text-4xl font-bold text-white">Welcome Back</h2>
-                    <p class="text-[10px] text-indigo-400 font-black uppercase tracking-widest mt-4">Access Neutral Node</p>
-                </div>
-                <form method="post" class="space-y-5">
-                    {% csrf_token %}
-                    <input type="text" placeholder="Access Key / Email" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <input type="password" placeholder="Passcode" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <button class="w-full py-5 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Authenticate</button>
-                </form>
-                <p class="text-center mt-8 text-xs text-slate-500">
-                    Don't have a node? <button onclick="toggleState('signup')" class="text-white font-bold hover:text-indigo-400">Create Account</button>
-                </p>
+        <div class="tiers">
+            <div class="tier">
+                <div class="tier-icon">🌱</div>
+                <h3>Seller Start</h3>
+                <div class="tier-price">Free</div>
+                <ul>
+                    <li>List up to 10 products</li>
+                    <li>Basic AI descriptions</li>
+                    <li>Manual support</li>
+                    <li>Community access</li>
+                </ul>
+                <a href="{% url 'users:user_register' %}">Get Started</a>
             </div>
-
-            <div id="signupState" class="hidden-state">
-                <div class="text-center mb-10">
-                    <h2 class="font-heading text-4xl font-bold text-white">Join Network</h2>
-                    <p class="text-[10px] text-indigo-400 font-black uppercase tracking-widest mt-4">Initialize New Entity</p>
-                </div>
-                <form method="post" class="space-y-5">
-                    {% csrf_token %}
-                    <input type="text" placeholder="Full Name" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <input type="email" placeholder="Email Address" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <input type="password" placeholder="Secure Password" class="auth-input w-full py-5 px-6 rounded-2xl outline-none text-sm">
-                    <button class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all">Establish Connection</button>
-                </form>
-                <p class="text-center mt-8 text-xs text-slate-500">
-                    Already registered? <button onclick="toggleState('login')" class="text-white font-bold hover:text-indigo-400">Sign In</button>
-                </p>
+            
+            <div class="tier" style="border: 2px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
+                <div class="tier-icon">⚡</div>
+                <h3 style="color: var(--accent);">Creator Pro</h3>
+                <div class="tier-price">$9.99/month</div>
+                <ul>
+                    <li>Unlimited products</li>
+                    <li>Full AI seller agent</li>
+                    <li>Auto negotiations</li>
+                    <li>Priority support</li>
+                    <li>Social sync</li>
+                </ul>
+                <a href="{% url 'users:user_register' %}" style="background: var(--gradient-1);">Most Popular</a>
+            </div>
+            
+            <div class="tier">
+                <div class="tier-icon">🏆</div>
+                <h3>Enterprise Elite</h3>
+                <div class="tier-price">Custom</div>
+                <ul>
+                    <li>Everything in Pro</li>
+                    <li>Dedicated manager</li>
+                    <li>Multi-store management</li>
+                    <li>API access</li>
+                    <li>Custom integrations</li>
+                </ul>
+                <a href="mailto:hello@africanaai.com">Contact Sales</a>
             </div>
         </div>
-    </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- IMPACT METRICS -->
+    <section class="section">
+        <div class="section-heading">
+            <h2>Our Impact Aurora</h2>
+            <p>Measuring our collective journey toward economic empowerment</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number">50K+</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">$5M+</div>
+                <div class="stat-label">Sales Generated</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">1000+</div>
+                <div class="stat-label">Job Placements</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">AI Coverage</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- FIVE PILLARS -->
+    <section class="section" id="learn">
+        <div class="section-heading">
+            <h2>Five Pillars of Power</h2>
+            <p>What makes Africana AI Africa's only complete AI commerce & careers ecosystem</p>
+        </div>
+        
+        <div class="pillars">
+            <div class="pillar">
+                <div class="pillar-icon">🧠</div>
+                <h3>AI Personal Adviser</h3>
+                <p>Your personal AI learns your goals and coaches you every step of the way towards success.</p>
+            </div>
+            
+            <div class="pillar">
+                <div class="pillar-icon">🛍️</div>
+                <h3>AI E-Shop Agent</h3>
+                <p>Upload products once. Your AI handles pricing, descriptions, and closes deals 24/7.</p>
+            </div>
+            
+            <div class="pillar">
+                <div class="pillar-icon">🤝</div>
+                <h3>Auto Negotiation</h3>
+                <p>Real-time AI negotiators close deals faster, maximize margins, handle communication.</p>
+            </div>
+            
+            <div class="pillar">
+                <div class="pillar-icon">💼</div>
+                <h3>Job Engine</h3>
+                <p>Get matched to global remote jobs. AI optimizes your CV and coaches for interviews.</p>
+            </div>
+            
+            <div class="pillar">
+                <div class="pillar-icon">📱</div>
+                <h3>Social Commerce Hub</h3>
+                <p>Integrate TikTok, Instagram, WhatsApp. AI manages all buyer interactions and sales.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- CORE SERVICES -->
+    <section class="section">
+        <div class="section-heading">
+            <h2>Our Core Services</h2>
+            <p>Everything you need to succeed in the digital economy</p>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>💡 Consultation</h3>
+                <p>Expert guidance on scaling, optimizing sales, and maximizing your digital presence.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🚀 Incubation</h3>
+                <p>Turn ideas into thriving businesses with mentorship, support, and resources.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>📚 Training</h3>
+                <p>Learn digital skills, e-commerce strategies, and job hunting from industry experts.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🤝 Partnerships</h3>
+                <p>Connect with global networks, investors, employers, and fellow creators.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>💰 Payment Solutions</h3>
+                <p>Fast, secure payments across Africa with zero-fee transfers.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>📊 Analytics</h3>
+                <p>Real-time dashboards showing sales, success rates, and earnings trends.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- FOOTER CTA -->
+    <section class="footer-cta">
+        <h2>Ready to Transform Your Economic Future?</h2>
+        <p>Join 50,000+ Africans already earning more with Africana AI. Start for free today.</p>
+        <a href="{% url 'users:user_register' %}">Get Started Free →</a>
+    </section>
+    
+    <footer style="text-align: center; padding: 40px; border-top: 1px solid var(--border-light); opacity: 0.6; font-size: 12px;">
+        Africana AI © 2026 | Building the Future of African Prosperity
+    </footer>
 </main>
 
 <script>
     gsap.registerPlugin(ScrollTrigger);
-
-    // World Class Staggered Entrance
-    window.addEventListener('DOMContentLoaded', () => {
-        const tl = gsap.timeline();
-        tl.from(".reveal-up", {
-            y: 60, opacity: 0, duration: 1.2, stagger: 0.2, ease: "expo.out"
-        }).from("nav", {
-            y: -20, opacity: 0, duration: 1
-        }, "-=0.8");
-    });
-
-    // Scroll Animations
-    gsap.utils.toArray('.reveal-left').forEach(el => {
-        gsap.from(el, {
-            scrollTrigger: { trigger: el, start: "top 85%" },
-            x: -100, opacity: 0, duration: 1.5, ease: "power4.out"
-        });
-    });
-
-    gsap.utils.toArray('.reveal-right').forEach(el => {
-        gsap.from(el, {
-            scrollTrigger: { trigger: el, start: "top 85%" },
-            x: 100, opacity: 0, duration: 1.5, ease: "power4.out"
-        });
-    });
-
-    // Magnetic Buttons
-    document.querySelectorAll('.btn-magnetic').forEach(btn => {
-        btn.addEventListener('mousemove', (e) => {
-            const rect = btn.getBoundingClientRect();
-            const x = (e.clientX - rect.left - rect.width/2) * 0.4;
-            const y = (e.clientY - rect.top - rect.height/2) * 0.4;
-            gsap.to(btn, { x, y, duration: 0.3 });
-        });
-        btn.addEventListener('mouseleave', () => {
-            gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
-        });
-    });
-
-    // State Management for Auth
-    function openAuth(mode) {
-        const modal = document.getElementById('authModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        toggleState(mode);
-        gsap.from("#authModal .bento-panel", { y: 50, opacity: 0, duration: 0.6, ease: "expo.out" });
-    }
-
-    function closeAuth() {
-        gsap.to("#authModal .bento-panel", { y: 50, opacity: 0, duration: 0.4, onComplete: () => {
-            document.getElementById('authModal').classList.add('hidden');
-            document.getElementById('authModal').classList.remove('flex');
-        }});
-    }
-
-    function toggleState(mode) {
-        const login = document.getElementById('loginState');
-        const signup = document.getElementById('signupState');
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        gsap.from('.badge', { opacity: 0, y: 20, duration: 0.6 });
+        gsap.from('.hero h1', { opacity: 0, y: 30, duration: 0.8, delay: 0.1 });
+        gsap.from('.login-card', { opacity: 0, x: 50, duration: 0.8, delay: 0.3 });
         
-        if(mode === 'signup') {
-            login.classList.add('hidden-state');
-            signup.classList.remove('hidden-state');
-        } else {
-            signup.classList.add('hidden-state');
-            login.classList.remove('hidden-state');
-        }
-    }
+        gsap.from('.tier', { scrollTrigger: { trigger: '.tier', start: 'top 80%' }, opacity: 0, y: 30, duration: 0.6, stagger: 0.2 });
+        gsap.from('.pillar', { scrollTrigger: { trigger: '.pillar', start: 'top 80%' }, opacity: 0, y: 30, duration: 0.6, stagger: 0.1 });
+        gsap.from('.stat', { scrollTrigger: { trigger: '.stat', start: 'top 80%' }, opacity: 0, scale: 0.9, duration: 0.6, stagger: 0.1 });
+        
+        document.querySelectorAll('.tier, .pillar').forEach(el => {
+            el.addEventListener('mouseenter', () => gsap.to(el, { y: -5, duration: 0.3 }));
+            el.addEventListener('mouseleave', () => gsap.to(el, { y: 0, duration: 0.3 }));
+        });
+    });
 </script>
+ 
+    :root { 
+        --accent: #6366f1; 
+        --bg-dark: #02040a;
+        --bg-darker: #010207;
+        --text-light: #f8fafc;
+        --text-muted: #94a3b8;
+        --border-light: rgba(255, 255, 255, 0.08);
+        --gradient-1: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        --gradient-2: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
+    }
+    
+    html { scroll-behavior: smooth; }
+    
+    body { 
+        background: var(--bg-dark); 
+        font-family: 'Poppins', sans-serif; 
+        color: var(--text-light);
+        overflow-x: hidden;
+    }
+    
+    .font-heading { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+    
+    /* Background Gradient Orbs */
+    .gradient-orb {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.6;
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    .orb-1 { 
+        width: 500px; 
+        height: 500px; 
+        background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+        top: -200px; 
+        left: -100px;
+        animation: float 20s ease-in-out infinite;
+    }
+    
+    .orb-2 { 
+        width: 400px; 
+        height: 400px; 
+        background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+        bottom: -150px; 
+        right: -50px;
+        animation: float 25s ease-in-out infinite reverse;
+    }
+    
+    .orb-3 {
+        width: 350px;
+        height: 350px;
+        background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+        top: 50%;
+        right: 10%;
+        animation: float 30s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) translateX(0px); }
+        25% { transform: translateY(-20px) translateX(20px); }
+        50% { transform: translateY(-40px) translateX(-20px); }
+        75% { transform: translateY(-20px) translateX(30px); }
+    }
+    
+    main { position: relative; z-index: 1; }
+
+    /* Glass Morphism */
+    .glass-card { 
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(40px) saturate(180%);
+        border: 1px solid var(--border-light);
+        border-radius: 24px;
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        overflow: visible !important;
+    }
+    
+    .glass-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 20px 60px rgba(99, 102, 241, 0.1);
+    }
+    
+    /* Button Styles */
+    .btn-primary {
+        position: relative;
+        overflow: hidden;
+        background: var(--gradient-1);
+        padding: 14px 32px;
+        border-radius: 12px;
+        border: none;
+        color: white;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5);
+    }
+    
+    /* Form Inputs */
+    .form-input {
+        width: 100%;
+        padding: 14px 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        color: var(--text-light);
+        font-size: 14px;
+        transition: all 0.3s ease;
+        font-family: 'Poppins', sans-serif;
+    }
+    
+    .form-input:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(99, 102, 241, 0.5);
+        outline: none;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+    
+    /* Feature Grid */
+    .feature-item {
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .feature-item:hover {
+        background: rgba(99, 102, 241, 0.05);
+        border-color: rgba(99, 102, 241, 0.3);
+        transform: translateY(-5px);
+    }
+    
+    .feature-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--gradient-1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 12px;
+    }
+    
+    .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .comparison-table th, .comparison-table td {
+        padding: 16px 12px;
+        text-align: center;
+        border: 1px solid var(--border-light);
+        font-size: 13px;
+    }
+    
+    .comparison-table th {
+        background: rgba(99, 102, 241, 0.1);
+        font-weight: 600;
+        color: var(--accent);
+        text-align: left;
+    }
+    
+    .comparison-table td:first-child {
+        text-align: left;
+        font-weight: 500;
+    }
+    
+    .comparison-table tr:hover {
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .check-mark { color: #10b981; font-weight: bold; font-size: 18px; }
+    .x-mark { color: #ef4444; opacity: 0.5; }
+    
+    .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+        margin: 80px 0;
+    }
+    
+    .problem-item, .solution-item {
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .problem-item:last-child, .solution-item:last-child {
+        border-bottom: none;
+    }
+</style>
+
+<main class="relative overflow-hidden">
+    <!-- Animated Background Orbs -->
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    <div class="gradient-orb orb-3"></div>
+
+    <!-- HERO SECTION -->
+    <section class="relative min-h-screen flex items-center justify-center px-6 py-20">
+        <div class="max-w-7xl w-full">
+            <div class="grid lg:grid-cols-2 gap-20 items-center">
+                
+                <!-- Left: Hero Content -->
+                <div class="space-y-10">
+                    <div class="status-badge">
+                        <span class="status-dot"></span>
+                        <span>Africa's First AI Commerce Platform</span>
+                    </div>
+                    
+                    <div>
+                        <h1 class="text-6xl md:text-7xl font-heading font-extrabold leading-tight mb-8">
+                            Africana AI
+                            <br><span style="background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                            Empower Your Economic Future
+                            </span>
+                        </h1>
+                        <p class="text-xl opacity-70 leading-relaxed max-w-lg">
+                            AI that understands every user personally, sells on their behalf, negotiates for them, and guides them through jobs and digital opportunities.
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-1 flex items-center justify-center flex-shrink-0 mt-1" style="min-width: 40px;">
+                                <span class="text-white font-bold">✓</span>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">AI Sells Your Products 24/7</h3>
+                                <p class="text-sm opacity-60">Your personal sales agent handles negotiations and closing</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-1 flex items-center justify-center flex-shrink-0 mt-1" style="min-width: 40px;">
+                                <span class="text-white font-bold">✓</span>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">AI Finds Job Opportunities</h3>
+                                <p class="text-sm opacity-60">Matches you to global remote jobs and local gigs instantly</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-1 flex items-center justify-center flex-shrink-0 mt-1" style="min-width: 40px;">
+                                <span class="text-white font-bold">✓</span>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Scale Across TikTok & WhatsApp</h3>
+                                <p class="text-sm opacity-60">Integrated with all major social commerce platforms</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Login Card -->
+                <div class="glass-card p-10 md:p-12">
+                    <form method="POST" action="{% url 'users:user_login' %}" class="space-y-6">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-widest opacity-60 mb-2">Email or Username</label>
+                            <input type="text" name="username" required 
+                                   class="form-input"
+                                   placeholder="Enter your identifier">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-widest opacity-60 mb-2">Password</label>
+                            <input type="password" name="password" required 
+                                   class="form-input"
+                                   placeholder="••••••••">
+                        </div>
+
+                        <button type="submit" class="btn-primary w-full text-center font-semibold">
+                            🚀 Start Your AI Journey
+                        </button>
+                    </form>
+
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-white/10"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 opacity-60">New member?</span>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'users:user_register' %}" 
+                       class="block w-full py-3 px-4 text-center rounded-lg border border-white/10 hover:bg-white/5 transition-all font-semibold">
+                        Create Free Account
+                    </a>
+
+                    <div class="mt-8 pt-6 border-t border-white/10 text-center">
+                        <p class="text-xs opacity-60 mb-2">Trusted by 50,000+ entrepreneurs across Africa</p>
+                        <div class="flex justify-center gap-1 text-yellow-400">
+                            ★★★★★
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- THE PROBLEM & SOLUTION -->
+    <section class="relative py-24 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-16">
+                <!-- The Problem -->
+                <div>
+                    <h2 class="text-4xl font-heading font-bold mb-12">The Problem Africans Face</h2>
+                    <div class="space-y-4">
+                        <div class="problem-item">
+                            <h3 class="font-semibold text-lg mb-2">📊 Marketplace Gap</h3>
+                            <p class="opacity-70">Millions want to sell online but lack marketing, negotiation, or digital skills.</p>
+                        </div>
+                        <div class="problem-item">
+                            <h3 class="font-semibold text-lg mb-2">💼 Job Challenges</h3>
+                            <p class="opacity-70">Job seekers struggle to stand out or navigate opportunities.</p>
+                        </div>
+                        <div class="problem-item">
+                            <h3 class="font-semibold text-lg mb-2">💰 Cost Barrier</h3>
+                            <p class="opacity-70">Small businesses can't afford sales teams or digital assistants.</p>
+                        </div>
+                        <div class="problem-item">
+                            <h3 class="font-semibold text-lg mb-2">🤔 Passive Platforms</h3>
+                            <p class="opacity-70">Marketplaces list products but don't help users succeed.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Our Solution -->
+                <div>
+                    <h2 class="text-4xl font-heading font-bold mb-12">Our AI-Powered Solution</h2>
+                    <div class="space-y-4">
+                        <div class="solution-item glass-card p-6">
+                            <h3 class="font-semibold text-lg mb-2">🤖 AI Personal Adviser</h3>
+                            <p class="opacity-70">Learns your behavior, understands goals, advises like a personal consultant.</p>
+                        </div>
+                        <div class="solution-item glass-card p-6">
+                            <h3 class="font-semibold text-lg mb-2">🛍️ AI-Powered E-Shop</h3>
+                            <p class="opacity-70">Upload products—AI handles pricing, negotiation, closing, upselling.</p>
+                        </div>
+                        <div class="solution-item glass-card p-6">
+                            <h3 class="font-semibold text-lg mb-2">⚡ Automated Negotiation</h3>
+                            <p class="opacity-70">Real-time negotiations ensuring faster conversions and better margins.</p>
+                        </div>
+                        <div class="solution-item glass-card p-6">
+                            <h3 class="font-semibold text-lg mb-2">💼 Job & Opportunity Engine</h3>
+                            <p class="opacity-70">Matches users to jobs, optimizes CVs, prepares for interviews.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- 5 CORE FEATURES -->
+    <section class="relative py-24 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-heading font-bold mb-6">Five Pillars of Africana AI</h2>
+                <p class="text-xl opacity-70 max-w-2xl mx-auto">What makes us the only complete AI commerce and careers platform in Africa</p>
+            </div>
+
+            <div class="grid md:grid-cols-5 gap-6">
+                <div class="feature-item">
+                    <div class="feature-icon">🧠</div>
+                    <h3 class="font-bold text-lg mb-3">AI Adviser</h3>
+                    <p class="text-sm opacity-70">Personal AI that learns and guides your journey</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🛍️</div>
+                    <h3 class="font-bold text-lg mb-3">AI E-Shop</h3>
+                    <p class="text-sm opacity-70">Automated selling on any platform</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🤝</div>
+                    <h3 class="font-bold text-lg mb-3">AI Negotiation</h3>
+                    <p class="text-sm opacity-70">24/7 deal-closing agent</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💼</div>
+                    <h3 class="font-bold text-lg mb-3">Job Engine</h3>
+                    <p class="text-sm opacity-70">Global remote & local gigs matched to you</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📱</div>
+                    <h3 class="font-bold text-lg mb-3">Social Commerce</h3>
+                    <p class="text-sm opacity-70">Integrated TikTok, Instagram, WhatsApp</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- COMPETITIVE ADVANTAGE -->
+    <section class="relative py-24 px-6 bg-gradient-to-b from-transparent via-indigo-500/5 to-transparent">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-heading font-bold mb-6">Why Africana AI Wins</h2>
+                <p class="text-xl opacity-70">We're the only platform combining all five capabilities</p>
+            </div>
+
+            <div class="glass-card p-8 overflow-x-auto">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 180px;">Platform</th>
+                            <th>Marketplace</th>
+                            <th>AI Selling</th>
+                            <th>AI Negotiation</th>
+                            <th>AI Adviser</th>
+                            <th>Social Commerce</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Jumia</td>
+                            <td class="check-mark">✓</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                        </tr>
+                        <tr>
+                            <td>Facebook Marketplace</td>
+                            <td class="check-mark">✓</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                        </tr>
+                        <tr>
+                            <td>Upwork</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                        </tr>
+                        <tr>
+                            <td>TikTok Shop</td>
+                            <td class="check-mark">✓</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="x-mark">✗</td>
+                            <td class="check-mark">✓</td>
+                        </tr>
+                        <tr style="background: rgba(99, 102, 241, 0.1); font-weight: 600;">
+                            <td>🚀 Africana AI</td>
+                            <td class="check-mark">✓</td>
+                            <td class="check-mark">✓</td>
+                            <td class="check-mark">✓</td>
+                            <td class="check-mark">✓</td>
+                            <td class="check-mark">✓</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- MARKET OPPORTUNITY -->
+    <section class="relative py-24 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-16 items-center">
+                <div class="glass-card p-10">
+                    <h2 class="text-4xl font-heading font-bold mb-8">Massive Market Opportunity</h2>
+                    <div class="space-y-6">
+                        <div class="pb-4 border-b border-white/10">
+                            <h3 class="text-2xl font-bold text-indigo-400">$180B+</h3>
+                            <p class="opacity-70">Africa's digital economy by 2025</p>
+                        </div>
+                        <div class="pb-4 border-b border-white/10">
+                            <h3 class="text-2xl font-bold text-indigo-400">25%+ AUM</h3>
+                            <p class="opacity-70">Annual e-commerce growth rate</p>
+                        </div>
+                        <div class="pb-4 border-b border-white/10">
+                            <h3 class="text-2xl font-bold text-indigo-400">500M+</h3>
+                            <p class="opacity-70">Target users: job seekers & entrepreneurs</p>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-indigo-400">First Mover</h3>
+                            <p class="opacity-70">No competitor combines all 5 capabilities</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="glass-card p-8">
+                        <h3 class="text-2xl font-bold mb-4">💰 Revenue Streams</h3>
+                        <ul class="space-y-3 text-sm opacity-70">
+                            <li>✓ Marketplace commissions (5-8%)</li>
+                            <li>✓ AI negotiation fees</li>
+                            <li>✓ Premium AI adviser subscriptions</li>
+                            <li>✓ Job posting & recruiter tools</li>
+                            <li>✓ Featured listings</li>
+                            <li>✓ Payment processing (0.5-2%)</li>
+                        </ul>
+                    </div>
+
+                    <div class="glass-card p-8">
+                        <h3 class="text-2xl font-bold mb-4">🎯 Our Vision</h3>
+                        <p class="opacity-70">Empower 100 million Africans with AI tools that help them earn, grow, and participate fully in the digital economy — regardless of background or resources.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA SECTION -->
+    <section class="relative py-20 px-6 mb-20">
+        <div class="max-w-4xl mx-auto text-center glass-card p-16">
+            <h2 class="text-4xl font-heading font-bold mb-6">Be Part of Africa's Future</h2>
+            <p class="text-lg opacity-70 mb-10 max-w-2xl mx-auto">
+                Join thousands of entrepreneurs and job seekers already using Africana AI to earn more, work smarter, and build their digital wealth.
+            </p>
+            <a href="{% url 'users:user_register' %}" class="btn-primary inline-block text-lg">
+                Start Your Free Trial →
+            </a>
+            <p class="text-sm opacity-60 mt-6">14-day free trial. No credit card required.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="relative py-12 border-t border-white/10">
+        <div class="max-w-6xl mx-auto px-6 text-center">
+            <p class="text-xs opacity-60 uppercase tracking-widest font-bold">
+                Africana AI © 2026 | Building the Future of African Prosperity
+            </p>
+        </div>
+    </footer>
+</main>
+
+<script>
+    // Ensure images are always visible
+    window.addEventListener('DOMContentLoaded', () => {
+        const images = document.querySelectorAll('.card-image');
+        images.forEach((img) => {
+            img.style.opacity = '1';
+            img.style.visibility = 'visible';
+            img.style.display = 'block';
+        });
+    });
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // ===== HERO ENTRANCE ANIMATIONS =====
+        const tl = gsap.timeline();
+        
+        // Status badge
+        tl.from('.status-badge', {
+            opacity: 0,
+            y: 20,
+            duration: 0.6,
+            ease: 'power2.out'
+        }, 0);
+
+        // Hero title
+        tl.from('h1', {
+            opacity: 0,
+            y: 40,
+            duration: 0.8,
+            ease: 'power3.out'
+        }, 0.2);
+
+        // Description text
+        tl.from('h1 + p', {
+            opacity: 0,
+            y: 20,
+            duration: 0.6,
+            ease: 'power2.out'
+        }, 0.4);
+
+        // Feature list items
+        gsap.from('.flex.items-start.gap-4', {
+            opacity: 0,
+            x: -30,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: 'power2.out',
+            delay: 0.6
+        });
+
+        // Login card
+        gsap.from('.glass-card', {
+            opacity: 0,
+            y: 40,
+            duration: 0.8,
+            ease: 'power3.out',
+            delay: 0.8
+        });
+
+        // ===== CARD HOVER EFFECTS =====
+        const cards = document.querySelectorAll('.feature-item, .solution-item');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                gsap.to(card, {
+                    y: -5,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            });
+            card.addEventListener('mouseleave', () => {
+                gsap.to(card, {
+                    y: 0,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            });
+        });
+
+        // ===== SCROLL TRIGGERED ANIMATIONS =====
+        gsap.from('.feature-item', {
+            scrollTrigger: {
+                trigger: '.feature-item',
+                start: 'top 80%',
+                toggleActions: 'play none none none'
+            },
+            opacity: 0,
+            y: 30,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: 'power3.out'
+        });
+
+        // ===== FLOATING BACKGROUND =====
+        gsap.to('.gradient-orb', {
+            duration: 20,
+            yPercent: (i) => 30 * (i % 2 === 0 ? 1 : -1),
+            repeat: -1,
+            yoyo: true,
+            ease: 'sine.inOut'
+        });
+
+        // ===== BUTTON INTERACTIONS =====
+        const buttons = document.querySelectorAll('.btn-primary');
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                gsap.to(btn, {
+                    scale: 1.02,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, {
+                    scale: 1,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            });
+        });
+    });
+</script>
+
 {% endblock %}
