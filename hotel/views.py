@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.contrib import messages
@@ -8,48 +9,74 @@ from urllib.parse import quote
 from .forms import AccommodationForm
 
 def sync_hotels_travelpayouts(request):
-    """Fetches hotel data from Travelpayouts using your API Token stored in environment variables."""
+    """
+    Fetches hotel data from Travelpayouts for multiple African cities, 
+    including Uganda, Kenya, and others.
+    """
     if not request.user.is_staff:
+        messages.error(request, "Only staff can sync API data.")
         return redirect('hotel:hotel_list')
 
-    # Fetching the token from Koyeb Environment Variables
-    # Ensure you named the variable TRAVEL_PAYOUTS_TOKEN in the Koyeb dashboard
     api_token = os.environ.get('TRAVEL_PAYOUTS_TOKEN')
+    marker = "703979" 
     
     if not api_token:
         messages.error(request, "API Token not found. Please set TRAVEL_PAYOUTS_TOKEN in Koyeb.")
         return redirect('hotel:hotel_list')
 
+    # List of African destinations to sync
+    african_destinations = [
+        {'city': 'Entebbe', 'country': 'Uganda', 'iata': 'EBB'},
+        {'city': 'Kampala', 'country': 'Uganda', 'iata': 'KLA'},
+        {'city': 'Nairobi', 'country': 'Kenya', 'iata': 'NBO'},
+        {'city': 'Dar es Salaam', 'country': 'Tanzania', 'iata': 'DAR'},
+        {'city': 'Kigali', 'country': 'Rwanda', 'iata': 'KGL'},
+        {'city': 'Lagos', 'country': 'Nigeria', 'iata': 'LOS'},
+        {'city': 'Johannesburg', 'country': 'South Africa', 'iata': 'JNB'},
+        {'city': 'Cairo', 'country': 'Egypt', 'iata': 'CAI'},
+        {'city': 'Addis Ababa', 'country': 'Ethiopia', 'iata': 'ADD'},
+    ]
+
     url = "https://engine.hotellook.com/api/v2/cache.json"
-    params = {
-        'location': 'Nairobi',
-        'currency': 'usd',
-        'limit': 15,
-        'token': api_token
-    }
+    total_added = 0
 
     try:
-        response = requests.get(url, params=params)
-        response.raise_for_status() # Check for HTTP errors
-        data = response.json()
-
-        for item in data:
-            # Using your ID 703979 for the affiliate marker
-            affiliate_link = f"https://tp.media/r?marker=703979&p=2409&u=https://www.trip.com/hotels/detail?hotelId={item['hotelId']}"
+        for dest in african_destinations:
+            params = {
+                'location': dest['iata'],
+                'currency': 'usd',
+                'limit': 10,
+                'token': api_token
+            }
             
-            Accommodation.objects.update_or_create(
-                external_id=f"tp-{item['hotelId']}",
-                defaults={
-                    'source': 'travelpayouts',
-                    'name': item['hotelName'],
-                    'price_per_night': item['priceAvg'],
-                    'city': 'Nairobi',
-                    'country': 'Kenya',
-                    'stars': item.get('stars', 0),
-                    'affiliate_url': affiliate_link
-                }
-            )
-        messages.success(request, f"Successfully synced {len(data)} hotels!")
+            response = requests.get(url, params=params)
+            # Skip if a specific city fails but continue the loop
+            if response.status_code != 200:
+                continue
+                
+            data = response.json()
+
+            for item in data:
+                affiliate_link = f"https://tp.media/r?marker={marker}&p=2409&u=https://www.trip.com/hotels/detail?hotelId={item['hotelId']}"
+                
+                Accommodation.objects.update_or_create(
+                    external_id=f"tp-{item['hotelId']}",
+                    defaults={
+                        'source': 'travelpayouts',
+                        'name': item['hotelName'],
+                        'price_per_night': item['priceAvg'],
+                        'city': dest['city'],
+                        'country': dest['country'],
+                        'stars': item.get('stars', 0),
+                        'affiliate_url': affiliate_link
+                    }
+                )
+                total_added += 1
+            
+            # Brief pause to prevent rate-limiting
+            time.sleep(0.3)
+
+        messages.success(request, f"Successfully synced {total_added} hotels across Africa!")
     except Exception as e:
         messages.error(request, f"Sync Error: {str(e)}")
     
@@ -69,4 +96,18 @@ def hotel_detail(request, slug):
     return render(request, 'hotel_detail.html', {'accommodation': accommodation})
 
 def hotel_list(request):
-    accommodations = Accommodation.objects.all().order_by('-id')
+    """Displays all accommodations, including synced and manual entries."""
+    accommodations = Accommodation.objects.all().order_by('-id')
+    return render(request, 'hotel_list.html', {'accommodations': accommodations})
+
+def add_accommodation(request):
+    if request.method == 'POST':
+        form = AccommodationForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Lodge added successfully!")
+            return redirect('hotel:hotel_list')
+    else:
+        form = AccommodationForm()
+    
+    return render(request, 'add_accommodation.html', {'form': form})
