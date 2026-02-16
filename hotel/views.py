@@ -69,7 +69,6 @@ def sync_hotels_travelpayouts(request):
                     hotel_id = hotel.get('id') or hotel.get('hotelId')
                     external_id = f"tp-{hotel_id}"
                     
-                    
                     # Generate a unique slug for the detail view
                     base_slug = slugify(f"{hotel_name}-{dest['city']}")
                     unique_slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
