@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load widget_tweaks %}
-{% block title %}{{ accommodation.name }} | The Collection Africa{% endblock %}
+{% load hotel_filters %}  {% block title %}{{ accommodation.name }} | The Collection Africa{% endblock %}
 
 {% block content %}
 <div class="bg-[#020617] min-h-screen text-slate-300 font-sans selection:bg-indigo-500/30 overflow-x-hidden">
