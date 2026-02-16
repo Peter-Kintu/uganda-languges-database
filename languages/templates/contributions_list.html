@@ -168,19 +168,19 @@
                 Listed <span class="text-indigo-500">Jobs.</span>
             </h1>
         
-            <form method="get" action="{% url 'languages:browse_job_listings' %}" class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 hero-search-container p-4 rounded-[32px]">
+            <form method="get" action="{% url 'languages:browse_job_listings' %}" class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-3 hero-search-container p-3 rounded-[32px] items-center">
                 <div class="md:col-span-5 relative group">
-                    <svg class="w-5 h-5 text-slate-500 absolute left-5 top-5 group-focus-within:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <input type="search" name="q" placeholder="Keywords, job eg teacher" value="{{ search_query }}" class="w-full bg-transparent border-none rounded-2xl text-white pl-14 py-4 focus:ring-0 text-lg">
+                    <svg class="w-5 h-5 text-slate-500 absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="search" name="q" placeholder="Keywords, job eg teacher" value="{{ search_query }}" class="w-full bg-transparent border-none rounded-2xl text-white pl-14 py-3 focus:ring-0 text-base">
                 </div>
                 
                 <div class="md:col-span-3 relative group">
-                    <svg class="w-5 h-5 text-slate-500 absolute left-5 top-5 group-focus-within:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                    <input type="text" name="where" placeholder="Country" value="{{ location_query }}" class="w-full bg-transparent border-none rounded-2xl text-white pl-14 py-4 focus:ring-0 text-lg">
+                    <svg class="w-5 h-5 text-slate-500 absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                    <input type="text" name="where" placeholder="Country" value="{{ location_query }}" class="w-full bg-transparent border-none rounded-2xl text-white pl-14 py-3 focus:ring-0 text-base">
                 </div>
                 
                 <div class="md:col-span-2">
-                    <select name="category" class="w-full bg-slate-800/50 border-none rounded-2xl text-slate-300 py-4 px-6 focus:ring-2 focus:ring-indigo-500 appearance-none">
+                    <select name="category" class="w-full bg-slate-800/50 border-none rounded-xl text-slate-300 py-3 px-4 focus:ring-2 focus:ring-indigo-500 appearance-none text-sm cursor-pointer">
                         <option value="all">All Roles</option>
                         {% for key, val in job_categories %}
                             <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
@@ -188,7 +188,11 @@
                     </select>
                 </div>
                 
-                <button type="submit" class="md:col-span-2 btn-primary text-white font-black rounded-2xl py-4 shadow-xl text-sm uppercase tracking-widest">Execute Search</button>
+                <div class="md:col-span-2">
+                    <button type="submit" class="w-full btn-primary text-white font-bold rounded-xl py-3 px-2 shadow-lg text-[11px] uppercase tracking-wider hover:brightness-110 transition-all active:scale-95 whitespace-nowrap">
+                        Search Jobs
+                    </button>
+                </div>
             </form>
         </header>
 

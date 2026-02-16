@@ -3,61 +3,125 @@
 {% load widget_tweaks %}
 
 {% block content %}
-<div class="bg-[#020617] min-h-screen py-24 px-4">
-    <div class="max-w-4xl mx-auto">
-        <div class="bg-slate-900 border border-slate-800 p-12 rounded-[56px] shadow-3xl">
-            <div class="text-center mb-12">
-                <h2 class="text-4xl font-black text-white uppercase tracking-tighter">New Listing</h2>
-                <p class="text-slate-500 mt-2">Add a new property to the global marketplace</p>
-            </div>
-            
-            <form method="POST" enctype="multipart/form-data" class="space-y-8">
+<div class="bg-[#020617] min-h-screen py-16 px-4 relative overflow-hidden">
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-600/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+    <div class="max-w-4xl mx-auto relative z-10">
+        <div class="text-center mb-12">
+            <span class="text-indigo-500 text-[9px] font-black uppercase tracking-[0.4em]">Partner Portal</span>
+            <h1 class="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mt-3 leading-none">
+                List Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Sanctuary</span>
+            </h1>
+            <p class="text-slate-500 mt-4 text-base max-w-lg mx-auto font-light">Join the elite collection of African stays. Go live on the global marketplace.</p>
+        </div>
+
+        <div class="bg-slate-900/40 border border-white/5 p-8 md:p-12 rounded-[40px] backdrop-blur-3xl shadow-3xl">
+            <form method="POST" enctype="multipart/form-data" class="space-y-10">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">Property Name</label>
-                        {% render_field form.name class="w-full bg-slate-800/50 border-slate-700 focus:border-indigo-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="e.g. Serengeti Heights" %}
+                <div class="space-y-6">
+                    <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                        <span class="bg-indigo-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">1</span>
+                        <h3 class="text-white font-black uppercase tracking-widest text-[10px]">Property Identity</h3>
                     </div>
-                     <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">City</label>
-                        {% render_field form.city class="w-full bg-slate-800/50 border-slate-700 focus:border-indigo-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="e.g. Serengeti Heights" %}
-                    </div>
-                     <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">Country</label>
-                        {% render_field form.country class="w-full bg-slate-800/50 border-slate-700 focus:border-indigo-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="e.g. Serengeti Heights" %}
-                    </div>
-                     <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">Price per night</label>
-                        {% render_field form.price_per_night class="w-full bg-slate-800/50 border-slate-700 focus:border-indigo-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="e.g. Serengeti Heights" %}
-                    </div>
-                     <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">Currency</label>
-                        {% render_field form.currency class="w-full bg-slate-800/50 border-slate-700 focus:border-indigo-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="e.g. Serengeti Heights" %}
-                    </div>
-                     <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">Stars</label>
-                        {% render_field form.stars class="w-full bg-slate-800/50 border-slate-700 focus:border-indigo-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="e.g. Serengeti Heights" %}
-                    </div>
-                     <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">Whatsapp Number</label>
-                        {% render_field form.whatsapp_number class="w-full bg-slate-800/50 border-slate-700 focus:border-indigo-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="e.g. Serengeti Heights" %}
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">TikTok Tour URL</label>
-                        {% render_field form.tiktok_url class="w-full bg-slate-800/50 border-slate-700 focus:border-pink-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="https://tiktok.com/..." %}
-                    </div>
-                      <div class="space-y-2">
-                        <label class="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-4">Description</label>
-                        {% render_field form.description class="w-full bg-slate-800/50 border-slate-700 focus:border-pink-500 rounded-3xl p-5 text-white transition-all outline-none" placeholder="https://tiktok.com/..." %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Property Name</label>
+                            {% render_field form.name class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-indigo-500 rounded-2xl p-4 text-sm text-white transition-all outline-none" placeholder="e.g. Entebbe Villa" %}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Stars / Rating</label>
+                            {% render_field form.stars class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-indigo-500 rounded-2xl p-4 text-sm text-white transition-all outline-none" placeholder="1 - 5" %}
+                        </div>
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-6 rounded-3xl text-lg uppercase tracking-widest shadow-2xl shadow-indigo-600/20 transition-all">
-                    Publish Property
-                </button>
+                <div class="space-y-6">
+                    <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                        <span class="bg-indigo-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">2</span>
+                        <h3 class="text-white font-black uppercase tracking-widest text-[10px]">Geography & Value</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">City</label>
+                            {% render_field form.city class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-indigo-500 rounded-2xl p-4 text-sm text-white outline-none" placeholder="City" %}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Country</label>
+                            {% render_field form.country class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-indigo-500 rounded-2xl p-4 text-sm text-white outline-none" placeholder="Country" %}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Currency</label>
+                            {% render_field form.currency class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-indigo-500 rounded-2xl p-4 text-sm text-white outline-none" placeholder="USD" %}
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Price per night</label>
+                        {% render_field form.price_per_night class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-indigo-500 rounded-2xl p-4 text-sm text-white outline-none" placeholder="00.00" %}
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                        <span class="bg-pink-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">3</span>
+                        <h3 class="text-white font-black uppercase tracking-widest text-[10px]">Experience & Socials</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">WhatsApp</label>
+                            {% render_field form.whatsapp_number class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-emerald-500 rounded-2xl p-4 text-sm text-white outline-none" placeholder="+256..." %}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">TikTok URL</label>
+                            {% render_field form.tiktok_url class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-pink-500 rounded-2xl p-4 text-sm text-white outline-none" placeholder="TikTok Link" %}
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Description</label>
+                        {% render_field form.description class="w-full bg-slate-800/30 border border-slate-700/50 focus:border-indigo-500 rounded-3xl p-6 text-sm text-white outline-none min-h-[120px]" placeholder="Tell the story of your property..." %}
+                    </div>
+                </div>
+
+                <div class="pt-8 flex justify-center">
+                    <div class="w-full max-w-xs">
+                        <button type="submit" class="group relative w-full overflow-hidden rounded-2xl bg-white p-[1px] transition-all hover:scale-[1.02] active:scale-[0.98]">
+                            <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-cyan-500 transition-all"></div>
+                            <div class="relative bg-indigo-600 group-hover:bg-transparent py-4 rounded-[15px] transition-all">
+                                <span class="text-white font-black text-xs uppercase tracking-[0.2em]">Publish Listing</span>
+                            </div>
+                        </button>
+                        <p class="text-center text-slate-600 text-[8px] uppercase font-black tracking-widest mt-6 italic">Verified Submission Protocol</p>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
 </div>
+
+<style>
+    /* Styling auto-generated file inputs */
+    input[type="file"] {
+        color: #64748b;
+        font-size: 0.75rem;
+    }
+    input[type="file"]::file-selector-button {
+        background: #1e293b;
+        border: 1px solid #334155;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 10px;
+        margin-right: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 9px;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    input[type="file"]::file-selector-button:hover {
+        background: #334155;
+        border-color: #475569;
+    }
+</style>
 {% endblock %}

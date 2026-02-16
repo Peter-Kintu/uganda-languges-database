@@ -1,89 +1,141 @@
 {% extends "base.html" %}
 {% load static %}
 {% load widget_tweaks %}
-{% block title %}{{ accommodation.name }} | Premium Stay{% endblock %}
+{% block title %}{{ accommodation.name }} | The Collection Africa{% endblock %}
 
 {% block content %}
-<div class="bg-[#020617] min-h-screen text-slate-300 font-sans selection:bg-indigo-500/30">
-    <div class="max-w-7xl mx-auto px-6 py-12 lg:py-20 grid grid-cols-1 lg:grid-cols-12 gap-16">
+<div class="bg-[#020617] min-h-screen text-slate-300 font-sans selection:bg-indigo-500/30 overflow-x-hidden">
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-indigo-600/10 blur-[150px] pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-6 py-12 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-16 relative z-10">
         
-        <div class="lg:col-span-7 space-y-8">
-            <div class="rounded-[48px] overflow-hidden border border-slate-800 shadow-2xl group relative">
-                <img src="{% if accommodation.image %}{{ accommodation.image.url }}{% else %}{{ accommodation.image_url }}{% endif %}" 
-                     class="w-full h-[500px] object-cover transition duration-700 group-hover:scale-105">
-                <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-60"></div>
+        <div class="lg:col-span-7 space-y-12">
+            <div class="relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-[52px] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                <div class="relative rounded-[48px] overflow-hidden border border-white/5 shadow-2xl bg-slate-900">
+                    <img src="{% if accommodation.image %}{{ accommodation.image.url }}{% else %}{{ accommodation.image_url }}{% endif %}" 
+                         class="w-full h-[600px] object-cover transition duration-[2s] group-hover:scale-110"
+                         alt="{{ accommodation.name }}">
+                    
+                    <div class="absolute top-8 left-8 flex gap-3">
+                        <span class="bg-black/60 backdrop-blur-md border border-white/10 text-white text-[10px] font-black px-5 py-2.5 rounded-2xl uppercase tracking-[0.2em]">
+                            {{ accommodation.source|default:"Private Collection" }}
+                        </span>
+                    </div>
+                </div>
             </div>
 
             {% if accommodation.tiktok_url %}
-            <div class="bg-slate-900/60 border border-pink-500/20 p-8 rounded-[40px] flex items-center justify-between backdrop-blur-xl hover:border-pink-500/50 transition-all group">
-                <div class="flex items-center gap-6">
-                    <div class="bg-gradient-to-tr from-pink-600 to-purple-600 p-5 rounded-3xl shadow-lg shadow-pink-600/20 animate-pulse">
-                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.06-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.03 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.28-2.26.54-4.5 2.1-6.11 1.55-1.67 3.81-2.58 6.07-2.48.01 1.57.01 3.13.01 4.7-.83-.23-1.72-.25-2.55.05-1.21.43-2.14 1.51-2.42 2.76-.32 1.28-.01 2.68.81 3.71.74.96 1.88 1.58 3.09 1.61 1.28.06 2.58-.46 3.39-1.46.7-.84.97-1.93.97-2.99V.02z"/>
-                        </svg>
+            <div class="relative group overflow-hidden bg-slate-900/40 border border-white/5 p-1 rounded-[40px] transition-all duration-500 hover:border-pink-500/30">
+                <div class="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative p-8 flex flex-col md:flex-row items-center justify-between gap-8 backdrop-blur-xl">
+                    <div class="flex items-center gap-6">
+                        <div class="relative">
+                            <div class="absolute -inset-2 bg-pink-500 rounded-full blur opacity-40 animate-pulse"></div>
+                            <div class="relative bg-black p-5 rounded-3xl border border-white/10">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.06-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.03 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.28-2.26.54-4.5 2.1-6.11 1.55-1.67 3.81-2.58 6.07-2.48.01 1.57.01 3.13.01 4.7-.83-.23-1.72-.25-2.55.05-1.21.43-2.14 1.51-2.42 2.76-.32 1.28-.01 2.68.81 3.71.74.96 1.88 1.58 3.09 1.61 1.28.06 2.58-.46 3.39-1.46.7-.84.97-1.93.97-2.99V.02z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-black text-2xl tracking-tight">Full Cinematic Tour</h3>
+                            <p class="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Watch on TikTok</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="text-white font-black text-xl tracking-tight">Experience the Tour</h3>
-                        <p class="text-slate-500 text-sm">Watch the full video walkthrough on TikTok</p>
-                    </div>
+                    <a href="{{ accommodation.tiktok_url }}" target="_blank" 
+                       class="w-full md:w-auto bg-white text-black hover:bg-pink-600 hover:text-white px-10 py-5 rounded-2xl font-black transition-all duration-300 uppercase text-xs tracking-[0.2em] shadow-xl text-center">
+                        Play Walkthrough
+                    </a>
                 </div>
-                <a href="{{ accommodation.tiktok_url }}" target="_blank" 
-                   class="bg-white text-black hover:bg-pink-600 hover:text-white px-8 py-4 rounded-2xl font-black transition-all uppercase text-sm tracking-widest shadow-xl">
-                    Open TikTok
-                </a>
             </div>
             {% endif %}
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
+                {% for amenity in "Verified,WiFi,Luxury,Secure"|split:"," %}
+                <div class="bg-slate-900/20 border border-white/5 p-6 rounded-3xl text-center">
+                    <span class="block text-white font-black text-[10px] uppercase tracking-widest">{{ amenity }}</span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
 
         <div class="lg:col-span-5">
-            <div class="sticky top-12">
-                <nav class="flex items-center gap-2 text-indigo-400 text-xs font-black uppercase tracking-[0.3em] mb-6">
-                    <span>{{ accommodation.country }}</span>
-                    <span class="w-1 h-1 bg-slate-700 rounded-full"></span>
-                    <span>{{ accommodation.city }}</span>
+            <div class="sticky top-24">
+                <nav class="flex items-center gap-3 text-indigo-400 text-[10px] font-black uppercase tracking-[0.4em] mb-10">
+                    <span class="hover:text-white cursor-pointer transition-colors">{{ accommodation.country }}</span>
+                    <svg class="w-3 h-3 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                    <span class="text-slate-500">{{ accommodation.city }}</span>
                 </nav>
                 
-                <h1 class="text-5xl md:text-7xl font-black text-white mb-8 leading-[0.9] tracking-tighter">
+                <h1 class="text-6xl md:text-8xl font-black text-white mb-8 leading-[0.85] tracking-tighter">
                     {{ accommodation.name }}
                 </h1>
                 
-                <div class="flex gap-1 text-yellow-500 mb-8">
-                    {% for i in "12345"|make_list %}
-                        {% if forloop.counter <= accommodation.stars %}★{% else %}<span class="opacity-20">★</span>{% endif %}
-                    {% endfor %}
+                <div class="flex items-center gap-4 mb-12">
+                    <div class="flex gap-1 text-yellow-500">
+                        {% for i in "12345"|make_list %}
+                            {% if forloop.counter <= accommodation.stars %}★{% else %}<span class="opacity-20">★</span>{% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="text-slate-600 font-black text-[10px] uppercase tracking-widest border-l border-slate-800 pl-4 italic">The African Standard</span>
                 </div>
 
-                <p class="text-slate-400 text-lg leading-relaxed mb-12 border-l-2 border-slate-800 pl-6">
-                    {{ accommodation.description }}
-                </p>
+                <div class="relative mb-16">
+                    <div class="absolute -left-6 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-transparent"></div>
+                    <p class="text-slate-400 text-xl leading-relaxed font-light italic pl-4">
+                        {% if accommodation.description %}
+                            {{ accommodation.description }}
+                        {% else %}
+                            An exceptional sanctuary carefully selected for the Global Stays collection. Experience the pinnacle of hospitality in {{ accommodation.city }}.
+                        {% endif %}
+                    </p>
+                </div>
 
-                <div class="bg-slate-900/50 p-10 rounded-[48px] border border-slate-800 backdrop-blur-md shadow-3xl">
-                    <div class="flex justify-between items-end mb-10">
-                        <div>
-                            <span class="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Pricing Model</span>
-                            <div class="text-5xl font-black text-white mt-2">
-                                <span class="text-xl text-indigo-500 align-top mt-2">{{ accommodation.currency }}</span>
-                                {{ accommodation.price_per_night|floatformat:0 }}
+                <div class="relative group">
+                    <div class="absolute -inset-1 bg-indigo-500/20 rounded-[44px] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                    <div class="relative bg-slate-900/80 border border-white/10 p-12 rounded-[40px] backdrop-blur-2xl shadow-3xl">
+                        <div class="flex justify-between items-center mb-12">
+                            <div>
+                                <span class="text-slate-500 text-[10px] uppercase font-black tracking-[0.2em] mb-2 block">Premium Rate</span>
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-5xl font-black text-white tracking-tighter">
+                                        {{ accommodation.price_per_night|floatformat:0 }}
+                                    </span>
+                                    <span class="text-indigo-400 font-black text-lg uppercase tracking-widest">{{ accommodation.currency }}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-500 font-bold uppercase text-[10px] tracking-widest block">Frequency</span>
+                                <span class="text-white font-black uppercase text-xs">Per Night</span>
                             </div>
                         </div>
-                        <div class="text-slate-500 font-bold uppercase text-[10px] tracking-widest mb-2">Per Night</div>
+                        
+                        <a href="{% url 'hotel:book_hotel' accommodation.pk %}" 
+                           class="relative flex items-center justify-center gap-4 w-full bg-white text-black hover:bg-indigo-600 hover:text-white font-black py-7 rounded-[32px] transition-all duration-500 transform hover:-translate-y-2 group/btn shadow-[0_20px_50px_rgba(255,255,255,0.1)] hover:shadow-indigo-500/40">
+                            <span class="uppercase tracking-[0.2em] text-xs">
+                                {% if accommodation.source == 'travelpayouts' %}
+                                    Secure Instant Booking
+                                {% else %}
+                                    Direct WhatsApp Reservation
+                                {% endif %}
+                            </span>
+                            <svg class="w-5 h-5 transition-transform group-hover/btn:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                        </a>
+                        
+                        <div class="mt-10 flex items-center justify-center gap-8 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700">
+                             <span class="text-[9px] text-slate-300 font-black uppercase tracking-[0.3em]">Protected by Africana AI Protocol</span>
+                        </div>
                     </div>
-                    
-                    <a href="{% url 'hotel:book_hotel' accommodation.pk %}" 
-                       class="block w-full text-center {% if accommodation.source == 'travelpayouts' %}bg-indigo-600 hover:bg-indigo-500{% else %}bg-emerald-600 hover:bg-emerald-500{% endif %} text-white font-black py-6 rounded-3xl transition-all shadow-2xl shadow-indigo-600/20 transform hover:-translate-y-1">
-                        {% if accommodation.source == 'travelpayouts' %}
-                            SECURE INSTANT BOOKING
-                        {% else %}
-                            WHATSAPP RESERVATION
-                        {% endif %}
-                    </a>
-                    
-                    <p class="text-[10px] text-slate-600 mt-6 text-center uppercase tracking-widest font-bold">
-                        Verified Listing • Secure Protocol
-                    </p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Custom split filter for the amenities */
+    .font-sans { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    h1 { text-wrap: balance; }
+</style>
 {% endblock %}
