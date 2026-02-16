@@ -64,7 +64,23 @@
 
                 <div class="space-y-6">
                     <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
-                        <span class="bg-pink-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">3</span>
+                        <span class="bg-cyan-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">3</span>
+                        <h3 class="text-white font-black uppercase tracking-widest text-[10px]">Visual Identity</h3>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Cover Photo</label>
+                        <div class="relative group">
+                            <div class="w-full bg-slate-800/30 border border-slate-700/50 focus-within:border-cyan-500 rounded-2xl p-4 transition-all">
+                                {% render_field form.image class="w-full text-sm text-slate-400 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-slate-700 file:text-white hover:file:bg-cyan-600 file:transition-all" %}
+                            </div>
+                            <p class="text-[8px] text-slate-500 mt-2 ml-2 uppercase tracking-widest">High-resolution landscape images recommended</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                        <span class="bg-pink-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">4</span>
                         <h3 class="text-white font-black uppercase tracking-widest text-[10px]">Experience & Socials</h3>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -100,28 +116,28 @@
 </div>
 
 <style>
-    /* Styling auto-generated file inputs */
+    /* Styling auto-generated file inputs to match the dark theme */
     input[type="file"] {
-        color: #64748b;
-        font-size: 0.75rem;
+        color: #94a3b8;
     }
     input[type="file"]::file-selector-button {
         background: #1e293b;
         border: 1px solid #334155;
         color: white;
-        padding: 6px 12px;
-        border-radius: 10px;
+        padding: 8px 16px;
+        border-radius: 12px;
         margin-right: 12px;
-        font-weight: 800;
+        font-weight: 900;
         text-transform: uppercase;
         font-size: 9px;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     input[type="file"]::file-selector-button:hover {
         background: #334155;
-        border-color: #475569;
+        border-color: #06b6d4; /* cyan-500 */
+        box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
     }
 </style>
 {% endblock %}
