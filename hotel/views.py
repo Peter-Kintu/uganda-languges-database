@@ -10,21 +10,21 @@ from .forms import AccommodationForm
 
 def sync_hotels_travelpayouts(request):
     """
-    Fetches hotel data from Travelpayouts for multiple African cities, 
-    including Uganda, Kenya, and others.
+    Fetches hotel data from Travelpayouts for multiple African cities.
+    Correctly handles various API response formats.
     """
     if not request.user.is_staff:
         messages.error(request, "Only staff can sync API data.")
         return redirect('hotel:hotel_list')
 
+    # Ensure this environment variable is set in Koyeb
     api_token = os.environ.get('TRAVEL_PAYOUTS_TOKEN')
     marker = "703979" 
     
     if not api_token:
-        messages.error(request, "API Token not found. Please set TRAVEL_PAYOUTS_TOKEN in Koyeb.")
+        messages.error(request, "API Token not found. Set TRAVEL_PAYOUTS_TOKEN in Koyeb.")
         return redirect('hotel:hotel_list')
 
-    # List of African destinations to sync
     african_destinations = [
         {'city': 'Entebbe', 'country': 'Uganda', 'iata': 'EBB'},
         {'city': 'Kampala', 'country': 'Uganda', 'iata': 'KLA'},
@@ -50,31 +50,37 @@ def sync_hotels_travelpayouts(request):
             }
             
             response = requests.get(url, params=params)
-            # Skip if a specific city fails but continue the loop
             if response.status_code != 200:
                 continue
                 
             data = response.json()
 
-            for item in data:
-                affiliate_link = f"https://tp.media/r?marker={marker}&p=2409&u=https://www.trip.com/hotels/detail?hotelId={item['hotelId']}"
+            # SAFETY CHECK: Handle cases where API returns a dict with 'data' key or a direct list
+            items = data if isinstance(data, list) else data.get('data', [])
+
+            for item in items:
+                # Unique ID format to avoid duplicates
+                external_id = f"tp-{item.get('hotelId')}"
+                
+                # Dynamic affiliate link generation
+                affiliate_link = f"https://tp.media/r?marker={marker}&p=2409&u=https://www.trip.com/hotels/detail?hotelId={item.get('hotelId')}"
                 
                 Accommodation.objects.update_or_create(
-                    external_id=f"tp-{item['hotelId']}",
+                    external_id=external_id,
                     defaults={
                         'source': 'travelpayouts',
-                        'name': item['hotelName'],
-                        'price_per_night': item['priceAvg'],
+                        'name': item.get('hotelName'),
+                        'price_per_night': item.get('priceAvg', 0),
                         'city': dest['city'],
                         'country': dest['country'],
                         'stars': item.get('stars', 0),
-                        'affiliate_url': affiliate_link
+                        'affiliate_url': affiliate_link,
+                        'description': f"Experience world-class hospitality at {item.get('hotelName')} in the heart of {dest['city']}. Booked through our premium global partners."
                     }
                 )
                 total_added += 1
             
-            # Brief pause to prevent rate-limiting
-            time.sleep(0.3)
+            time.sleep(0.3) # Rate limit protection
 
         messages.success(request, f"Successfully synced {total_added} hotels across Africa!")
     except Exception as e:
@@ -82,23 +88,14 @@ def sync_hotels_travelpayouts(request):
     
     return redirect('hotel:hotel_list')
 
-def book_hotel(request, pk):
-    """Decision logic: Redirect to WhatsApp or Affiliate link."""
-    hotel = get_object_or_404(Accommodation, pk=pk)
-    if hotel.source == 'travelpayouts' and hotel.affiliate_url:
-        return redirect(hotel.affiliate_url)
-    
-    message = quote(f"Hello, I'm interested in booking {hotel.name} in {hotel.city}. Is it available?")
-    return redirect(f"https://wa.me/{hotel.whatsapp_number}?text={message}")
-
-def hotel_detail(request, slug):
-    accommodation = get_object_or_404(Accommodation, slug=slug)
-    return render(request, 'hotel_detail.html', {'accommodation': accommodation})
-
 def hotel_list(request):
     """Displays all accommodations, including synced and manual entries."""
     accommodations = Accommodation.objects.all().order_by('-id')
     return render(request, 'hotel_list.html', {'accommodations': accommodations})
+
+def hotel_detail(request, slug):
+    accommodation = get_object_or_404(Accommodation, slug=slug)
+    return render(request, 'hotel_detail.html', {'accommodation': accommodation})
 
 def add_accommodation(request):
     if request.method == 'POST':
@@ -111,3 +108,12 @@ def add_accommodation(request):
         form = AccommodationForm()
     
     return render(request, 'add_accommodation.html', {'form': form})
+
+def book_hotel(request, pk):
+    """Decision logic: Redirect to WhatsApp or Affiliate link."""
+    hotel = get_object_or_404(Accommodation, pk=pk)
+    if hotel.source == 'travelpayouts' and hotel.affiliate_url:
+        return redirect(hotel.affiliate_url)
+    
+    message = quote(f"Hello, I'm interested in booking {hotel.name} in {hotel.city}. Is it available?")
+    return redirect(f"https://wa.me/{hotel.whatsapp_number}?text={message}")

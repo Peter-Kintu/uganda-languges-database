@@ -75,15 +75,29 @@
         {% for stay in accommodations %}
         <div class="group bg-slate-900/20 rounded-[40px] overflow-hidden border border-slate-800/40 hover:border-indigo-500/40 transition-all duration-700 hover:shadow-2xl">
             
-            <div class="relative h-64 overflow-hidden">
-                <img src="{% if stay.image %}{{ stay.image.url }}{% else %}{{ stay.image_url }}{% endif %}" 
-                     class="w-full h-full object-cover transition duration-[1.5s] group-hover:scale-110"
-                     alt="{{ stay.name }}">
+            <div class="relative h-64 overflow-hidden bg-slate-800">
+                {% if stay.image %}
+                    <img src="{{ stay.image.url }}" class="w-full h-full object-cover transition duration-[1.5s] group-hover:scale-110" alt="{{ stay.name }}">
+                {% elif stay.image_url %}
+                    <img src="{{ stay.image_url }}" class="w-full h-full object-cover transition duration-[1.5s] group-hover:scale-110" alt="{{ stay.name }}">
+                {% else %}
+                    <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1000&auto=format&fit=crop" 
+                         class="w-full h-full object-cover opacity-60 transition duration-[1.5s] group-hover:scale-110" 
+                         alt="Luxury African Stay">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-white/20 font-black uppercase text-[10px] tracking-widest">Premium Collection</span>
+                    </div>
+                {% endif %}
                 
                 <div class="absolute top-4 left-4 flex gap-2">
                     <span class="bg-black/60 backdrop-blur-md border border-white/10 text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
                         {{ stay.country|default:"Africa" }}
                     </span>
+                    {% if stay.source == 'travelpayouts' %}
+                    <span class="bg-indigo-600 text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
+                        Partner
+                    </span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -93,11 +107,15 @@
                         <span class="text-indigo-400 text-[9px] font-black uppercase tracking-widest">{{ stay.city }}</span>
                     </div>
                     <div class="flex text-yellow-500 scale-75">
-                        {% for i in "12345"|make_list %}{% if forloop.counter <= stay.stars %}★{% endif %}{% endfor %}
+                        {% if stay.stars > 0 %}
+                            {% for i in "12345"|make_list %}{% if forloop.counter <= stay.stars %}★{% endif %}{% endfor %}
+                        {% else %}
+                            <span class="text-slate-600 uppercase text-[8px] font-black italic">Verified Luxury</span>
+                        {% endif %}
                     </div>
                 </div>
 
-                <h3 class="text-2xl font-bold text-white mb-6 tracking-tight group-hover:text-indigo-300 transition-colors duration-300">
+                <h3 class="text-2xl font-bold text-white mb-6 tracking-tight group-hover:text-indigo-300 transition-colors duration-300 line-clamp-1">
                     {{ stay.name }}
                 </h3>
                 
@@ -106,7 +124,9 @@
                         <span class="text-slate-500 text-[8px] block uppercase font-black tracking-widest">Starting From</span>
                         <div class="flex items-baseline gap-1">
                             <span class="text-xs font-bold text-slate-400">{{ stay.currency }}</span>
-                            <span class="text-2xl font-black text-white tracking-tighter">{{ stay.price_per_night|floatformat:0 }}</span>
+                            <span class="text-2xl font-black text-white tracking-tighter">
+                                {% if stay.price_per_night > 0 %}{{ stay.price_per_night|floatformat:0 }}{% else %}Enquire{% endif %}
+                            </span>
                         </div>
                     </div>
                     
@@ -132,6 +152,13 @@
     }
     .animate-bounce-short {
         animation: bounce-short 2s ease-in-out infinite;
+    }
+    .line-clamp-1 {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        line-clamp: 1;
+        -webkit-box-orient: vertical;  
+        overflow: hidden;
     }
 </style>
 {% endblock %}
