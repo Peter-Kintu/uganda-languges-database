@@ -30,6 +30,12 @@ urlpatterns = [
     # 1. Admin
     path("admin/", admin.site.urls),
 
+    # 5. E‑shop
+    path("eshop/", include("eshop.urls", namespace="eshop")),
+
+    # 6. Hotels
+    path("hotels/", include("hotel.urls", namespace="hotel")),
+
     # 2. Users (Authentication & Profile) at root
     path("", include("users.urls")),
 
@@ -41,11 +47,7 @@ urlpatterns = [
          RedirectView.as_view(url=reverse_lazy("users:user_login")),
          name="accounts_login_redirect"),
 
-    # 5. E‑shop
-    path("eshop/", include("eshop.urls", namespace="eshop")),
-
-    # 6. Hotels
-    path("hotels/", include("hotel.urls", namespace="hotel")),
+    
 
     # 7. SEO
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict}, name="sitemap"),
