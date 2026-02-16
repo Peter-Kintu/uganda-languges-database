@@ -10,6 +10,8 @@ from urllib.parse import quote
 from .models import Accommodation
 from .forms import AccommodationForm
 
+
+
 def sync_hotels_travelpayouts(request):
     """
     Fetches hotel data from Travelpayouts for multiple African cities.
