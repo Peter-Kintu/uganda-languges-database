@@ -168,12 +168,21 @@
                         </span>
                     </a>
 
+                <a href="{% url 'hotel:hotel_list' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                    <span class="nav-icon-container">
+                        <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" class="hidden" /> <path stroke-linecap="round" stroke-linejoin="round" d="M15 11.25l1.5 1.5.75-.75V8.758l2.276-.61a.48.48 0 00.349-.464V4.41c0-.26-.14-.5-.367-.632A4.49 4.49 0 0015 3.125a4.49 4.49 0 00-2.258.653c-.227.132-.367.372-.367.632v3.274c0 .19.113.361.289.437l1.711.737v2.398zm-1.5 8.25V18a3 3 0 00-6 0v1.5m10.5-3v-1.312c0-.361-.137-.71-.384-.977L14.5 14.25m-9 0l-3.116 3.213c-.247.267-.384.616-.384.977V19.5m13.5-3H3.75" />
+                        </svg>
+                        <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Lodges</span>
+                    </span>
+                </a>
+
                     <a href="{% url 'users:profile' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
                         <span class="nav-icon-container">
                             <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                             </svg>
-                            <span class="nav-icon-tooltip" role="tooltip">Profile</span>
+                            <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Profile</span>
                         </span>
                     </a>
 
@@ -186,21 +195,14 @@
                         </span>
                     </a>
 
-                    <a href="{% url 'languages:browse_job_listings' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
-                        <span class="nav-icon-container">
-                            <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.75v-1.5a2.25 2.25 0 0 0-2.25-2.25h-6l-3-3H6.75A2.25 2.25 0 0 0 4.5 9v1.5a2.25 2.25 0 0 0 2.25 2.25h6l3 3h1.5a2.25 2.25 0 0 0 2.25-2.25Z" />
-                            </svg>
-                            <span class="nav-icon-tooltip" role="tooltip">Job Listings</span>
-                        </span>
-                    </a>
+            
 
                     <a href="{% url 'languages:recruiters_page' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
                         <span class="nav-icon-container">
                             <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V20.25a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25v-1.996c0-.306.125-.6.353-.828l1.378-1.378c.31-.31.724-.51 1.171-.572L7.5 15h9l1.458-.33a2.25 2.25 0 0 0 1.17-.572l.937-.936c.228-.228.353-.522.353-.828V12c0-.306-.125-.6-.353-.828l-1.378-1.378a2.25 2.25 0 0 0-2.25-2.25H12c-.828 0-1.61.328-2.182.9l-1.06 1.06a.75.75 0 0 1-1.06 0L6.182 8.718A2.25 2.25 0 0 0 4.5 8.136V7.5a2.25 2.25 0 0 1 2.25-2.25h1.5a.75.75 0 0 0 0-1.5H6.75A3.75 3.75 0 0 0 3 7.5v1.136c0 .854.341 1.667.956 2.282l1.06 1.06a.75.75 0 0 1 0 1.06l-1.06 1.06a3.75 3.75 0 0 0-.956 2.282V18.72Z" />
                             </svg>
-                            <span class="nav-icon-tooltip" role="tooltip">Recruiters</span>
+                            <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Recruiters</span>
                         </span>
                     </a>
 
@@ -212,7 +214,7 @@
                             <svg class="w-6 h-6 text-indigo-500 group-hover:text-indigo-300 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
                             </svg>
-                            <span class="nav-icon-tooltip" role="tooltip">Dashboard</span>
+                            <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Dashboard</span>
                         </span>
                     </a>
                     <a href="{% url 'languages:user_logout' %}" class="ml-2 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out transform hover:scale-105">
@@ -238,13 +240,22 @@
         <div id="drawer-menu-links" class="max-w-7xl mx-auto px-4 sm:px-6">
             <a href="{% url 'languages:home' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
                 <span class="flex items-center">
-                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125V14.25c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v6.625c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21.75h8.25"/></svg> Home
+                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v6.625c0 .621.504 1.125 1.125 1.125H20.25c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21.75h8.25"/></svg> Home
                 </span>
             </a>
               
              <a href="{% url 'eshop:product_list' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
                 <span class="flex items-center">
                     <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.5.856 8.528a2.25 2.25 0 0 1-.676 1.76l-.44.437c-.322.32-.744.498-1.18.498H5.986c-.436 0-.858-.178-1.18-.498l-.44-.438a2.25 2.25 0 0 1-.676-1.757l.856-8.527M12 8.25h.008v.008H12V8.25Z" /></svg> Market
+                </span>
+            </a>
+
+              <a href="{% url 'hotel:hotel_list' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
+                <span class="flex items-center">
+                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11.25l1.5 1.5.75-.75V8.758l2.276-.61a.48.48 0 00.349-.464V4.41c0-.26-.14-.5-.367-.632A4.49 4.49 0 0015 3.125a4.49 4.49 0 00-2.258.653c-.227.132-.367.372-.367.632v3.274c0 .19.113.361.289.437l1.711.737v2.398zm-1.5 8.25V18a3 3 0 00-6 0v1.5m10.5-3v-1.312c0-.361-.137-.71-.384-.977L14.5 14.25m-9 0l-3.116 3.213c-.247.267-.384.616-.384.977V19.5m13.5-3H3.75" />
+                    </svg>
+                    Lodges
                 </span>
             </a>
 
@@ -259,12 +270,8 @@
                     <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg> Post
                 </span>
             </a>
-
-            <a href="{% url 'languages:browse_job_listings' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
-                <span class="flex items-center">
-                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.75v-1.5a2.25 2.25 0 0 0-2.25-2.25h-6l-3-3H6.75A2.25 2.25 0 0 0 4.5 9v1.5a2.25 2.25 0 0 0 2.25 2.25h6l3 3h1.5a2.25 2.25 0 0 0 2.25-2.25Z" /></svg> Jobs
-                </span>
-            </a>
+                    
+          
 
             <a href="{% url 'languages:recruiters_page' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
                 <span class="flex items-center">

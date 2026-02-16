@@ -3,7 +3,9 @@ Django
 gunicorn
 
 # Database (Neon.tech / Postgres)
-psycopg2-binary
+# Using psycopg[binary] for better cross-platform compatibility
+psycopg[binary]
+
 dj-database-url
 python-dotenv
 
@@ -24,3 +26,7 @@ django-widget-tweaks
 python-aliexpress-api
 google-genai
 phonenumbers
+
+# Required Core (The fix for your Pydantic error)
+pydantic
+pydantic-core

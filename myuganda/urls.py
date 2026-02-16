@@ -44,10 +44,15 @@ urlpatterns = [
     # 5. E‑shop
     path("eshop/", include("eshop.urls", namespace="eshop")),
 
-    # 6. SEO
+    # 6. Hotels
+    path("hotels/", include("hotel.urls", namespace="hotel")),
+
+    # 7. SEO
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict}, name="sitemap"),
 
     path("show-ip/", show_ip),
+
+    
    
 ]
 
