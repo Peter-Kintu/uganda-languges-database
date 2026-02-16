@@ -10,29 +10,27 @@ from urllib.parse import quote
 from .models import Accommodation
 from .forms import AccommodationForm
 
-
 def sync_hotels_travelpayouts(request):
     """
-    Fetches hotel data from Travelpayouts for multiple African cities.
-    Correctly handles various API response formats and prevents duplicates.
+    Syncs hotels using the Hotellook Static List API.
+    Uses the updated TRAVEL_PAYOUTS_TOKEN environment variable.
     """
     if not request.user.is_staff:
         messages.error(request, "Only staff can sync API data.")
         return redirect('hotel:hotel_list')
 
-    # Environment variable check
+    # Now using the key name you updated in Koyeb
     api_token = os.environ.get('TRAVEL_PAYOUTS_TOKEN')
     marker = "703979" 
     
     if not api_token:
-        messages.error(request, "API Token not found. Set TRAVEL_PAYOUTS_TOKEN in Koyeb settings.")
-        # If request came from admin, stay in admin
+        messages.error(request, "API Token not found. Ensure 'TRAVEL_PAYOUTS_TOKEN' is set in Koyeb.")
         if 'admin' in request.path:
             return redirect('admin:hotel_accommodation_changelist')
         return redirect('hotel:hotel_list')
 
-    # Comprehensive list of African destinations for the directory
-    african_destinations = [
+    # Comprehensive list of African destinations for your directory
+    destinations = [
         {'city': 'Entebbe', 'country': 'Uganda', 'iata': 'EBB'},
         {'city': 'Kampala', 'country': 'Uganda', 'iata': 'KLA'},
         {'city': 'Nairobi', 'country': 'Kenya', 'iata': 'NBO'},
@@ -44,72 +42,69 @@ def sync_hotels_travelpayouts(request):
         {'city': 'Addis Ababa', 'country': 'Ethiopia', 'iata': 'ADD'},
     ]
 
-    url = "https://engine.hotellook.com/api/v2/cache.json"
+    # Hotellook Static Hotels Endpoint (Reliable for directory building)
+    url = "https://engine.hotellook.com/api/v2/static/hotels.json"
     total_added = 0
 
     try:
-        for dest in african_destinations:
+        for dest in destinations:
             params = {
                 'location': dest['iata'],
-                'currency': 'usd',
-                'limit': 10,
-                'token': api_token
+                'token': api_token,
+                'limit': 15  # Fetch top 15 hotels per city
             }
             
             response = requests.get(url, params=params)
-            if response.status_code != 200:
-                continue
-                
-            data = response.json()
+            
+            if response.status_code == 200:
+                data = response.json()
+                # Handle both list and dictionary response formats
+                hotels = data if isinstance(data, list) else data.get('hotels', [])
 
-            # Travelpayouts returns a list directly or a dict with a 'data' key.
-            items = data if isinstance(data, list) else data.get('data', [])
+                for hotel in hotels:
+                    hotel_name = hotel.get('name') or hotel.get('hotelName')
+                    if not hotel_name:
+                        continue
 
-            for item in items:
-                hotel_name = item.get('hotelName')
-                if not hotel_name:
-                    continue
+                    hotel_id = hotel.get('id') or hotel.get('hotelId')
+                    external_id = f"tp-{hotel_id}"
+                    
+                    # Generate a unique slug for the detail view
+                    base_slug = slugify(f"{hotel_name}-{dest['city']}")
+                    unique_slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
 
-                external_id = f"tp-{item.get('hotelId')}"
-                
-                # We generate a unique slug here to ensure the Detail View works immediately
-                # This mirrors your model's logic but ensures it's populated during sync
-                base_slug = slugify(f"{hotel_name}-{dest['city']}")
-                unique_slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
-
-                # Update or create based on the external ID
-                Accommodation.objects.update_or_create(
-                    external_id=external_id,
-                    defaults={
-                        'source': 'travelpayouts',
-                        'name': hotel_name,
-                        'slug': unique_slug,
-                        'price_per_night': item.get('priceAvg', 0),
-                        'city': dest['city'],
-                        'country': dest['country'],
-                        'stars': item.get('stars', 0),
-                        'affiliate_url': f"https://tp.media/r?marker={marker}&p=2409&u=https://www.trip.com/hotels/detail?hotelId={item.get('hotelId')}",
-                        'description': f"Experience world-class hospitality at {hotel_name} in {dest['city']}. This premium stay is curated as part of our elite African collection."
-                    }
-                )
-                total_added += 1
+                    # Update or create the entry
+                    Accommodation.objects.update_or_create(
+                        external_id=external_id,
+                        defaults={
+                            'source': 'travelpayouts',
+                            'name': hotel_name,
+                            'slug': unique_slug,
+                            'city': dest['city'],
+                            'country': dest['country'],
+                            'stars': hotel.get('stars', 0),
+                            'price_per_night': 0, # Live prices require the Search API
+                            'affiliate_url': f"https://tp.media/r?marker={marker}&p=2409&u=https://www.trip.com/hotels/detail?hotelId={hotel_id}",
+                            'description': f"Experience the best of {dest['city']} at {hotel_name}. This stay is part of our curated Africana collection."
+                        }
+                    )
+                    total_added += 1
             
             # Rate limiting safety
-            time.sleep(0.3)
+            time.sleep(0.5)
 
         messages.success(request, f"Successfully synced {total_added} hotels into your directory!")
         
     except Exception as e:
         messages.error(request, f"Sync Error: {str(e)}")
     
-    # Determine where to redirect back to
     if 'admin' in request.path:
         return redirect('admin:hotel_accommodation_changelist')
     return redirect('hotel:hotel_list')
 
 
 def hotel_list(request):
-    """Displays all accommodations: both manual (local) and API-synced entries."""
+    """Displays all accommodations."""
     accommodations = Accommodation.objects.all().order_by('-id')
     return render(request, 'hotel_list.html', {'accommodations': accommodations})
 
@@ -121,12 +116,12 @@ def hotel_detail(request, slug):
 
 
 def add_accommodation(request):
-    """Allows users to manually list their own lodges."""
+    """Allows manual listing of lodges."""
     if request.method == 'POST':
         form = AccommodationForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            messages.success(request, "Your lodge has been successfully added to the collection!")
+            messages.success(request, "Your lodge has been successfully added!")
             return redirect('hotel:hotel_list')
     else:
         form = AccommodationForm()
@@ -137,15 +132,16 @@ def add_accommodation(request):
 def book_hotel(request, pk):
     """
     Booking Logic:
-    - If it's an API hotel: Redirect to the affiliate link.
-    - If it's a Local hotel: Open WhatsApp with a pre-filled message.
+    - API hotel: Redirects to Trip.com.
+    - Local hotel: Opens WhatsApp.
     """
     hotel = get_object_or_404(Accommodation, pk=pk)
     
     if hotel.source == 'travelpayouts' and hotel.affiliate_url:
         return redirect(hotel.affiliate_url)
     
-    # WhatsApp flow for local partners
-    message = quote(f"Hello, I'm interested in booking {hotel.name} in {hotel.city}. Is it available for my dates?")
-    whatsapp_num = getattr(hotel, 'whatsapp_number', '256000000000') # Fallback if missing
-    return redirect(f"https://wa.me/{whatsapp_num}?text={message}")
+    raw_num = hotel.whatsapp_number or "256000000000"
+    clean_num = "".join(filter(str.isdigit, str(raw_num)))
+    
+    message = quote(f"Hello, I'm interested in booking {hotel.name} in {hotel.city}.")
+    return redirect(f"https://wa.me/{clean_num}?text={message}")
