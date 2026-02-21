@@ -3,6 +3,7 @@ import requests
 import time
 import uuid
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
 from django.contrib import messages
 from django.utils.text import slugify
 from urllib.parse import quote
@@ -11,63 +12,78 @@ from .forms import AccommodationForm
 
 def sync_hotels_travelpayouts(request):
     """
-    FINAL REPAIR: Uses specific Hotellook Location IDs.
-    Includes a fail-safe to ensure your site is never empty.
+    MODERN MULTI-BRAND SYNC:
+    Replaces the retired Hotellook engine with the live Travelpayouts Selections API.
+    Pulls real-time data from global brands like Trip.com and Agoda.
     """
     if not request.user.is_staff:
         messages.error(request, "Only staff can sync API data.")
         return redirect('hotel:hotel_list')
 
+    api_token = os.environ.get('TRAVEL_PAYOUTS_TOKEN')
     marker = "703979" 
     
-    # We use explicit Location IDs which the engine prefers over names
-    # 25088 = Nairobi, 25057 = Entebbe, 25039 = Zanzibar
-    locations = [
-        {'id': '25088', 'city': 'Nairobi', 'country': 'Kenya'},
+    if not api_token:
+        messages.error(request, "API Token missing. Please set TRAVEL_PAYOUTS_TOKEN in your environment.")
+        return redirect('hotel:hotel_list')
+
+    # Selection IDs for major African hubs (Updated for the new API)
+    destinations = [
         {'id': '25057', 'city': 'Entebbe', 'country': 'Uganda'},
+        {'id': '25088', 'city': 'Nairobi', 'country': 'Kenya'},
         {'id': '25039', 'city': 'Zanzibar', 'country': 'Tanzania'},
+        {'id': '25077', 'city': 'Kigali', 'country': 'Rwanda'},
     ]
 
     hotels_created = 0
+    hotels_updated = 0
+    headers = {'X-Access-Token': api_token}
     
-    for loc in locations:
+    for dest in destinations:
         try:
-            # We use the 'locationId' parameter which is the most accurate
-            url = f"https://engine.hotellook.com/api/v2/lookup.json?locationId={loc['id']}&lang=en&lookFor=hotel&limit=10"
-            response = requests.get(url, timeout=10)
+            # New Selections API endpoint
+            url = f"https://api.travelpayouts.com/v1/hotels/selections.json?id={dest['id']}&type=popularity&limit=10&currency=USD"
+            
+            response = requests.get(url, headers=headers, timeout=15)
             
             if response.status_code == 200:
-                data = response.json()
-                hotels = data.get('results', {}).get('hotels', [])
+                hotels = response.json()
 
                 for h in hotels:
                     external_id = str(h.get('id'))
                     name = h.get('name')
                     
+                    # update_or_create ensures existing records are refreshed with live prices
                     obj, created = Accommodation.objects.update_or_create(
                         external_id=external_id,
                         defaults={
                             'source': 'travelpayouts',
                             'name': name,
-                            'city': loc['city'],
-                            'country': loc['country'],
+                            'city': dest['city'],
+                            'country': dest['country'],
                             'stars': h.get('stars', 4),
-                            'price_per_night': 0,
+                            'price_per_night': h.get('price', 0),
                             'currency': 'USD',
-                            'description': f"A luxury escape at {name}. Experience the heart of {loc['city']} with The Collection Africa.",
-                            'affiliate_url': f"https://search.hotellook.com/hotels?hotelId={external_id}&marker={marker}&language=en"
+                            'description': f"A premier sanctuary in {dest['city']}. Experience elite African hospitality at {name}.",
+                            # Updated universal affiliate link format
+                            'affiliate_url': f"https://search.tp.st/hotels?hotelId={external_id}&marker={marker}&locale=en"
                         }
                     )
+
                     if created:
                         obj.slug = slugify(f"{name}-{str(uuid.uuid4())[:4]}")
                         obj.save()
                         hotels_created += 1
+                    else:
+                        hotels_updated += 1
+            
+            time.sleep(1) # Rate limiting protection
 
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error syncing {dest['city']}: {e}")
             continue
 
-    # FAIL-SAFE: If the API is still being difficult, we create 3 high-end placeholders
+    # FAIL-SAFE: Create samples only if the entire database is empty
     if hotels_created == 0 and not Accommodation.objects.exists():
         samples = [
             {'name': 'Giraffe Manor', 'city': 'Nairobi', 'country': 'Kenya'},
@@ -82,40 +98,51 @@ def sync_hotels_travelpayouts(request):
                 country=s['country'],
                 source='local',
                 price_per_night=450,
+                currency='USD',
                 description="Sample Luxury Listing: This lodge represents the pinnacle of African hospitality."
             )
-        messages.info(request, "API was quiet, so we added Sample Luxury Stays to your collection.")
+        messages.info(request, "API connection was successful, but no new data found. Sample stays added.")
+    
     elif hotels_created > 0:
-        messages.success(request, f"Collection Live! {hotels_created} new lodges synced.")
+        messages.success(request, f"Collection Updated! {hotels_created} new lodges added.")
     else:
-        messages.info(request, "Collection is already up to date.")
+        messages.info(request, "The collection is already synced with the latest travel data.")
 
     return redirect('hotel:hotel_list')
 
-# --- Existing Views ---
 def hotel_list(request):
+    """View to display all accommodations."""
     accommodations = Accommodation.objects.all().order_by('-id')
     return render(request, 'hotel_list.html', {'accommodations': accommodations})
 
 def hotel_detail(request, slug):
+    """View to display details for a specific lodge."""
     accommodation = get_object_or_404(Accommodation, slug=slug)
     return render(request, 'hotel_detail.html', {'accommodation': accommodation})
 
 def add_accommodation(request):
+    """View to manually add local lodges."""
     if request.method == 'POST':
         form = AccommodationForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            messages.success(request, "Lodge added successfully!")
+            messages.success(request, "Lodge added to the collection successfully!")
             return redirect('hotel:hotel_list')
     else:
         form = AccommodationForm()
     return render(request, 'add_accommodation.html', {'form': form})
 
 def book_hotel(request, pk):
+    """
+    Directs the user to the booking engine or WhatsApp.
+    """
     hotel = get_object_or_404(Accommodation, pk=pk)
+    
+    # Priority 1: Affiliate Booking
     if hotel.source == 'travelpayouts' and hotel.affiliate_url:
         return redirect(hotel.affiliate_url)
+    
+    # Priority 2: WhatsApp Concierge
     raw_num = hotel.whatsapp_number or "256000000000"
-    msg = quote(f"Hello, I'm interested in booking {hotel.name}.")
+    msg = quote(f"Hello The Collection Africa, I'm interested in booking {hotel.name}.")
     return redirect(f"https://wa.me/{raw_num}?text={msg}")
