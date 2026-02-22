@@ -17,24 +17,36 @@
         .footer-link:hover {
             color: #818cf8;
         }
-        /* Frosted glass effect for the drawer - Duplicated but kept to ensure no visual change */
         .drawer-glass {
             background-color: rgba(31, 41, 55, 0.9);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
-
-        /* Basic transition for the drawer - Duplicated but kept to ensure no visual change */
         .drawer-transition {
             transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-
         .drawer-open {
             transform: translateX(0%);
         }
-
         .drawer-close {
             transform: translateX(-100%);
+        }
+
+        /* Custom Input Styles */
+        .form-input {
+            width: 100%;
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            margin-top: 0.25rem;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #818cf8;
+            border-width: 2px;
         }
     </style>
 {% endblock %}
@@ -43,14 +55,14 @@
 <main class="flex-grow flex items-center justify-center p-8">
     <div class="w-full max-w-lg bg-gray-800 p-8 rounded-2xl shadow-xl border border-indigo-500">
         <h1 class="text-3xl font-bold text-white mb-4 text-center">Join Our Network of Top Recruiters</h1>
-        <p class="text-gray-400 mb-8 text-center">Partner with us to gain premium access to top talent, enhanced visibility, and recruitment features.</p>
+        <p class="text-gray-400 mb-8 text-center">Partner with us to gain premium access to top talent and recruitment features.</p>
         
-        <section class="mb-8">
-            <h2 class="text-2xl font-semibold text-indigo-400 mb-4">Top Posting Recruiters (All-Time)</h2>
+        <section class="mb-10">
+            <h2 class="text-2xl font-semibold text-indigo-400 mb-4 text-center">Top Posting Recruiters</h2>
             <div class="space-y-3">
                 {% if top_recruiters %}
                     {% for recruiter in top_recruiters %}
-                        <div class="flex justify-between items-center bg-gray-700 p-3 rounded-lg">
+                        <div class="flex justify-between items-center bg-gray-700 p-3 rounded-lg border border-gray-600">
                             <span class="font-medium text-white">{{ recruiter.recruiter_name|default:'[Anonymous Company]' }}</span>
                             <span class="text-sm px-3 py-1 bg-indigo-500 text-indigo-900 rounded-full font-bold">
                                 {{ recruiter.post_count }} Job Posts
@@ -58,16 +70,67 @@
                         </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-400">No recruiters have posted jobs yet. Be the first!</p>
+                    <p class="text-gray-400 text-center">No recruiters have posted jobs yet. Be the first!</p>
                 {% endif %}
             </div>
         </section>
 
-        <div class="text-center">
-            <a href="mailto:kintupeter7@gmail.com" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition duration-300 shadow-lg">
-                Contact Us to Become a Partner
-            </a>
-        </div>
+        <hr class="border-gray-700 mb-8">
+
+        <section>
+            <h2 class="text-xl font-bold text-white mb-6 text-center">Direct Partnership Inquiry</h2>
+            
+            <form id="contactForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300">Company Name / Your Name</label>
+                    <input type="text" id="name" required class="form-input" placeholder="e.g. Acme Corp">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300">Message</label>
+                    <textarea id="message" rows="3" required class="form-input" placeholder="I am interested in..."></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <button type="button" onclick="sendEmail()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition duration-300 shadow-lg">
+                        Send via Email
+                    </button>
+
+                    <button type="button" onclick="sendWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition duration-300 shadow-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.224-3.62c1.566.93 3.19 1.419 4.85 1.42h.005c5.448 0 9.886-4.437 9.889-9.886 0-2.641-1.03-5.123-2.902-6.994s-4.353-2.901-6.995-2.901c-5.447 0-9.886 4.438-9.889 9.886-.001 1.73.458 3.413 1.323 4.888l-1.048 3.83 3.925-1.029z"/></svg>
+                        Chat on WhatsApp
+                    </button>
+                </div>
+            </form>
+        </section>
     </div>
 </main>
+
+<script>
+    const MY_PHONE = "256789746493";
+    const MY_EMAIL = "kintupeter7@gmail.com";
+
+    function getFormData() {
+        const name = document.getElementById('name').value;
+        const msg = document.getElementById('message').value;
+        return { name, msg };
+    }
+
+    function sendEmail() {
+        const data = getFormData();
+        if(!data.name || !data.msg) return alert("Please fill in both fields");
+        
+        const subject = encodeURIComponent("Partnership Inquiry from " + data.name);
+        const body = encodeURIComponent("Hello,\n\n" + data.msg + "\n\nRegards,\n" + data.name);
+        
+        window.location.href = `mailto:${MY_EMAIL}?subject=${subject}&body=${body}`;
+    }
+
+    function sendWhatsApp() {
+        const data = getFormData();
+        if(!data.name || !data.msg) return alert("Please fill in both fields");
+        
+        const text = encodeURIComponent(`*Partnership Inquiry*\n*From:* ${data.name}\n*Message:* ${data.msg}`);
+        window.open(`https://wa.me/${MY_PHONE}?text=${text}`, '_blank');
+    }
+</script>
 {% endblock content %}
