@@ -24,17 +24,74 @@
             line-height: 1.6;
         }
 
-        /* MODERN SEARCH BAR */
-        .hero-search-container {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(20px);
+        /* WORLD-CLASS SEARCH UI - IMPROVED RESPONSIVENESS */
+        .search-orchestrator {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(24px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transition: all 0.4s ease;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 20px 50px -12px rgba(0, 0, 0, 0.8);
+            border-radius: 24px;
+            padding: 12px;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 100%;
         }
-        .hero-search-container:focus-within {
-            border-color: var(--brand-primary);
-            box-shadow: 0 0 0 4px var(--brand-glow);
+        
+        @media (min-width: 768px) {
+            .search-orchestrator {
+                border-radius: 40px;
+                padding: 10px;
+            }
+        }
+
+        .search-orchestrator:focus-within {
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 80px -10px rgba(99, 102, 241, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .search-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-height: 56px;
+            width: 100%;
+        }
+        
+        .search-input-group input, .search-input-group select {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            height: 100%;
+            width: 100%;
+            color: white !important;
+            padding-left: 54px;
+            padding-right: 15px;
+            font-size: 15px;
+            font-weight: 500;
+            outline: none;
+        }
+
+        /* FIX: Dropdown Visibility (White background/invisible text fix) */
+        .search-input-group select option {
+            background-color: #0f172a; /* Matches card-bg */
+            color: white;
+        }
+
+        /* Select styling reset */
+        .search-input-group select {
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .search-input-group svg {
+            position: absolute;
+            left: 20px;
+            color: #64748b;
+            transition: color 0.3s ease;
+            pointer-events: none;
+        }
+        .search-input-group:focus-within svg {
+            color: var(--brand-primary);
         }
 
         /* NEU-JOB CARDS */
@@ -77,7 +134,6 @@
             transform: translateY(-2px);
         }
 
-        /* ANIMATED BADGE */
         .pulse-dot {
             width: 8px; height: 8px;
             background: #10b981;
@@ -93,12 +149,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
-        .badge-adzuna {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--adzuna-blue);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-        }
     </style>
 {% endblock %}
 
@@ -106,7 +156,7 @@
 <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     
     {% if selected_job %}
-        {# SINGLE JOB VIEW - LUXURY LAYOUT #}
+        {# SINGLE JOB VIEW #}
         <div class="max-w-4xl mx-auto">
             <a href="{% url 'languages:browse_job_listings' %}" class="group flex items-center text-slate-400 hover:text-white mb-8 transition">
                 <div class="p-2 rounded-full bg-slate-800 mr-3 group-hover:-translate-x-1 transition">
@@ -154,7 +204,6 @@
                             <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" 
                                     class="bg-white text-black hover:bg-indigo-50 font-bold py-5 px-12 rounded-2xl text-lg transition-all active:scale-95 shadow-2xl">Secure Apply Now</button>
                         {% endif %}
-                        <span class="text-slate-500 text-sm">Verified Opportunity &bull; 24h average response</span>
                     </div>
                 </div>
             </div>
@@ -162,25 +211,26 @@
 
     {% else %}
         {# LIST VIEW - MODERN GRID #}
-        <header class="mb-20 text-center relative">
-            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-600/20 blur-[120px] -z-10 rounded-full"></div>
-            <h1 class="text-5xl md:text-7xl font-black mb-6 tracking-tighter text-gradient">
-                Listed <span class="text-indigo-500">Jobs.</span>
+        <header class="mb-20 text-center relative px-4">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-600/10 blur-[140px] -z-10 rounded-full"></div>
+            <h1 class="text-5xl md:text-8xl font-black mb-10 tracking-tighter text-gradient leading-none">
+                AI <span class="text-indigo-500">Nodes.</span>
             </h1>
         
-            <form method="get" action="{% url 'languages:browse_job_listings' %}" class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-3 hero-search-container p-3 rounded-[32px] items-center">
-                <div class="md:col-span-5 relative group">
-                    <svg class="w-5 h-5 text-slate-500 absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <input type="search" name="q" placeholder="Keywords, job eg teacher" value="{{ search_query }}" class="w-full bg-transparent border-none rounded-2xl text-white pl-14 py-3 focus:ring-0 text-base">
+            <form method="get" action="{% url 'languages:browse_job_listings' %}" class="max-w-6xl mx-auto search-orchestrator flex flex-col md:grid md:grid-cols-12 gap-2">
+                <div class="md:col-span-5 search-input-group border-b md:border-b-0 md:border-r border-white/10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="search" name="q" placeholder="Keywords, job e.g. AI Trainer" value="{{ search_query }}">
                 </div>
                 
-                <div class="md:col-span-3 relative group">
-                    <svg class="w-5 h-5 text-slate-500 absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                    <input type="text" name="where" placeholder="Country" value="{{ location_query }}" class="w-full bg-transparent border-none rounded-2xl text-white pl-14 py-3 focus:ring-0 text-base">
+                <div class="md:col-span-3 search-input-group border-b md:border-b-0 md:border-r border-white/10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                    <input type="text" name="where" placeholder="Location" value="{{ location_query }}">
                 </div>
                 
-                <div class="md:col-span-2">
-                    <select name="category" class="w-full bg-slate-800/50 border-none rounded-xl text-slate-300 py-3 px-4 focus:ring-2 focus:ring-indigo-500 appearance-none text-sm cursor-pointer">
+                <div class="md:col-span-2 search-input-group border-b md:border-b-0 border-white/10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                    <select name="category">
                         <option value="all">All Roles</option>
                         {% for key, val in job_categories %}
                             <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
@@ -188,9 +238,9 @@
                     </select>
                 </div>
                 
-                <div class="md:col-span-2">
-                    <button type="submit" class="w-full btn-primary text-white font-bold rounded-xl py-3 px-2 shadow-lg text-[11px] uppercase tracking-wider hover:brightness-110 transition-all active:scale-95 whitespace-nowrap">
-                        Search Jobs
+                <div class="md:col-span-2 p-1">
+                    <button type="submit" class="w-full h-full btn-primary text-white font-black rounded-2xl md:rounded-[28px] py-4 md:py-0 shadow-lg text-[12px] uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 min-h-[50px]">
+                        Pulse Search
                     </button>
                 </div>
             </form>
@@ -198,33 +248,87 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-            {# 1. PREMIUM CARD DESIGN #}
-            {% if solidgigs %}
-            <div class="job-card premium-card p-8 flex flex-col group h-full">
-                <div class="relative z-10 h-full flex flex-col">
-                    <div class="flex justify-between items-start mb-8">
-                        <div class="bg-indigo-500/20 text-indigo-300 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-tighter border border-indigo-500/30">Premium Partner</div>
-                        <div class="pulse-dot"></div>
-                    </div>
-                    <h3 class="text-3xl font-black text-white mb-4 leading-tight">
-                        {{ solidgigs.name }}
-                    </h3>
-                    <p class="text-slate-400 text-sm mb-8 leading-relaxed">Verified high-budget freelance leads delivered directly to your inbox. No bidding, no noise.</p>
-                    
-                    <div class="mt-auto">
-                        <div class="flex -space-x-3 mb-6">
-                            <img class="h-8 w-8 rounded-full border-2 border-slate-900" src="https://i.pravatar.cc/100?u=1">
-                            <img class="h-8 w-8 rounded-full border-2 border-slate-900" src="https://i.pravatar.cc/100?u=2">
-                            <img class="h-8 w-8 rounded-full border-2 border-slate-900" src="https://i.pravatar.cc/100?u=3">
-                            <div class="h-8 w-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white">+5k</div>
+                {# 1. MICRO1 PREMIUM CARD #}
+        <div class="job-card p-8 flex flex-col h-full group border-t-4 border-indigo-400 shadow-2xl" style="background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 100%);">
+            <div class="flex justify-between items-start mb-6">
+                <div class="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-indigo-500/20">Official AGI Contributor</div>
+                <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+            </div>
+
+            <h3 class="text-2xl font-black text-white mb-3 tracking-tight">Micro1 AI Specialist</h3>
+
+            <p class="text-slate-400 text-sm mb-8 leading-relaxed">Join the world's most elite network training frontier AI models. High-compensation roles for subject matter experts, writers, and developers.</p>
+
+            <div class="mt-auto">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="text-indigo-300 font-bold text-xs px-3 py-1 bg-indigo-500/10 rounded-lg">Priority Global Hiring</span>
+                    <span class="text-emerald-400 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Top-Tier Pay</span>
+                </div>
+
+                <a href="https://refer.micro1.ai/referral/jobs?referralCode=ab667ca0-d5d0-430a-b035-e3b87dda7148&utm_source=referral&utm_medium=share&utm_campaign=job_referral" 
+                target="_blank" 
+                class="w-full block text-center py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95 uppercase text-[11px] tracking-widest">
+                Secure Your Spot
+                </a>
+            </div>
+        </div>
+
+                {# 2. JOBCOPILOT PREMIUM CARD #}
+        <div class="job-card p-8 flex flex-col h-full group border-t-4 border-emerald-500 shadow-2xl" style="background: linear-gradient(165deg, #020617 0%, #064e3b 100%);">
+            <div class="flex justify-between items-start mb-6">
+                <div class="bg-emerald-500/10 text-emerald-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-emerald-500/20">Smart Career Automation</div>
+                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            </div>
+
+            <h3 class="text-2xl font-black text-white mb-3 tracking-tight">JobCopilot AI</h3>
+
+            <p class="text-slate-400 text-sm mb-8 leading-relaxed">Let AI find and apply to 1,000+ remote jobs for you. Skip the manual search and land interviews while you sleep with advanced auto-apply technology.</p>
+
+            <div class="mt-auto">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="text-emerald-300 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Auto-Apply Active</span>
+                    <span class="text-emerald-300 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Remote-First</span>
+                </div>
+
+                <a href="https://jobcopilot.com/?linkId=lp_494205&sourceId=kintu-peter&tenantId=jobcopilot" 
+                target="_blank" 
+                class="w-full block text-center py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95 uppercase text-[11px] tracking-widest">
+                Automate My Job Search
+                </a>
+            </div>
+        </div>
+
+                        {# 3. SOLIDGIGS PREMIUM CARD #}
+                {% if solidgigs %}
+                <div class="job-card premium-card p-8 flex flex-col group h-full border-t-4 border-indigo-400" style="background: linear-gradient(165deg, #1e1b4b 0%, #0f172a 100%);">
+                    <div class="relative z-10 h-full flex flex-col">
+                        <div class="flex justify-between items-start mb-8">
+                            <div class="bg-indigo-500/20 text-indigo-300 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-indigo-500/30">Top 1% Freelance Leads</div>
+                            <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
                         </div>
-                        <a href="{{ solidgigs.url }}" target="_blank" class="w-full block text-center py-4 bg-white text-indigo-900 font-black rounded-2xl hover:bg-indigo-50 transition active:scale-95">Claim Your Leads</a>
+
+                        <h3 class="text-3xl font-black text-white mb-4 leading-tight">{{ solidgigs.name }}</h3>
+
+                        <p class="text-slate-400 text-sm mb-8 leading-relaxed">Stop hunting for work. Get hand-picked, high-budget freelance gigs delivered to your inbox. We find the leads, you land the contracts.</p>
+                        
+                        <div class="mt-auto">
+                            <div class="flex items-center gap-2 mb-6">
+                                <span class="text-indigo-300 font-bold text-[10px] px-3 py-1 bg-indigo-500/10 rounded-lg uppercase">Pre-Vetted</span>
+                                <span class="text-indigo-300 font-bold text-[10px] px-3 py-1 bg-indigo-500/10 rounded-lg uppercase">Daily Updates</span>
+                            </div>
+
+                            <a href="{{ solidgigs.url }}" 
+                            target="_blank" 
+                            class="w-full block text-center py-4 bg-white text-indigo-900 font-black rounded-2xl hover:bg-indigo-50 transition-all shadow-xl active:scale-95 uppercase text-[11px] tracking-widest">
+                            Access Premium Leads
+                            </a>
+                        </div>
                     </div>
                 </div>
-            </div>
+
             {% endif %}
 
-            {# 2. VERIFIED DATABASE JOBS #}
+            {# REST OF THE DYNAMIC JOBS #}
             {% for job in job_posts %}
                 <div class="job-card p-8 flex flex-col h-full group">
                     <div class="flex justify-between items-center mb-6">
@@ -240,12 +344,10 @@
                             </button>
                         </form>
                     </div>
-                    
                     <h3 class="text-xl font-bold text-white mb-2 leading-tight group-hover:text-indigo-400 transition">
                         <a href="?job_id={{ job.pk }}">{{ job.post_content|truncatechars:70 }}</a>
                     </h3>
                     <p class="text-slate-400 font-medium text-sm mb-6">{{ job.recruiter_name }}</p>
-                    
                     <div class="mt-auto pt-6 border-t border-white/5 flex justify-between items-center">
                         <span class="text-slate-500 text-[10px] font-black uppercase tracking-widest">{{ job.recruiter_location }}</span>
                         <a href="?job_id={{ job.pk }}" class="p-2 rounded-full bg-slate-800 text-indigo-400 hover:bg-indigo-600 hover:text-white transition">
@@ -255,20 +357,17 @@
                 </div>
             {% endfor %}
 
-            {# 3. CAREERJET API MIX #}
             {% for job in careerjet_jobs %}
                 <div class="job-card p-8 flex flex-col border-t-4 border-orange-500 h-full">
                     <span class="text-[10px] font-black text-orange-500 mb-6 uppercase tracking-[0.2em]">Aggregated Partner</span>
                     <h3 class="text-xl font-bold text-white mb-2">{{ job.title|safe }}</h3>
                     <p class="text-slate-500 font-bold text-xs uppercase mb-1">{{ job.company }}</p>
-                    <p class="text-slate-600 text-[10px] mb-8 uppercase font-medium">{{ job.location|default:"" }}</p>
                     <div class="mt-auto">
                         <a href="{{ job.url }}" target="_blank" class="w-full block text-center py-4 bg-slate-800 hover:bg-orange-600 text-white text-xs font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest">External Application</a>
                     </div>
                 </div>
             {% endfor %}
 
-            {# 4. ADZUNA API BACKFILL #}
             {% for job in adzuna_jobs %}
                 <div class="job-card p-8 border-l-4 border-blue-500 flex flex-col h-full">
                     <div class="flex justify-between items-center mb-6">
@@ -277,7 +376,6 @@
                     </div>
                     <h3 class="text-xl font-bold text-white mb-2 line-clamp-2">{{ job.title|safe }}</h3>
                     <p class="text-blue-400 font-bold text-xs uppercase mb-1">{{ job.company.display_name }}</p>
-                    <p class="text-slate-500 text-[10px] mb-8 uppercase font-medium italic">{{ job.location.display_name|default:"International" }}</p>
                     <div class="mt-auto">
                         <a href="{{ job.redirect_url }}" target="_blank" class="w-full block text-center py-4 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-600/30 text-xs font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest">Initialize Apply</a>
                     </div>
@@ -285,7 +383,7 @@
             {% endfor %}
         </div>
 
-        {# CINEMATIC PAGINATION #}
+        {# PAGINATION #}
         {% if job_posts.paginator.num_pages > 1 %}
         <div class="flex justify-center items-center mt-24 mb-12 gap-8">
             {% if job_posts.has_previous %}
@@ -293,11 +391,9 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </a>
             {% endif %}
-            
             <div class="px-8 py-3 bg-slate-800/50 backdrop-blur-md rounded-full border border-white/5">
                 <span class="text-slate-400 text-sm font-bold uppercase tracking-widest">Iteration {{ job_posts.number }} <span class="text-slate-600 px-2">/</span> {{ job_posts.paginator.num_pages }}</span>
             </div>
-
             {% if job_posts.has_next %}
                 <a href="?page={{ job_posts.next_page_number }}&q={{ search_query }}&category={{ selected_category }}&where={{ location_query }}" class="h-14 w-14 flex items-center justify-center rounded-full bg-slate-800 text-white border border-white/5 hover:bg-indigo-600 transition shadow-xl">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -309,34 +405,18 @@
     {% endif %}
 </main>
 
-{# FLOATING ACTIONS #}
 <button id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-10 right-10 bg-indigo-600/20 backdrop-blur-xl border border-indigo-500/30 hover:bg-indigo-600 text-white p-5 rounded-full shadow-3xl transition-all transform hover:scale-110 active:scale-90 z-50">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
 </button>
 
-{# GLASS MODAL #}
 <div id="easyApplyModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-2xl flex items-center justify-center p-6">
-    <div class="bg-slate-900 w-full max-w-xl rounded-[40px] p-10 md:p-14 border border-white/10 shadow-3xl relative animate-in fade-in zoom-in duration-500">
+    <div class="bg-slate-900 w-full max-w-xl rounded-[40px] p-10 md:p-14 border border-white/10 shadow-3xl relative">
         <button onclick="closeEasyApplyModal()" class="absolute top-8 right-8 text-slate-500 hover:text-white transition">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         <h2 class="text-4xl font-black text-white mb-2 tracking-tight">Access Role</h2>
-        <p class="text-slate-400 mb-10 font-light">Submit your identity profile to the recruiter node.</p>
-        
-        <div id="actionMessage" class="hidden text-center py-12"></div>
-        
-        <form id="easyApplyForm" class="space-y-6">
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Full Identity Name</label>
-                <input type="text" placeholder="John Doe" required class="w-full bg-slate-800 border-none rounded-3xl text-white p-5 focus:ring-4 focus:ring-indigo-500/20 text-lg">
-            </div>
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Experience Manifest (PDF)</label>
-                <div class="relative w-full bg-slate-800 border-2 border-dashed border-white/10 rounded-3xl p-8 text-center hover:border-indigo-500 transition">
-                    <input type="file" id="cvUpload" required class="absolute inset-0 opacity-0 cursor-pointer">
-                    <p class="text-slate-400 text-sm">Drag file or click to upload</p>
-                </div>
-            </div>
+        <form id="easyApplyForm" class="space-y-6 mt-8">
+            <input type="text" placeholder="Full Identity Name" required class="w-full bg-slate-800 border-none rounded-3xl text-white p-5 focus:ring-4 focus:ring-indigo-500/20 text-lg">
             <button type="submit" class="w-full btn-primary text-white font-black py-5 rounded-3xl text-lg transition active:scale-95 shadow-2xl uppercase tracking-widest">Finalize Application</button>
         </form>
     </div>
