@@ -4,107 +4,211 @@
 {% block content %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700;800&family=Space+Grotesk:wght@500;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&family=Space+Grotesk:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
     :root { 
-        --accent: #6366f1; 
+        /* Refined color palette for better contrast */
+        --accent: #818cf8; /* Lighter indigo for better readability on dark */
+        --accent-glow: rgba(99, 102, 241, 0.4);
         --bg-dark: #0f172a;
+        --bg-card: rgba(30, 41, 59, 0.7);
         --text-light: #f8fafc;
-        --border-light: rgba(255, 255, 255, 0.08);
+        --text-muted: #94a3b8;
+        --border-light: rgba(255, 255, 255, 0.1);
         --gradient-1: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
     }
     
     body { 
-        background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a3e 100%);
+        background-color: var(--bg-dark);
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
         font-family: 'Poppins', sans-serif; 
         color: var(--text-light);
-        overflow-x: hidden;
+        line-height: 1.6;
+        margin: 0;
     }
     
-    .font-heading { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+    .font-heading { 
+        font-family: 'Space Grotesk', sans-serif; 
+        font-weight: 700; 
+        letter-spacing: -0.02em;
+    }
+
+    /* Fluid Typography - No more "funny" fonts on small screens */
+    h1 { font-size: clamp(2.2rem, 8vw, 3.5rem); line-height: 1.1; }
+    h2 { font-size: clamp(1.5rem, 5vw, 2.2rem); }
+    h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
 
     /* Glass Effect */
     .glass-card { 
-        background: rgba(15, 23, 42, 0.8); 
-        backdrop-filter: blur(20px); 
+        background: var(--bg-card); 
+        backdrop-filter: blur(12px); 
+        -webkit-backdrop-filter: blur(12px);
         border: 1px solid var(--border-light); 
-        border-radius: 20px; 
+        border-radius: 24px; 
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
 
     /* Layout Components */
-    .hero { min-height: 100vh; display: flex; align-items: center; padding: 80px 40px; }
-    .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; max-width: 1200px; margin: 0 auto; align-items: center; }
+    .hero { 
+        min-height: 100vh; 
+        display: flex; 
+        align-items: center; 
+        padding: 100px 24px; 
+    }
+    .hero-grid { 
+        display: grid; 
+        grid-template-columns: 1.1fr 0.9fr; 
+        gap: 60px; 
+        max-width: 1200px; 
+        margin: 0 auto; 
+        align-items: center; 
+    }
     
     .badge { 
-        display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; 
-        background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); 
-        border-radius: 50px; font-size: 12px; margin-bottom: 20px; 
+        display: inline-flex; 
+        align-items: center; 
+        gap: 8px; 
+        padding: 6px 14px; 
+        background: rgba(99, 102, 241, 0.15); 
+        border: 1px solid rgba(99, 102, 241, 0.2); 
+        border-radius: 100px; 
+        font-size: 13px; 
+        font-weight: 500;
+        margin-bottom: 24px; 
+        color: var(--accent);
     }
 
     .form-input { 
-        width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); 
-        border: 1px solid var(--border-light); border-radius: 10px; color: white; margin-top: 8px;
+        width: 100%; 
+        padding: 14px; 
+        background: rgba(15, 23, 42, 0.6); 
+        border: 1px solid var(--border-light); 
+        border-radius: 12px; 
+        color: white; 
+        margin-top: 8px;
+        transition: border-color 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: rgba(15, 23, 42, 0.8);
     }
 
     .btn-primary { 
-        background: var(--gradient-1); width: 100%; padding: 14px; 
-        border-radius: 10px; border: none; color: white; font-weight: 600; cursor: pointer;
+        background: var(--gradient-1); 
+        width: 100%; 
+        padding: 16px; 
+        border-radius: 12px; 
+        border: none; 
+        color: white; 
+        font-weight: 700; 
+        font-size: 1rem;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        margin-top: 10px;
     }
 
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 50px; }
-    .card-item { padding: 30px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 16px; }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -10px var(--accent);
+    }
 
-    @media (max-width: 968px) { .hero-grid { grid-template-columns: 1fr; text-align: center; } }
+    /* Grid improvements for rhythm */
+    .grid-3 { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+        gap: 24px; 
+    }
+    
+    .card-item { 
+        padding: 32px; 
+        background: rgba(255, 255, 255, 0.03); 
+        border: 1px solid var(--border-light); 
+        border-radius: 20px; 
+        transition: background 0.3s ease;
+    }
+
+    .card-item p { color: var(--text-muted); font-size: 0.95rem; }
+
+    /* Fixes for "Funny" Mobile View */
+    @media (max-width: 968px) { 
+        .hero { padding: 60px 20px; }
+        .hero-grid { 
+            grid-template-columns: 1fr; 
+            text-align: center; 
+            gap: 40px;
+        } 
+        .badge { justify-content: center; margin-left: auto; margin-right: auto; }
+        .glass-card { padding: 30px 20px !important; }
+    }
 </style>
 
 <main>
     <section class="hero">
         <div class="hero-grid">
             <div class="hero-text">
-                <div class="badge"><span style="width:8px; height:8px; background:#10b981; border-radius:50%"></span> Africa's First AI Commerce Platform</div>
-                <h1 class="font-heading" style="font-size: 3.5rem; line-height: 1.1;">Empower Your <span style="color: var(--accent)">Economic Future and job search</span></h1>
-                <p style="margin: 20px 0; opacity: 0.8;">Join thousands of entrepreneurs using AI to sell products 24/7 and land global jobs.</p>
+                <div class="badge">
+                    <span style="width:8px; height:8px; background:#10b981; border-radius:50%"></span> 
+                    Africa's First AI Commerce Platform
+                </div>
+                <h1 class="font-heading">Empower Your <span style="color: var(--accent)">Economic Future</span> & Career</h1>
+                <p style="margin: 24px 0; color: var(--text-muted); font-size: 1.1rem;">
+                    Join thousands of entrepreneurs using AI to sell products 24/7 and land global jobs.
+                </p>
             </div>
             
-            <div class="glass-card" style="padding: 40px;">
-                <h2 class="font-heading">Sign In</h2>
+            <div class="glass-card" style="padding: 48px;">
+                <h2 class="font-heading" style="margin-bottom: 24px;">Sign In</h2>
                 <form method="POST" action="{% url 'users:user_login' %}">
                     {% csrf_token %}
-                    <div style="margin-bottom: 15px;">
-                        <label style="font-size: 12px; opacity: 0.7;">Email or Username</label>
-                        <input type="text" name="username" class="form-input" required>
+                    <div style="margin-bottom: 20px; text-align: left;">
+                        <label style="font-size: 13px; font-weight: 500; color: var(--text-muted);">Email or Username</label>
+                        <input type="text" name="username" class="form-input" placeholder="Enter your details" required>
                     </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="font-size: 12px; opacity: 0.7;">Password</label>
-                        <input type="password" name="password" class="form-input" required>
+                    <div style="margin-bottom: 20px; text-align: left;">
+                        <label style="font-size: 13px; font-weight: 500; color: var(--text-muted);">Password</label>
+                        <input type="password" name="password" class="form-input" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn-primary">Sign In</button>
+                    <button type="submit" class="btn-primary">Sign In to Dashboard</button>
                 </form>
-                <p style="text-align: center; margin-top: 20px; font-size: 14px;">
-                    New here? <a href="{% url 'users:user_register' %}" style="color: var(--accent); font-weight: 600;">Create Account</a>
+                <p style="text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-muted);">
+                    New here? <a href="{% url 'users:user_register' %}" style="color: var(--accent); font-weight: 600; text-decoration: none;">Create Account</a>
                 </p>
             </div>
         </div>
     </section>
 
-    <section style="padding: 60px 20px; text-align: center;">
+    <section style="padding: 40px 24px; background: rgba(0,0,0,0.2);">
         <div class="grid-3" style="max-width: 1200px; margin: 0 auto;">
-            <div class="card-item"><h3>50K+</h3><p>Active Users</p></div>
-            <div class="card-item"><h3>$5M+</h3><p>Sales Generated</p></div>
-            <div class="card-item"><h3>2M+ Jobs</h3><p>fetched everyday</p></div>
-            <div class="card-item"><h3>aliexpress, ebey and amazon products</h3><p>all on one platform</p></div>
-            <div class="card-item"><h3>post on tiktok</h3><p>let the ai negotiate for you</p></div>
-            <div class="card-item"><h3>24/7</h3><p>AI Support</p></div>
+            <div class="card-item" style="text-align: center;"><h3>50K+</h3><p>Active Users</p></div>
+            <div class="card-item" style="text-align: center;"><h3>$5M+</h3><p>Sales Generated</p></div>
+            <div class="card-item" style="text-align: center;"><h3>2M+</h3><p>Daily Jobs Fetched</p></div>
         </div>
     </section>
 
-    <section style="padding: 80px 20px; max-width: 1200px; margin: 0 auto;">
-        <h2 class="font-heading" style="text-align: center; font-size: 2.5rem;">The three Pillars</h2>
+    <section style="padding: 100px 24px; max-width: 1200px; margin: 0 auto;">
+        <h2 class="font-heading" style="text-align: center; margin-bottom: 48px;">The Three Pillars</h2>
         <div class="grid-3">
-            <div class="card-item"><h3>🧠 AI Adviser</h3><p>Personal coaching for your career growth.</p></div>
-            <div class="card-item"><h3>🛍️ AI E-Shop</h3><p>Automated selling on WhatsApp and TikTok.</p></div>
-            <div class="card-item"><h3>🤝 Auto-Negotiation</h3><p>AI closes deals for you while you sleep.</p></div>
+            <div class="card-item">
+                <span style="font-size: 2rem;">🧠</span>
+                <h3>AI Adviser</h3>
+                <p>Personalized coaching and strategic insights for your career growth.</p>
+            </div>
+            <div class="card-item">
+                <span style="font-size: 2rem;">🛍️</span>
+                <h3>AI E-Shop</h3>
+                <p>Automated inventory management and selling on WhatsApp and TikTok.</p>
+            </div>
+            <div class="card-item">
+                <span style="font-size: 2rem;">🤝</span>
+                <h3>Auto-Negotiation</h3>
+                <p>Advanced AI that closes deals and manages customers while you sleep.</p>
+            </div>
         </div>
     </section>
 </main>
@@ -112,12 +216,21 @@
 <script>
     gsap.registerPlugin(ScrollTrigger);
     document.addEventListener('DOMContentLoaded', () => {
-        gsap.from(".hero-text", { opacity: 0, x: -50, duration: 1, ease: "power2.out" });
-        gsap.from(".glass-card", { opacity: 0, x: 50, duration: 1, delay: 0.2 });
+        // Animation for Hero
+        gsap.from(".hero-text", { opacity: 0, y: 30, duration: 1, ease: "power3.out" });
+        gsap.from(".glass-card", { opacity: 0, y: 50, duration: 1, delay: 0.3, ease: "power3.out" });
         
+        // Animation for Cards
         gsap.from(".card-item", { 
-            scrollTrigger: { trigger: ".grid-3", start: "top 80%" },
-            opacity: 0, y: 30, stagger: 0.2, duration: 0.8 
+            scrollTrigger: { 
+                trigger: ".grid-3", 
+                start: "top 85%" 
+            },
+            opacity: 0, 
+            y: 40, 
+            stagger: 0.15, 
+            duration: 0.8,
+            ease: "power2.out"
         });
     });
 </script>
