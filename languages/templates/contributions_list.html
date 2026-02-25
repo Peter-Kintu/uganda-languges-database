@@ -210,48 +210,50 @@
         </div>
 
     {% else %}
-       <header class="relative pt-16 pb-12 md:pt-24 md:pb-20 text-center px-4 overflow-hidden">
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-indigo-500/10 blur-[120px] -z-10 rounded-full"></div>
-
-    <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tighter leading-[1.1]">
-        Find Your Next <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-500">Listed Job.</span>
-    </h1>
-    <p class="text-slate-500 text-lg mb-10 max-w-2xl mx-auto font-medium">
-        Explore thousands of opportunities curated specifically for your career path.
-    </p>
+        {# LIST VIEW - REFINED HERO SECTION #}
+<header class="mb-16 pt-10 pb-6 text-center relative px-4">
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] -z-10 rounded-full"></div>
+    
+    <div class="max-w-4xl mx-auto mb-12">
+        <h1 class="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight text-gradient-white leading-tight">
+            Listed <span class="text-indigo-500">Jobs.</span>
+        </h1>
+        <p class="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
+            Coaching, strategic insights, and curated AI job fetching <br class="hidden md:block"> powered by ai career intelligence.
+        </p>
+    </div>
 
     <form method="get" action="{% url 'languages:browse_job_listings' %}" 
-          class="max-w-5xl mx-auto bg-white dark:bg-slate-900 shadow-2xl shadow-indigo-100 dark:shadow-none border border-slate-200 dark:border-white/10 p-2 rounded-3xl flex flex-col md:grid md:grid-cols-12 gap-1">
+          class="max-w-5xl mx-auto search-orchestrator flex flex-col md:grid md:grid-cols-12 gap-1">
         
-        <div class="md:col-span-4 flex items-center px-4 py-3 border-b md:border-b-0 md:border-r border-slate-100 dark:border-white/10">
-            <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input type="search" name="q" placeholder="Keywords (e.g. AI Trainer)" value="{{ search_query }}" 
-                   class="w-full bg-transparent border-none focus:ring-0 text-slate-700 dark:text-white placeholder-slate-400 text-sm ml-2">
+        <div class="md:col-span-4 search-input-group border-b md:border-b-0 md:border-r border-white/5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input type="search" name="q" placeholder="Job title or keywords" value="{{ search_query }}">
         </div>
         
-        <div class="md:col-span-3 flex items-center px-4 py-3 border-b md:border-b-0 md:border-r border-slate-100 dark:border-white/10">
-            <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-            <input type="text" name="where" placeholder="Location" value="{{ location_query }}"
-                   class="w-full bg-transparent border-none focus:ring-0 text-slate-700 dark:text-white placeholder-slate-400 text-sm ml-2">
+        <div class="md:col-span-3 search-input-group border-b md:border-b-0 md:border-r border-white/5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+            <input type="text" name="where" placeholder="City or remote" value="{{ location_query }}">
         </div>
         
-        <div class="md:col-span-3 flex items-center px-4 py-3">
-            <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
-            <select name="category" class="w-full bg-transparent border-none focus:ring-0 text-slate-700 dark:text-white text-sm ml-2 appearance-none">
-                <option value="all">All Roles</option>
+        <div class="md:col-span-3 search-input-group">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+            <select name="category" class="pr-10">
+                <option value="all">All Categories</option>
                 {% for key, val in job_categories %}
                     <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select>
         </div>
         
-        <div class="md:col-span-2">
-            <button type="submit" class="w-full h-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl py-3 md:py-0 transition-all active:scale-95 shadow-lg shadow-indigo-200">
+        <div class="md:col-span-2 p-1">
+            <button type="submit" class="w-full h-full btn-primary text-white font-bold rounded-xl md:rounded-full py-3 md:py-0 shadow-lg text-sm uppercase tracking-wider hover:scale-[1.02] transition-all active:scale-95">
                 Search
             </button>
         </div>
     </form>
 </header>
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
                 {# 1. MICRO1 PREMIUM CARD #}
