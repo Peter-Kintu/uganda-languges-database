@@ -210,60 +210,64 @@
         </div>
 
     {% else %}
-        {# LIST VIEW - REFINED HERO SECTION #}
-     {# LIST VIEW - REPLACED HERO WITH PRODUCT-STYLE SEARCH HEADER #}
-<header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md shadow-2xl -mx-4 sm:-mx-6 lg:-mx-8 mb-12">
-    <div class="container mx-auto px-4 py-3">
-        <div class="flex items-center justify-between gap-4 mb-3">
-            <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-1 group whitespace-nowrap">
-                <h1 class="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white transition-all group-hover:tracking-normal">
-                    Listed<span class="text-indigo-500">.Jobs</span>
-                </h1>
-            </a>
+        {# LIST VIEW - UNIFIED SEARCH & FILTER HEADER #}
+        <header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md shadow-2xl -mx-4 sm:-mx-6 lg:-mx-8 mb-12">
+            <div class="container mx-auto px-4 py-3">
+                <form method="GET" action="{% url 'languages:browse_job_listings' %}" id="search-filter-form">
+                    <div class="flex items-center justify-between gap-4 mb-3">
+                        <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-1 group whitespace-nowrap">
+                            <h1 class="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white transition-all group-hover:tracking-normal">
+                                Listed<span class="text-indigo-500">.Jobs</span>
+                            </h1>
+                        </a>
 
-            <form method="GET" action="{% url 'languages:browse_job_listings' %}" class="hidden md:flex flex-grow max-w-2xl">
-                <div class="flex w-full group rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/50 bg-slate-800/50 border border-slate-700 shadow-inner transition-all">
-                    <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search job titles, skills, or keywords..." 
-                           class="w-full bg-transparent text-white text-sm py-2.5 px-4 outline-none placeholder-slate-500">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 transition-all group-hover:px-8">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </button>
-                </div>
-            </form>
+                        <div class="hidden md:flex flex-grow max-w-2xl">
+                            <div class="flex w-full group rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/50 bg-slate-800/50 border border-slate-700 shadow-inner transition-all">
+                                <input type="text" name="q" id="search-q-desktop" value="{{ search_query|default:'' }}" placeholder="Search job titles, skills, or keywords..." 
+                                       class="w-full bg-transparent text-white text-sm py-2.5 px-4 outline-none placeholder-slate-500">
+                                
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 transition-all group-hover:px-8">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
 
-            <div class="flex items-center gap-2 sm:gap-4">
-                <a href="{% url 'languages:post_job' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold py-2.5 px-5 rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
-                    + Post a Job
-                </a>
+                        <div class="flex items-center gap-2 sm:gap-4">
+                            <a href="{% url 'languages:post_job' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold py-2.5 px-5 rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
+                                + Post a Job
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="md:hidden mb-3">
+                        <input type="text" id="search-q-mobile" value="{{ search_query|default:'' }}" placeholder="Search jobs..." 
+                               class="w-full bg-slate-800/50 border border-slate-700 text-white text-sm rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-t border-slate-800 pt-2 mt-2">
+                        <div class="flex gap-2">
+                            <div class="relative">
+                                <input type="text" name="where" value="{{ location_query|default:'' }}" placeholder="Location (City/Remote)" 
+                                       class="bg-slate-800/50 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-32 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                            </div>
+                            
+                            <div class="relative">
+                                <select name="category" class="bg-slate-800/50 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-36 focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer">
+                                    <option value="all">All Categories</option>
+                                    {% for key, val in job_categories %}
+                                        <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <button type="submit" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-5 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-lg shadow-yellow-500/10 active:scale-95">
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
-        </div>
-
-        <form method="GET" action="{% url 'languages:browse_job_listings' %}" class="md:hidden mb-3">
-            <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search jobs..." 
-                   class="w-full bg-slate-800/50 border border-slate-700 text-white text-sm rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 outline-none">
-        </form>
-
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-t border-slate-800 pt-2 mt-2">
-            <form method="GET" action="{% url 'languages:browse_job_listings' %}" class="flex gap-2">
-                <input type="hidden" name="q" value="{{ search_query|default:'' }}">
-                
-                <input type="text" name="where" value="{{ location_query|default:'' }}" placeholder="Location (City/Remote)" 
-                       class="bg-slate-800/50 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-32 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-                
-                <select name="category" class="bg-slate-800/50 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-36 focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none">
-                    <option value="all">All Categories</option>
-                    {% for key, val in job_categories %}
-                        <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
-                    {% endfor %}
-                </select>
-
-                <button type="submit" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-5 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-lg shadow-yellow-500/10 active:scale-95">
-                    Filter
-                </button>
-            </form>
-        </div>
-    </div>
-</header>
+        </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
@@ -440,4 +444,23 @@
         </form>
     </div>
 </div>
+
+<script>
+    // Logic to sync the mobile search input to the desktop search input
+    // This prevents duplicate 'q' parameters being sent to the server.
+    const desktopQ = document.getElementById('search-q-desktop');
+    const mobileQ = document.getElementById('search-q-mobile');
+    
+    if(mobileQ && desktopQ) {
+        // Update desktop value when mobile is typed in
+        mobileQ.addEventListener('input', (e) => {
+            desktopQ.value = e.target.value;
+        });
+        
+        // Ensure initial sync
+        if (mobileQ.value !== desktopQ.value) {
+            mobileQ.value = desktopQ.value;
+        }
+    }
+</script>
 {% endblock %}
