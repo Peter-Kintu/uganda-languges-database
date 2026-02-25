@@ -7,6 +7,11 @@ urlpatterns = [
     # 1. Static/Specific paths first
     path('', views.hotel_list, name='hotel_list'),
     path('add/', views.add_accommodation, name='add_accommodation'),
+    
+    # NEW: Smart Ecosystem Discovery Endpoint (The 5KM Proximity Engine)
+    # This powers the real-time GPS search without refreshing the page
+    path('nearby/', views.ajax_nearby_accommodations, name='ajax_nearby'),
+    
     # hotel/urls.py
     path('sync/', views.sync_hotels_travelpayouts, name='sync_hotels_travelpayouts'),
     

@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from django.utils.text import slugify
-from django.conf import settings
+from django.conf import settings  # Import settings to reference the User model
 from cloudinary.models import CloudinaryField
 
 class Accommodation(models.Model):
@@ -21,11 +21,23 @@ class Accommodation(models.Model):
         ('Lesotho', 'Lesotho'), ('Liberia', 'Liberia'), ('Libya', 'Libya'), ('Madagascar', 'Madagascar'),
         ('Malawi', 'Malawi'), ('Mali', 'Mali'), ('Mauritania', 'Mauritania'), ('Mauritius', 'Mauritius'),
         ('Morocco', 'Morocco'), ('Mozambique', 'Mozambique'), ('Namibia', 'Namibia'), ('Niger', 'Niger'),
-        ('Nigeria', 'Nigeria'), ('Rwanda', 'Rwanda'), ('Senegal', 'Senegal'), ('Seychelles', 'Seychelles'),
-        ('Sierra Leone', 'Sierra Leone'), ('Somalia', 'Somalia'), ('South Africa', 'South Africa'),
-        ('South Sudan', 'South Sudan'), ('Sudan', 'Sudan'), ('Tanzania', 'Tanzania'), ('Togo', 'Togo'),
+        ('Nigeria', 'Nigeria'), ('Rwanda', 'Rwanda'), ('Sao Tome and Principe', 'Sao Tome and Principe'),
+        ('Senegal', 'Senegal'), ('Seychelles', 'Seychelles'), ('Sierra Leone', 'Sierra Leone'),
+        ('Somalia', 'Somalia'), ('South Africa', 'South Africa'), ('South Sudan', 'South Sudan'),
+        ('Sudan', 'Sudan'), ('Tanzania', 'Tanzania'), ('Togo', 'Togo'),
         ('Tunisia', 'Tunisia'), ('Uganda', 'Uganda'), ('Zambia', 'Zambia'), ('Zimbabwe', 'Zimbabwe'),
     ]
+
+    # --- ECOSYSTEM & VENDOR FIELDS ---
+    # FIX: Using settings.AUTH_USER_MODEL instead of auth.User
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='accommodations',
+        null=True, 
+        blank=True
+    )
+    is_verified_vendor = models.BooleanField(default=False)
 
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='local')
     external_id = models.CharField(max_length=200, blank=True, null=True) 
@@ -36,8 +48,12 @@ class Accommodation(models.Model):
     country = models.CharField(max_length=100, choices=AFRICAN_COUNTRIES)
     city = models.CharField(max_length=100)
     address = models.TextField(blank=True)
-    stars = models.IntegerField(default=0)
     
+    # --- GEOSPATIAL ENGINE FIELDS ---
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    
+    stars = models.IntegerField(default=0)
     price_per_night = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3, default='USD')
     
@@ -46,13 +62,22 @@ class Accommodation(models.Model):
     affiliate_url = models.TextField(blank=True, null=True) 
     
     image = CloudinaryField('image', blank=True, null=True)
-    image_url = models.TextField(blank=True, null=True)
+    image_url = models.URLField(max_length=1000, blank=True, null=True) 
+
+    class Meta:
+        verbose_name_plural = "Accommodations"
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = slugify(f"{self.name}-{self.city}")
-            self.slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
+            self.slug = slugify(f"{self.name}-{self.city}")
+            # Ensure slug is unique
+            unique_slug = self.slug
+            num = 1
+            while Accommodation.objects.filter(slug=unique_slug).exists():
+                unique_slug = f"{self.slug}-{num}"
+                num += 1
+            self.slug = unique_slug
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.name} - {self.city}, {self.country}"
+        return f"{self.name} ({self.city})"

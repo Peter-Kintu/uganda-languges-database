@@ -6,16 +6,53 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.contrib import messages
 from django.utils.text import slugify
+from django.http import JsonResponse
 from urllib.parse import quote
 from .models import Accommodation
 from .forms import AccommodationForm
 
+def ajax_nearby_accommodations(request):
+    """
+    THE 5KM PROXIMITY ENGINE:
+    Calculates distance using a coordinate bounding box (+/- 0.045 degrees).
+    Prioritizes verified local vendors in the results.
+    """
+    lat = request.GET.get('lat')
+    lon = request.GET.get('lon')
+    
+    if not lat or not lon:
+        return JsonResponse({'status': 'error', 'message': 'Location required'}, status=400)
+
+    try:
+        # Math: 0.045 degrees is roughly 5 kilometers
+        range_delta = 0.045
+        lat_min, lat_max = float(lat) - range_delta, float(lat) + range_delta
+        lon_min, lon_max = float(lon) - range_delta, float(lon) + range_delta
+
+        # Query: Within 5KM, prioritizing local community hosts
+        nearby = Accommodation.objects.filter(
+            latitude__range=(lat_min, lat_max),
+            longitude__range=(lon_min, lon_max)
+        ).order_by('-is_verified_vendor')[:6]
+
+        results = [{
+            'name': item.name,
+            'city': item.city,
+            'price': f"{item.currency} {item.price_per_night}",
+            'slug': item.slug,
+            'image': item.image.url if item.image else item.image_url,
+            'is_verified': item.is_verified_vendor
+        } for item in nearby]
+
+        return JsonResponse({'status': 'success', 'data': results})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
 def sync_hotels_travelpayouts(request):
     """
     REAL-TIME API SYNC ENGINE:
-    1. Fetches live data from Travelpayouts for specific African hubs.
-    2. Removes hardcoded 'curated' fallbacks to ensure data is 100% real.
-    3. Updates existing prices if the hotel is already in the database.
+    Updated to also store GPS coordinates for the discovery engine.
     """
     if not request.user.is_staff:
         messages.error(request, "Access Denied: Staff credentials required for API Sync.")
@@ -24,7 +61,6 @@ def sync_hotels_travelpayouts(request):
     api_token = os.environ.get('TRAVEL_PAYOUTS_TOKEN')
     marker = "703979" # Your Travelpayouts Affiliate Marker
     
-    # Define real search hubs for your collection
     search_areas = [
         {'city': 'Kampala', 'country': 'Uganda', 'lat': '0.3476', 'lon': '32.5825'},
         {'city': 'Entebbe', 'country': 'Uganda', 'lat': '0.0512', 'lon': '32.4637'},
@@ -38,25 +74,22 @@ def sync_hotels_travelpayouts(request):
     headers = {'X-Access-Token': api_token} if api_token else {}
 
     if not api_token:
-        messages.warning(request, "API Sync failed: TRAVEL_PAYOUTS_TOKEN is missing from environment.")
+        messages.warning(request, "API Sync failed: TRAVEL_PAYOUTS_TOKEN is missing.")
         return redirect('hotel:hotel_list')
 
     for area in search_areas:
         try:
-            # Using the Travelpayouts / HotelsCombined Search API
             url = f"https://api.travelpayouts.com/v1/hotels/search.json?lat={area['lat']}&lon={area['lon']}&limit=15&currency=USD"
             response = requests.get(url, headers=headers, timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
-                # API usually returns a list or a dict with a 'hotels' key
                 hotels = data if isinstance(data, list) else data.get('hotels', [])
 
                 for h in hotels:
                     hotel_name = h.get('name')
                     ext_id = str(h.get('id'))
                     
-                    # We use update_or_create to keep prices fresh without duplicating hotels
                     obj, created = Accommodation.objects.update_or_create(
                         external_id=ext_id,
                         defaults={
@@ -68,19 +101,19 @@ def sync_hotels_travelpayouts(request):
                             'stars': h.get('stars', 4),
                             'price_per_night': h.get('price', 0),
                             'currency': 'USD',
+                            'latitude': h.get('lat'), # GPS Capture
+                            'longitude': h.get('lon'), # GPS Capture
                             'description': f"A premium sanctuary located in {area['city']}. Verified as part of The Collection's global partner network.",
                             'affiliate_url': f"https://search.tp.st/hotels?hotelId={ext_id}&marker={marker}&locale=en"
                         }
                     )
                     
-                    # If it's a new hotel, ensure it has a unique slug
                     if created:
                         if not obj.slug:
                             obj.slug = slugify(f"{hotel_name}-{str(uuid.uuid4())[:4]}")
                         obj.save()
                         hotels_synced += 1
                 
-                # Respectful delay for API rate limits
                 time.sleep(0.5)
                 
         except Exception as e:
@@ -96,12 +129,7 @@ def sync_hotels_travelpayouts(request):
 
 
 def hotel_list(request):
-    """
-    Displays all properties from the database.
-    This includes:
-    1. 'travelpayouts' (Synced via API)
-    2. 'local' (Manually added by you via the 'List Your Sanctuary' form)
-    """
+    """Displays all properties from the database."""
     accommodations = Accommodation.objects.all().order_by('-id')
     return render(request, 'hotel_list.html', {'accommodations': accommodations})
 
@@ -115,14 +143,17 @@ def hotel_detail(request, slug):
 def add_accommodation(request):
     """
     Manual entry form for local lodges.
-    These are saved with source='local' and use WhatsApp for booking.
+    Updated to associate properties with the logged-in vendor.
     """
     if request.method == 'POST':
         form = AccommodationForm(request.POST, request.FILES)
         if form.is_valid():
-            # The form logic in forms.py sets source='local' automatically
-            form.save()
-            messages.success(request, "Property successfully added to the private collection.")
+            accommodation = form.save(commit=False)
+            # Associate the property with the user (vendor)
+            if request.user.is_authenticated:
+                accommodation.owner = request.user
+            accommodation.save()
+            messages.success(request, "Property successfully added to your sanctuary collection.")
             return redirect('hotel:hotel_list')
     else:
         form = AccommodationForm()
@@ -130,17 +161,12 @@ def add_accommodation(request):
 
 
 def book_hotel(request, pk):
-    """
-    Directs users based on hotel source:
-    - API Hotels -> External Affiliate Booking Engine
-    - Local Hotels -> Direct WhatsApp Concierge
-    """
+    """Directs users to Affiliate Booking or Direct WhatsApp."""
     hotel = get_object_or_404(Accommodation, pk=pk)
     
     if hotel.source == 'travelpayouts' and hotel.affiliate_url:
         return redirect(hotel.affiliate_url)
     
-    # WhatsApp logic for local lodges
     raw_num = hotel.whatsapp_number or "256000000000"
     message = quote(f"Hello The Collection Africa, I am interested in booking {hotel.name} in {hotel.city}.")
     return redirect(f"https://wa.me/{raw_num}?text={message}")
