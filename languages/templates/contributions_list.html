@@ -211,47 +211,58 @@
 
     {% else %}
         {# LIST VIEW - REFINED HERO SECTION #}
-<header class="mb-16 pt-10 pb-6 text-center relative px-4">
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] -z-10 rounded-full"></div>
-    
-    <div class="max-w-4xl mx-auto mb-12">
-        <h1 class="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight text-gradient-white leading-tight">
-            Listed <span class="text-indigo-500">Jobs.</span>
-        </h1>
-        <p class="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-            Coaching, strategic insights, and curated AI job fetching <br class="hidden md:block"> powered by ai career intelligence.
-        </p>
-    </div>
+     {# LIST VIEW - REPLACED HERO WITH PRODUCT-STYLE SEARCH HEADER #}
+<header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md shadow-2xl -mx-4 sm:-mx-6 lg:-mx-8 mb-12">
+    <div class="container mx-auto px-4 py-3">
+        <div class="flex items-center justify-between gap-4 mb-3">
+            <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-1 group whitespace-nowrap">
+                <h1 class="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white transition-all group-hover:tracking-normal">
+                    Listed<span class="text-indigo-500">.Jobs</span>
+                </h1>
+            </a>
 
-    <form method="get" action="{% url 'languages:browse_job_listings' %}" 
-          class="max-w-5xl mx-auto search-orchestrator flex flex-col md:grid md:grid-cols-12 gap-1">
-        
-        <div class="md:col-span-4 search-input-group border-b md:border-b-0 md:border-r border-white/5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input type="search" name="q" placeholder="Job title or keywords" value="{{ search_query }}">
+            <form method="GET" action="{% url 'languages:browse_job_listings' %}" class="hidden md:flex flex-grow max-w-2xl">
+                <div class="flex w-full group rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/50 bg-slate-800/50 border border-slate-700 shadow-inner transition-all">
+                    <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search job titles, skills, or keywords..." 
+                           class="w-full bg-transparent text-white text-sm py-2.5 px-4 outline-none placeholder-slate-500">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 transition-all group-hover:px-8">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </button>
+                </div>
+            </form>
+
+            <div class="flex items-center gap-2 sm:gap-4">
+                <a href="{% url 'languages:post_job' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold py-2.5 px-5 rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
+                    + Post a Job
+                </a>
+            </div>
         </div>
-        
-        <div class="md:col-span-3 search-input-group border-b md:border-b-0 md:border-r border-white/5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-            <input type="text" name="where" placeholder="City or remote" value="{{ location_query }}">
+
+        <form method="GET" action="{% url 'languages:browse_job_listings' %}" class="md:hidden mb-3">
+            <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search jobs..." 
+                   class="w-full bg-slate-800/50 border border-slate-700 text-white text-sm rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 outline-none">
+        </form>
+
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-t border-slate-800 pt-2 mt-2">
+            <form method="GET" action="{% url 'languages:browse_job_listings' %}" class="flex gap-2">
+                <input type="hidden" name="q" value="{{ search_query|default:'' }}">
+                
+                <input type="text" name="where" value="{{ location_query|default:'' }}" placeholder="Location (City/Remote)" 
+                       class="bg-slate-800/50 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-32 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                
+                <select name="category" class="bg-slate-800/50 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-36 focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none">
+                    <option value="all">All Categories</option>
+                    {% for key, val in job_categories %}
+                        <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-5 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-lg shadow-yellow-500/10 active:scale-95">
+                    Filter
+                </button>
+            </form>
         </div>
-        
-        <div class="md:col-span-3 search-input-group">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
-            <select name="category" class="pr-10">
-                <option value="all">All Categories</option>
-                {% for key, val in job_categories %}
-                    <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div class="md:col-span-2 p-1">
-            <button type="submit" class="w-full h-full btn-primary text-white font-bold rounded-xl md:rounded-full py-3 md:py-0 shadow-lg text-sm uppercase tracking-wider hover:scale-[1.02] transition-all active:scale-95">
-                Search
-            </button>
-        </div>
-    </form>
+    </div>
 </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
