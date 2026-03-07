@@ -191,6 +191,11 @@ JAZZMIN_SETTINGS = {
             "permissions": ["auth.view_user"]
         },
         {
+            "name": "🎬 Sync Movies", 
+            "url": "/admin/movie/movie/sync-now/", # This matches the 'name' in urls.py
+            "permissions": ["auth.view_user"]
+        },
+        {
             "name": "🏨 Sync Hotels", 
             "url": "/admin/hotel/accommodation/sync/", 
             "permissions": ["auth.view_user"]

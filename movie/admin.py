@@ -1,20 +1,23 @@
 from django.contrib import admin
+from django.urls import path
 from .models import Movie, Order
+from .views import sync_movies_view
+
 
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
     # Added 'category' to the list display to help manage 'Date Night' vs 'Trending' tags
     list_display = ('name', 'category', 'genre', 'rating', 'view_count', 'source_display')
-    
+
     # Added 'category' and 'release_date' filters for easier catalog management
     list_filter = ('category', 'genre', 'rating', 'release_date')
-    
+
     # Search by title or AI keywords
     search_fields = ('name', 'ai_recommendation_tags', 'description')
-    
+
     # Automatically generates the URL slug as you type the name
     prepopulated_fields = {'slug': ('name',)}
-    
+
     # Organized layout for adding/editing movies
     fieldsets = (
         ('Movie Identity', {
@@ -37,6 +40,15 @@ class MovieAdmin(admin.ModelAdmin):
         """Custom column to show if AI generated the description."""
         return "✨ AI Enhanced" if obj.ai_summary else "👤 Manual Entry"
     source_display.short_description = 'Content Source'
+
+    # Register custom admin URL for syncing movies
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path("sync-now/", self.admin_site.admin_view(sync_movies_view), name="movie_sync"),
+        ]
+        return custom_urls + urls
+
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
