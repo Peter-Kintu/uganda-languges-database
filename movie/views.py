@@ -3,8 +3,9 @@ from .models import Movie, Order
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib.admin.views.decorators import staff_member_required
-from .sync_movies import fetch_trending_movies
+from .sync_movies import fetch_and_store_movies   # ✅ corrected import
 from django.contrib import messages
+
 
 @login_required
 def movie_list(request):
@@ -30,6 +31,7 @@ def movie_list(request):
         'trending': trending
     })
 
+
 @login_required
 def movie_detail(request, slug):
     """
@@ -51,6 +53,7 @@ def movie_detail(request, slug):
         'movie': movie,
         'recommendations': recommendations
     })
+
 
 @login_required
 def watch_now(request, movie_id):
@@ -74,13 +77,17 @@ def watch_now(request, movie_id):
         
     return redirect('movie:movie_list')
 
+
 @staff_member_required
 def sync_movies_view(request):
     try:
-        fetch_and_store_movies()
-        messages.success(request, "Movies synced successfully from TMDB!")
+        added, updated = fetch_and_store_movies()   # ✅ now matches the import
+        messages.success(
+            request,
+            f"Movies synced successfully from TMDB! Added: {added}, Updated: {updated}"
+        )
     except Exception as e:
         messages.error(request, f"Error syncing movies: {str(e)}")
     
     # Redirect back to the movie admin page
-    return redirect('admin:movie_movie_changelist')    
+    return redirect('admin:movie_movie_changelist')
