@@ -39,15 +39,19 @@ def movie_detail(request, slug):
     Shows similar movies to keep users clicking affiliate links.
     """
     movie = get_object_or_404(Movie, slug=slug)
-    
-    # AI Recommendation Logic: Match by genre or AI tags
-    recommendations = Movie.objects.filter(
-        Q(genre=movie.genre) | Q(ai_recommendation_tags__icontains=movie.genre)
-    ).exclude(id=movie.id)[:4]
 
-    # Increment view count for the Trending algorithm
-    movie.view_count += 1
-    movie.save()
+    # AI Recommendation Logic: only filter if genre exists
+    if movie.genre:
+        recommendations = Movie.objects.filter(
+            Q(genre=movie.genre) | Q(ai_recommendation_tags__icontains=movie.genre)
+        ).exclude(id=movie.id)[:4]
+    else:
+        # fallback: just show 4 other movies
+        recommendations = Movie.objects.exclude(id=movie.id)[:4]
+
+    # Increment view count safely
+    movie.view_count = (movie.view_count or 0) + 1
+    movie.save(update_fields=["view_count"])
 
     return render(request, 'movie/movie_detail.html', {
         'movie': movie,
