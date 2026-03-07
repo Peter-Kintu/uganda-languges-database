@@ -4,14 +4,11 @@ from movie.models import Movie
 
 
 def fetch_and_store_movies():
-    # Retrieve the token from environment variables
+    # Retrieve the v3 API key from environment variables
     token = os.environ.get('TMDB_TOKEN')
 
-    url = "https://api.themoviedb.org/3/trending/movie/day?language=en-US"
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {token}"
-    }
+    url = f"https://api.themoviedb.org/3/trending/movie/day?api_key={token}&language=en-US"
+    headers = {"accept": "application/json"}
 
     print("Fetching movies from TMDB...")
     response = requests.get(url, headers=headers)
