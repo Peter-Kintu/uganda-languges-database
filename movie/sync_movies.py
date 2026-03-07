@@ -3,7 +3,7 @@ import requests
 from movie.models import Movie
 
 
-def fetch_trending_movies():
+def fetch_and_store_movies():
     # Retrieve the token from environment variables
     token = os.environ.get('TMDB_TOKEN')
 
@@ -15,6 +15,9 @@ def fetch_trending_movies():
 
     print("Fetching movies from TMDB...")
     response = requests.get(url, headers=headers)
+
+    added_count = 0
+    updated_count = 0
 
     if response.status_code == 200:
         data = response.json().get('results', [])
@@ -34,9 +37,16 @@ def fetch_trending_movies():
                     'ai_summary': f"AI Pick: {item['title']} is currently trending!",
                 }
             )
-            print(f"{'✅ Added' if created else '🔄 Updated'}: {item['title']}")
+            if created:
+                added_count += 1
+                print(f"✅ Added: {item['title']}")
+            else:
+                updated_count += 1
+                print(f"🔄 Updated: {item['title']}")
     else:
         print(f"❌ Error: {response.status_code} - {response.text}")
+
+    return added_count, updated_count
 
 
 if __name__ == "__main__":
@@ -44,4 +54,5 @@ if __name__ == "__main__":
     import django
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myuganda.settings')
     django.setup()
-    fetch_trending_movies()
+    added, updated = fetch_and_store_movies()
+    print(f"Finished syncing. Added: {added}, Updated: {updated}")
