@@ -19,6 +19,7 @@ def show_ip(request):
 sitemaps_dict = {
     'static': StaticViewSitemap,
     'products': ProductSitemap,
+    'movies': ProductSitemap,
     'jobs': JobPostSitemap,
 }
 
@@ -35,6 +36,10 @@ urlpatterns = [
 
     # 6. Hotels
     path("hotels/", include("hotel.urls", namespace="hotel")),
+
+        # 2. Movies
+    path("movie/", include("movie.urls", namespace="movie")),  
+
 
     # 2. Users (Authentication & Profile) at root
     path("", include("users.urls")),

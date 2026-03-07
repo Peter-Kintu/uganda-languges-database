@@ -1295,6 +1295,22 @@ def t_metrics(
     metrics_payload = []
 
     for metric in metrics:
+
+      if isinstance(metric, dict):
+        try:
+          metric = types.UnifiedMetric.model_validate(metric)
+        except pydantic.ValidationError:
+          pass
+
+      if isinstance(metric, types.UnifiedMetric):
+        unified_metric_payload: dict[str, Any] = metric.model_dump()
+        unified_metric_payload['aggregation_metrics'] = [
+            'AVERAGE',
+            'STANDARD_DEVIATION',
+        ]
+        metrics_payload.append(unified_metric_payload)
+        continue
+
       metric_payload_item: dict[str, Any] = {}
       metric_payload_item['aggregation_metrics'] = [
           'AVERAGE',
@@ -1332,3 +1348,12 @@ def t_metrics(
         )
       metrics_payload.append(metric_payload_item)
     return metrics_payload
+
+
+def t_is_vertex_embed_content_model(model: str) -> bool:
+  return (
+      # Gemini Embeddings except gemini-embedding-001.
+      'gemini' in model and model != 'gemini-embedding-001'
+      # Open-source MaaS embedding models.
+      or 'maas' in model
+  )

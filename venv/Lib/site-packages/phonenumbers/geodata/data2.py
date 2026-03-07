@@ -2292,6 +2292,7 @@ data = {
  '1727943':{'en': 'Tarpon Springs, FL'},
  '1727944':{'en': 'Tarpon Springs, FL'},
  '1727945':{'en': 'Tarpon Springs, FL'},
+ '1728':{'en': 'Palm Beach, FL'},
  '1730':{'en': 'Illinois'},
  '1731':{'en': 'Tennessee'},
  '1731235':{'en': 'Greenfield, TN'},
@@ -10018,5 +10019,4 @@ data = {
  '1918834':{'en': 'Tulsa, OK'},
  '1918835':{'en': 'Tulsa, OK'},
  '1918836':{'en': 'Tulsa, OK'},
- '1918838':{'en': 'Tulsa, OK'},
 }
