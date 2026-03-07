@@ -9,7 +9,7 @@
         </h2>
         <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
             {% for trend in trending %}
-            <a href="{% url 'movie:movie_detail' trend.slug %}" class="min-w-[180px] md:min-w-[240px] group">
+            <a href="{% url 'movie:watch_now' movie.id %}" class="min-w-[180px] md:min-w-[240px] group">
                 <div class="relative overflow-hidden rounded-lg aspect-video border border-indigo-500/30">
                     <img src="{{ trend.image_url }}" class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80"></div>
