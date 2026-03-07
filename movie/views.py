@@ -2,6 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Movie, Order
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.contrib.admin.views.decorators import staff_member_required
+from .sync_movies import fetch_trending_movies
+from django.contrib import messages
 
 @login_required
 def movie_list(request):
@@ -70,3 +73,14 @@ def watch_now(request, movie_id):
         return redirect(movie.affiliate_url)
         
     return redirect('movie:movie_list')
+
+@staff_member_required
+def sync_movies_view(request):
+    try:
+        fetch_and_store_movies()
+        messages.success(request, "Movies synced successfully from TMDB!")
+    except Exception as e:
+        messages.error(request, f"Error syncing movies: {str(e)}")
+    
+    # Redirect back to the movie admin page
+    return redirect('admin:movie_movie_changelist')    
