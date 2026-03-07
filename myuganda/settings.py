@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
     'django.contrib.sites',
     'django.contrib.humanize',
+    'movie',
+  
 
     # Third-party
     'widget_tweaks',
@@ -152,7 +154,8 @@ ALI_APP_KEY = os.getenv('ALI_APP_KEY', '524714')
 ALI_APP_SECRET = os.getenv('ALI_APP_SECRET', 'fallback_secret')
 ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID', 'default_tracking_id')
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
+# settings.py
+TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
 # --- STORAGE BACKENDS ---
 STORAGES = {
     "default": {
