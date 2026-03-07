@@ -3,7 +3,7 @@ import requests
 from movie.models import Movie
 
 
-def fetch_and_store_movies():
+def fetch_trending_movies():
     # Retrieve the token from environment variables
     token = os.environ.get('TMDB_TOKEN')
 
@@ -44,4 +44,4 @@ if __name__ == "__main__":
     import django
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myuganda.settings')
     django.setup()
-    fetch_and_store_movies()
+    fetch_trending_movies()
