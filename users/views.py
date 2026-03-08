@@ -109,13 +109,10 @@ def user_register(request):
         if form.is_valid():
             user = form.save(commit=False)
             
-            # FIX: Use 'referrer' instead of 'referred_by'
             referrer_username = request.session.get('referrer')
             if referrer_username:
                 try:
                     referrer_user = User.objects.get(username=referrer_username)
-                    # Check if your CustomUser model has a 'referrer' field
-                    # If it's a field on the User model, set it here:
                     if hasattr(user, 'referrer'):
                         user.referrer = referrer_user
                 except User.DoesNotExist:
@@ -163,12 +160,7 @@ def user_profile(request):
     referral_earnings = 0
     
     if Order:
-        # FIX: Changed 'referred_by' to 'referrer'
-        # Also, check if your Order model links to User object or Username string
-        # If Order.referrer is a ForeignKey to User:
         successful_referrals = Order.objects.filter(referrer=user, status='Completed')
-        
-        # Calculate Earnings using the total_commission sum
         referral_earnings = successful_referrals.aggregate(Sum('total_commission'))['total_commission__sum'] or 0
     
     base_url = request.build_absolute_uri(reverse('users:user_register'))
@@ -198,7 +190,7 @@ def profile_edit(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Your profile was successfully updated!')
-            return redirect('users:user_profile') # Fixed redirect name
+            return redirect('users:user_profile')
     else:
         form = ProfileEditForm(instance=user)
     try:
@@ -207,7 +199,7 @@ def profile_edit(request):
         return render(request, 'profile_edit.html', {'form': form})
 
 # ==============================================================================
-# AI CHAT & CONTEXT UTILITIES (Keep your existing Gemini logic)
+# AI CHAT & CONTEXT UTILITIES
 # ==============================================================================
 
 def _get_user_profile_data(user):
@@ -250,14 +242,16 @@ def gemini_proxy(request):
         raw_contents = data.get('contents', [])
         
         profile = _get_user_profile_data(request.user)
+        # Optimized system instruction to reduce token usage
         system_instruction = (
             f"You are the Career Companion AI for Africana. "
             f"User: {profile['full_name']}. Bio: {profile['bio']}. "
-            f"Skills: {', '.join(profile['skills'])}. History: {', '.join(profile['experiences'])}."
+            f"Skills: {', '.join(profile['skills'][:10])}. History: {', '.join(profile['experiences'][:5])}."
         )
         history = _format_history_for_sdk(raw_contents)
 
-        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+        # Prioritizing 1.5-flash which has more reliable free-tier capacity
+        models_to_try = ["gemini-1.5-flash", "gemini-2.0-flash"]
         
         for model_name in models_to_try:
             try:
@@ -266,18 +260,19 @@ def gemini_proxy(request):
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.7,
-                        max_output_tokens=1024,
+                        max_output_tokens=800, # Slightly reduced to save TPM quota
                     ),
                     contents=history
                 )
                 if response.text:
                     return JsonResponse({"text": response.text, "model_used": model_name})
             except Exception as model_e:
-                if any(x in str(model_e) for x in ["429", "404", "RESOURCE_EXHAUSTED"]):
+                # If specific capacity error, try the next model
+                if any(x in str(model_e).upper() for x in ["429", "RESOURCE_EXHAUSTED", "QUOTA"]):
                     continue
                 raise model_e 
 
-        return JsonResponse({"error": "Quota Exceeded"}, status=429)
+        return JsonResponse({"error": "Quota Busy: The AI free tier is currently at capacity. Please wait 30 seconds."}, status=429)
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
