@@ -143,11 +143,13 @@
     }
 
     .chat-header-main h1 {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        background: linear-gradient(to right, #818cf8, #c084fc);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.025em;
     }
     
     #sidebarToggle {
@@ -206,10 +208,14 @@
 
     .chat-message.error {
         align-self: center;
-        background-color: #7f1d1d;
-        color: #fca5a5;
-        border: 1px solid #b91c1c;
-        font-size: 0.85rem;
+        background-color: #1e293b;
+        color: #cbd5e1;
+        border: 1px solid #334155;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-align: center;
+        padding: 1rem;
+        max-width: 90%;
     }
 
     .chat-input-area {
@@ -225,6 +231,13 @@
         border-radius: 1rem;
         border: 1px solid #374151;
         padding: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: box-shadow 0.2s ease;
+    }
+    
+    .integrated-input-container:focus-within {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border-color: #6366f1;
     }
     
     #chatInput {
@@ -250,6 +263,13 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+    }
+    
+    #sendChatButton:hover {
+        background-color: #4338ca;
+        transform: scale(1.05);
     }
 
     @media (max-width: 768px) {
