@@ -186,24 +186,29 @@
 
         const sendBtn = document.getElementById('sendChatButton');
         sendBtn.disabled = true;
+        
+        // Show user message instantly
         appendMessage('user', text);
         
+        // Prepare current state
         chatInput.value = '';
         chatInput.style.height = 'auto';
         typingStatus.style.display = 'block';
         scrollToBottom();
 
         try {
+            // Get local history and add current user message for the API call
             const history = getSessionHistory(currentSessionId);
+            const contents = history.map(m => ({ role: m.role, text: m.text }));
+            contents.push({ role: 'user', text: text });
+
             const response = await fetch("{% url 'users:gemini_proxy' %}", {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
-                body: JSON.stringify({ 
-                    contents: history.concat({ role: 'user', text: text }) 
-                })
+                body: JSON.stringify({ contents: contents })
             });
 
             const data = await response.json();
@@ -211,6 +216,7 @@
 
             if (data.text) {
                 appendMessage('ai', data.text);
+                // Persist both messages to local storage
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
@@ -230,6 +236,7 @@
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role}`;
         
+        // Basic Markdown Support
         let formatted = text
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/^\s*[\-\*]\s+(.*)/gm, '<li>$1</li>')
