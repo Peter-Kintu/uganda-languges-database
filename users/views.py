@@ -38,11 +38,9 @@ except ImportError:
 # ==============================================================================
 
 def google_verification(request):
-    """Verifies site ownership for Google Search Console."""
     return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
 
 def robots_txt(request):
-    """Generates robots.txt for search engine crawlers."""
     lines = [
         "User-agent: *",
         "Disallow: /admin/",
@@ -51,7 +49,6 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 def tts_proxy(request):
-    """Proxies TTS requests to avoid CORS issues."""
     text = request.GET.get('text', '')
     lang = request.GET.get('lang', 'en')
     if not text:
@@ -65,17 +62,15 @@ def tts_proxy(request):
         return HttpResponse(f"Error: {str(e)}", status=500)
 
 # ==============================================================================
-# AUTHENTICATION VIEWS (With Referral Capture)
+# AUTHENTICATION VIEWS
 # ==============================================================================
 
 def user_login(request):
     ref = request.GET.get('ref')
     if ref:
         request.session['referrer'] = ref
-
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
-        
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -88,7 +83,6 @@ def user_login(request):
             messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
-        
     context = {'form': form, 'next': request.GET.get('next', '')}
     try:
         return render(request, 'users/login.html', context)
@@ -99,15 +93,12 @@ def user_register(request):
     ref = request.GET.get('ref')
     if ref:
         request.session['referrer'] = ref
-
     if request.user.is_authenticated:
         return redirect('languages:browse_job_listings')
-    
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            
             referrer_username = request.session.get('referrer')
             if referrer_username:
                 try:
@@ -116,13 +107,10 @@ def user_register(request):
                         user.referrer = referrer_user
                 except User.DoesNotExist:
                     pass 
-            
             user.save()
             login(request, user)
-            
             if 'referrer' in request.session:
                 del request.session['referrer']
-                
             messages.success(request, "Registration successful. Welcome!")
             return redirect('languages:browse_job_listings')
         else:
@@ -131,7 +119,6 @@ def user_register(request):
                     messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = CustomUserCreationForm()
-    
     try:
         return render(request, 'users/register.html', {'form': form})
     except TemplateDoesNotExist:
@@ -154,25 +141,17 @@ def user_profile(request):
     educations = Education.objects.filter(user=user).order_by('-end_date')
     skills = Skill.objects.filter(user=user)
     social_connections = SocialConnection.objects.filter(user=user)
-    
     successful_referrals = []
     referral_earnings = 0
-    
     if Order:
         successful_referrals = Order.objects.filter(referrer=user, status='Completed')
         referral_earnings = successful_referrals.aggregate(Sum('total_commission'))['total_commission__sum'] or 0
-    
     base_url = request.build_absolute_uri(reverse('users:user_register'))
     referral_link = f"{base_url}?ref={user.username}"
-
     context = {
-        'user': user,
-        'experiences': experiences,
-        'educations': educations,
-        'skills': skills,
-        'social_connections': social_connections,
-        'referral_link': referral_link,
-        'successful_referrals': successful_referrals,
+        'user': user, 'experiences': experiences, 'educations': educations,
+        'skills': skills, 'social_connections': social_connections,
+        'referral_link': referral_link, 'successful_referrals': successful_referrals,
         'total_referral_earnings': referral_earnings,
         'total_referral_count': successful_referrals.count() if Order else 0,
     }
@@ -198,7 +177,7 @@ def profile_edit(request):
         return render(request, 'profile_edit.html', {'form': form})
 
 # ==============================================================================
-# AI CHAT & CONTEXT UTILITIES
+# AI CHAT LOGIC (Fixed for 2025 Standards)
 # ==============================================================================
 
 def _get_user_profile_data(user):
@@ -206,10 +185,7 @@ def _get_user_profile_data(user):
         "full_name": user.get_full_name() or user.username, 
         "bio": getattr(user, 'about', 'No bio provided'),
         "skills": [skill.name for skill in Skill.objects.filter(user=user)],
-        "experiences": [
-            f"{exp.title} at {exp.company_name}" 
-            for exp in Experience.objects.filter(user=user)
-        ]
+        "experiences": [f"{exp.title} at {exp.company_name}" for exp in Experience.objects.filter(user=user)]
     }
 
 def _format_history_for_sdk(messages):
@@ -218,7 +194,6 @@ def _format_history_for_sdk(messages):
         role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
         text = msg.get("text", "").strip()
         if not text: continue
-            
         if formatted and formatted[-1]["role"] == role:
             formatted[-1]["parts"][0]["text"] += f"\n{text}"
         else:
@@ -231,12 +206,12 @@ def gemini_proxy(request):
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
-    raw_api_key = os.environ.get("GEMINI_API_KEY", "").strip().replace('"', '').replace("'", "")
-    if not raw_api_key:
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip().replace('"', '').replace("'", "")
+    if not api_key:
         return JsonResponse({"error": "API Key missing"}, status=500)
 
     try:
-        client = genai.Client(api_key=raw_api_key)
+        client = genai.Client(api_key=api_key)
         data = json.loads(request.body)
         raw_contents = data.get('contents', [])
         
@@ -244,18 +219,19 @@ def gemini_proxy(request):
         system_instruction = (
             f"You are the Career Companion AI for Africana. "
             f"User: {profile['full_name']}. Bio: {profile['bio']}. "
-            f"Skills: {', '.join(profile['skills'][:10])}. History: {', '.join(profile['experiences'][:5])}."
+            f"Skills: {', '.join(profile['skills'][:10])}."
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # 2025 STABLE IDs - No "models/" prefix
-        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash-002", "gemini-1.5-pro-002"]
+        # UPDATED: Use stable version strings and remove manual 'models/' prefix
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
         
-        last_error = "Unknown error"
-        for model_name in models_to_try:
+        last_err = ""
+        for model_id in models_to_try:
             try:
+                # The SDK automatically handles the 'models/' prefix
                 response = client.models.generate_content(
-                    model=model_name, 
+                    model=model_id, 
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.7,
@@ -264,22 +240,16 @@ def gemini_proxy(request):
                     contents=history
                 )
                 if response.text:
-                    print(f"SUCCESS: Used model {model_name}")
-                    return JsonResponse({"text": response.text, "model_used": model_name})
-            except Exception as model_e:
-                last_error = str(model_e)
-                print(f"DEBUG: Model {model_name} failed: {last_error}")
-                # Fallback on quota/capacity errors
-                if any(x in last_error.upper() for x in ["429", "RESOURCE_EXHAUSTED", "QUOTA", "503"]):
-                    continue
-                # If it's a 404, the next model in the list might be available
-                if "404" in last_error:
-                    continue
-        
-        return JsonResponse({"error": f"AI Service unavailable. Latest error: {last_error}"}, status=429)
+                    return JsonResponse({"text": response.text, "model_used": model_id})
+            except Exception as e:
+                last_err = str(e)
+                # Continue to next model if it's a 404, 429, or 503
+                continue
 
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)
+        return JsonResponse({"error": f"AI unavailable. Last error: {last_err}"}, status=503)
+
+    except Exception as global_e:
+        return JsonResponse({"error": str(global_e)}, status=400)
 
 @login_required
 def profile_ai(request):
