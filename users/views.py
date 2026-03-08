@@ -250,13 +250,13 @@ def gemini_proxy(request):
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # Prioritizing 1.5-flash which has more reliable free-tier capacity
-        models_to_try = ["gemini-1.5-flash", "gemini-2.0-flash"]
+        # Using available models with fallback
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro"]
         
         for model_name in models_to_try:
             try:
                 response = client.models.generate_content(
-                    model=model_name, 
+                    model=f"models/{model_name}", 
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.7,
