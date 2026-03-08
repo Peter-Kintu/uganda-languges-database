@@ -225,11 +225,11 @@ def gemini_proxy(request):
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # FIXED: Updated model list to avoid legacy 404 errors.
-        # Removed 'gemini-pro' as it is often unsupported in newer v1beta SDK calls.
+        # UPDATED: Replaced legacy model names to resolve 404 NOT_FOUND errors.
+        # We prioritize 2.0-flash for speed and reliability in the 2025 environment.
         models_to_try = [
-            "gemini-1.5-flash", 
             "gemini-2.0-flash", 
+            "gemini-1.5-flash", 
             "gemini-1.5-pro"
         ]
         
