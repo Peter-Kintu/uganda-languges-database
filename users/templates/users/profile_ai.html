@@ -13,7 +13,6 @@
         --text-secondary: #94a3b8;
         --glass-border: rgba(255, 255, 255, 0.1);
     }
-
     body {
         background-color: var(--bg-main);
         font-family: 'Plus Jakarta Sans', sans-serif;
@@ -22,14 +21,9 @@
         height: 100vh;
         overflow: hidden;
     }
-
     #chatLog::-webkit-scrollbar { width: 6px; }
-    #chatLog::-webkit-scrollbar-track { background: transparent; }
     #chatLog::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-    #chatLog::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
-
     .app-container { display: flex; height: 100vh; width: 100vw; }
-
     .sidebar {
         width: 280px;
         background: var(--bg-sidebar);
@@ -39,7 +33,6 @@
         transition: transform 0.3s ease;
     }
     .sidebar.collapsed { transform: translateX(-280px); width: 0; }
-
     .history-list { flex: 1; overflow-y: auto; padding: 1rem; list-style: none; margin: 0; }
     .history-item {
         padding: 0.8rem 1rem;
@@ -52,19 +45,14 @@
         overflow: hidden;
         text-overflow: ellipsis;
         transition: 0.2s;
-        border: 1px solid transparent;
     }
-    .history-item:hover { background: rgba(255,255,255,0.05); color: white; }
-    .history-item.active { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); border-color: rgba(59, 130, 246, 0.2); }
-
+    .history-item.active { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
     .chat-main-area {
         flex: 1;
         display: flex;
         flex-direction: column;
         background: radial-gradient(circle at top right, #0f172a, #020617);
-        position: relative;
     }
-
     .chat-header {
         padding: 1.25rem 2rem;
         background: rgba(2, 6, 23, 0.8);
@@ -73,9 +61,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        z-index: 10;
     }
-
     #chatLog {
         flex: 1;
         overflow-y: auto;
@@ -83,50 +69,19 @@
         display: flex;
         flex-direction: column;
         gap: 2rem;
-        scroll-behavior: smooth;
     }
-
     .chat-message {
         max-width: 85%;
         padding: 1.25rem 1.5rem;
         border-radius: 20px;
         font-size: 0.95rem;
         line-height: 1.7;
-        position: relative;
         animation: slideUp 0.3s ease-out;
     }
-
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(15px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .chat-message.user {
-        align-self: flex-end;
-        background: var(--accent-blue);
-        color: white;
-        border-bottom-right-radius: 4px;
-        box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.3);
-    }
-
-    .chat-message.ai {
-        align-self: flex-start;
-        background: #1e293b;
-        color: #f1f5f9;
-        border-bottom-left-radius: 4px;
-        border: 1px solid var(--glass-border);
-    }
-
-    .message-label {
-        display: block;
-        font-size: 0.65rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.6rem;
-        opacity: 0.5;
-    }
-
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+    .chat-message.user { align-self: flex-end; background: var(--accent-blue); color: white; border-bottom-right-radius: 4px; }
+    .chat-message.ai { align-self: flex-start; background: #1e293b; color: #f1f5f9; border-bottom-left-radius: 4px; border: 1px solid var(--glass-border); }
+    .message-label { display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.6rem; opacity: 0.5; }
     .chat-input-area { padding: 0 18% 2.5rem; }
     .input-glass-wrapper {
         display: flex;
@@ -136,70 +91,23 @@
         border: 1px solid var(--glass-border);
         border-radius: 20px;
         padding: 0.75rem 1rem;
-        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .input-glass-wrapper:focus-within {
-        border-color: var(--accent-blue);
-        box-shadow: 0 0 25px rgba(59, 130, 246, 0.15);
-        background: rgba(30, 41, 59, 0.9);
-    }
-
-    textarea {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: white;
-        outline: none;
-        resize: none;
-        padding: 0.5rem;
-        font-family: inherit;
-        font-size: 1rem;
-        max-height: 180px;
-    }
-
-    .btn-send {
-        background: var(--accent-blue);
-        color: white;
-        border: none;
-        width: 44px;
-        height: 44px;
-        border-radius: 14px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: 0.2s;
-        flex-shrink: 0;
-    }
-    .btn-send:hover { transform: scale(1.05); filter: brightness(1.1); }
-    .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    #typingStatus {
-        padding: 0.5rem 18%;
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--accent-blue);
-        display: none;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-
-    @media (max-width: 1024px) {
-        #chatLog, .chat-input-area, #typingStatus { padding-left: 5%; padding-right: 5%; }
-    }
+    textarea { flex: 1; background: transparent; border: none; color: white; outline: none; resize: none; padding: 0.5rem; font-size: 1rem; max-height: 180px; }
+    .btn-send { background: var(--accent-blue); color: white; border: none; width: 44px; height: 44px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    #typingStatus { padding: 0.5rem 18%; font-size: 0.7rem; color: var(--accent-blue); display: none; font-weight: 700; }
 </style>
 
 <div class="app-container">
     <aside class="sidebar" id="sidebar">
         <div class="p-6 flex justify-between items-center">
-            <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Session History</h2>
+            <h2 class="text-[10px] font-black uppercase text-slate-500">History</h2>
             <button onclick="createNewChat()" class="p-2 hover:bg-white/5 rounded-full transition">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             </button>
         </div>
         <ul class="history-list" id="historyList"></ul>
         <div class="p-4 mt-auto border-t border-white/5">
-            <button onclick="clearChat()" class="w-full py-3 text-[10px] font-bold text-red-400 hover:bg-red-400/10 rounded-xl transition uppercase">Wipe All Data</button>
+            <button onclick="clearChat()" class="w-full py-3 text-[10px] font-bold text-red-400 hover:bg-red-400/10 rounded-xl transition uppercase">Clear History</button>
         </div>
     </aside>
 
@@ -209,20 +117,20 @@
                 <button id="sidebarToggle" class="text-slate-400 hover:text-white transition">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
-                <h1 class="text-sm font-bold tracking-tight">Career AI Companion</h1>
+                <h1 class="text-sm font-bold">Africana AI Companion</h1>
             </div>
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active System</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Live</span>
             </div>
         </header>
 
         <div id="chatLog"></div>
-        <div id="typingStatus">Agent is drafting response...</div>
+        <div id="typingStatus">System thinking...</div>
 
         <div class="chat-input-area">
             <div class="input-glass-wrapper">
-                <textarea id="chatInput" placeholder="Message your career agent..." rows="1"></textarea>
+                <textarea id="chatInput" placeholder="How can I help your career today?" rows="1"></textarea>
                 <button onclick="typeQuery()" id="sendChatButton" class="btn-send">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                 </button>
@@ -240,7 +148,6 @@
     window.onload = () => {
         updateHistorySidebar();
         switchSession(currentSessionId);
-        chatInput.focus();
     };
 
     async function typeQuery() {
@@ -249,16 +156,14 @@
 
         const sendBtn = document.getElementById('sendChatButton');
         sendBtn.disabled = true;
-
         appendMessage('user', text);
         chatInput.value = '';
-        chatInput.style.height = 'auto';
         typingStatus.style.display = 'block';
         scrollToBottom();
 
         try {
             const history = getSessionHistory(currentSessionId);
-            // FIX: Pointing to the specific Django view URL dynamically
+            // POINTING TO CORRECT DJANGO URL:
             const response = await fetch("{% url 'users:gemini_proxy' %}", {
                 method: 'POST',
                 headers: { 
@@ -268,11 +173,6 @@
                 body: JSON.stringify({ contents: history.concat({ role: 'user', text: text }) })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `Server Error ${response.status}`);
-            }
-
             const data = await response.json();
             typingStatus.style.display = 'none';
 
@@ -281,11 +181,12 @@
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
+            } else {
+                throw new Error(data.error || "System Timeout");
             }
         } catch (e) {
             typingStatus.style.display = 'none';
             appendMessage('ai', `System Notice: ${e.message}`);
-            console.error("Diagnostic:", e);
         } finally {
             sendBtn.disabled = false;
             scrollToBottom();
@@ -293,28 +194,15 @@
     }
 
     function appendMessage(role, text) {
-        if (!text) return;
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role}`;
-        const labelText = role === 'user' ? 'You' : 'Career Agent';
-        
-        let formatted = text
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\n/g, '<br>')
-            .replace(/- (.*?)<br>/g, '• $1<br>');
-
-        messageDiv.innerHTML = `
-            <span class="message-label">${labelText}</span>
-            <div class="content-body">${formatted}</div>
-        `;
-
+        let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        messageDiv.innerHTML = `<span class="message-label">${role === 'user' ? 'You' : 'AI'}</span><div>${formatted}</div>`;
         chatLog.appendChild(messageDiv);
         scrollToBottom();
     }
 
-    function scrollToBottom() {
-        chatLog.scrollTop = chatLog.scrollHeight;
-    }
+    function scrollToBottom() { chatLog.scrollTop = chatLog.scrollHeight; }
 
     function getSessionHistory(id) {
         const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
@@ -333,10 +221,9 @@
         const list = document.getElementById('historyList');
         list.innerHTML = '';
         Object.keys(sessions).sort().reverse().forEach(id => {
-            const firstLine = sessions[id][0]?.text.substring(0, 25) || "New Chat";
             const li = document.createElement('li');
             li.className = `history-item ${id === currentSessionId ? 'active' : ''}`;
-            li.innerText = firstLine + '...';
+            li.innerText = sessions[id][0]?.text.substring(0, 20) + '...';
             li.onclick = () => switchSession(id);
             list.appendChild(li);
         });
@@ -348,7 +235,6 @@
         chatLog.innerHTML = '';
         getSessionHistory(id).forEach(m => appendMessage(m.role, m.text));
         updateHistorySidebar();
-        scrollToBottom();
     }
 
     function createNewChat() {
@@ -357,26 +243,11 @@
     }
 
     function clearChat() {
-        if(confirm("Permanently erase local chat history?")) {
-            localStorage.clear();
-            location.reload();
-        }
+        if(confirm("Wipe all chats?")) { localStorage.clear(); location.reload(); }
     }
 
-    document.getElementById('sidebarToggle').onclick = () => {
-        document.getElementById('sidebar').classList.toggle('collapsed');
-    };
+    document.getElementById('sidebarToggle').onclick = () => document.getElementById('sidebar').classList.toggle('collapsed');
 
-    chatInput.oninput = function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    };
-
-    chatInput.onkeydown = (e) => {
-        if(e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            typeQuery();
-        }
-    };
+    chatInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); typeQuery(); } };
 </script>
 {% endblock %}
