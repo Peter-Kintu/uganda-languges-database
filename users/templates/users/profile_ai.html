@@ -23,7 +23,7 @@
         overflow: hidden;
     }
 
-    /* --- IMPROVED SCROLLBAR --- */
+    /* --- MODERN SCROLLBAR --- */
     #chatLog::-webkit-scrollbar { width: 6px; }
     #chatLog::-webkit-scrollbar-track { background: transparent; }
     #chatLog::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
@@ -59,7 +59,7 @@
     .history-item:hover { background: rgba(255,255,255,0.05); color: white; }
     .history-item.active { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); border-color: rgba(59, 130, 246, 0.2); }
 
-    /* --- CHAT MAIN --- */
+    /* --- CHAT MAIN AREA --- */
     .chat-main-area {
         flex: 1;
         display: flex;
@@ -82,7 +82,7 @@
     #chatLog {
         flex: 1;
         overflow-y: auto;
-        padding: 2rem 18% 4rem; /* Increased side padding for readability */
+        padding: 2rem 18% 4rem; 
         display: flex;
         flex-direction: column;
         gap: 2rem;
@@ -257,18 +257,16 @@
         const sendBtn = document.getElementById('sendChatButton');
         sendBtn.disabled = true;
 
-        // 1. Display User Message Immediately
         appendMessage('user', text);
         chatInput.value = '';
         chatInput.style.height = 'auto';
-        
-        // 2. Show UI Loading
         typingStatus.style.display = 'block';
         scrollToBottom();
 
         try {
             const history = getSessionHistory(currentSessionId);
-            const response = await fetch("{% url 'users:gemini_proxy' %}", {
+            // Updated to explicitly point to the v1 API endpoint
+            const response = await fetch("/api/v1/gemini_proxy/", {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -277,9 +275,12 @@
                 body: JSON.stringify({ contents: history.concat({ role: 'user', text: text }) })
             });
 
-            const data = await response.json();
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Server Error ${response.status}`);
+            }
 
-            // 3. Clear typing status before showing response
+            const data = await response.json();
             typingStatus.style.display = 'none';
 
             if (data.text) {
@@ -288,12 +289,13 @@
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
             } else {
-                throw new Error("Empty Response");
+                throw new Error("Empty AI response received.");
             }
         } catch (e) {
             typingStatus.style.display = 'none';
-            appendMessage('ai', "I'm having trouble connecting to the brain center. Please check your network and try again.");
-            console.error("Chat Error:", e);
+            // Detailed user-facing error message
+            appendMessage('ai', `System Notice: ${e.message}. Please verify your server is running and check the terminal logs.`);
+            console.error("Diagnostic Log:", e);
         } finally {
             sendBtn.disabled = false;
             scrollToBottom();
@@ -302,13 +304,10 @@
 
     function appendMessage(role, text) {
         if (!text) return;
-        
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role}`;
-        
         const labelText = role === 'user' ? 'You' : 'Career Agent';
         
-        // Basic Markdown Support
         let formatted = text
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\n/g, '<br>')
@@ -324,9 +323,8 @@
     }
 
     function scrollToBottom() {
-        // Double scroll to ensure it catches new elements
         chatLog.scrollTop = chatLog.scrollHeight;
-        setTimeout(() => { chatLog.scrollTop = chatLog.scrollHeight; }, 30);
+        setTimeout(() => { chatLog.scrollTop = chatLog.scrollHeight; }, 50);
     }
 
     function getSessionHistory(id) {
@@ -345,9 +343,7 @@
         const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
         const list = document.getElementById('historyList');
         list.innerHTML = '';
-        
         const sortedIds = Object.keys(sessions).sort().reverse();
-        
         sortedIds.forEach(id => {
             const firstLine = sessions[id][0]?.text.substring(0, 25) || "New Chat";
             const li = document.createElement('li');
@@ -373,24 +369,21 @@
     }
 
     function clearChat() {
-        if(confirm("This will permanently erase all local chat history. Continue?")) {
+        if(confirm("Permanently erase local chat history?")) {
             localStorage.clear();
             location.reload();
         }
     }
 
-    // Sidebar Logic
     document.getElementById('sidebarToggle').onclick = () => {
         document.getElementById('sidebar').classList.toggle('collapsed');
     };
 
-    // Auto-resize textarea
     chatInput.oninput = function() {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
     };
 
-    // Enter key sends
     chatInput.onkeydown = (e) => {
         if(e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
