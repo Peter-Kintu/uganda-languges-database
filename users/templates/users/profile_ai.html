@@ -7,7 +7,7 @@
 <style>
     /* --- DARK BLUE BACKGROUND THEME --- */
     body {
-        background: linear-gradient(135deg, #0a0e16 0%, #0f172a 100%);
+        background-color: #0a0e16;
         font-family: 'Inter', sans-serif;
         color: #e5e7eb;
         margin: 0;
@@ -21,15 +21,13 @@
         display: flex;
         height: 100vh;
         max-width: 100vw;
-        background: rgba(15, 23, 42, 0.85);
-        backdrop-filter: blur(10px);
     }
 
     /* --- SIDEBAR --- */
     .sidebar {
         width: 300px;
-        background: #ffffff;
-        border-right: 1px solid #e2e8f0;
+        background: #111827;
+        border-right: 1px solid #1f2937;
         display: flex;
         flex-direction: column;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -49,7 +47,7 @@
 
     .sidebar-header {
         padding: 1.5rem;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid #1f2937;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -58,7 +56,7 @@
     .sidebar-header h2 {
         font-size: 1.125rem;
         font-weight: 600;
-        color: #334155;
+        color: #6b7280;
         margin: 0;
     }
 
@@ -72,8 +70,8 @@
         padding: 0.75rem 1rem;
         margin-bottom: 0.5rem;
         border-radius: 0.75rem;
-        background: #f8fafc;
-        color: #475569;
+        background: #1f2937;
+        color: #9ca3af;
         cursor: pointer;
         transition: all 0.2s ease;
         border: 1px solid transparent;
@@ -82,20 +80,20 @@
     }
 
     .history-item:hover {
-        background: #e2e8f0;
+        background: #374151;
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .history-item.active {
-        background: #3b82f6;
+        background: #312e81;
         color: #ffffff;
-        border-color: #2563eb;
+        border-color: #4338ca;
     }
 
     .sidebar-footer {
         padding: 1.5rem;
-        border-top: 1px solid #f1f5f9;
+        border-top: 1px solid #1f2937;
     }
 
     .action-icon-button {
@@ -104,8 +102,8 @@
         border: none;
         cursor: pointer;
         border-radius: 0.5rem;
-        background: #f1f5f9;
-        color: #64748b;
+        background: #1f2937;
+        color: #e5e7eb;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -114,12 +112,12 @@
     }
 
     .action-icon-button:hover {
-        background: #e2e8f0;
+        background: #374151;
         transform: scale(1.05);
     }
 
     .action-icon-button.clear {
-        background: #ef4444;
+        background: #dc2626;
         color: #ffffff;
         width: 100%;
         margin-top: 1rem;
@@ -132,7 +130,7 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        background: #0f172a;
+        background: #030712;
     }
 
     .chat-header-main {
@@ -170,7 +168,7 @@
     }
 
     #sidebarToggle:hover {
-        background: #e2e8f0;
+        background: #374151;
     }
 
     .chat-header-main .version-badge {
@@ -191,7 +189,7 @@
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
-        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        background: linear-gradient(180deg, #030712 0%, #0a0e16 100%);
     }
 
     .chat-message {
@@ -226,9 +224,9 @@
 
     .chat-message.ai {
         align-self: flex-start;
-        background: #ffffff;
-        color: #1e293b;
-        border: 1px solid #e2e8f0;
+        background: #1f2937;
+        color: #e5e7eb;
+        border: 1px solid #374151;
         border-bottom-left-radius: 0.25rem;
     }
 
@@ -253,16 +251,16 @@
 
     .chat-input-area {
         padding: 1.5rem 2rem;
-        background: #ffffff;
-        border-top: 1px solid #f1f5f9;
+        background: #111827;
+        border-top: 1px solid #1f2937;
         box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .input-container {
         display: flex;
         align-items: flex-end;
-        background: #f8fafc;
-        border: 2px solid #e2e8f0;
+        background: #030712;
+        border: 2px solid #374151;
         border-radius: 1rem;
         padding: 0.5rem;
         transition: all 0.2s ease;
@@ -270,8 +268,8 @@
     }
 
     .input-container:focus-within {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     }
 
     #chatInput {
@@ -281,7 +279,7 @@
         padding: 0.75rem 1rem;
         background: transparent;
         border: none;
-        color: #1e293b;
+        color: #ffffff;
         resize: none;
         outline: none;
         font-family: inherit;
