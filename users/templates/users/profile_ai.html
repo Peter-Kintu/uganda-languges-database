@@ -119,7 +119,7 @@
 <div class="app-container">
     <aside class="sidebar" id="sidebar">
         <div class="p-6 flex justify-between items-center">
-            <h2 class="text-[10px] font-black uppercase text-slate-500 tracking-widest">History</h2>
+            <h2 class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Africana AI History</h2>
             <button onclick="createNewChat()" class="p-2 hover:bg-white/5 rounded-full transition text-slate-400">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             </button>
@@ -149,12 +149,12 @@
 
         <div id="chatLog"></div>
         <div id="typingStatus">
-            <span class="animate-pulse">Thinking...</span>
+            <span class="animate-pulse">Africana AI is thinking...</span>
         </div>
 
         <div class="chat-input-area">
             <div class="input-glass-wrapper">
-                <textarea id="chatInput" placeholder="Ask about career paths, resume tips, or job skills..." rows="1"></textarea>
+                <textarea id="chatInput" placeholder="Ask Africana AI about career paths, resume tips, or job skills..." rows="1"></textarea>
                 <button onclick="typeQuery()" id="sendChatButton" class="btn-send">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                 </button>
@@ -175,7 +175,6 @@
         chatInput.focus();
     };
 
-    // Auto-resize textarea
     chatInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
@@ -220,7 +219,7 @@
             }
         } catch (e) {
             typingStatus.style.display = 'none';
-            appendMessage('ai', `System Notice: ${e.message}`);
+            appendMessage('ai', `Notice: ${e.message}`);
         } finally {
             sendBtn.disabled = false;
             scrollToBottom();
@@ -231,7 +230,6 @@
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role}`;
         
-        // Basic Markdown Support (Bold, Lists, Line Breaks)
         let formatted = text
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/^\s*[\-\*]\s+(.*)/gm, '<li>$1</li>')
@@ -239,7 +237,7 @@
             .replace(/\n/g, '<br>');
 
         messageDiv.innerHTML = `
-            <span class="message-label">${role === 'user' ? 'You' : 'Companion'}</span>
+            <span class="message-label">${role === 'user' ? 'You' : 'Africana AI'}</span>
             <div class="message-content">${formatted}</div>
         `;
         chatLog.appendChild(messageDiv);
@@ -284,7 +282,7 @@
         chatLog.innerHTML = '';
         const history = getSessionHistory(id);
         if (history.length === 0) {
-            appendMessage('ai', "Hello! I'm your Career Companion. How can I help you progress in your career today?");
+            appendMessage('ai', "Hello! I'm your Africana AI Career Companion. How can I help you progress in your career today?");
         } else {
             history.forEach(m => appendMessage(m.role, m.text));
         }
@@ -299,7 +297,7 @@
     }
 
     function clearChat() {
-        if(confirm("This will permanently delete your local chat history. Continue?")) {
+        if(confirm("Permanently erase your chat history with Africana AI?")) {
             localStorage.clear();
             location.reload();
         }
