@@ -223,13 +223,17 @@ def gemini_proxy(request):
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # UPDATED: Use stable version strings and remove manual 'models/' prefix
-        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        # FIXED: Use versioned model identifiers to avoid 404 errors.
+        # The SDK handles the 'models/' prefix automatically.
+        models_to_try = [
+            "gemini-2.0-flash", 
+            "gemini-1.5-flash", 
+            "gemini-1.5-pro-002"
+        ]
         
         last_err = ""
         for model_id in models_to_try:
             try:
-                # The SDK automatically handles the 'models/' prefix
                 response = client.models.generate_content(
                     model=model_id, 
                     config=types.GenerateContentConfig(
@@ -243,7 +247,7 @@ def gemini_proxy(request):
                     return JsonResponse({"text": response.text, "model_used": model_id})
             except Exception as e:
                 last_err = str(e)
-                # Continue to next model if it's a 404, 429, or 503
+                # Continue to next model if current one fails
                 continue
 
         return JsonResponse({"error": f"AI unavailable. Last error: {last_err}"}, status=503)
