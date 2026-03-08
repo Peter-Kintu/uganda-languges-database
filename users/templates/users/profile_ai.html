@@ -447,6 +447,11 @@
         const text = chatInput.value.trim();
         if (!text) return;
 
+        // Disable send button to prevent multiple requests
+        const sendButton = document.getElementById('sendChatButton');
+        sendButton.disabled = true;
+        sendButton.style.opacity = '0.5';
+
         appendMessage('user', text);
         chatInput.value = '';
         chatInput.style.height = 'auto';
@@ -486,6 +491,9 @@
             appendMessage('error', "System Note: " + e.message);
         } finally {
             loadingIndicator.classList.add('hidden');
+            // Re-enable send button
+            sendButton.disabled = false;
+            sendButton.style.opacity = '1';
             chatLog.scrollTop = chatLog.scrollHeight;
         }
     }
