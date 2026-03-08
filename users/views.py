@@ -228,7 +228,7 @@ def gemini_proxy(request):
         models_to_try = [
             "gemini-2.0-flash", 
             "gemini-1.5-flash", 
-            "gemini-1.5-pro-002"
+            "gemini-pro"
         ]
         
         last_err = ""
