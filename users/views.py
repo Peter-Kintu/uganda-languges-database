@@ -203,6 +203,7 @@ def _format_history_for_sdk(messages):
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
+    """Proxies requests to Google Gemini for Africana AI."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
@@ -217,23 +218,25 @@ def gemini_proxy(request):
         
         profile = _get_user_profile_data(request.user)
         system_instruction = (
-            f"You are the Career Companion AI for Africana. "
+            f"You are the Career Companion AI for Africana AI. "
             f"User: {profile['full_name']}. Bio: {profile['bio']}. "
-            f"Skills: {', '.join(profile['skills'][:10])}."
+            f"Skills: {', '.join(profile['skills'][:10])}. "
+            "Provide professional career advice, resume tips, and industry insights."
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # FIXED: Use versioned model identifiers to avoid 404 errors.
-        # The SDK handles the 'models/' prefix automatically.
+        # FIXED: Updated model list to avoid legacy 404 errors.
+        # Removed 'gemini-pro' as it is often unsupported in newer v1beta SDK calls.
         models_to_try = [
-            "gemini-2.0-flash", 
             "gemini-1.5-flash", 
-            "gemini-pro"
+            "gemini-2.0-flash", 
+            "gemini-1.5-pro"
         ]
         
         last_err = ""
         for model_id in models_to_try:
             try:
+                # Use standard 2025 SDK method
                 response = client.models.generate_content(
                     model=model_id, 
                     config=types.GenerateContentConfig(
@@ -247,7 +250,6 @@ def gemini_proxy(request):
                     return JsonResponse({"text": response.text, "model_used": model_id})
             except Exception as e:
                 last_err = str(e)
-                # Continue to next model if current one fails
                 continue
 
         return JsonResponse({"error": f"AI unavailable. Last error: {last_err}"}, status=503)
