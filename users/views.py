@@ -69,7 +69,6 @@ def tts_proxy(request):
 # ==============================================================================
 
 def user_login(request):
-    # Capture referral if present in the login URL
     ref = request.GET.get('ref')
     if ref:
         request.session['referrer'] = ref
@@ -242,7 +241,6 @@ def gemini_proxy(request):
         raw_contents = data.get('contents', [])
         
         profile = _get_user_profile_data(request.user)
-        # Optimized system instruction to reduce token usage
         system_instruction = (
             f"You are the Career Companion AI for Africana. "
             f"User: {profile['full_name']}. Bio: {profile['bio']}. "
@@ -250,29 +248,35 @@ def gemini_proxy(request):
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # Using available models with fallback
-        models_to_try = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro"]
+        # 2025 STABLE IDs - No "models/" prefix
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash-002", "gemini-1.5-pro-002"]
         
+        last_error = "Unknown error"
         for model_name in models_to_try:
             try:
                 response = client.models.generate_content(
-                    model=f"models/{model_name}", 
+                    model=model_name, 
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.7,
-                        max_output_tokens=800, # Slightly reduced to save TPM quota
+                        max_output_tokens=800,
                     ),
                     contents=history
                 )
                 if response.text:
+                    print(f"SUCCESS: Used model {model_name}")
                     return JsonResponse({"text": response.text, "model_used": model_name})
             except Exception as model_e:
-                # If specific capacity error, try the next model
-                if any(x in str(model_e).upper() for x in ["429", "RESOURCE_EXHAUSTED", "QUOTA"]):
+                last_error = str(model_e)
+                print(f"DEBUG: Model {model_name} failed: {last_error}")
+                # Fallback on quota/capacity errors
+                if any(x in last_error.upper() for x in ["429", "RESOURCE_EXHAUSTED", "QUOTA", "503"]):
                     continue
-                raise model_e 
-
-        return JsonResponse({"error": "Quota Busy: The AI free tier is currently at capacity. Please wait 30 seconds."}, status=429)
+                # If it's a 404, the next model in the list might be available
+                if "404" in last_error:
+                    continue
+        
+        return JsonResponse({"error": f"AI Service unavailable. Latest error: {last_error}"}, status=429)
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
