@@ -23,7 +23,6 @@
         overflow: hidden;
     }
 
-    /* --- MODERN SCROLLBAR --- */
     #chatLog::-webkit-scrollbar { width: 6px; }
     #chatLog::-webkit-scrollbar-track { background: transparent; }
     #chatLog::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
@@ -31,7 +30,6 @@
 
     .app-container { display: flex; height: 100vh; width: 100vw; }
 
-    /* --- SIDEBAR --- */
     .sidebar {
         width: 280px;
         background: var(--bg-sidebar);
@@ -59,7 +57,6 @@
     .history-item:hover { background: rgba(255,255,255,0.05); color: white; }
     .history-item.active { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); border-color: rgba(59, 130, 246, 0.2); }
 
-    /* --- CHAT MAIN AREA --- */
     .chat-main-area {
         flex: 1;
         display: flex;
@@ -89,7 +86,6 @@
         scroll-behavior: smooth;
     }
 
-    /* --- MESSAGE BUBBLES --- */
     .chat-message {
         max-width: 85%;
         padding: 1.25rem 1.5rem;
@@ -131,7 +127,6 @@
         opacity: 0.5;
     }
 
-    /* --- INPUT BOX --- */
     .chat-input-area { padding: 0 18% 2.5rem; }
     .input-glass-wrapper {
         display: flex;
@@ -179,7 +174,6 @@
     .btn-send:hover { transform: scale(1.05); filter: brightness(1.1); }
     .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    /* --- TYPING --- */
     #typingStatus {
         padding: 0.5rem 18%;
         font-size: 0.7rem;
@@ -224,7 +218,6 @@
         </header>
 
         <div id="chatLog"></div>
-        
         <div id="typingStatus">Agent is drafting response...</div>
 
         <div class="chat-input-area">
@@ -265,8 +258,8 @@
 
         try {
             const history = getSessionHistory(currentSessionId);
-            // Updated to explicitly point to the v1 API endpoint
-            const response = await fetch("/api/v1/gemini_proxy/", {
+            // FIX: Pointing to the specific Django view URL dynamically
+            const response = await fetch("{% url 'users:gemini_proxy' %}", {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -288,14 +281,11 @@
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
-            } else {
-                throw new Error("Empty AI response received.");
             }
         } catch (e) {
             typingStatus.style.display = 'none';
-            // Detailed user-facing error message
-            appendMessage('ai', `System Notice: ${e.message}. Please verify your server is running and check the terminal logs.`);
-            console.error("Diagnostic Log:", e);
+            appendMessage('ai', `System Notice: ${e.message}`);
+            console.error("Diagnostic:", e);
         } finally {
             sendBtn.disabled = false;
             scrollToBottom();
@@ -324,7 +314,6 @@
 
     function scrollToBottom() {
         chatLog.scrollTop = chatLog.scrollHeight;
-        setTimeout(() => { chatLog.scrollTop = chatLog.scrollHeight; }, 50);
     }
 
     function getSessionHistory(id) {
@@ -343,8 +332,7 @@
         const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
         const list = document.getElementById('historyList');
         list.innerHTML = '';
-        const sortedIds = Object.keys(sessions).sort().reverse();
-        sortedIds.forEach(id => {
+        Object.keys(sessions).sort().reverse().forEach(id => {
             const firstLine = sessions[id][0]?.text.substring(0, 25) || "New Chat";
             const li = document.createElement('li');
             li.className = `history-item ${id === currentSessionId ? 'active' : ''}`;
