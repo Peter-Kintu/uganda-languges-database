@@ -8,6 +8,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib import messages
+from django.conf import settings
 import requests
 import os
 
@@ -251,6 +252,7 @@ def browse_job_listings(request):
                         careerjet_jobs = retry.json().get('jobs', []) if retry.status_code == 200 else []
                 
                 # --- UPDATE: Append Publisher ID to URLs for tracking ---
+                # This logic is performed here to ensure that the template always gets ready-to-use URLs.
                 if careerjet_jobs and CAREERJET_PUBLISHER_ID:
                     for job in careerjet_jobs:
                         job_url = job.get('url', '')
@@ -279,6 +281,8 @@ def browse_job_listings(request):
         'search_query': search_query if search_query != "hiring" else '',
         'location_query': location_query,
         'page_title': f"Jobs in {location_query}",
+        # Fix: Ensure this is passed to prevent Template rendering errors (HTTP 500)
+        'CAREERJET_API_KEY': CAREERJET_PUBLISHER_ID,
     }
     return render(request, 'contributions_list.html', context)
 
