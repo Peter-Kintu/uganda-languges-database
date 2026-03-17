@@ -151,6 +151,15 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
+        /* Custom scrollbar for horizontal categories */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 {% endblock %}
 
@@ -171,7 +180,7 @@
                 <header class="flex flex-col md:flex-row items-center md:items-start gap-8 mb-12">
                     <div class="relative">
                         {% if selected_job.company_logo_or_media %}
-                            <img src="{{ selected_job.company_logo_or_media.url }}" class="h-24 w-24 rounded-3xl object-cover ring-4 ring-slate-800 bg-white">
+                            <img src="{{ selected_job.company_logo_or_media.url }}" class="h-24 w-24 rounded-3xl object-cover ring-4 ring-slate-800 bg-white" alt="Company Logo">
                         {% else %}
                             <div class="h-24 w-24 rounded-3xl bg-indigo-600 flex items-center justify-center text-3xl font-black text-white shadow-2xl">
                                 {{ selected_job.recruiter_name|slice:":1" }}
@@ -273,58 +282,58 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-                {# 1. MICRO1 PREMIUM CARD #}
-        <div class="job-card p-8 flex flex-col h-full group border-t-4 border-indigo-400 shadow-2xl" style="background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 100%);">
-            <div class="flex justify-between items-start mb-6">
-                <div class="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-indigo-500/20">Official AGI Contributor</div>
-                <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
-            </div>
-
-            <h3 class="text-2xl font-black text-white mb-3 tracking-tight">Micro1 AI Specialist</h3>
-
-            <p class="text-slate-400 text-sm mb-8 leading-relaxed">Join the world's most elite network training frontier AI models. High-compensation roles for subject matter experts, writers, and developers.</p>
-
-            <div class="mt-auto">
-                <div class="flex items-center gap-3 mb-6">
-                    <span class="text-indigo-300 font-bold text-xs px-3 py-1 bg-indigo-500/10 rounded-lg">Priority Global Hiring</span>
-                    <span class="text-emerald-400 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Top-Tier Pay</span>
+            {# 1. MICRO1 PREMIUM CARD #}
+            <div class="job-card p-8 flex flex-col h-full group border-t-4 border-indigo-400 shadow-2xl" style="background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 100%);">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-indigo-500/20">Official AGI Contributor</div>
+                    <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
                 </div>
 
-                <a href="https://refer.micro1.ai/referral/jobs?referralCode=ab667ca0-d5d0-430a-b035-e3b87dda7148&utm_source=referral&utm_medium=share&utm_campaign=job_referral" 
-                target="_blank" 
-                class="w-full block text-center py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95 uppercase text-[11px] tracking-widest">
-                Secure Your Spot
-                </a>
+                <h3 class="text-2xl font-black text-white mb-3 tracking-tight">Micro1 AI Specialist</h3>
+
+                <p class="text-slate-400 text-sm mb-8 leading-relaxed">Join the world's most elite network training frontier AI models. High-compensation roles for subject matter experts, writers, and developers.</p>
+
+                <div class="mt-auto">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="text-indigo-300 font-bold text-xs px-3 py-1 bg-indigo-500/10 rounded-lg">Priority Global Hiring</span>
+                        <span class="text-emerald-400 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Top-Tier Pay</span>
+                    </div>
+
+                    <a href="https://refer.micro1.ai/referral/jobs?referralCode=ab667ca0-d5d0-430a-b035-e3b87dda7148&utm_source=referral&utm_medium=share&utm_campaign=job_referral" 
+                    target="_blank" 
+                    class="w-full block text-center py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95 uppercase text-[11px] tracking-widest">
+                    Secure Your Spot
+                    </a>
+                </div>
             </div>
-        </div>
 
-                {# 2. JOBCOPILOT PREMIUM CARD #}
-        <div class="job-card p-8 flex flex-col h-full group border-t-4 border-emerald-500 shadow-2xl" style="background: linear-gradient(165deg, #020617 0%, #064e3b 100%);">
-            <div class="flex justify-between items-start mb-6">
-                <div class="bg-emerald-500/10 text-emerald-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-emerald-500/20">Smart Career Automation</div>
-                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-            </div>
-
-            <h3 class="text-2xl font-black text-white mb-3 tracking-tight">JobCopilot AI</h3>
-
-            <p class="text-slate-400 text-sm mb-8 leading-relaxed">Let AI find and apply to 1,000+ remote jobs for you. Skip the manual search and land interviews while you sleep with advanced auto-apply technology.</p>
-
-            <div class="mt-auto">
-                <div class="flex items-center gap-3 mb-6">
-                    <span class="text-emerald-300 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Auto-Apply Active</span>
-                    <span class="text-emerald-300 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Remote-First</span>
+            {# 2. JOBCOPILOT PREMIUM CARD #}
+            <div class="job-card p-8 flex flex-col h-full group border-t-4 border-emerald-500 shadow-2xl" style="background: linear-gradient(165deg, #020617 0%, #064e3b 100%);">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="bg-emerald-500/10 text-emerald-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-emerald-500/20">Smart Career Automation</div>
+                    <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
                 </div>
 
-                <a href="https://jobcopilot.com/?linkId=lp_494205&sourceId=kintu-peter&tenantId=jobcopilot" 
-                target="_blank" 
-                class="w-full block text-center py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95 uppercase text-[11px] tracking-widest">
-                Automate My Job Search
-                </a>
-            </div>
-        </div>
+                <h3 class="text-2xl font-black text-white mb-3 tracking-tight">JobCopilot AI</h3>
 
-                        {# 3. SOLIDGIGS PREMIUM CARD #}
-                {% if solidgigs %}
+                <p class="text-slate-400 text-sm mb-8 leading-relaxed">Let AI find and apply to 1,000+ remote jobs for you. Skip the manual search and land interviews while you sleep with advanced auto-apply technology.</p>
+
+                <div class="mt-auto">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="text-emerald-300 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Auto-Apply Active</span>
+                        <span class="text-emerald-300 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Remote-First</span>
+                    </div>
+
+                    <a href="https://jobcopilot.com/?linkId=lp_494205&sourceId=kintu-peter&tenantId=jobcopilot" 
+                    target="_blank" 
+                    class="w-full block text-center py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95 uppercase text-[11px] tracking-widest">
+                    Automate My Job Search
+                    </a>
+                </div>
+            </div>
+
+            {# 3. SOLIDGIGS PREMIUM CARD #}
+            {% if solidgigs %}
                 <div class="job-card premium-card p-8 flex flex-col group h-full border-t-4 border-indigo-400" style="background: linear-gradient(165deg, #1e1b4b 0%, #0f172a 100%);">
                     <div class="relative z-10 h-full flex flex-col">
                         <div class="flex justify-between items-start mb-8">
@@ -350,7 +359,6 @@
                         </div>
                     </div>
                 </div>
-
             {% endif %}
 
             {# REST OF THE DYNAMIC JOBS #}
@@ -430,7 +438,7 @@
     {% endif %}
 </main>
 
-<button id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-10 right-10 bg-indigo-600/20 backdrop-blur-xl border border-indigo-500/30 hover:bg-indigo-600 text-white p-5 rounded-full shadow-3xl transition-all transform hover:scale-110 active:scale-90 z-50">
+<button id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-10 right-10 bg-indigo-600/20 backdrop-blur-xl border border-indigo-500/30 hover:bg-indigo-600 text-white p-5 rounded-full shadow-3xl transition-all transform hover:scale-110 active:scale-90 z-50">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
 </button>
 
@@ -449,20 +457,36 @@
 
 <script>
     // Logic to sync the mobile search input to the desktop search input
-    // This prevents duplicate 'q' parameters being sent to the server.
     const desktopQ = document.getElementById('search-q-desktop');
     const mobileQ = document.getElementById('search-q-mobile');
+    const form = document.getElementById('search-filter-form');
     
     if(mobileQ && desktopQ) {
-        // Update desktop value when mobile is typed in
+        // Sync values when typing
         mobileQ.addEventListener('input', (e) => {
             desktopQ.value = e.target.value;
         });
+        desktopQ.addEventListener('input', (e) => {
+            mobileQ.value = e.target.value;
+        });
         
-        // Ensure initial sync
+        // Initial sync
         if (mobileQ.value !== desktopQ.value) {
-            mobileQ.value = desktopQ.value;
+            mobileQ.value = desktopQ.value || '';
         }
+
+        // Before submitting, ensure only one 'q' parameter is active
+        form.addEventListener('submit', () => {
+            if (window.innerWidth < 768) {
+                // If on mobile, make sure the desktop input is disabled or its name is removed 
+                // so it doesn't send duplicate 'q' params
+                desktopQ.setAttribute('name', '');
+                mobileQ.setAttribute('name', 'q');
+            } else {
+                mobileQ.setAttribute('name', '');
+                desktopQ.setAttribute('name', 'q');
+            }
+        });
     }
 </script>
 {% endblock %}
