@@ -271,7 +271,7 @@ def browse_job_listings(request):
         'job_posts': job_posts_context,
         'adzuna_jobs': adzuna_jobs, 
         'careerjet_jobs': careerjet_jobs,
-        'solidgigs': solidgigs,
+        'solidgigs': solidgigs_data,
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query if search_query != "hiring" else '',
