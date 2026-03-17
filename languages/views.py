@@ -246,6 +246,8 @@ def browse_job_listings(request):
                     cj_data = cj_res.json()
                     if cj_data.get('type') == 'JOBS':
                         careerjet_jobs = cj_data.get('jobs', [])
+                        for job in careerjet_jobs:
+                            job['url'] = f"{job['url']}&publisher={CAREERJET_API_KEY}" if '?' in job['url'] else f"{job['url']}?publisher={CAREERJET_API_KEY}"
                     
                     if not careerjet_jobs:
                         cj_params['locale_code'] = 'en_US'
@@ -254,6 +256,8 @@ def browse_job_listings(request):
                                            params=cj_params, auth=(CAREERJET_API_KEY, ''), 
                                            headers=cj_headers, timeout=5)
                         careerjet_jobs = retry.json().get('jobs', []) if retry.status_code == 200 else []
+                        for job in careerjet_jobs:
+                            job['url'] = f"{job['url']}&publisher={CAREERJET_API_KEY}" if '?' in job['url'] else f"{job['url']}?publisher={CAREERJET_API_KEY}"
 
             except Exception as e:
                 print(f"CJ Error: {e}")
