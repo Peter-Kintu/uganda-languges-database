@@ -115,6 +115,9 @@ def post_job(request):
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
 CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
+# Publisher/affiliate ID used for click tracking in job redirect URLs.
+# For Careerjet, this is the same value as your API key / affiliate ID.
+CAREERJET_PUBLISHER_ID = os.getenv("CAREERJET_PUBLISHER_ID") or CAREERJET_API_KEY
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
@@ -278,7 +281,7 @@ def browse_job_listings(request):
         'search_query': search_query if search_query != "hiring" else '',
         'location_query': location_query,
         'page_title': f"Jobs in {location_query}",
-        'CAREERJET_API_KEY': CAREERJET_API_KEY,
+        'CAREERJET_API_KEY': CAREERJET_PUBLISHER_ID,
     }
     return render(request, 'contributions_list.html', context)
 
