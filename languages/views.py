@@ -115,8 +115,6 @@ def post_job(request):
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
 CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
-# Publisher/affiliate ID used for click tracking in job redirect URLs.
-# For Careerjet, this is the same value as your API key / affiliate ID.
 CAREERJET_PUBLISHER_ID = os.getenv("CAREERJET_PUBLISHER_ID") or CAREERJET_API_KEY
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
@@ -149,7 +147,6 @@ def browse_job_listings(request):
     location_query = request.GET.get('where') or ""
     page = request.GET.get('page', 1)
 
-    # --- SOLIDGIGS PARTNER DATA ---
     display_query = search_query if search_query != "hiring" else "Freelance"
     solidgigs_data = {
         'name': f"Elite {display_query.title()} Roles",
@@ -158,7 +155,6 @@ def browse_job_listings(request):
     }
 
     if selected_job is None:
-        # A. LOCAL DATABASE SEARCH
         job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
         if category_filter and category_filter != 'all':
             job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
@@ -170,7 +166,6 @@ def browse_job_listings(request):
             )
         final_job_list = list(job_posts_filtered)
 
-        # B. EXTERNAL API BACKFILL
         loc_lower = location_query.lower()
         
         # --- 1. Adzuna Integration ---
@@ -217,11 +212,7 @@ def browse_job_listings(request):
 
             try:
                 x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-                if x_forwarded_for:
-                    u_ip = x_forwarded_for.split(',')[0].strip()
-                else:
-                    u_ip = request.META.get('REMOTE_ADDR')
-                
+                u_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
                 u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
                 search_loc = "" if "africa" in loc_lower else location_query
 
@@ -233,7 +224,7 @@ def browse_job_listings(request):
                     'user_agent': u_agent,
                     'page_size': 25,
                     'page': page,
-                    'affid': CAREERJET_API_KEY,  # affiliate publisher ID for click attribution
+                    'affid': CAREERJET_API_KEY, 
                 }
 
                 cj_headers = {'Referer': 'https://initial-danette-africana-60541726.koyeb.app'}
@@ -258,11 +249,18 @@ def browse_job_listings(request):
                                            params=cj_params, auth=(CAREERJET_API_KEY, ''), 
                                            headers=cj_headers, timeout=5)
                         careerjet_jobs = retry.json().get('jobs', []) if retry.status_code == 200 else []
+                
+                # --- UPDATE: Append Publisher ID to URLs for tracking ---
+                if careerjet_jobs and CAREERJET_PUBLISHER_ID:
+                    for job in careerjet_jobs:
+                        job_url = job.get('url', '')
+                        if job_url:
+                            separator = '&' if '?' in job_url else '?'
+                            job['url'] = f"{job_url}{separator}publisher={CAREERJET_PUBLISHER_ID}"
 
             except Exception as e:
                 print(f"CJ Error: {e}")
 
-        # Local Pagination
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
         job_posts_context = posts_on_page
@@ -281,7 +279,6 @@ def browse_job_listings(request):
         'search_query': search_query if search_query != "hiring" else '',
         'location_query': location_query,
         'page_title': f"Jobs in {location_query}",
-        'CAREERJET_API_KEY': CAREERJET_PUBLISHER_ID,
     }
     return render(request, 'contributions_list.html', context)
 
