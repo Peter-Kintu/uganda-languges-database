@@ -113,9 +113,11 @@ def post_job(request):
         form = JobPostForm()
     return render(request, 'contribute.html', {'form': form})
 
+# API Credentials
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
 CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
+# Ensure the publisher ID falls back to the API key if not specifically set
 CAREERJET_PUBLISHER_ID = os.getenv("CAREERJET_PUBLISHER_ID") or CAREERJET_API_KEY
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
@@ -199,36 +201,40 @@ def browse_job_listings(request):
 
         # --- 2. Careerjet Integration ---
         if CAREERJET_API_KEY:
+            # Map countries to Careerjet locales
             cj_locale = 'en_GB' 
             if 'uganda' in loc_lower: cj_locale = 'en_UG'
             elif 'kenya' in loc_lower: cj_locale = 'en_KE'
             elif 'nigeria' in loc_lower: cj_locale = 'en_NG'
             elif 'south africa' in loc_lower: cj_locale = 'en_ZA'
             elif 'ghana' in loc_lower: cj_locale = 'en_GH'
-            elif 'ethiopia' in loc_lower: cj_locale = 'en_ET'
-            elif 'rwanda' in loc_lower: cj_locale = 'en_RW'
-            elif 'tanzania' in loc_lower: cj_locale = 'en_TZ'
             elif 'usa' in loc_lower: cj_locale = 'en_US'
-            elif 'africa' in loc_lower: cj_locale = 'en_ZA'
 
             try:
+                # Get User Details (REQUIRED by Careerjet)
                 x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
                 u_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
                 u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
-                search_loc = "" if "africa" in loc_lower else location_query
+                
+                # Dynamic Referer Construction (REQUIRED by Careerjet)
+                current_url = request.build_absolute_uri()
 
                 cj_params = {
                     'locale_code': cj_locale,
                     'keywords': search_query if search_query != "hiring" else "",
-                    'location': search_loc,
+                    'location': location_query,
                     'user_ip': u_ip,
                     'user_agent': u_agent,
                     'page_size': 25,
                     'page': page,
                 }
 
-                cj_headers = {'Referer': 'https://initial-danette-africana-60541726.koyeb.app'}
+                cj_headers = {
+                    'content-type': 'application/json',
+                    'Referer': current_url
+                }
 
+                # API Call with Basic Auth (API_KEY as username)
                 cj_res = requests.get(
                     'https://search.api.careerjet.net/v4/query', 
                     params=cj_params, 
@@ -241,26 +247,17 @@ def browse_job_listings(request):
                     cj_data = cj_res.json()
                     if cj_data.get('type') == 'JOBS':
                         careerjet_jobs = cj_data.get('jobs', [])
-                    
-                    if not careerjet_jobs:
-                        cj_params['locale_code'] = 'en_US'
-                        cj_params['location'] = "" 
-                        retry = requests.get('https://search.api.careerjet.net/v4/query', 
-                                           params=cj_params, auth=(CAREERJET_API_KEY, ''), 
-                                           headers=cj_headers, timeout=5)
-                        careerjet_jobs = retry.json().get('jobs', []) if retry.status_code == 200 else []
                 
-                # --- UPDATE: Append Publisher ID to URLs for tracking ---
-                # This logic is performed here to ensure that the template always gets ready-to-use URLs.
+                # --- BACKEND LINK INJECTION: This makes the clicks trackable ---
                 if careerjet_jobs and CAREERJET_PUBLISHER_ID:
                     for job in careerjet_jobs:
-                        job_url = job.get('url', '')
-                        if job_url:
-                            separator = '&' if '?' in job_url else '?'
-                            job['url'] = f"{job_url}{separator}publisher={CAREERJET_PUBLISHER_ID}"
+                        raw_url = job.get('url', '')
+                        if raw_url:
+                            sep = '&' if '?' in raw_url else '?'
+                            job['url'] = f"{raw_url}{sep}publisher={CAREERJET_PUBLISHER_ID}"
 
             except Exception as e:
-                print(f"CJ Error: {e}")
+                print(f"Careerjet API error: {e}")
 
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
@@ -280,7 +277,7 @@ def browse_job_listings(request):
         'search_query': search_query if search_query != "hiring" else '',
         'location_query': location_query,
         'page_title': f"Jobs in {location_query}",
-        # Fix: Ensure this is passed to prevent Template rendering errors (HTTP 500)
+        # Keep variable for template filter fallback
         'CAREERJET_API_KEY': CAREERJET_PUBLISHER_ID,
     }
     return render(request, 'contributions_list.html', context)
