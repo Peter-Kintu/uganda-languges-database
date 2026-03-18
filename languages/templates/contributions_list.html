@@ -396,7 +396,8 @@
                     <h3 class="text-xl font-bold text-white mb-2">{{ job.title|safe }}</h3>
                     <p class="text-slate-500 font-bold text-xs uppercase mb-1">{{ job.company }}</p>
                     <div class="mt-auto">
-                        <a href="{{ job.url|add_publisher:CAREERJET_API_KEY }}" target="_blank" class="w-full block text-center py-4 bg-slate-800 hover:bg-orange-600 text-white text-xs font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest">External Application</a>
+                        {# Careerjet returns jobviewtrack.com URLs — tracking is embedded; no ?publisher= needed #}
+                        <a href="{{ job.url }}" target="_blank" class="w-full block text-center py-4 bg-slate-800 hover:bg-orange-600 text-white text-xs font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest">External Application</a>
                     </div>
                 </div>
             {% endfor %}

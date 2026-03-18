@@ -225,7 +225,6 @@ def browse_job_listings(request):
                     'user_agent': u_agent,
                     'page_size': 25,
                     'page': page,
-                    'affid': CAREERJET_API_KEY, 
                 }
 
                 cj_headers = {'Referer': 'https://initial-danette-africana-60541726.koyeb.app'}
