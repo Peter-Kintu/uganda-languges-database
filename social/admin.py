@@ -25,9 +25,16 @@ class SocialProfileAdminForm(forms.ModelForm):
 @admin.register(SocialProfile)
 class SocialProfileAdmin(admin.ModelAdmin):
     form = SocialProfileAdminForm
-    list_display = ('user', 'trust_score_display', 'verified_deals_count', 'is_verified_merchant', 'auto_negotiation_enabled')
+    list_display = (
+        'user', 
+        'trust_score_display', 
+        'verified_deals_count', 
+        'is_verified_merchant', 
+        'auto_negotiation_enabled'
+    )
     list_filter = ('is_verified_merchant', 'auto_negotiation_enabled')
     search_fields = ('user__username', 'user__email')
+    actions = ['recalculate_trust']
     
     fieldsets = (
         ('User Identity', {
@@ -52,13 +59,26 @@ class SocialProfileAdmin(admin.ModelAdmin):
         return f"{obj.trust_score}%"
     trust_score_display.short_description = 'Trust Score'
 
+    @admin.action(description="Recalculate selected Trust Scores")
+    def recalculate_trust(self, request, queryset):
+        for profile in queryset:
+            profile.update_trust_score()
+        self.message_user(request, "Trust scores have been updated based on verified endorsements.")
+
 
 @admin.register(BusinessReel)
 class BusinessReelAdmin(admin.ModelAdmin):
     """
     Command center for shoppable reels. Monitor speed and negotiation floors.
     """
-    list_display = ('caption_summary', 'author', 'price_display', 'floor_display', 'is_low_bandwidth_optimized', 'created_at')
+    list_display = (
+        'caption_summary', 
+        'author', 
+        'price_display', 
+        'floor_display', 
+        'is_low_bandwidth_optimized', 
+        'created_at'
+    )
     list_filter = ('currency', 'is_low_bandwidth_optimized', 'created_at')
     search_fields = ('author__username', 'caption')
     readonly_fields = ('created_at',)
@@ -86,6 +106,7 @@ class BusinessReelAdmin(admin.ModelAdmin):
     price_display.short_description = 'Public Price'
 
     def floor_display(self, obj):
+        # Shows what the AI is actually using as a floor
         floor = obj.get_negotiation_floor()
         return f"{obj.currency} {floor:,.2f}"
     floor_display.short_description = 'AI Floor'
@@ -103,6 +124,9 @@ class VideoEndorsementAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Endorsement Details', {
-            'fields': ('professional', 'client', 'video_clip', 'is_verified_transaction', 'created_at')
+            'fields': ('professional', 'client', 'video_clip', 'is_verified_transaction')
+        }),
+        ('Timestamp', {
+            'fields': ('created_at',)
         }),
     )

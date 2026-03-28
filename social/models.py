@@ -39,12 +39,13 @@ class SocialProfile(models.Model):
     )
     
     # --- PILLAR 4: BENTO LAYOUT ---
+    # bento_config stores layout positions for the LinkedIn 2.0 style view
     bento_config = models.JSONField(default=dict, blank=True)
 
     def update_trust_score(self):
         """Logic to recalculate trust based on verified endorsements."""
         endorsements = self.user.received_endorsements.filter(is_verified_transaction=True).count()
-        # Example logic: 2 pts per deal + 5 pts per verified testimonial
+        # Formula: 2 pts per verified deal + 5 pts per verified video testimonial
         self.trust_score = min(100.0, (self.verified_deals_count * 2) + (endorsements * 5))
         self.save()
 
@@ -56,15 +57,25 @@ class SocialProfile(models.Model):
 
 class BusinessReel(models.Model):
     """
-    TikTok 2.0 Shoppable Reel: High-speed video gateway.
+    TikTok 2.0 Shoppable Reel: High-speed video gateway with Agentic Pricing.
     """
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reels')
+    
+    # Video optimized for Africa-first delivery (Adaptive Bitrate)
     video = CloudinaryField(
         'video', 
-        resource_type='video', 
-        help_text="Optimized for low-bandwidth delivery."
+        resource_type='video',
+        folder='africana_reels/',
+        help_text="Optimized for low-bandwidth delivery.",
+        options={
+            "eager": [
+                {"streaming_profile": "full_hd", "format": "mp4"},
+                {"streaming_profile": "low_bandwidth", "format": "mp4"},
+            ],
+            "eager_async": True,
+        }
     )
-    thumbnail = CloudinaryField('image', blank=True, null=True)
+    thumbnail = CloudinaryField('image', folder='africana_thumbnails/', blank=True, null=True)
     caption = models.TextField(max_length=500)
     
     # --- AGENTIC PRICING ---
@@ -90,6 +101,7 @@ class BusinessReel(models.Model):
         """Calculates floor price from specific field or global margin."""
         if self.floor_price:
             return self.floor_price
+        # Fallback to the profile-wide margin if no specific floor is set for this reel
         margin = self.author.social_profile.minimum_margin_percent
         return self.price * (1 - (margin / 100))
 
@@ -99,11 +111,19 @@ class BusinessReel(models.Model):
 
 class VideoEndorsement(models.Model):
     """
-    Verified Proof of Work: 15-second client testimonials.
+    Verified Proof of Work: 15-second client testimonials for the Trust Ledger.
     """
     professional = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_endorsements')
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_endorsements')
-    video_clip = CloudinaryField('video', resource_type='video')
+    video_clip = CloudinaryField(
+        'video', 
+        resource_type='video', 
+        folder='endorsements/',
+        options={
+            "resource_type": "video",
+            "transformation": [{"width": 480, "crop": "limit", "quality": "auto"}]
+        }
+    )
     is_verified_transaction = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -114,17 +134,22 @@ class VideoEndorsement(models.Model):
 # --- AUTOMATION SIGNALS ---
 
 @receiver(post_save, sender=User)
-def create_user_social_profile(sender, instance, created, **kwargs):
+def handle_user_social_profile(sender, instance, created, **kwargs):
     """
-    Automatically creates a SocialProfile whenever a new User is registered.
+    Handles SocialProfile lifecycle. 
+    Creates a profile on user registration and ensures it stays synced.
     """
     if created:
         SocialProfile.objects.get_or_create(user=instance)
+    else:
+        if hasattr(instance, 'social_profile'):
+            instance.social_profile.save()
 
-@receiver(post_save, sender=User)
-def save_user_social_profile(sender, instance, **kwargs):
+@receiver(post_save, sender=VideoEndorsement)
+def auto_update_trust_on_endorsement(sender, instance, created, **kwargs):
     """
-    Ensures the profile is saved whenever the User object is updated.
+    Pillar 1 Automation: Triggers a Trust Ledger recalculation whenever 
+     a new verified endorsement is posted.
     """
-    if hasattr(instance, 'social_profile'):
-        instance.social_profile.save()
+    if instance.is_verified_transaction:
+        instance.professional.social_profile.update_trust_score()
