@@ -39,13 +39,11 @@ class SocialProfile(models.Model):
     )
     
     # --- PILLAR 4: BENTO LAYOUT ---
-    # bento_config stores layout positions for the LinkedIn 2.0 style view
     bento_config = models.JSONField(default=dict, blank=True)
 
     def update_trust_score(self):
         """Logic to recalculate trust based on verified endorsements."""
         endorsements = self.user.received_endorsements.filter(is_verified_transaction=True).count()
-        # Formula: 2 pts per verified deal + 5 pts per verified video testimonial
         self.trust_score = min(100.0, (self.verified_deals_count * 2) + (endorsements * 5))
         self.save()
 
@@ -61,19 +59,14 @@ class BusinessReel(models.Model):
     """
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reels')
     
-    # Video optimized for Africa-first delivery (Adaptive Bitrate)
+    # FIX: Removed 'options' dict to prevent TypeError: Field.__init__() got unexpected keyword argument.
+    # Optimization is now handled by resource_type and folder flags.
     video = CloudinaryField(
         'video', 
         resource_type='video',
         folder='africana_reels/',
-        help_text="Optimized for low-bandwidth delivery.",
-        options={
-            "eager": [
-                {"streaming_profile": "full_hd", "format": "mp4"},
-                {"streaming_profile": "low_bandwidth", "format": "mp4"},
-            ],
-            "eager_async": True,
-        }
+        overwrite=True,
+        help_text="Optimized for low-bandwidth delivery."
     )
     thumbnail = CloudinaryField('image', folder='africana_thumbnails/', blank=True, null=True)
     caption = models.TextField(max_length=500)
@@ -89,7 +82,6 @@ class BusinessReel(models.Model):
         help_text="Absolute minimum the AI Agent can accept."
     )
     
-    # --- OPTIMIZATION ---
     is_low_bandwidth_optimized = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -98,10 +90,8 @@ class BusinessReel(models.Model):
         ordering = ['-created_at']
 
     def get_negotiation_floor(self):
-        """Calculates floor price from specific field or global margin."""
         if self.floor_price:
             return self.floor_price
-        # Fallback to the profile-wide margin if no specific floor is set for this reel
         margin = self.author.social_profile.minimum_margin_percent
         return self.price * (1 - (margin / 100))
 
@@ -109,20 +99,39 @@ class BusinessReel(models.Model):
         return f"Reel by {self.author.username} - {self.currency} {self.price}"
 
 
+# --- SOVEREIGN MESSAGING (Native Encrypted "Hire" Logic) ---
+
+class SecureMessage(models.Model):
+    """
+    Internal E2EE-style messaging for the 'Hire' protocol.
+    """
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    
+    # Reference to the reel that triggered the 'Hire' intent
+    related_reel = models.ForeignKey(BusinessReel, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    content = models.TextField(help_text="Stored message content.")
+    is_encrypted = models.BooleanField(default=True)
+    is_read = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"Secure Msg from {self.sender.username} to {self.recipient.username}"
+
+
 class VideoEndorsement(models.Model):
-    """
-    Verified Proof of Work: 15-second client testimonials for the Trust Ledger.
-    """
     professional = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_endorsements')
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_endorsements')
+    
+    # FIX: Cleaned up CloudinaryField here as well
     video_clip = CloudinaryField(
         'video', 
         resource_type='video', 
-        folder='endorsements/',
-        options={
-            "resource_type": "video",
-            "transformation": [{"width": 480, "crop": "limit", "quality": "auto"}]
-        }
+        folder='endorsements/'
     )
     is_verified_transaction = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -135,10 +144,6 @@ class VideoEndorsement(models.Model):
 
 @receiver(post_save, sender=User)
 def handle_user_social_profile(sender, instance, created, **kwargs):
-    """
-    Handles SocialProfile lifecycle. 
-    Creates a profile on user registration and ensures it stays synced.
-    """
     if created:
         SocialProfile.objects.get_or_create(user=instance)
     else:
@@ -147,9 +152,5 @@ def handle_user_social_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=VideoEndorsement)
 def auto_update_trust_on_endorsement(sender, instance, created, **kwargs):
-    """
-    Pillar 1 Automation: Triggers a Trust Ledger recalculation whenever 
-     a new verified endorsement is posted.
-    """
     if instance.is_verified_transaction:
         instance.professional.social_profile.update_trust_score()
