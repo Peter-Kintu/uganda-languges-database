@@ -13,6 +13,7 @@ User = settings.AUTH_USER_MODEL
 class SocialProfile(models.Model):
     """
     Extends the user with capabilities for verified social commerce.
+    Contains the Trust Ledger (Pillar 1) and Bento Config (Pillar 4).
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='social_profile')
     
@@ -44,6 +45,7 @@ class SocialProfile(models.Model):
     def update_trust_score(self):
         """Logic to recalculate trust based on verified endorsements."""
         endorsements = self.user.received_endorsements.filter(is_verified_transaction=True).count()
+        # Formula: Base points from deals + bonus for verified video testimonials
         self.trust_score = min(100.0, (self.verified_deals_count * 2) + (endorsements * 5))
         self.save()
 
@@ -55,12 +57,11 @@ class SocialProfile(models.Model):
 
 class BusinessReel(models.Model):
     """
-    TikTok 2.0 Shoppable Reel: High-speed video gateway with Agentic Pricing.
+    Shoppable Reel / Professional Portfolio: 
+    High-speed video gateway with optional Agentic Pricing.
     """
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reels')
     
-    # FIX: Removed 'options' dict to prevent TypeError: Field.__init__() got unexpected keyword argument.
-    # Optimization is now handled by resource_type and folder flags.
     video = CloudinaryField(
         'video', 
         resource_type='video',
@@ -71,15 +72,21 @@ class BusinessReel(models.Model):
     thumbnail = CloudinaryField('image', folder='africana_thumbnails/', blank=True, null=True)
     caption = models.TextField(max_length=500)
     
-    # --- AGENTIC PRICING ---
-    price = models.DecimalField(max_digits=12, decimal_places=2)
-    currency = models.CharField(max_length=10, default="UGX")
+    # --- AGENTIC PRICING (Optional for Professional Reels) ---
+    price = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Public price. Leave blank for professional/work-sample content."
+    )
+    currency = models.CharField(max_length=10, default="UGX", blank=True)
     floor_price = models.DecimalField(
         max_digits=12, 
         decimal_places=2, 
         null=True, 
         blank=True,
-        help_text="Absolute minimum the AI Agent can accept."
+        help_text="Absolute minimum the AI Agent can accept. (Secret)"
     )
     
     is_low_bandwidth_optimized = models.BooleanField(default=True)
@@ -90,28 +97,39 @@ class BusinessReel(models.Model):
         ordering = ['-created_at']
 
     def get_negotiation_floor(self):
+        """Calculates floor price from specific field or global margin."""
+        if not self.price:
+            return None
         if self.floor_price:
             return self.floor_price
-        margin = self.author.social_profile.minimum_margin_percent
-        return self.price * (1 - (margin / 100))
+        
+        # Fallback to social profile margin if floor_price is missing but public price exists
+        try:
+            margin = self.author.social_profile.minimum_margin_percent
+            return self.price * (1 - (margin / 100))
+        except SocialProfile.DoesNotExist:
+            return self.price
 
     def __str__(self):
-        return f"Reel by {self.author.username} - {self.currency} {self.price}"
+        if self.price:
+            return f"Business Reel by {self.author.username} - {self.currency} {self.price}"
+        return f"Professional Reel by {self.author.username}"
 
 
-# --- SOVEREIGN MESSAGING (Native Encrypted "Hire" Logic) ---
+# --- SOVEREIGN MESSAGING ---
 
 class SecureMessage(models.Model):
     """
-    Internal E2EE-style messaging for the 'Hire' protocol.
+    Native messaging for the 'Hire' protocol. 
+    Keeps users within the ecosystem instead of moving to WhatsApp.
     """
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
     
-    # Reference to the reel that triggered the 'Hire' intent
+    # Context: Which product/service triggered this conversation?
     related_reel = models.ForeignKey(BusinessReel, on_delete=models.SET_NULL, null=True, blank=True)
     
-    content = models.TextField(help_text="Stored message content.")
+    content = models.TextField()
     is_encrypted = models.BooleanField(default=True)
     is_read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -120,14 +138,16 @@ class SecureMessage(models.Model):
         ordering = ['timestamp']
 
     def __str__(self):
-        return f"Secure Msg from {self.sender.username} to {self.recipient.username}"
+        return f"Secure Msg: {self.sender.username} -> {self.recipient.username}"
 
 
 class VideoEndorsement(models.Model):
+    """
+    Verified Proof of Work: 15-second client testimonials.
+    """
     professional = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_endorsements')
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_endorsements')
     
-    # FIX: Cleaned up CloudinaryField here as well
     video_clip = CloudinaryField(
         'video', 
         resource_type='video', 
@@ -144,6 +164,7 @@ class VideoEndorsement(models.Model):
 
 @receiver(post_save, sender=User)
 def handle_user_social_profile(sender, instance, created, **kwargs):
+    """Ensures every user has a SocialProfile and handles sync."""
     if created:
         SocialProfile.objects.get_or_create(user=instance)
     else:
@@ -152,5 +173,9 @@ def handle_user_social_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=VideoEndorsement)
 def auto_update_trust_on_endorsement(sender, instance, created, **kwargs):
+    """Pillar 1 Automation: Recalculates Trust Score when endorsements are verified."""
     if instance.is_verified_transaction:
-        instance.professional.social_profile.update_trust_score()
+        try:
+            instance.professional.social_profile.update_trust_score()
+        except SocialProfile.DoesNotExist:
+            pass

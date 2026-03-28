@@ -6,10 +6,11 @@ from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django.contrib import messages
 
 # Internal App Models and Forms
-from .models import BusinessReel, SocialProfile
-from .forms import BusinessReelUploadForm 
+from .models import BusinessReel, SocialProfile, SecureMessage
+from .forms import BusinessReelUploadForm, SecureMessageForm
 # External User Model from users app
 from users.models import CustomUser
 
@@ -21,12 +22,13 @@ class FeedView(ListView):
     model = BusinessReel
     template_name = 'social/feed.html'
     context_object_name = 'reels'
+    # Show both Business (priced) and Professional (unpriced) reels
     queryset = BusinessReel.objects.filter(is_active=True).select_related('author__social_profile')
     ordering = ['-created_at']
 
 class BentoProfileView(DetailView):
     """
-    Pillar 4: LinkedIn 2.0 Bento-style profile view.
+    Pillar 4: Modern Bento-style profile view.
     Highlights Trust Ledger and Proof of Work.
     """
     model = CustomUser
@@ -37,7 +39,8 @@ class BentoProfileView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['social'] = self.object.social_profile
+        # Ensure profile exists via the signal-backed relation
+        context['social'] = getattr(self.object, 'social_profile', None)
         context['user_reels'] = BusinessReel.objects.filter(author=self.object, is_active=True)
         # Fetch verified video endorsements for the 'Proof of Work' section
         context['endorsements'] = self.object.received_endorsements.filter(is_verified_transaction=True)[:5]
@@ -47,7 +50,7 @@ class BentoProfileView(DetailView):
 def upload_reel(request):
     """
     Pillar 2 & 3: Africa-First Upload Flow.
-    Sets the stage for Agentic Commerce by defining price floors.
+    Supports dual-mode uploads: Business (with price) and Professional (no price).
     """
     if request.method == 'POST':
         form = BusinessReelUploadForm(request.POST, request.FILES)
@@ -55,6 +58,7 @@ def upload_reel(request):
             reel = form.save(commit=False)
             reel.author = request.user
             reel.save()
+            messages.success(request, "Reel deployed successfully to the global feed.")
             return redirect('social:social_feed')
     else:
         form = BusinessReelUploadForm()
@@ -62,13 +66,41 @@ def upload_reel(request):
     return render(request, 'social/upload.html', {'form': form})
 
 @login_required
+def initiate_hire_protocol(request, reel_id):
+    """
+    Sovereign Messaging: The 'Hire' Protocol.
+    Opens a secure channel between a buyer and a professional regarding a specific reel.
+    """
+    reel = get_object_or_404(BusinessReel, id=reel_id)
+    
+    if request.method == 'POST':
+        form = SecureMessageForm(request.POST)
+        if form.is_valid():
+            msg = form.save(commit=False)
+            msg.sender = request.user
+            msg.recipient = reel.author
+            msg.related_reel = reel
+            msg.save()
+            return JsonResponse({'status': 'SENT', 'message': 'Inquiry sent securely.'})
+    
+    return JsonResponse({'status': 'ERROR', 'message': 'Invalid request.'}, status=400)
+
+@login_required
 def ai_negotiate_price(request, reel_id):
     """
-    Pillar 3: The "Haggle" Protocol (2026 Gold Standard).
-    An autonomous agent that manages price discovery to save human time.
+    Pillar 3: The "Haggle" Protocol.
+    Autonomous agent handling price discovery. 
+    Gracefully exits if the reel is non-commercial (Professional Mode).
     """
     if request.method == "POST":
         reel = get_object_or_404(BusinessReel, id=reel_id, is_active=True)
+        
+        # SAFETY: Exit if the reel has no price (Professional Mode)
+        if not reel.price:
+            return JsonResponse({
+                'status': 'INFO', 
+                'message': 'This is a professional showcase. Use the "Hire" button to discuss rates.'
+            }, status=200)
         
         try:
             if request.content_type == 'application/json':
@@ -77,12 +109,12 @@ def ai_negotiate_price(request, reel_id):
                 data = request.POST
                 
             buyer_offer = float(data.get('offer', 0))
-            floor_price = float(reel.get_negotiation_floor())
+            floor_price = float(reel.get_negotiation_floor() or reel.price)
             public_price = float(reel.price)
             
             # --- AGENTIC LOGIC: THE HAGGLE ---
             
-            # 1. Instant Acceptance
+            # 1. Instant Acceptance (At or above public price)
             if buyer_offer >= public_price:
                 return JsonResponse({
                     'status': 'SUCCESS', 
@@ -90,34 +122,33 @@ def ai_negotiate_price(request, reel_id):
                     'price': buyer_offer
                 })
 
-            # 2. Strategic Negotiation (The "Middle Ground")
+            # 2. Strategic Negotiation (Above floor, below public)
             if buyer_offer >= floor_price:
-                # If the offer is above floor but below public, the AI tries to 
-                # meet them halfway to maximize profit for the seller.
-                suggested_midpoint = (public_price + buyer_offer) / 2
-                
-                # If the difference is small (less than 5%), just accept it to close the deal.
+                # Close Deal Check: If within 5% of public price, just accept
                 if (public_price - buyer_offer) / public_price < 0.05:
                      return JsonResponse({
                         'status': 'SUCCESS', 
-                        'message': 'Deal! The Africana Agent has accepted your offer.',
+                        'message': 'Deal! The Agent has accepted your offer.',
                         'price': buyer_offer
                     })
                 
+                # Meet in the middle logic
+                suggested_midpoint = (public_price + buyer_offer) / 2
                 return JsonResponse({
                     'status': 'COUNTER',
                     'message': 'You are close! How about we meet in the middle?',
                     'price': round(suggested_midpoint, 2)
                 })
             
-            # 3. Floor Protection
-            # If offer is too low, counter with a price slightly above the floor
-            # to leave room for one final concession.
-            counter_offer = floor_price * 1.05 
+            # 3. Floor Protection (Offer is below floor)
+            # Counter with 5% above the absolute floor
+            counter_offer = max(floor_price * 1.05, buyer_offer * 1.10) 
+            # Ensure counter never exceeds public price
+            counter_offer = min(counter_offer, public_price)
             
             return JsonResponse({
                 'status': 'COUNTER', 
-                'message': 'That is a bit low for this quality. Here is the best the Agent can do right now.',
+                'message': 'That is a bit low. Here is the best the Agent can do right now.',
                 'price': round(counter_offer, 2)
             })
             

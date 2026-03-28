@@ -7,7 +7,7 @@
             <h1 class="text-3xl font-black tracking-tighter italic">PUBLISH REEL</h1>
             <span class="bg-indigo-600/20 text-indigo-400 text-[10px] font-bold px-2 py-1 rounded-full border border-indigo-500/30">2026 ELITE</span>
         </div>
-        <p class="text-gray-500 text-sm mb-8">Pillar 2: Optimized for low-latency delivery across Africa.</p>
+        <p class="text-gray-500 text-sm mb-8 italic">Pillar 2: Optimized for low-latency delivery across Africa.</p>
 
         <form method="POST" enctype="multipart/form-data" class="space-y-6" id="upload-form">
             {% csrf_token %}
@@ -26,44 +26,48 @@
                 <video id="preview" class="hidden w-full h-full object-cover z-10" loop muted autoplay playsinline></video>
                 
                 <div id="size-badge" class="hidden absolute top-4 right-4 z-30 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] font-bold">
-                    <span id="file-size">0MB</span> / 50MB
+                    <span id="file-size" class="text-indigo-400">0MB</span> / 50MB
                 </div>
             </div>
 
-            <div class="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4 shadow-2xl">
+            <div class="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4 shadow-2xl backdrop-blur-md">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-black uppercase tracking-widest text-indigo-400">Pillar 3: Agentic Settings</h3>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-indigo-400">Pillar 3: Content Logic</h3>
                     <span class="text-[9px] text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">Haggle Protocol v1.0</span>
                 </div>
                 
                 <div class="space-y-1">
-                    <label class="block text-[10px] uppercase opacity-50 tracking-widest">Product Description</label>
+                    <label class="block text-[10px] uppercase opacity-50 tracking-widest font-bold">Description / Caption</label>
                     {{ form.caption }}
+                </div>
+
+                <div id="professional-notice" class="text-[10px] text-gray-400 bg-white/5 p-3 rounded-xl border border-white/5 italic">
+                    💡 Tip: Leave pricing blank to post as a <b>Professional Work Sample</b>. Fill them to enable <b>AI Haggling</b>.
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label class="block text-[10px] uppercase opacity-50 tracking-widest">Public Price</label>
+                        <label class="block text-[10px] uppercase opacity-50 tracking-widest font-bold">Public Price</label>
                         {{ form.price }}
                     </div>
                     <div class="space-y-1">
-                        <label class="block text-[10px] uppercase opacity-50 tracking-widest text-indigo-300">AI Floor (Secret)</label>
+                        <label class="block text-[10px] uppercase tracking-widest font-bold text-indigo-300">AI Floor (Secret)</label>
                         {{ form.floor_price }}
                     </div>
                 </div>
 
-                <div id="price-health" class="hidden text-[9px] font-medium p-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">
-                    ⚠️ Floor price cannot exceed public price.
+                <div id="price-health" class="hidden text-[9px] font-medium p-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse">
+                    ⚠️ Safety Lock: AI Floor Price cannot exceed Public Price. The agent needs room to negotiate.
                 </div>
 
-                <div class="flex items-center justify-between pt-2 border-t border-white/5">
+                <div class="flex items-center justify-between pt-4 border-t border-white/5">
                     <div class="flex items-center space-x-3">
-                        <span class="text-[10px] uppercase opacity-50 tracking-widest">Low Data Mode</span>
+                        <span class="text-[10px] uppercase opacity-50 tracking-widest font-bold">Data Saver</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             {{ form.is_low_bandwidth_optimized }}
                         </label>
                     </div>
-                    <span class="text-[9px] text-gray-500 italic">Reduces data cost for buyers</span>
+                    <span class="text-[9px] text-gray-500 italic">Optimized for 3G/4G stability</span>
                 </div>
             </div>
 
@@ -73,8 +77,13 @@
             </button>
             
             {% if form.errors %}
-            <div class="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl text-red-200 text-xs">
-                {{ form.non_field_errors }}
+            <div class="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl text-red-200 text-xs font-mono">
+                {% for field in form %}
+                    {% if field.errors %}
+                        <p class="font-bold uppercase text-[10px] mb-1">{{ field.label }} Error:</p>
+                        <p class="mb-2">{{ field.errors|striptags }}</p>
+                    {% endif %}
+                {% endfor %}
             </div>
             {% endif %}
         </form>
@@ -95,53 +104,61 @@
     const floorInput = document.querySelector('input[name="floor_price"]');
     const priceHealth = document.getElementById('price-health');
 
-    // Video Preview & Local Validation
+    // Video Handling
     input.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Check size (50MB limit for African network stability)
             const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
             fileSizeText.innerText = sizeInMB + "MB";
             sizeBadge.classList.remove('hidden');
             
             if (sizeInMB > 50) {
-                alert("This file is too large for low-latency delivery. Please use a file under 50MB.");
+                alert("File exceeds 50MB limit. High-latency detected.");
                 input.value = "";
+                sizeBadge.classList.add('hidden');
                 return;
             }
 
-            preview.src = URL.createObjectURL(file);
+            const url = URL.createObjectURL(file);
+            preview.src = url;
             preview.classList.remove('hidden');
             prompt.classList.add('hidden');
         }
     }
 
-    // Agentic Safety Check (Frontend)
+    // Agentic Safety Check (Frontend) - Updated for Optionality
     const validatePricing = () => {
-        const p = parseFloat(priceInput.value);
-        const f = parseFloat(floorInput.value);
-        if (p && f && f > p) {
-            priceHealth.classList.remove('hidden');
-            btn.disabled = true;
-            btn.classList.add('grayscale', 'opacity-50');
+        const publicPrice = parseFloat(priceInput.value);
+        const floorPrice = parseFloat(floorInput.value);
+        
+        // Only validate if BOTH values exist (Business Mode)
+        if (!isNaN(publicPrice) && !isNaN(floorPrice)) {
+            if (floorPrice > publicPrice) {
+                priceHealth.classList.remove('hidden');
+                btn.disabled = true;
+                btn.classList.add('grayscale', 'opacity-50');
+            } else {
+                priceHealth.classList.add('hidden');
+                btn.disabled = false;
+                btn.classList.remove('grayscale', 'opacity-50');
+            }
         } else {
+            // Professional Mode (Empty or partial values are fine)
             priceHealth.classList.add('hidden');
             btn.disabled = false;
             btn.classList.remove('grayscale', 'opacity-50');
         }
     };
 
-    priceInput.oninput = validatePricing;
-    floorInput.oninput = validatePricing;
+    priceInput.addEventListener('input', validatePricing);
+    floorInput.addEventListener('input', validatePricing);
 
-    // Immersive Upload State
+    // Form Submission UI
     form.onsubmit = () => {
         btn.disabled = true;
-        btn.classList.add('bg-indigo-800');
-        btnText.innerText = "UPLOADING TO CLOUDINARY...";
+        btn.classList.add('bg-indigo-900', 'animate-pulse');
+        btnText.innerText = "DEPLOYING TO CLOUDINARY...";
         btnSpinner.classList.remove('hidden');
-        // Visual feedback: Add a pulse during the long upload
-        btn.classList.add('animate-pulse');
     }
 </script>
 {% endblock %}
