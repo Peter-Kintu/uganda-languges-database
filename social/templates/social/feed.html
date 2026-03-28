@@ -21,8 +21,24 @@
         100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
     }
 
-    .heart-active { color: #ef4444; transform: scale(1.2); }
+    /* Fixed Heart Logic */
+    .heart-icon { color: rgba(255, 255, 255, 0.5); transition: all 0.3s ease; }
+    .heart-active { color: #ef4444 !important; transform: scale(1.2); filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6)); }
+    
+    /* Floating Publish Button */
+    .publish-fab {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 50;
+    }
 </style>
+
+<div class="publish-fab">
+    <a href="{% url 'social:upload_reel' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-2xl font-black italic tracking-tighter text-xs flex items-center shadow-2xl border border-white/20 transition-all active:scale-90">
+        <span class="mr-2">⚡</span> PUBLISH
+    </a>
+</div>
 
 <div class="h-screen w-full snap-y snap-mandatory overflow-y-scroll bg-black no-scrollbar" id="reel-container">
     {% for reel in reels %}
@@ -39,23 +55,23 @@
         <div class="absolute right-4 bottom-32 flex flex-col space-y-6 items-center z-30">
             <button onclick="toggleLike(this, '{{ reel.id }}')" class="flex flex-col items-center group">
                 <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75">
-                    <span class="text-2xl transition-colors {% if user in reel.likes.all %}heart-active{% endif %}">❤️</span>
+                    <span class="text-2xl heart-icon {% if user in reel.likes.all %}heart-active{% endif %}">❤️</span>
                 </div>
-                <span class="text-[10px] mt-1 font-bold text-white" id="like-count-{{ reel.id }}">{{ reel.total_likes }}</span>
+                <span class="text-[10px] mt-1 font-bold text-white/70" id="like-count-{{ reel.id }}">{{ reel.total_likes }}</span>
             </button>
 
             <button onclick="shareReel('{{ reel.id }}', '{{ reel.share_token }}')" class="flex flex-col items-center group">
                 <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75">
                     <span class="text-2xl">🔗</span>
                 </div>
-                <span class="text-[10px] mt-1 font-bold text-white">Share</span>
+                <span class="text-[10px] mt-1 font-bold text-white/70">Share</span>
             </button>
 
             <button onclick="downloadWithBranding('{{ reel.id }}', '{{ reel.video.url }}')" class="flex flex-col items-center group">
                 <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75">
                     <span class="text-2xl">📥</span>
                 </div>
-                <span class="text-[10px] mt-1 font-bold text-white italic">Elite</span>
+                <span class="text-[10px] mt-1 font-bold text-white/70 italic">Elite</span>
             </button>
         </div>
 
@@ -63,8 +79,12 @@
             <div class="flex items-end justify-between">
                 <div class="flex-1">
                     <div class="flex items-center space-x-3 mb-4">
-                        <a href="{% url 'social:bento_profile' reel.author.username %}" class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center font-bold border border-white/20 shadow-lg transition-transform active:scale-90">
-                            {{ reel.author.username|slice:":1"|upper }}
+                        <a href="{% url 'social:bento_profile' reel.author.username %}" class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center font-bold border border-white/20 shadow-lg transition-transform active:scale-90 overflow-hidden">
+                            {% if reel.author.profile_image %}
+                                <img src="{{ reel.author.profile_image.url }}" class="w-full h-full object-cover">
+                            {% else %}
+                                {{ reel.author.username|slice:":1"|upper }}
+                            {% endif %}
                         </a>
                         <div>
                             <h2 class="font-black text-lg tracking-tighter flex items-center">
@@ -150,7 +170,7 @@
 <script>
     let activeReel = '';
 
-    // Like Interaction
+    // Fixed Like Interaction
     async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
@@ -161,35 +181,43 @@
             if (data.status === 'success') {
                 const heart = btn.querySelector('span');
                 heart.classList.toggle('heart-active');
-                document.getElementById(`like-count-${reelId}`).innerText = data.total_likes;
+                
+                const countSpan = document.getElementById(`like-count-${reelId}`);
+                countSpan.innerText = data.total_likes;
+                
+                // Add minor feedback
+                if(heart.classList.contains('heart-active')) {
+                    countSpan.classList.add('text-red-400');
+                } else {
+                    countSpan.classList.remove('text-red-400');
+                }
             }
-        } catch (e) { console.error("Like failed"); }
+        } catch (e) { 
+            console.error("Like failed. Ensure the URL '/social/reel/ID/like/' exists in urls.py"); 
+        }
     }
 
-    // Share Interaction
     async function shareReel(reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`;
         if (navigator.share) {
             await navigator.share({ title: 'Africana AI Reel', url: shareUrl });
         } else {
             navigator.clipboard.writeText(shareUrl);
-            alert("Link copied to clipboard!");
+            alert("Link copied!");
         }
         fetch(`/social/reel/${reelId}/track-share/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
     }
 
-    // Download Interaction
     function downloadWithBranding(reelId, url) {
         const link = document.createElement('a');
         link.href = url;
-        link.download = `AfricanaAI_Elite_${reelId}.mp4`;
+        link.download = `Elite_${reelId}.mp4`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         fetch(`/social/reel/${reelId}/track-download/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
     }
 
-    // Haggle Protocol
     async function triggerHaggle(reelId) {
         const offer = prompt("Enter your offer price:");
         if (!offer) return;
@@ -200,14 +228,14 @@
                 body: JSON.stringify({ offer: offer })
             });
             const data = await response.json();
-            alert(`${data.status}: ${data.message} ${data.price || ''}`);
-        } catch (e) { alert("Connection error."); }
+            alert(`${data.status}: ${data.message}`);
+        } catch (e) { alert("Agent Busy."); }
     }
 
     function openSecureChat(username, reelId, title) {
         activeReel = reelId;
-        document.getElementById('chat-with').innerText = `CHAT WITH @${username}`;
-        document.getElementById('context-box').innerText = `Context: "${title}"`;
+        document.getElementById('chat-with').innerText = `SESSION WITH @${username}`;
+        document.getElementById('context-box').innerText = `Ref: "${title}"`;
         document.getElementById('chat-modal').classList.remove('hidden');
         document.getElementById('chat-modal').classList.add('flex');
     }
@@ -226,31 +254,24 @@
             const data = await response.json();
             if (data.status === 'SENT') {
                 const msgDiv = document.createElement('div');
-                msgDiv.className = 'ml-auto bg-indigo-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm text-white shadow-lg';
+                msgDiv.className = 'ml-auto bg-indigo-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm text-white';
                 msgDiv.innerText = text;
                 document.getElementById('chat-messages').appendChild(msgDiv);
                 document.getElementById('message-text').value = '';
                 const container = document.getElementById('chat-messages');
                 container.scrollTop = container.scrollHeight;
             }
-        } catch (e) { alert("Handshake Failed."); }
+        } catch (e) { alert("Network Error."); }
     }
 
-    // Intersection Observer for autoplay
-    const observerOptions = { threshold: 0.7 };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
-                video.play().catch(e => {});
-                const next = entry.target.nextElementSibling;
-                if (next) {
-                    const nVid = next.querySelector('video');
-                    if (nVid) nVid.preload = "auto";
-                }
+                video.play().catch(() => {});
             } else { video.pause(); }
         });
-    }, observerOptions);
+    }, { threshold: 0.7 });
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 </script>
