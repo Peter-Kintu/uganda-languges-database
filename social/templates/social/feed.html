@@ -25,12 +25,18 @@
     .heart-icon { color: rgba(255, 255, 255, 0.5); transition: all 0.3s ease; }
     .heart-active { color: #ef4444 !important; transform: scale(1.2); filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6)); }
     
-    /* Floating Publish Button - Fixed Position */
+    /* Floating Publish Button - Relocated to Top Left to avoid Elite button overlap */
     .publish-fab {
         position: fixed;
         top: 24px;
-        right: 24px;
+        left: 24px;
         z-index: 100;
+    }
+
+    /* Static Profile Box (Prevents 500 Error on Click) */
+    .profile-static {
+        pointer-events: none;
+        cursor: default;
     }
 
     /* Immersive Chat Styling */
@@ -83,13 +89,13 @@
             <div class="flex items-end justify-between">
                 <div class="flex-1">
                     <div class="flex items-center space-x-3 mb-4">
-                        <a href="{% url 'social:bento_profile' reel.author.username %}" class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center font-bold border border-white/20 shadow-lg transition-transform active:scale-90 overflow-hidden">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center font-bold border border-white/20 shadow-lg overflow-hidden profile-static">
                             {% if reel.author.profile_image %}
                                 <img src="{{ reel.author.profile_image.url }}" class="w-full h-full object-cover">
                             {% else %}
                                 {{ reel.author.username|slice:":1"|upper }}
                             {% endif %}
-                        </a>
+                        </div>
                         <div>
                             <h2 class="font-black text-lg tracking-tighter flex items-center">
                                 @{{ reel.author.username }}
@@ -143,7 +149,7 @@
     <div class="h-screen w-full flex flex-col items-center justify-center text-white p-10 text-center">
         <div class="text-6xl mb-4">🌍</div>
         <h2 class="text-2xl font-black italic uppercase tracking-tighter">Feed is Offline</h2>
-        <p class="text-gray-500 text-sm max-w-xs">No reels found in your area. Be the first to deploy content!</p>
+        <p class="text-gray-500 text-sm max-w-xs">No reels found. Be the first to deploy content!</p>
         <a href="{% url 'social:upload_reel' %}" class="mt-6 bg-indigo-600 px-8 py-3 rounded-2xl font-bold hover:scale-105 transition-transform">PUBLISH NOW</a>
     </div>
     {% endfor %}
@@ -179,6 +185,7 @@
 </div>
 
 <script>
+    // JS Logic remains unchanged
     let activeReel = '';
 
     async function toggleLike(btn, reelId) {
