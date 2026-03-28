@@ -215,7 +215,6 @@
 </div>
 
 <script>
-    // Intersection Observer for Auto-play and Scrolling
     const observerOptions = { threshold: 0.8 };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -235,7 +234,6 @@
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 
-    // Social Interaction Endpoints
     async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
@@ -251,7 +249,8 @@
     }
 
     async function shareReel(reelId, token) {
-        const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`;
+        // Ensure the origin is treated as secure
+        const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`.replace('http://', 'https://');
         fetch(`/social/reel/${reelId}/track-share/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
 
         if (navigator.share) {
@@ -263,9 +262,11 @@
     }
 
     function downloadWithBranding(reelId, url) {
+        // Force the download URL to be secure to avoid mixed content blockage
+        const secureUrl = url.replace('http://', 'https://');
         fetch(`/social/reel/${reelId}/track-download/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
         const link = document.createElement('a');
-        link.href = url;
+        link.href = secureUrl;
         link.download = `Africana_Elite_${reelId}.mp4`;
         document.body.appendChild(link);
         link.click();
