@@ -1,46 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-    /* Prevent body from scrolling to enable the snap-container */
-    body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
-        background-color: black;
-    }
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
-    /* Pillar 2: The Snap Container */
+<style>
+    /* Global Overrides & Smoothness */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Ensure the container behaves like TikTok */
     #reel-container {
         height: 100vh;
         width: 100%;
+        scroll-snap-type: y mandatory;
         overflow-y: scroll;
-        scroll-snap-type: y mandatory; /* This creates the TikTok "thud" snap */
-        scroll-behavior: smooth;
-        -ms-overflow-style: none; 
-        scrollbar-width: none;
+        background-color: black;
     }
-    #reel-container::-webkit-scrollbar { display: none; }
 
-    /* Each video section must be exactly the height of the screen */
-    .reel-section {
-        height: 100vh;
-        width: 100%;
+    section {
         scroll-snap-align: start;
         scroll-snap-stop: always;
+        height: 100vh;
+        width: 100%;
         position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #000;
     }
 
     .video-overlay {
         background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 30%, transparent 100%);
-        pointer-events: none; /* Allows clicking through to video if needed */
     }
-    .video-overlay * { pointer-events: auto; } /* Re-enable for buttons */
 
     /* Floating Plus Button (Top Left) */
     .publish-fab {
@@ -51,16 +38,24 @@
     }
 
     .plus-btn {
-        width: 48px; height: 48px;
-        display: flex; align-items: center; justify-content: center;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         background: rgba(99, 102, 241, 0.8);
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px; color: white;
+        border-radius: 16px;
+        color: white;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .plus-btn:hover { transform: rotate(90deg) scale(1.1); background: rgb(99, 102, 241); }
+
+    .plus-btn:hover {
+        transform: rotate(90deg) scale(1.1);
+        background: rgb(99, 102, 241);
+    }
 
     .agent-pulse {
         box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
@@ -75,12 +70,15 @@
     .heart-icon { color: rgba(255, 255, 255, 0.7); transition: all 0.3s ease; }
     .heart-active { color: #ef4444 !important; transform: scale(1.25); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.6)); }
     
+    .profile-static { pointer-events: none; cursor: default; }
+    
     .side-btn {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         transition: all 0.2s;
     }
+    .side-btn:active { transform: scale(0.9); }
 </style>
 
 <div class="publish-fab">
@@ -91,19 +89,18 @@
     </a>
 </div>
 
-<div id="reel-container">
+<div id="reel-container" class="no-scrollbar">
     {% for reel in reels %}
-    <section class="reel-section" data-reel-id="{{ reel.id }}" data-category="{{ reel.category|default:'general' }}">
+    <section data-reel-id="{{ reel.id }}">
         <video 
             class="w-full h-full object-cover" 
             src="{{ reel.video.url }}" 
-            loop 
-            muted 
             playsinline 
-            preload="auto">
+            preload="auto"
+            muted>
         </video>
 
-        <div class="absolute right-4 bottom-32 flex flex-col space-y-6 items-center z-30">
+        <div class="absolute right-4 bottom-28 flex flex-col space-y-6 items-center z-30">
             <button onclick="toggleLike(this, '{{ reel.id }}')" class="flex flex-col items-center">
                 <div class="p-3.5 side-btn rounded-full">
                     <span class="text-2xl heart-icon {% if user in reel.likes.all %}heart-active{% endif %}">❤️</span>
@@ -126,11 +123,11 @@
             </button>
         </div>
 
-        <div class="absolute bottom-0 left-0 w-full p-8 video-overlay text-white z-20">
+        <div class="absolute bottom-0 left-0 w-full p-8 video-overlay text-white">
             <div class="flex items-end justify-between max-w-5xl mx-auto">
                 <div class="flex-1 mr-4">
                     <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 p-[2px] shadow-xl">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 p-[2px] shadow-xl profile-static">
                             <div class="w-full h-full rounded-[14px] bg-black overflow-hidden">
                                 {% if reel.author.profile_image %}
                                     <img src="{{ reel.author.profile_image.url }}" class="w-full h-full object-cover">
@@ -142,96 +139,92 @@
                             </div>
                         </div>
                         <div>
-                            <h2 class="font-black text-lg tracking-tighter">@{{ reel.author.username }}</h2>
-                            <p class="text-green-400 text-[9px] font-mono uppercase tracking-[0.2em]">Trust Score: {{ reel.author.social_profile.trust_score|floatformat:0 }}%</p>
+                            <h2 class="font-black text-lg tracking-tighter flex items-center">
+                                @{{ reel.author.username }}
+                                {% if not reel.price %}
+                                <span class="ml-2 bg-indigo-500/20 text-indigo-300 text-[8px] px-2 py-0.5 rounded-full border border-indigo-500/30 uppercase tracking-widest">Pro</span>
+                                {% endif %}
+                            </h2>
+                            <p class="text-green-400 text-[9px] font-mono uppercase tracking-[0.2em]">
+                                Trust Score: {{ reel.author.social_profile.trust_score|floatformat:0 }}%
+                            </p>
                         </div>
                     </div>
-                    <p class="text-sm text-gray-200 max-w-md line-clamp-2 mb-4">{{ reel.caption }}</p>
+
+                    <p class="text-sm text-gray-200 max-w-md line-clamp-2 mb-6 leading-relaxed">
+                        {{ reel.caption }}
+                    </p>
                     
                     {% if reel.price %}
-                    <div class="inline-flex items-center bg-white/10 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10">
+                    <div class="inline-flex items-center bg-white/5 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10">
                         <span class="text-xs font-black text-indigo-400 mr-2 uppercase">{{ reel.currency }}</span>
-                        <span class="text-lg font-bold">{{ reel.price|floatformat:0 }}</span>
+                        <span class="text-lg font-bold tracking-tight">{{ reel.price|floatformat:0 }}</span>
                     </div>
                     {% endif %}
                 </div>
 
                 <div class="flex flex-col items-center space-y-6">
                     {% if reel.price %}
-                    <button onclick="triggerHaggle('{{ reel.id }}')" class="agent-pulse p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
-                        <span class="text-2xl">🤝</span>
+                    <button onclick="triggerHaggle('{{ reel.id }}')" class="flex flex-col items-center group">
+                        <div class="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 transition-all agent-pulse">
+                            <span class="text-2xl">🤝</span>
+                        </div>
+                        <span class="text-[10px] mt-2 font-black uppercase tracking-widest text-white/70">Haggle</span>
                     </button>
                     {% endif %}
-                    <button onclick="openSecureChat('{{ reel.author.username }}', '{{ reel.id }}', '{{ reel.caption|truncatechars:20 }}')" class="p-5 bg-indigo-600 rounded-[24px] shadow-[0_0_30px_rgba(79,70,229,0.5)] border border-indigo-400/50">
-                        <span class="text-2xl">💼</span>
+
+                    <button onclick="openSecureChat('{{ reel.author.username }}', '{{ reel.id }}', '{{ reel.caption|truncatechars:25 }}')" class="flex flex-col items-center group">
+                        <div class="p-5 bg-indigo-600 rounded-[24px] group-hover:bg-indigo-500 transition-all shadow-[0_0_30px_rgba(79,70,229,0.5)] border border-indigo-400/50">
+                            <span class="text-2xl">💼</span>
+                        </div>
+                        <span class="text-[10px] mt-2 font-black uppercase text-indigo-300 tracking-widest">Hire Me</span>
                     </button>
                 </div>
             </div>
         </div>
     </section>
     {% empty %}
-    <div class="h-screen w-full flex flex-col items-center justify-center text-white text-center">
-        <h2 class="text-3xl font-black italic uppercase">No Content Detected</h2>
-        <a href="{% url 'social:upload_reel' %}" class="mt-8 bg-indigo-600 px-10 py-4 rounded-2xl font-black">PUBLISH NOW</a>
+    <div class="h-screen w-full flex flex-col items-center justify-center text-white p-10 text-center">
+        <div class="text-7xl mb-6">🏜️</div>
+        <h2 class="text-3xl font-black italic uppercase tracking-tighter">The Feed is Quiet</h2>
+        <a href="{% url 'social:upload_reel' %}" class="mt-8 bg-indigo-600 px-10 py-4 rounded-2xl font-black tracking-widest hover:scale-105 transition-transform shadow-2xl">DEEPLOY CONTENT</a>
     </div>
     {% endfor %}
 </div>
 
-<div id="chat-modal" class="fixed inset-0 z-[200] bg-black/95 backdrop-blur-3xl hidden flex-col transition-all">
-    <div class="p-6 flex justify-between items-center border-b border-white/10">
-        <h3 id="chat-with" class="font-black text-xl text-white italic uppercase">SECURE SESSION</h3>
-        <button onclick="closeChat()" class="text-white/40 text-xs font-black uppercase tracking-widest">Terminate</button>
+<div id="chat-modal" class="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl hidden flex-col transition-all">
     </div>
-    <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar"></div>
-    <div class="p-6 bg-gray-900/80 border-t border-white/10">
-        <div class="relative max-w-4xl mx-auto">
-            <textarea id="message-text" rows="2" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pr-16 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Type your proposal..."></textarea>
-            <button onclick="sendSecureMessage()" class="absolute bottom-3 right-3 bg-indigo-600 p-3 rounded-xl">🚀</button>
-        </div>
-    </div>
-</div>
 
 <script>
     let activeReel = '';
-    
-    // --- PREFERENCE DETECTION LOGIC ---
-    // Tracks how long user watches specific categories
-    let watchTimer;
-    let currentInterests = JSON.parse(localStorage.getItem('user_interests')) || {};
+    const container = document.getElementById('reel-container');
 
-    const observerOptions = { threshold: 0.8 }; // Must be 80% visible to play
+    // Autoscroll & TikTok Scroll Logic
+    const observerOptions = { threshold: 0.8 };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
-            const reelId = entry.target.dataset.reelId;
-            const category = entry.target.dataset.category;
-
             if (entry.isIntersecting) {
-                video.play().catch(() => {});
+                // Play video when in view
+                video.play().catch(e => console.log("User interaction required"));
                 
-                // Start timing for interest detection
-                watchTimer = setTimeout(() => {
-                    currentInterests[category] = (currentInterests[category] || 0) + 1;
-                    localStorage.setItem('user_interests', JSON.stringify(currentInterests));
-                    console.log("Updated Interests:", currentInterests);
-                }, 5000); // If watched for 5 seconds, user "likes" this type
-
-                // Preload next video
-                const next = entry.target.nextElementSibling;
-                if (next) {
-                    const nVid = next.querySelector('video');
-                    if (nVid) nVid.preload = "auto";
-                }
+                // Autoscroll Logic: When this video ends, scroll to next
+                video.onended = () => {
+                    const nextSection = entry.target.nextElementSibling;
+                    if (nextSection) {
+                        nextSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                };
             } else {
                 video.pause();
-                clearTimeout(watchTimer);
+                video.currentTime = 0; // Reset video when scrolled away
             }
         });
     }, observerOptions);
 
-    document.querySelectorAll('.reel-section').forEach(s => observer.observe(s));
+    document.querySelectorAll('section').forEach(s => observer.observe(s));
 
-    // --- EXISTING FUNCTIONS (Unchanged as requested) ---
+    // EXISTING LOGIC FUNCTIONS
     async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
@@ -240,34 +233,55 @@
             });
             const data = await response.json();
             if (data.status === 'success') {
-                btn.querySelector('span').classList.toggle('heart-active');
+                const heart = btn.querySelector('span');
+                heart.classList.toggle('heart-active');
                 document.getElementById(`like-count-${reelId}`).innerText = data.total_likes;
             }
-        } catch (e) {}
+        } catch (e) { console.error("Like failed."); }
     }
 
     async function shareReel(reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`;
         if (navigator.share) {
-            try { await navigator.share({ title: 'Elite Content', url: shareUrl }); } catch (err) {}
+            try { await navigator.share({ title: 'Africana AI Reel', url: shareUrl }); } catch (err) {}
         } else {
             navigator.clipboard.writeText(shareUrl);
-            alert("Link Copied.");
+            alert("Secure Link Copied.");
         }
+    }
+
+    function downloadWithBranding(reelId, url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Elite_${reelId}.mp4`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async function triggerHaggle(reelId) {
+        const offer = prompt("AI Negotiator Active. Enter your offer price:");
+        if (!offer) return;
+        try {
+            const response = await fetch(`/social/negotiate/${reelId}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ offer: offer })
+            });
+            const data = await response.json();
+            alert(`${data.status}: ${data.message}`);
+        } catch (e) { alert("Agent Busy."); }
     }
 
     function openSecureChat(username, reelId, title) {
         activeReel = reelId;
-        document.getElementById('chat-with').innerText = `SESSION WITH @${username}`;
         document.getElementById('chat-modal').classList.remove('hidden');
         document.getElementById('chat-modal').classList.add('flex');
     }
 
     function closeChat() { 
         document.getElementById('chat-modal').classList.add('hidden'); 
+        document.getElementById('chat-modal').classList.remove('flex');
     }
-    
-    // Remaining functions (sendSecureMessage, triggerHaggle, etc.) 
-    // should stay as you had them in your original script.
 </script>
 {% endblock %}

@@ -27,6 +27,14 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 # --- PRODUCTION SECURITY & CSRF FIXES ---
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# --- FIX FOR "NOT SECURE" CHROME FLAG ---
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
 # CSRF Trusted Origins Configuration
 CSRF_TRUSTED_ORIGINS = [
     'https://initial-danette-africana-60541726.koyeb.app',
@@ -57,7 +65,6 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.humanize',
     'movie',
-  
 
     # Third-party
     'widget_tweaks',
@@ -141,11 +148,12 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-# --- CLOUDINARY ---
+# --- CLOUDINARY (UPDATED FOR HTTPS SECURITY) ---
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+    'SECURE': True,  # Forces all Cloudinary URLs to use https://
 }
 
 # --- API EXTERNAL CREDENTIALS ---
@@ -155,8 +163,8 @@ ALI_APP_KEY = os.getenv('ALI_APP_KEY', '524714')
 ALI_APP_SECRET = os.getenv('ALI_APP_SECRET', 'fallback_secret')
 ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID', 'default_tracking_id')
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-# settings.py
 TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
+
 # --- STORAGE BACKENDS ---
 STORAGES = {
     "default": {
@@ -180,10 +188,7 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Database Management System",
     "copyright": "Uganda Language Project",
     "user_avatar": None,
-    
-    # FIXED: point to users.CustomUser to prevent 500 error
     "search_model": ["users.CustomUser"], 
-    
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         {
@@ -193,7 +198,7 @@ JAZZMIN_SETTINGS = {
         },
         {
             "name": "🎬 Sync Movies", 
-            "url": "/admin/movie/movie/sync-now/", # This matches the 'name' in urls.py
+            "url": "/admin/movie/movie/sync-now/",
             "permissions": ["auth.view_user"]
         },
         {
@@ -203,12 +208,9 @@ JAZZMIN_SETTINGS = {
         },
         {"name": "View Site", "url": "/", "new_window": True},
     ],
-    
     "show_sidebar": True,
     "navigation_expanded": True,
-    
     "order_with_respect_to": ["auth", "users", "languages", "eshop", "hotel"],
-    
     "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage"],
     "hide_models": ["auth.Group"],
     "icons": {
