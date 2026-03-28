@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib import messages
-from django.db.models import F
+from django.db.models import F, Q
 
 # Internal App Models and Forms
 from .models import BusinessReel, SocialProfile, SecureMessage
@@ -99,7 +99,7 @@ def toggle_like_reel(request, reel_id):
     return JsonResponse({
         'status': 'success',
         'liked': liked,
-        'total_likes': reel.total_likes() if callable(getattr(reel, 'total_likes', None)) else getattr(reel, 'total_likes', 0)
+        'total_likes': reel.likes.count()
     })
 
 @csrf_exempt
@@ -120,14 +120,60 @@ def track_download(request, reel_id):
     BusinessReel.objects.filter(id=reel_id).update(download_count=F('download_count') + 1)
     return JsonResponse({'status': 'SUCCESS'})
 
-# --- AGENTIC & MESSAGING PROTOCOLS ---
+# --- SOVEREIGN MESSAGING PROTOCOLS (WHATSAPP STYLE) ---
+
+@login_required
+def inbox(request):
+    """
+    Pillar 4: Inbox view to see all ongoing conversations.
+    Groups messages to show unique chat partners.
+    """
+    # Get IDs of people the user has interacted with
+    sent_ids = SecureMessage.objects.filter(sender=request.user).values_list('recipient', flat=True)
+    received_ids = SecureMessage.objects.filter(recipient=request.user).values_list('sender', flat=True)
+    
+    partner_ids = set(list(sent_ids) + list(received_ids))
+    chat_partners = CustomUser.objects.filter(id__in=partner_ids)
+    
+    return render(request, 'social/inbox.html', {'chat_partners': chat_partners})
+
+@login_required
+def chat_detail(request, partner_id):
+    """
+    Pillar 4: The Chat Thread between sender and receiver.
+    Displays messages in chronological order.
+    """
+    partner = get_object_or_404(CustomUser, id=partner_id)
+    
+    # Fetch conversation history
+    thread = SecureMessage.objects.filter(
+        (Q(sender=request.user) & Q(recipient=partner)) |
+        (Q(sender=partner) & Q(recipient=request.user))
+    ).order_by('timestamp')
+    
+    # Mark messages as read
+    thread.filter(recipient=request.user, is_read=False).update(is_read=True)
+
+    if request.method == "POST":
+        content = request.POST.get('content')
+        if content:
+            SecureMessage.objects.create(
+                sender=request.user,
+                recipient=partner,
+                content=content
+            )
+            return redirect('social:chat_detail', partner_id=partner.id)
+
+    return render(request, 'social/chat_detail.html', {
+        'partner': partner,
+        'thread': thread
+    })
 
 @login_required
 @require_POST
 def initiate_hire_protocol(request, reel_id):
     """
-    Sovereign Messaging: The 'Hire' Protocol.
-    Handles the "Secure Handshake" between buyer and professional.
+    Handles the "Secure Handshake" and redirects to the chat thread.
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
     content = request.POST.get('content')
@@ -139,7 +185,13 @@ def initiate_hire_protocol(request, reel_id):
             related_reel=reel,
             content=content
         )
-        return JsonResponse({'status': 'SENT', 'message': 'Secure Handshake Established.'})
+        # Add redirect URL for the frontend to handle the jump to the message thread
+        chat_url = f"/social/chat/{reel.author.id}/"
+        return JsonResponse({
+            'status': 'SENT', 
+            'message': 'Handshake Established.',
+            'redirect_url': chat_url
+        })
     
     return JsonResponse({'status': 'ERROR', 'message': 'Handshake Failed.'}, status=400)
 
@@ -147,7 +199,7 @@ def initiate_hire_protocol(request, reel_id):
 def ai_negotiate_price(request, reel_id):
     """
     Pillar 3: The "Haggle" Protocol.
-    Autonomous agent handling price discovery within seller-defined boundaries.
+    Autonomous agent handling price discovery.
     """
     if request.method == "POST":
         reel = get_object_or_404(BusinessReel, id=reel_id, is_active=True)
@@ -159,49 +211,41 @@ def ai_negotiate_price(request, reel_id):
             })
         
         try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST
-                
+            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
             buyer_offer = float(data.get('offer', 0))
             
-            # Floor logic: absolute minimum the user is willing to accept
-            floor_price = float(getattr(reel, 'negotiation_floor', reel.price * 0.8))
+            # Floor logic from reel attributes
+            floor_price = float(getattr(reel, 'floor_price', reel.price * 0.8))
             public_price = float(reel.price)
             
-            # 1. Instant Acceptance
             if buyer_offer >= public_price:
                 return JsonResponse({
                     'status': 'SUCCESS', 
-                    'message': 'Offer accepted immediately. Proceed to checkout.',
+                    'message': 'Offer accepted immediately.',
                     'price': buyer_offer
                 })
 
-            # 2. Agentic Negotiation
             if buyer_offer >= floor_price:
-                # 5% threshold for auto-closing the deal
                 if (public_price - buyer_offer) / public_price <= 0.05:
                      return JsonResponse({
                         'status': 'SUCCESS', 
-                        'message': 'The Agent has authorized this deal!',
+                        'message': 'Agent authorized this deal!',
                         'price': buyer_offer
                     })
                 
                 suggested_midpoint = (public_price + buyer_offer) / 2
                 return JsonResponse({
                     'status': 'COUNTER',
-                    'message': 'You are close. The Agent proposes this middle ground:',
+                    'message': 'Agent proposes middle ground:',
                     'price': round(suggested_midpoint, 2)
                 })
             
-            # 3. Floor Defense
             counter_offer = max(floor_price * 1.05, buyer_offer * 1.10) 
             counter_offer = min(counter_offer, public_price)
             
             return JsonResponse({
                 'status': 'COUNTER', 
-                'message': 'That offer is below the authorized floor. Best possible deal:',
+                'message': 'Best possible deal:',
                 'price': round(counter_offer, 2)
             })
             

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-black min-h-screen text-white flex flex-col">
+    <div class="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <a href="{% url 'social:social_feed' %}" class="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <div>
+                <h2 class="text-xl font-black tracking-tighter uppercase italic">@{{ other_person.username }}</h2>
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-[10px] font-mono text-indigo-400 uppercase tracking-widest">Encrypted Inquiry Channel</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden md:flex flex-col items-end">
+            <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Sovereign Identity</span>
+            <span class="text-xs font-bold text-white">Verified Professional</span>
+        </div>
+    </div>
+
+    <div id="chat-thread" class="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar pb-32">
+        {% for msg in chat_messages %}
+            <div class="flex {% if msg.sender == request.user %}justify-end{% else %}justify-start{% endif %} animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div class="max-w-[85%] md:max-w-[70%]">
+                    <div class="p-4 rounded-3xl {% if msg.sender == request.user %}bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.3)] text-white rounded-tr-none{% else %}bg-gray-900 border border-white/10 text-gray-200 rounded-tl-none{% endif %}">
+                        <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+                    </div>
+                    <div class="mt-2 flex items-center {% if msg.sender == request.user %}justify-end{% endif %} space-x-2 opacity-40">
+                        <span class="text-[9px] font-black uppercase tracking-tighter">{{ msg.timestamp|timesince }} ago</span>
+                        {% if msg.is_encrypted %}
+                            <span class="text-[9px]">🔒</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="h-full flex flex-col items-center justify-center text-center opacity-30 py-20">
+                <div class="text-5xl mb-4">🛡️</div>
+                <p class="text-xs font-black uppercase tracking-[0.3em]">No transmission history</p>
+            </div>
+        {% endfor %}
+        <div id="scroll-anchor"></div>
+    </div>
+
+    <div class="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black to-transparent">
+        <div class="max-w-3xl mx-auto">
+            <form method="POST" action="{% url 'social:hire_protocol' reel_id=related_reel.id|default:0 %}" class="relative flex items-center gap-3">
+                {% csrf_token %}
+                <div class="flex-1 relative group">
+                    <input type="text" 
+                           name="content" 
+                           autocomplete="off"
+                           placeholder="Type your secure inquiry..." 
+                           class="w-full bg-gray-900/50 backdrop-blur-xl border border-white/10 rounded-2xl py-4 pl-6 pr-14 text-white placeholder-gray-600 focus:border-indigo-500/50 focus:ring-0 transition-all outline-none">
+                    
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center space-x-2 text-gray-500">
+                        <span class="text-[10px] font-mono">2026</span>
+                    </div>
+                </div>
+                
+                <button type="submit" 
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-2xl font-black shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    #chat-thread {
+        scroll-behavior: smooth;
+    }
+</style>
+
+<script>
+    // Automatically focus input and scroll to latest message
+    window.onload = () => {
+        const thread = document.getElementById('chat-thread');
+        thread.scrollTop = thread.scrollHeight;
+        
+        const input = document.querySelector('input[name="content"]');
+        if(input) input.focus();
+    };
+
+    // Handle dynamic message updates if necessary in the future
+    document.querySelector('form').onsubmit = function() {
+        const btn = this.querySelector('button');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'animate-pulse');
+    };
+</script>
+{% endblock %}

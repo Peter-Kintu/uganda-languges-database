@@ -58,7 +58,6 @@ CSRF_TRUSTED_ORIGINS = [
 for host in ALLOWED_HOSTS:
     clean_host = host.strip()
     if clean_host and clean_host != '*':
-        # Ensure it doesn't already have a protocol before adding https://
         if not clean_host.startswith(('http://', 'https://')):
             CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
 
@@ -81,8 +80,7 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
     'django.contrib.sites',
     'django.contrib.humanize',
-    'movie',
-
+    
     # Third-party
     'widget_tweaks',
     'cloudinary_storage',
@@ -94,14 +92,15 @@ INSTALLED_APPS = [
     'eshop',
     'languages',
     'hotel',
-    'social',
+    'movie',
+    'social', # Optimized TikTok-style Business Reels & Sovereignty Layer
 ]
 
 SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # High-performance static serving
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -170,15 +169,15 @@ CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-    'SECURE': True,  # CRITICAL: Ensures all Cloudinary media URLs use https://
+    'SECURE': True,  # Ensures all media URLs use https://
 }
 
 # --- API EXTERNAL CREDENTIALS ---
 ADZUNA_APP_ID = os.getenv('ADZUNA_APP_ID')
 ADZUNA_API_KEY = os.getenv('ADZUNA_API_KEY')
-ALI_APP_KEY = os.getenv('ALI_APP_KEY', '524714')
-ALI_APP_SECRET = os.getenv('ALI_APP_SECRET', 'fallback_secret')
-ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID', 'default_tracking_id')
+ALI_APP_KEY = os.getenv('ALI_APP_KEY')
+ALI_APP_SECRET = os.getenv('ALI_APP_SECRET')
+ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID')
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
 
@@ -197,48 +196,34 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # --- JAZZMIN SETTINGS ---
 JAZZMIN_SETTINGS = {
-    "site_title": "Uganda Language Admin",
-    "site_header": "Uganda Languages",
-    "site_brand": "Uganda Languages",
+    "site_title": "Africana AI Admin",
+    "site_header": "Africana AI",
+    "site_brand": "Africana AI",
     "site_logo": "images/uganda_logo.png",
-    "site_icon": "images/favicon.ico",
-    "welcome_sign": "Database Management System",
-    "copyright": "Uganda Language Project",
-    "user_avatar": None,
-    "search_model": ["users.CustomUser"], 
+    "welcome_sign": "Africana AI Ecosystem Management",
+    "copyright": "Africana AI Project",
+    "search_model": ["users.CustomUser", "social.BusinessReel"], 
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {
-            "name": "🛒 Sync AliExpress", 
-            "url": "/admin/eshop/product/sync-now/", 
-            "permissions": ["auth.view_user"]
-        },
-        {
-            "name": "🎬 Sync Movies", 
-            "url": "/admin/movie/movie/sync-now/",
-            "permissions": ["auth.view_user"]
-        },
-        {
-            "name": "🏨 Sync Hotels", 
-            "url": "/admin/hotel/accommodation/sync/", 
-            "permissions": ["auth.view_user"]
-        },
+        {"name": "🛒 Sync AliExpress", "url": "/admin/eshop/product/sync-now/", "permissions": ["auth.view_user"]},
+        {"name": "🎬 Sync Movies", "url": "/admin/movie/movie/sync-now/", "permissions": ["auth.view_user"]},
+        {"name": "🏨 Sync Hotels", "url": "/admin/hotel/accommodation/sync/", "permissions": ["auth.view_user"]},
         {"name": "View Site", "url": "/", "new_window": True},
     ],
     "show_sidebar": True,
     "navigation_expanded": True,
-    "order_with_respect_to": ["auth", "users", "languages", "eshop", "hotel"],
+    "order_with_respect_to": ["auth", "users", "social", "languages", "eshop", "hotel"],
     "hide_apps": ["contenttypes", "sessions", "sites", "cloudinary_storage"],
     "hide_models": ["auth.Group"],
     "icons": {
         "auth": "fas fa-users-cog",
         "users.CustomUser": "fas fa-user-shield",
-        "languages.PhraseContribution": "fas fa-comments",
+        "social.BusinessReel": "fas fa-video",
+        "social.SecureMessage": "fas fa-envelope-shield",
+        "social.SocialProfile": "fas fa-id-badge",
         "languages.Translation": "fas fa-language",
         "languages.JobPost": "fas fa-briefcase",
-        "languages.Recruiter": "fas fa-id-card-alt",
         "eshop.Product": "fas fa-shopping-cart",
-        "eshop.Order": "fas fa-file-invoice-dollar",
         "hotel.Accommodation": "fas fa-hotel",
     },
 }
