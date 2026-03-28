@@ -38,7 +38,10 @@ urlpatterns = [
     path("hotels/", include("hotel.urls", namespace="hotel")),
 
         # 2. Movies
-    path("movie/", include("movie.urls", namespace="movie")),  
+    path("movie/", include("movie.urls", namespace="movie")), 
+
+
+    path('social/', include('social.urls', namespace='social')), 
 
 
     # 2. Users (Authentication & Profile) at root

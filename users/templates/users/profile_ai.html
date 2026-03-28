@@ -119,7 +119,7 @@
 <div class="app-container">
     <aside class="sidebar" id="sidebar">
         <div class="p-6 flex justify-between items-center">
-            <h2 class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Africana AI History</h2>
+            <h2 class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Chat History</h2>
             <button onclick="createNewChat()" class="p-2 hover:bg-white/5 rounded-full transition text-slate-400">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             </button>
@@ -149,12 +149,12 @@
 
         <div id="chatLog"></div>
         <div id="typingStatus">
-            <span class="animate-pulse">Africana AI is thinking...</span>
+            <span class="animate-pulse">Analyzing your request...</span>
         </div>
 
         <div class="chat-input-area">
             <div class="input-glass-wrapper">
-                <textarea id="chatInput" placeholder="Ask Africana AI about career paths, resume tips, or job skills..." rows="1"></textarea>
+                <textarea id="chatInput" placeholder="Ask about career paths, resume tips, or job skills..." rows="1"></textarea>
                 <button onclick="typeQuery()" id="sendChatButton" class="btn-send">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                 </button>
@@ -187,18 +187,15 @@
         const sendBtn = document.getElementById('sendChatButton');
         sendBtn.disabled = true;
         
-        // Show user message instantly
         appendMessage('user', text);
-        
-        // Prepare current state
         chatInput.value = '';
         chatInput.style.height = 'auto';
         typingStatus.style.display = 'block';
         scrollToBottom();
 
         try {
-            // Get local history and add current user message for the API call
             const history = getSessionHistory(currentSessionId);
+            // Prepare payload for Django view
             const contents = history.map(m => ({ role: m.role, text: m.text }));
             contents.push({ role: 'user', text: text });
 
@@ -216,7 +213,6 @@
 
             if (data.text) {
                 appendMessage('ai', data.text);
-                // Persist both messages to local storage
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
@@ -225,7 +221,7 @@
             }
         } catch (e) {
             typingStatus.style.display = 'none';
-            appendMessage('ai', `Notice: ${e.message}`);
+            appendMessage('ai', `System Notice: ${e.message}`);
         } finally {
             sendBtn.disabled = false;
             scrollToBottom();
@@ -236,11 +232,11 @@
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role}`;
         
-        // Basic Markdown Support
+        // Formatted Markdown-style replacement
         let formatted = text
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/^\s*[\-\*]\s+(.*)/gm, '<li>$1</li>')
-            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+            .replace(/(<li>.*<\/li>)/s, '<ul class="list-disc ml-4 my-2">$1</ul>')
             .replace(/\n/g, '<br>');
 
         messageDiv.innerHTML = `
@@ -274,7 +270,7 @@
         
         const sortedKeys = Object.keys(sessions).sort().reverse();
         sortedKeys.forEach(id => {
-            const firstMsg = sessions[id][0]?.text || "New Conversation";
+            const firstMsg = sessions[id][0]?.text || "New Chat";
             const li = document.createElement('li');
             li.className = `history-item ${id === currentSessionId ? 'active' : ''}`;
             li.innerText = firstMsg.substring(0, 28) + (firstMsg.length > 28 ? '...' : '');

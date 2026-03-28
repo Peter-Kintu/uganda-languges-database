@@ -2,7 +2,7 @@
 {% load static %}
 {% load cloudinary %}
 
-{% block title %}{{ user.get_full_name|default:user.username }}'s Profile{% endblock %}
+{% block title %}{{ user.get_full_name|default:user.username }}'s Profile | Africana AI{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8 sm:py-12">
@@ -36,12 +36,20 @@
                 </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-3">
-                <a href="{% url 'users:profile_edit' %}" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition duration-150">
+            <div class="flex flex-wrap gap-3 w-full md:w-auto">
+                <a href="{% url 'users:profile_edit' %}" class="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition duration-150">
                     Edit Profile
                 </a>
-                <a href="{% url 'users:profile_ai' %}" class="inline-flex items-center justify-center px-4 py-2 border border-indigo-500/50 text-sm font-medium rounded-full shadow-sm text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50 transition duration-150">
-                    🤖 Career AI
+                
+                <a href="{% url 'languages:recruiters_page' %}" class="inline-flex items-center justify-center px-5 py-2.5 border border-indigo-500/50 text-sm font-semibold rounded-xl shadow-sm text-white bg-indigo-500/20 hover:bg-indigo-500/40 transition duration-150">
+                    <svg class="w-4 h-4 mr-2 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    View Recruiters
+                </a>
+
+                <a href="{% url 'users:profile_ai' %}" class="inline-flex items-center justify-center px-5 py-2.5 border border-indigo-500/50 text-sm font-semibold rounded-xl shadow-sm text-indigo-300 bg-indigo-900/40 hover:bg-indigo-900/60 transition duration-150">
+                    🤖 AI Companion
                 </a>
             </div>
         </header>
@@ -49,7 +57,7 @@
         <section class="mb-10 bg-indigo-900/20 rounded-2xl border border-indigo-500/20 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-white flex items-center">
-                    <span class="mr-2">🌍</span> Africana Ambassador Status
+                    <span class="mr-2">🌍</span> Ambassador Status
                 </h2>
                 <span class="bg-green-500/20 text-green-400 text-xs font-bold px-3 py-1 rounded-full border border-green-500/30 uppercase tracking-wider">
                     Active Earner
@@ -58,83 +66,86 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700">
-                    <p class="text-gray-400 text-sm uppercase font-bold tracking-widest mb-1">Your Referral Link</p>
+                    <p class="text-gray-400 text-sm uppercase font-bold tracking-widest mb-2">Referral Link</p>
                     <div class="flex items-center space-x-2">
-                        <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}?ref={{ user.username }}" id="refLink" class="bg-gray-800 border-none text-indigo-300 text-xs rounded-lg block w-full p-2 focus:ring-0">
-                        <button onclick="copyRefLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition-colors">
+                        <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}?ref={{ user.username }}" id="refLink" class="bg-gray-800 border-none text-indigo-300 text-xs rounded-lg block w-full p-2.5 focus:ring-0">
+                        <button onclick="copyRefLink()" id="copyBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-lg transition-all active:scale-95">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                             </svg>
                         </button>
                     </div>
-                    <p class="text-[10px] text-gray-500 mt-2 italic">Earn commissions when others buy using your link.</p>
+                    <p class="text-[10px] text-gray-500 mt-2 italic">Earn commissions on vendor sales via your link.</p>
                 </div>
 
                 <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700 flex flex-col justify-center">
-                    <p class="text-gray-400 text-sm uppercase font-bold tracking-widest mb-1">Estimated Earnings</p>
+                    <p class="text-gray-400 text-sm uppercase font-bold tracking-widest mb-1">Total Earnings</p>
                     <h3 class="text-3xl font-black text-green-400">
                         UGX {{ user.total_referral_earnings|default:"0"|floatformat:0 }}
                     </h3>
-                    <p class="text-[10px] text-gray-500 italic">Confirmed upon vendor delivery.</p>
+                    <p class="text-[10px] text-gray-500 italic">Confirmed upon successful delivery.</p>
                 </div>
             </div>
         </section>
 
-        {% if user.notifications.exists %}
+        {% if user.profile_notifications.exists %}
         <section class="mb-10 bg-gray-900/30 rounded-2xl border border-gray-700 p-6">
             <h2 class="text-xl font-bold text-indigo-400 mb-4 flex items-center">
                 <span class="mr-2">🔔</span> Recent Activity
             </h2>
             <div class="space-y-3">
-                {% for alert in user.notifications.all|slice:":3" %}
-                <div class="p-4 rounded-xl bg-gray-800/40 border {% if not alert.is_read %}border-indigo-500/40 shadow-md{% else %}border-gray-700{% endif %} flex justify-between items-center">
-                    <div>
+                {% for alert in user.profile_notifications.all|slice:":3" %}
+                <div class="p-4 rounded-xl bg-gray-800/40 border {% if not alert.is_read %}border-indigo-500/40 bg-indigo-500/5 shadow-md{% else %}border-gray-700{% endif %} flex justify-between items-center">
+                    <div class="pr-4">
                         <p class="text-white font-bold text-sm">{{ alert.title }}</p>
-                        <p class="text-gray-400 text-xs">{{ alert.message }}</p>
+                        <p class="text-gray-400 text-xs mt-0.5">{{ alert.message }}</p>
                     </div>
-                    <span class="text-[10px] text-gray-600 font-medium">{{ alert.created_at|timesince }} ago</span>
+                    <span class="text-[10px] text-gray-600 font-medium whitespace-nowrap">{{ alert.created_at|timesince }} ago</span>
                 </div>
                 {% endfor %}
             </div>
         </section>
         {% endif %}
 
-        <section class="mb-8">
+        <section class="mb-10">
             <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">About</h2>
-            <p class="text-gray-300 leading-relaxed">{{ user.about|default:"No description provided yet." }}</p>
+            <div class="prose prose-invert max-w-none">
+                <p class="text-gray-300 leading-relaxed">{{ user.about|default:"Professional journey details not yet shared." }}</p>
+            </div>
         </section>
 
-        <section class="mb-8">
+        <section class="mb-10">
             <h2 class="text-2xl font-bold text-indigo-400 mb-4 border-b border-gray-700/50 pb-2">Work Experience</h2>
             <div class="space-y-6">
                 {% if user.experiences.all %}
                     {% for exp in user.experiences.all %}
-                        <div class="pl-4 border-l-4 border-indigo-600">
+                        <div class="pl-5 border-l-2 border-indigo-600 relative">
+                            <div class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-600"></div>
                             <h3 class="text-xl font-semibold text-white">{{ exp.title }}</h3>
-                            <p class="text-gray-400">{{ exp.company_name }}</p>
-                            <p class="text-sm text-gray-500 mb-2">
-                                {{ exp.start_date|date:"M Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
+                            <p class="text-indigo-300 font-medium">{{ exp.company_name }}</p>
+                            <p class="text-xs text-gray-500 mb-2 uppercase tracking-wide">
+                                {{ exp.start_date|date:"M Y" }} — {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
                             </p>
-                            <p class="text-gray-300 text-sm">{{ exp.description }}</p>
+                            <p class="text-gray-400 text-sm leading-relaxed">{{ exp.description }}</p>
                         </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-400 italic">No work experience listed.</p>
+                    <p class="text-gray-500 italic text-sm">No work experience entries listed.</p>
                 {% endif %}
             </div>
         </section>
 
         <section>
-            <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">Skills</h2>
+            <h2 class="text-2xl font-bold text-indigo-400 mb-4 border-b border-gray-700/50 pb-2">Technical Skills</h2>
             <div class="flex flex-wrap gap-2">
                 {% if user.skills.all %}
                     {% for skill in user.skills.all %}
-                        <span class="px-4 py-1 bg-indigo-600 text-white text-sm font-medium rounded-full shadow-md hover:bg-indigo-500 transition duration-200">
-                            {{ skill.name }}
+                        <span class="px-4 py-1.5 bg-indigo-600/20 text-indigo-300 text-xs font-bold rounded-lg border border-indigo-500/30 hover:bg-indigo-600 hover:text-white transition-all cursor-default">
+                            {{ skill.name|upper }}
                         </span>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-400 italic">No skills added yet.</p>
+                    <p class="text-gray-500 italic text-sm">Add skills to showcase your expertise.</p>
                 {% endif %}
             </div>
         </section>
@@ -145,12 +156,18 @@
 <script>
     function copyRefLink() {
         const copyText = document.getElementById("refLink");
+        const copyBtn = document.getElementById("copyBtn");
+        
         copyText.select();
         copyText.setSelectionRange(0, 99999); 
         navigator.clipboard.writeText(copyText.value);
         
-        // Visual feedback using a temporary alert or toast
-        alert("Referral link copied!");
+        const originalSvg = copyBtn.innerHTML;
+        copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>`;
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = originalSvg;
+        }, 2000);
     }
 </script>
 {% endblock content %}

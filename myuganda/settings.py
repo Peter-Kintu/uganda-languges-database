@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'eshop',
     'languages',
     'hotel',
+    'social',
 ]
 
 SITE_ID = 1
