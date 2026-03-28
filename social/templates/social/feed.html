@@ -190,14 +190,14 @@
 
                 <div class="flex flex-col items-center">
                     {% if reel.price %}
-                        <button onclick="triggerHaggle('{{ reel.id }}')" class="flex flex-col items-center group">
+                        <button onclick="triggerHaggle('{{ reel.id }}', '{{ reel.author.social_profile.whatsapp_number }}', '{{ reel.caption|escapejs }}', '{{ reel.price }}', '{{ reel.currency }}')" class="flex flex-col items-center group">
                             <div class="p-5 bg-green-600 rounded-[24px] group-hover:bg-green-500 transition-all shadow-[0_0_30px_rgba(34,197,94,0.5)] border border-green-400/50 agent-pulse">
                                 <span class="text-2xl">🤝</span>
                             </div>
                             <span class="text-[10px] mt-2 font-black uppercase text-green-400 tracking-widest">Buy Now</span>
                         </button>
                     {% else %}
-                        <button onclick="initiateHire('{{ reel.id }}')" class="flex flex-col items-center group">
+                        <button onclick="initiateHire('{{ reel.id }}', '{{ reel.author.social_profile.whatsapp_number }}', '{{ reel.caption|escapejs }}')" class="flex flex-col items-center group">
                             <div class="p-5 bg-indigo-600 rounded-[24px] group-hover:bg-indigo-500 transition-all shadow-[0_0_30px_rgba(79,70,229,0.5)] border border-indigo-400/50">
                                 <span class="text-2xl">💼</span>
                             </div>
@@ -274,43 +274,38 @@
         document.body.removeChild(link);
     }
 
-    async function triggerHaggle(reelId) {
-        const offer = prompt("AI Negotiator Active. Enter your offer price:");
-        if (!offer) return;
-        try {
-            const response = await fetch(`/social/negotiate/${reelId}/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ offer: offer })
-            });
-            const data = await response.json();
-            alert(`${data.status}: ${data.message}${data.price ? ' Suggested: ' + data.price : ''}`);
-        } catch (e) { alert("Agent Unavailable."); }
+    // WhatsApp Buying Logic
+    async function triggerHaggle(reelId, whatsapp, caption, price, currency) {
+        if (!whatsapp || whatsapp === 'None' || whatsapp === '') {
+            alert("Creator contact not available. Please try again later.");
+            return;
+        }
+
+        const cleanNumber = whatsapp.replace(/\D/g, ''); 
+        const text = `Hello! I'm interested in buying this: "${caption.substring(0, 50)}..." for ${currency} ${price}. Is it available?`;
+        const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
+        
+        // Track the buy-intent before redirecting
+        fetch(`/social/reel/${reelId}/track-buy/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+        
+        window.open(waUrl, '_blank');
     }
 
-    async function initiateHire(reelId) {
-        const introMessage = prompt("Establish Connection: Send a brief requirement or greeting to the creator.");
-        if (!introMessage) return;
-
-        try {
-            const response = await fetch(`/social/hire/${reelId}/`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-CSRFToken': '{{ csrf_token }}' 
-                },
-                body: JSON.stringify({ content: introMessage })
-            });
-            const data = await response.json();
-            
-            if (data.status === 'SENT') {
-                window.location.href = data.redirect_url;
-            } else {
-                alert("Protocol Error: " + data.message);
-            }
-        } catch (e) { 
-            alert("Handshake Interrupted. Please check your connection."); 
+    // WhatsApp Hiring Logic
+    async function initiateHire(reelId, whatsapp, caption) {
+        if (!whatsapp || whatsapp === 'None' || whatsapp === '') {
+            alert("Creator contact not available. Please try again later.");
+            return;
         }
+
+        const cleanNumber = whatsapp.replace(/\D/g, '');
+        const text = `Hi! I saw your work: "${caption.substring(0, 60)}..." and I would like to discuss a professional project with you.`;
+        const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
+
+        // Track the hire-intent before redirecting
+        fetch(`/social/reel/${reelId}/track-hire/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+
+        window.open(waUrl, '_blank');
     }
 </script>
 {% endblock %}

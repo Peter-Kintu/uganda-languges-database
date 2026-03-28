@@ -41,6 +41,14 @@
                     {{ form.caption }}
                 </div>
 
+                <div class="space-y-1">
+                    <label class="block text-[10px] uppercase tracking-widest font-bold text-green-400 flex items-center">
+                        <span class="mr-1">💬</span> WhatsApp Number
+                    </label>
+                    {{ form.whatsapp_number }}
+                    <p class="text-[9px] text-gray-500 italic">Include country code (e.g., +256...)</p>
+                </div>
+
                 <div id="professional-notice" class="text-[10px] text-gray-400 bg-white/5 p-3 rounded-xl border border-white/5 italic">
                     💡 <span class="text-indigo-300">Mode:</span> <span id="mode-text" class="text-white font-bold">PROFESSIONAL SHOWCASE</span>
                 </div>
@@ -67,7 +75,7 @@
                             {{ form.is_low_bandwidth_optimized }}
                         </label>
                     </div>
-                    <span class="text-[9px] text-gray-500 italic">Optimized for network stability</span>
+                    <span class="text-[9px] text-gray-500 italic">Optimized for stability</span>
                 </div>
             </div>
 
@@ -105,7 +113,7 @@
     const priceHealth = document.getElementById('price-health');
     const modeText = document.getElementById('mode-text');
 
-    // Video Pre-processing
+    // Video Pre-processing logic
     input.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -127,19 +135,17 @@
         }
     }
 
-    // Dynamic Differentiation: Hire Me vs Buy Now
+    // Dynamic Intent Handling
     const validatePricingAndIntent = () => {
         const publicPrice = parseFloat(priceInput.value);
         const floorPrice = parseFloat(floorInput.value);
         
-        // Update UI based on if price is entered
         if (!isNaN(publicPrice) && publicPrice > 0) {
             btnText.innerText = "BUY NOW";
             modeText.innerText = "COMMERCIAL PRODUCT / SERVICE";
             btn.classList.replace('bg-indigo-600', 'bg-green-600');
             btn.classList.replace('shadow-indigo-600/30', 'shadow-green-600/30');
             
-            // Pillar 3 Logic: Floor Check
             if (!isNaN(floorPrice) && floorPrice > publicPrice) {
                 priceHealth.classList.remove('hidden');
                 btn.disabled = true;
@@ -150,7 +156,6 @@
                 btn.classList.remove('grayscale', 'opacity-50', 'cursor-not-allowed');
             }
         } else {
-            // Job Seeker / Professional Mode
             btnText.innerText = "HIRE ME";
             modeText.innerText = "PROFESSIONAL SHOWCASE";
             btn.classList.replace('bg-green-600', 'bg-indigo-600');
@@ -164,8 +169,6 @@
 
     priceInput.addEventListener('input', validatePricingAndIntent);
     floorInput.addEventListener('input', validatePricingAndIntent);
-
-    // Initial state check
     validatePricingAndIntent();
 
     form.onsubmit = () => {
