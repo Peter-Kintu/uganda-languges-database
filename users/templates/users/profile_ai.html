@@ -19,20 +19,21 @@
         font-family: 'Plus Jakarta Sans', sans-serif;
         color: var(--text-primary);
         margin: 0;
-        /* Using dvh (dynamic viewport height) to account for mobile browser bars */
+        /* Force body to exactly the height of the viewport */
         height: 100dvh; 
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
-    /* Container fills the space between base.html navbar and screen bottom */
     .app-container {
         display: flex;
-        height: 100%;
+        flex: 1; 
         width: 100vw;
         position: relative;
+        overflow: hidden; 
     }
 
-    /* Sidebar - Desktop */
     .sidebar {
         width: 280px;
         background: var(--bg-sidebar);
@@ -43,14 +44,14 @@
         z-index: 100;
     }
 
-    /* Main Area - Uses Flex Column to push input to bottom */
     .chat-main-area {
         flex: 1;
         display: flex;
         flex-direction: column;
         background: radial-gradient(circle at top right, #0f172a, #020617);
-        height: 100%;
-        min-width: 0; /* Prevents flex items from overflowing */
+        /* Critical: ensures main area doesn't exceed parent height */
+        height: 100%; 
+        min-height: 0;
         position: relative;
     }
 
@@ -60,22 +61,26 @@
         background: rgba(2, 6, 23, 0.8);
         backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--glass-border);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        z-index: 10;
     }
 
-    /* Message area grows to fill space, then scrolls */
+    /* Fixed Scrolling Logic */
     #chatLog {
-        flex: 1;
+        flex: 1 1 0%; /* Shorthand for grow, shrink, and basis 0 */
         overflow-y: auto;
+        overflow-x: hidden;
         padding: 1.5rem 1rem;
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.5rem;
+        scroll-behavior: smooth;
+        /* Hack to ensure Chrome/Safari respects overflow in flex */
+        min-height: 0; 
     }
 
-    /* World-class message bubbles */
+    #chatLog::-webkit-scrollbar { width: 6px; }
+    #chatLog::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+
     .chat-message {
         max-width: 85%;
         padding: 0.85rem 1.1rem;
@@ -83,6 +88,8 @@
         font-size: 0.95rem;
         line-height: 1.5;
         animation: fadeIn 0.2s ease;
+        word-wrap: break-word;
+        position: relative;
     }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -101,7 +108,6 @@
         border-bottom-left-radius: 4px;
     }
 
-    /* Input Area - Forced to bottom */
     .chat-input-area {
         flex-shrink: 0;
         padding: 1rem;
@@ -146,11 +152,9 @@
         cursor: pointer;
         transition: transform 0.1s;
         margin-bottom: 2px;
+        flex-shrink: 0;
     }
 
-    .btn-send:active { transform: scale(0.9); }
-
-    /* Mobile Responsive Logic */
     @media (max-width: 768px) {
         .sidebar {
             position: absolute;
@@ -160,13 +164,7 @@
             transform: translateX(-100%);
         }
         .sidebar.active { transform: translateX(0); }
-        
         .chat-message { max-width: 92%; }
-        
-        /* Ensure input stays visible above mobile keyboard */
-        .chat-input-area {
-            padding-bottom: env(safe-area-inset-bottom, 1rem);
-        }
     }
 
     .history-item {
@@ -215,7 +213,7 @@
     </aside>
 
     <main class="chat-main-area">
-        <header class="chat-header">
+        <header class="chat-header flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <button id="sidebarToggle" class="p-1 text-slate-400">
                     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -248,7 +246,6 @@
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
 
-    // Toggle Sidebar
     document.getElementById('sidebarToggle').onclick = () => {
         sidebar.classList.add('active');
         overlay.classList.add('active');
@@ -259,7 +256,6 @@
         overlay.classList.remove('active');
     };
 
-    // Auto-resize text area
     chatInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 150) + 'px';
@@ -306,9 +302,14 @@
     function appendMessage(role, text) {
         const div = document.createElement('div');
         div.className = `chat-message ${role}`;
-        div.innerHTML = `<div class="text-[10px] font-bold opacity-30 mb-1 uppercase">${role === 'user' ? 'You' : 'Africana'}</div>${text.replace(/\n/g, '<br>')}`;
+        let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+        div.innerHTML = `<div class="text-[10px] font-bold opacity-30 mb-1 uppercase">${role === 'user' ? 'You' : 'Africana'}</div>${formattedText}`;
         chatLog.appendChild(div);
-        scrollToBottom();
+        
+        // Wait for DOM update before scrolling
+        requestAnimationFrame(() => {
+            scrollToBottom();
+        });
     }
 
     function scrollToBottom() {
@@ -353,6 +354,7 @@
             history.forEach(m => appendMessage(m.role, m.text));
         }
         updateHistorySidebar();
+        scrollToBottom();
     }
 
     function createNewChat() {
