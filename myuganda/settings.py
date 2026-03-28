@@ -32,7 +32,7 @@ if not DEBUG:
     # 1. Force Redirect to HTTPS
     SECURE_SSL_REDIRECT = True
     
-    # 2. Strict Transport Security (HSTS) - This tells Chrome the site IS secure
+    # 2. Strict Transport Security (HSTS) - Essential for the "Secure" padlock
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
@@ -40,17 +40,15 @@ if not DEBUG:
     # 3. Secure Cookies (Only sent over HTTPS)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript from accessing cookies
     
     # 4. Modern Browser Protections
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    # Prevents your site from being embedded in frames on other sites
     X_FRAME_OPTIONS = 'DENY' 
-    # Ensures Referrer header only sent for same-origin
     SECURE_REFERRER_POLICY = "same-origin"
 
 # --- CSRF TRUSTED ORIGINS ---
-# Clean up origins: Production should ONLY use https
 CSRF_TRUSTED_ORIGINS = [
     'https://initial-danette-africana-60541726.koyeb.app',
     'https://uganda-languges-database.onrender.com',
@@ -60,7 +58,9 @@ CSRF_TRUSTED_ORIGINS = [
 for host in ALLOWED_HOSTS:
     clean_host = host.strip()
     if clean_host and clean_host != '*':
-        CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
+        # Ensure it doesn't already have a protocol before adding https://
+        if not clean_host.startswith(('http://', 'https://')):
+            CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
 
 # Local development origins
 if DEBUG:
@@ -170,7 +170,7 @@ CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-    'SECURE': True,  # Ensures all media URLs use https://
+    'SECURE': True,  # CRITICAL: Ensures all Cloudinary media URLs use https://
 }
 
 # --- API EXTERNAL CREDENTIALS ---
