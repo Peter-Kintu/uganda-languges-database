@@ -16,7 +16,6 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* TikTok Scroll Container Logic */
     #reel-container {
         height: 100vh;
         width: 100%;
@@ -51,7 +50,6 @@
     
     .video-overlay * { pointer-events: auto; }
 
-    /* Floating Plus Button (Top Left) */
     .publish-fab {
         position: fixed;
         top: 20px;
@@ -197,7 +195,7 @@
                     </button>
                     {% endif %}
 
-                    <button onclick="openSecureChat('{{ reel.author.username }}', '{{ reel.id }}', '{{ reel.caption|truncatechars:25 }}')" class="flex flex-col items-center group">
+                    <button onclick="openSecureChat('{{ reel.author.username }}', '{{ reel.id }}')" class="flex flex-col items-center group">
                         <div class="p-5 bg-indigo-600 rounded-[24px] group-hover:bg-indigo-500 transition-all shadow-[0_0_30px_rgba(79,70,229,0.5)] border border-indigo-400/50">
                             <span class="text-2xl">💼</span>
                         </div>
@@ -216,33 +214,40 @@
     {% endfor %}
 </div>
 
-<div id="chat-modal" class="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl hidden flex-col transition-all items-center justify-center">
-    <div class="w-full max-w-lg p-6 bg-gray-900/50 rounded-3xl border border-white/10 relative">
-        <button onclick="closeChat()" class="absolute top-4 right-4 text-white/50 hover:text-white">✕</button>
-        <h3 class="text-xl font-black mb-4 uppercase tracking-tighter">Sovereign Inquiry</h3>
-        <p class="text-gray-400 text-sm mb-6">Send a direct, encrypted message to the professional.</p>
-        <textarea id="chat-content" class="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white mb-4" rows="4" placeholder="Request a quote or service..."></textarea>
-        <button onclick="sendSecureMessage()" class="w-full bg-indigo-600 py-4 rounded-xl font-bold uppercase tracking-widest">Send Message</button>
+<div id="chat-modal" class="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl hidden flex-col items-center justify-center p-6">
+    <div class="w-full max-w-lg bg-gray-900 border border-white/10 rounded-3xl p-8 relative shadow-2xl">
+        <button onclick="closeChat()" class="absolute top-6 right-6 text-white/40 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        
+        <h3 class="text-2xl font-black mb-2 uppercase tracking-tighter text-white">Sovereign Inquiry</h3>
+        <p id="chat-target-label" class="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6">Encrypted Channel</p>
+        
+        <textarea id="chat-content" 
+            class="w-full bg-black border border-white/10 rounded-2xl p-4 text-white placeholder-gray-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all mb-6" 
+            rows="5" 
+            placeholder="Type your private inquiry here..."></textarea>
+        
+        <button id="send-btn" onclick="sendSecureMessage()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg active:scale-95">
+            Send Private Message
+        </button>
     </div>
 </div>
 
 <script>
     let activeReelId = '';
     
-    // TikTok Scroll & Auto-Play Logic
     const observerOptions = { threshold: 0.8 };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
-                video.play().catch(e => console.log("User interaction required"));
-                
-                // When video ends, scroll to next
+                video.play().catch(e => {});
                 video.onended = () => {
-                    const nextSection = entry.target.nextElementSibling;
-                    if (nextSection) {
-                        nextSection.scrollIntoView({ behavior: 'smooth' });
-                    }
+                    const next = entry.target.nextElementSibling;
+                    if (next) next.scrollIntoView({ behavior: 'smooth' });
                 };
             } else {
                 video.pause();
@@ -253,7 +258,6 @@
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 
-    // Social & Commerce Logic
     async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
@@ -262,27 +266,26 @@
             });
             const data = await response.json();
             if (data.status === 'success') {
-                const heart = btn.querySelector('span');
-                heart.classList.toggle('heart-active');
+                btn.querySelector('span').classList.toggle('heart-active');
                 document.getElementById(`like-count-${reelId}`).innerText = data.total_likes;
             }
-        } catch (e) { console.error("Like failed."); }
+        } catch (e) {}
     }
 
     async function shareReel(reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`;
         if (navigator.share) {
-            try { await navigator.share({ title: 'Africana AI Reel', url: shareUrl }); } catch (err) {}
+            try { await navigator.share({ title: 'Africana AI', url: shareUrl }); } catch (err) {}
         } else {
             navigator.clipboard.writeText(shareUrl);
-            alert("Secure Link Copied.");
+            alert("Link Copied to Clipboard.");
         }
     }
 
     function downloadWithBranding(reelId, url) {
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Elite_${reelId}.mp4`;
+        link.download = `Africana_Elite_${reelId}.mp4`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -299,35 +302,61 @@
             });
             const data = await response.json();
             alert(`${data.status}: ${data.message}`);
-        } catch (e) { alert("Agent Busy."); }
+        } catch (e) { alert("Agent Unavailable."); }
     }
 
-    // Modal Controls
-    function openSecureChat(username, reelId, title) {
+    // Modal Control Functions
+    function openSecureChat(username, reelId) {
         activeReelId = reelId;
+        document.getElementById('chat-target-label').innerText = `To: @${username} (Secure Channel)`;
         document.getElementById('chat-modal').classList.remove('hidden');
         document.getElementById('chat-modal').classList.add('flex');
+        document.getElementById('chat-content').focus();
     }
 
     function closeChat() { 
         document.getElementById('chat-modal').classList.add('hidden'); 
         document.getElementById('chat-modal').classList.remove('flex');
+        document.getElementById('chat-content').value = '';
     }
 
     async function sendSecureMessage() {
-        const content = document.getElementById('chat-content').value;
-        if (!content) return;
+        const content = document.getElementById('chat-content').value.trim();
+        const sendBtn = document.getElementById('send-btn');
+        
+        if (!content || !activeReelId) return;
+
+        // Visual Feedback
+        sendBtn.disabled = true;
+        sendBtn.innerText = "TRANSMITTING...";
         
         try {
+            // Using URLSearchParams to ensure proper form encoding for Django's request.POST
+            const formData = new URLSearchParams();
+            formData.append('content', content);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
             const response = await fetch(`/social/hire/${activeReelId}/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: `content=${encodeURIComponent(content)}`
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}' 
+                },
+                body: formData.toString()
             });
-            const data = await response.json();
-            alert("Message Transmitted via Secure Protocol.");
-            closeChat();
-        } catch (e) { alert("Communication Error."); }
+
+            if (response.ok) {
+                alert("Message Transmitted. This inquiry is private between you and the author.");
+                closeChat();
+            } else {
+                throw new Error("Protocol Failed");
+            }
+        } catch (e) { 
+            alert("Transmission Error. Check connection."); 
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerText = "Send Private Message";
+        }
     }
 </script>
 {% endblock %}
