@@ -2,45 +2,76 @@
 
 {% block content %}
 <style>
+    /* Pillar 2: Smooth immersive scrolling */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
     .video-overlay {
         background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
     }
-    /* Pillar 4: End-to-End Encryption Badge UI */
-    .e2ee-badge {
-        background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-        box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+
+    /* Pulse effect for the AI Agent button */
+    .agent-pulse {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
     }
 </style>
 
 <div class="h-screen w-full snap-y snap-mandatory overflow-y-scroll bg-black no-scrollbar" id="reel-container">
     {% for reel in reels %}
     <section class="relative h-screen w-full snap-start flex items-center justify-center" data-reel-id="{{ reel.id }}">
-        <video class="w-full h-full object-cover" src="{{ reel.video.url }}" loop muted playsinline autoplay preload="auto"></video>
+        <video 
+            class="w-full h-full object-cover" 
+            src="{{ reel.video.url }}" 
+            loop 
+            muted 
+            playsinline 
+            preload="auto">
+        </video>
 
         <div class="absolute bottom-0 left-0 w-full p-8 video-overlay text-white">
             <div class="flex items-end justify-between">
                 <div class="flex-1">
                     <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center font-bold border border-white/20">
+                        <a href="{% url 'social:bento_profile' reel.author.username %}" class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center font-bold border border-white/20 shadow-lg transition-transform active:scale-90">
                             {{ reel.author.username|slice:":1"|upper }}
-                        </div>
+                        </a>
                         <div>
-                            <h2 class="font-black text-lg">{{ reel.author.username }}</h2>
-                            <p class="text-green-400 text-[10px] font-mono uppercase tracking-widest">Trust Ledger: {{ reel.author.social_profile.trust_score|floatformat:0 }}%</p>
+                            <h2 class="font-black text-lg tracking-tighter flex items-center">
+                                @{{ reel.author.username }}
+                                {% if not reel.price %}
+                                <span class="ml-2 bg-white/10 text-[8px] px-2 py-0.5 rounded-full border border-white/5 uppercase tracking-widest text-gray-400">Pro</span>
+                                {% endif %}
+                            </h2>
+                            <p class="text-green-400 text-[10px] font-mono uppercase tracking-widest">
+                                Trust: {{ reel.author.social_profile.trust_score|floatformat:0 }}%
+                            </p>
                         </div>
                     </div>
                     <p class="text-sm opacity-90 max-w-xs line-clamp-2 mb-6">{{ reel.caption }}</p>
+                    
+                    {% if reel.price %}
+                    <div class="inline-flex items-center bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 mb-4">
+                        <span class="text-xs font-black text-indigo-400 mr-2">{{ reel.currency }}</span>
+                        <span class="text-sm font-bold tracking-tight">{{ reel.price|floatformat:0 }}</span>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="flex flex-col items-center space-y-6 pb-4">
-                    <button onclick="triggerHaggle('{{ reel.id }}')" class="flex flex-col items-center">
-                        <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
+                    {% if reel.price %}
+                    <button onclick="triggerHaggle('{{ reel.id }}')" class="flex flex-col items-center group">
+                        <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 group-active:scale-90 transition-all agent-pulse">
                             <span class="text-2xl">🤝</span>
                         </div>
-                        <span class="text-[10px] mt-1 font-bold uppercase">Haggle</span>
+                        <span class="text-[10px] mt-1 font-bold uppercase tracking-tighter">Haggle</span>
                     </button>
+                    {% endif %}
 
                     <button onclick="openSecureChat('{{ reel.author.username }}', '{{ reel.id }}', '{{ reel.caption|truncatechars:25 }}')" class="flex flex-col items-center group">
                         <div class="p-4 bg-indigo-600 rounded-2xl group-active:scale-95 transition-all shadow-xl border border-indigo-400/30">
@@ -49,37 +80,48 @@
                         <span class="text-[10px] mt-1 font-bold uppercase text-indigo-300">Hire</span>
                     </button>
 
-                    <button class="p-3 bg-yellow-400 rounded-xl text-black font-black text-xs uppercase">Pay</button>
+                    {% if reel.price %}
+                    <button class="p-3 bg-yellow-400 rounded-xl text-black font-black text-xs uppercase shadow-lg active:scale-95 transition-all">
+                        Pay
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </section>
+    {% empty %}
+    <div class="h-screen w-full flex flex-col items-center justify-center text-white p-10 text-center">
+        <div class="text-6xl mb-4">🌍</div>
+        <h2 class="text-2xl font-black italic uppercase tracking-tighter">Feed is Offline</h2>
+        <p class="text-gray-500 text-sm max-w-xs">No reels found in your area. Be the first to deploy content!</p>
+        <a href="{% url 'social:upload_reel' %}" class="mt-6 bg-indigo-600 px-8 py-3 rounded-2xl font-bold">PUBLISH NOW</a>
+    </div>
     {% endfor %}
 </div>
 
-<div id="chat-modal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl hidden flex-col transition-all">
+<div id="chat-modal" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl hidden flex-col transition-all">
     <div class="p-6 flex justify-between items-center border-b border-white/10">
         <div>
             <h3 id="chat-with" class="font-black text-xl text-white italic tracking-tighter uppercase">SECURE SESSION</h3>
             <div class="flex items-center space-x-1">
                 <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                <span class="text-[8px] text-green-400 font-mono uppercase tracking-widest">End-to-End Encrypted</span>
+                <span class="text-[8px] text-green-400 font-mono uppercase tracking-widest">Pillar 4 Encrypted</span>
             </div>
         </div>
-        <button onclick="closeChat()" class="text-white/40 text-sm uppercase font-bold">Close</button>
+        <button onclick="closeChat()" class="text-white/40 text-sm uppercase font-bold hover:text-white">Close</button>
     </div>
     
     <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
         <div class="bg-indigo-600/20 border border-indigo-500/30 p-4 rounded-2xl text-xs text-indigo-200">
-            🔒 This conversation is encrypted. Only you and the professional can read these messages.
+            🔒 Protocol: This channel is sovereign. Only you and the professional hold the keys to this conversation.
         </div>
         <div id="context-box" class="bg-white/5 p-3 rounded-xl border border-white/10 text-[10px] text-gray-400 italic"></div>
     </div>
 
-    <div class="p-6 bg-gray-900/50 border-t border-white/10">
+    <div class="p-6 bg-gray-900/50 border-t border-white/10 mb-safe">
         <div class="relative">
-            <textarea id="message-text" rows="2" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-gray-600" placeholder="Type your secure message..."></textarea>
-            <button onclick="sendSecureMessage()" class="absolute bottom-3 right-3 bg-indigo-600 p-2 rounded-xl hover:bg-indigo-500 transition-colors">
+            <textarea id="message-text" rows="2" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Enter message..."></textarea>
+            <button onclick="sendSecureMessage()" class="absolute bottom-3 right-3 bg-indigo-600 p-2 rounded-xl hover:bg-indigo-500 transition-all">
                 <span class="text-lg">🚀</span>
             </button>
         </div>
@@ -87,14 +129,39 @@
 </div>
 
 <script>
-    let activeProfessional = '';
     let activeReel = '';
 
+    async function triggerHaggle(reelId) {
+        const offer = prompt("Enter your offer price:");
+        if (!offer) return;
+
+        try {
+            const response = await fetch(`/social/negotiate/${reelId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ offer: offer })
+            });
+            const data = await response.json();
+            
+            if (data.status === 'SUCCESS') {
+                alert(`🤝 DEAL ACCEPTED: ${data.price}\n${data.message}`);
+            } else if (data.status === 'COUNTER') {
+                alert(`🤖 AGENT COUNTER-OFFER: ${data.price}\n"${data.message}"`);
+            } else if (data.status === 'INFO') {
+                alert(data.message);
+            }
+        } catch (e) {
+            alert("Connection error. Try again.");
+        }
+    }
+
     function openSecureChat(username, reelId, title) {
-        activeProfessional = username;
         activeReel = reelId;
         document.getElementById('chat-with').innerText = `CHAT WITH @${username}`;
-        document.getElementById('context-box').innerText = `Re: "${title}"`;
+        document.getElementById('context-box').innerText = `Context: "${title}"`;
         document.getElementById('chat-modal').classList.remove('hidden');
         document.getElementById('chat-modal').classList.add('flex');
     }
@@ -107,36 +174,49 @@
         const text = document.getElementById('message-text').value;
         if (!text) return;
 
-        // Pillar 4: Logic to send to your internal 'messages' app
-        // This should hit an endpoint like /messages/send/
         try {
-            const response = await fetch('/messages/send/', {
+            const response = await fetch(`/social/hire/${activeReel}/`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
-                body: JSON.stringify({
-                    recipient: activeProfessional,
-                    reel_id: activeReel,
-                    content: text,
-                    encrypted: true
-                })
+                body: new URLSearchParams({ 'content': text })
             });
 
-            if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'SENT') {
                 const msgDiv = document.createElement('div');
-                msgDiv.className = 'ml-auto bg-indigo-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm text-white';
+                msgDiv.className = 'ml-auto bg-indigo-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm text-white shadow-lg';
                 msgDiv.innerText = text;
                 document.getElementById('chat-messages').appendChild(msgDiv);
                 document.getElementById('message-text').value = '';
-                alert("Message deployed securely!");
+                const container = document.getElementById('chat-messages');
+                container.scrollTop = container.scrollHeight;
             }
         } catch (e) {
-            alert("Security Handshake Failed. Check connection.");
+            alert("Handshake Failed.");
         }
     }
 
-    // Existing Intersection Observer...
+    // Intersection Observer for autoplay
+    const observerOptions = { threshold: 0.7 };
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target.querySelector('video');
+            if (entry.isIntersecting) {
+                video.play().catch(e => console.log("Autoplay inhibited"));
+                const next = entry.target.nextElementSibling;
+                if (next) {
+                    const nVid = next.querySelector('video');
+                    if (nVid) nVid.preload = "auto";
+                }
+            } else {
+                video.pause();
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('section').forEach(s => observer.observe(s));
 </script>
 {% endblock %}

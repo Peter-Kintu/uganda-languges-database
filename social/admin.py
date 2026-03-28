@@ -1,12 +1,13 @@
 from django.contrib import admin
 from django import forms
-from .models import SocialProfile, BusinessReel, VideoEndorsement
+from .models import SocialProfile, BusinessReel, VideoEndorsement, SecureMessage
 
 # --- CUSTOM WIDGETS/FORMS ---
 
 class SocialProfileAdminForm(forms.ModelForm):
     """
-    Custom form to provide a better UI for the Bento JSON configuration.
+    Pillar 4: Bento Configuration Form.
+    Provides a better UI for editing the profile grid layout.
     """
     class Meta:
         model = SocialProfile
@@ -69,11 +70,13 @@ class SocialProfileAdmin(admin.ModelAdmin):
 @admin.register(BusinessReel)
 class BusinessReelAdmin(admin.ModelAdmin):
     """
-    Command center for shoppable reels. Monitor speed and negotiation floors.
+    Command center for shoppable and professional reels. 
+    Monitors speed and negotiation floors.
     """
     list_display = (
         'caption_summary', 
         'author', 
+        'mode_display',
         'price_display', 
         'floor_display', 
         'is_low_bandwidth_optimized', 
@@ -89,7 +92,7 @@ class BusinessReelAdmin(admin.ModelAdmin):
         }),
         ('Pillar 3: Agentic Pricing', {
             'fields': ('price', 'currency', 'floor_price'),
-            'description': "Set the listing price and the private AI negotiation floor."
+            'description': "Set the listing price and private floor. Leave empty for Professional Mode."
         }),
         ('Pillar 2: Performance', {
             'fields': ('is_low_bandwidth_optimized', 'created_at'),
@@ -97,19 +100,50 @@ class BusinessReelAdmin(admin.ModelAdmin):
         }),
     )
 
+    def mode_display(self, obj):
+        return "💼 Business" if obj.price else "🎨 Pro"
+    mode_display.short_description = 'Reel Mode'
+
     def caption_summary(self, obj):
         return obj.caption[:50] + "..." if len(obj.caption) > 50 else obj.caption
     caption_summary.short_description = 'Caption'
 
     def price_display(self, obj):
-        return f"{obj.currency} {obj.price:,}"
+        if obj.price:
+            return f"{obj.currency} {obj.price:,}"
+        return "Showcase Only"
     price_display.short_description = 'Public Price'
 
     def floor_display(self, obj):
         # Shows what the AI is actually using as a floor
+        if not obj.price:
+            return "N/A"
         floor = obj.get_negotiation_floor()
         return f"{obj.currency} {floor:,.2f}"
     floor_display.short_description = 'AI Floor'
+
+
+@admin.register(SecureMessage)
+class SecureMessageAdmin(admin.ModelAdmin):
+    """
+    Monitor the 'Hire' protocol conversations and ecosystem engagement.
+    """
+    list_display = ('sender', 'recipient', 'related_reel', 'timestamp', 'is_read')
+    list_filter = ('is_read', 'timestamp', 'is_encrypted')
+    search_fields = ('sender__username', 'recipient__username', 'content')
+    readonly_fields = ('timestamp',)
+    
+    fieldsets = (
+        ('Participants', {
+            'fields': ('sender', 'recipient', 'related_reel')
+        }),
+        ('Message Content', {
+            'fields': ('content', 'is_encrypted', 'is_read')
+        }),
+        ('Metadata', {
+            'fields': ('timestamp',)
+        }),
+    )
 
 
 @admin.register(VideoEndorsement)
