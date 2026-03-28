@@ -195,7 +195,6 @@
 
         try {
             const history = getSessionHistory(currentSessionId);
-            // Prepare payload for Django view
             const contents = history.map(m => ({ role: m.role, text: m.text }));
             contents.push({ role: 'user', text: text });
 
@@ -232,11 +231,15 @@
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role}`;
         
-        // Formatted Markdown-style replacement
+        // Comprehensive Markdown support
         let formatted = text
+            .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/^\s*[\-\*]\s+(.*)/gm, '<li>$1</li>')
-            .replace(/(<li>.*<\/li>)/s, '<ul class="list-disc ml-4 my-2">$1</ul>')
+            .replace(/(<li>.*<\/li>)/s, '<ul class="list-disc ml-6 my-2">$1</ul>')
+            .replace(/### (.*)/g, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>')
+            .replace(/## (.*)/g, '<h2 class="text-xl font-bold mt-5 mb-3">$1</h2>')
             .replace(/\n/g, '<br>');
 
         messageDiv.innerHTML = `
