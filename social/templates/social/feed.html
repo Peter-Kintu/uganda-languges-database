@@ -10,13 +10,13 @@
     }
     /* Pulse effect for the AI Agent button */
     .agent-pulse {
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
         animation: pulse 2s infinite;
     }
     @keyframes pulse {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
     }
 </style>
 
@@ -43,11 +43,11 @@
                             <h2 class="font-black text-xl flex items-center">
                                 {{ reel.author.get_full_name|default:reel.author.username }}
                                 {% if reel.author.social_profile.is_verified_merchant %}
-                                <span class="ml-2 text-blue-400 text-sm" title="Verified Expert">✔</span>
+                                <span class="ml-2 text-blue-400 text-sm" title="Verified Merchant">✔</span>
                                 {% endif %}
                             </h2>
                             <p class="text-green-400 text-xs font-mono uppercase tracking-widest">
-                                {{ reel.author.social_profile.trust_score|default:"0" }}% Trust Ledger
+                                {{ reel.author.social_profile.trust_score|floatformat:0 }}% Trust Ledger
                             </p>
                         </div>
                     </a>
@@ -64,7 +64,7 @@
                 </div>
 
                 <div class="flex flex-col items-center space-y-6 pb-4">
-                    <button onclick="triggerHaggle('{{ reel.id }}')" class="flex flex-col items-center group">
+                    <button onclick="triggerHaggle('{{ reel.id }}', '{{ reel.price }}')" class="flex flex-col items-center group">
                         <div class="p-3 bg-white/10 backdrop-blur-md rounded-full group-active:scale-90 transition-all border border-white/10 agent-pulse">
                             <span class="text-2xl">🤝</span>
                         </div>
@@ -94,7 +94,7 @@
     {% endfor %}
 </div>
 
-<a href="{% url 'social:upload_reel' %}" class="fixed bottom-8 right-8 z-50 bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-transform">
+<a href="{% url 'social:upload_reel' %}" class="fixed bottom-8 right-8 z-50 bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-transform hover:rotate-90">
     <span class="text-3xl font-light">+</span>
 </a>
 
@@ -110,48 +110,63 @@
     }
 
     /**
-     * Pillar 3: The "Haggle" Protocol (Agentic Commerce)
+     * Pillar 3: The "Haggle" Protocol (Multi-Turn AI Negotiation)
      */
-    async function triggerHaggle(reelId) {
-        const offer = prompt("Africana AI: What is your price offer?");
-        if (!offer) return;
+    async function triggerHaggle(reelId, publicPrice) {
+        let currentOffer = prompt(`Africana AI: The public price is ${publicPrice}. What is your price offer?`);
+        
+        if (!currentOffer) return;
 
-        try {
-            const response = await fetch(`/social/negotiate/${reelId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ offer: offer })
-            });
-            const data = await response.json();
-            
-            if (data.status === 'SUCCESS') {
-                alert(`🤝 Deal! Africana AI Agent accepted: ${data.price}`);
-                const deliveryUrl = "{% url 'eshop:delivery_location' %}";
-                window.location.href = `${deliveryUrl}?reel_id=${reelId}&negotiated_price=${data.price}&intent=negotiated_buy`;
-            } else if (data.status === 'COUNTER') {
-                alert(`🤖 Counter-offer from Seller's Agent: ${data.price}\n"${data.message}"`);
-            } else {
-                alert(`⚠️ ${data.message}`);
+        let negotiating = true;
+        while (negotiating) {
+            try {
+                const response = await fetch(`/social/negotiate/${reelId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ offer: currentOffer })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'SUCCESS') {
+                    alert(`🤝 DEAL REACHED!\nThe Agent accepted: ${data.price}`);
+                    const deliveryUrl = "{% url 'eshop:delivery_location' %}";
+                    window.location.href = `${deliveryUrl}?reel_id=${reelId}&negotiated_price=${data.price}&intent=negotiated_buy`;
+                    negotiating = false;
+                } else if (data.status === 'COUNTER') {
+                    let userChoice = prompt(`🤖 Agent Counter-Offer: ${data.price}\n"${data.message}"\n\nEnter counter-offer or "OK" to accept theirs:`);
+                    
+                    if (!userChoice) {
+                        negotiating = false; 
+                    } else if (userChoice.toUpperCase() === 'OK') {
+                        currentOffer = data.price; 
+                    } else {
+                        currentOffer = userChoice; 
+                    }
+                } else {
+                    alert(`⚠️ ${data.message}`);
+                    negotiating = false;
+                }
+            } catch (e) {
+                console.error("Negotiation failed", e);
+                alert("Connection error. Try again later.");
+                negotiating = false;
             }
-        } catch (e) {
-            console.error("Negotiation failed", e);
-            alert("Connection error. Try again later.");
         }
     }
 
     /**
-     * Pillar 2: Low-Latency Intersection Observer
-     * Ensures only visible videos play to save data and battery.
+     * Pillar 2: Low-Latency Performance Observer
      */
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
-                video.play().catch(e => console.log("Autoplay blocked:", e));
-                // Predictive pre-load of the next video
+                video.play().catch(e => {});
+                // Predictive pre-load next
                 const next = entry.target.nextElementSibling;
                 if (next) {
                     const nextVid = next.querySelector('video');
@@ -161,7 +176,7 @@
                 video.pause();
             }
         });
-    }, { threshold: 0.7 });
+    }, { threshold: 0.6 });
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 </script>

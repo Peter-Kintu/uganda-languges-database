@@ -25,11 +25,11 @@ class BusinessReelUploadForm(forms.ModelForm):
                 'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all'
             }),
             'price': forms.NumberInput(attrs={
-                'placeholder': 'Public Price',
+                'placeholder': 'Public Price (e.g. 50,000)',
                 'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all'
             }),
             'floor_price': forms.NumberInput(attrs={
-                'placeholder': 'AI Minimum (Private)',
+                'placeholder': 'AI Minimum (e.g. 45,000)',
                 'class': 'w-full bg-gray-900 border-indigo-900 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all shadow-[0_0_15px_rgba(79,70,229,0.1)]'
             }),
             'currency': forms.Select(attrs={
@@ -41,9 +41,22 @@ class BusinessReelUploadForm(forms.ModelForm):
         }
         
         labels = {
-            'floor_price': 'AI Agent Floor Price',
+            'floor_price': 'AI Agent Floor Price (Private)',
             'is_low_bandwidth_optimized': 'Optimize for Low Data (3G/4G)'
         }
+
+    def clean_video(self):
+        """
+        Pillar 2 Optimization:
+        Basic validation to ensure video files aren't massive before 
+        attempting the Cloudinary upload.
+        """
+        video = self.cleaned_data.get('video')
+        if video:
+            # Limit to 50MB for mobile-first stability
+            if video.size > 50 * 1024 * 1024:
+                raise forms.ValidationError("Video file too large. Please keep it under 50MB.")
+        return video
 
     def clean(self):
         """
@@ -55,10 +68,17 @@ class BusinessReelUploadForm(forms.ModelForm):
         price = cleaned_data.get("price")
         floor_price = cleaned_data.get("floor_price")
 
-        if price and floor_price and floor_price > price:
-            # This error will be caught in the 'upload_reel' view and shown in the template
-            raise forms.ValidationError(
-                "The AI Negotiation Floor cannot be higher than the public price. "
-                "Adjust the floor to be equal to or less than the Listing Price."
-            )
+        if price and floor_price:
+            if floor_price > price:
+                raise forms.ValidationError(
+                    "Safety Check: Your AI Floor Price cannot be higher than your Public Price. "
+                    "The Agent needs a range to negotiate within."
+                )
+            
+            # Advice for the user: Encourage a margin for the AI to work with
+            if floor_price == price:
+                 # We don't raise an error, but this makes the 'Agent' useless.
+                 # In a future update, we could add a warning message here.
+                 pass
+
         return cleaned_data
