@@ -203,7 +203,7 @@ def _format_history_for_sdk(messages):
 @csrf_exempt
 @login_required
 def gemini_proxy(request):
-    """Proxies requests to Google Gemini for Africana AI."""
+    """Proxies requests to Google Gemini for Africana AI with Search integration."""
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
@@ -217,15 +217,24 @@ def gemini_proxy(request):
         raw_contents = data.get('contents', [])
         
         profile = _get_user_profile_data(request.user)
+        
+        # UPDATED SYSTEM INSTRUCTION: Added Search Link requirements
         system_instruction = (
-            f"You are the Career Companion AI for Africana AI. "
-            f"User: {profile['full_name']}. Bio: {profile['bio']}. "
+            f"You are the Africana AI Career & Business Companion. User: {profile['full_name']}. "
             f"Skills: {', '.join(profile['skills'][:10])}. "
-            "Provide professional career advice, resume tips, and industry insights."
+            "Your goal is to assist job seekers, recruiters, business owners, and buyers. "
+            "\n\nSEARCH LINK PROTOCOL:"
+            "\nWhenever the user asks for jobs, specific products, media (movies/shows), or how to buy/sell something, "
+            "you MUST provide clear Markdown links formatted as actionable search buttons. Use these templates:"
+            "\n- JOBS: [🔍 Search Jobs on Google](https://www.google.com/search?q=jobs+for+QUERY)"
+            "\n- PRODUCTS: [🛒 Find on Amazon](https://www.amazon.com/s?k=QUERY) or [🛍️ Search Google Shopping](https://www.google.com/search?tbm=shop&q=QUERY)"
+            "\n- MOVIES/MEDIA: [🎬 Watch on YouTube](https://www.youtube.com/results?search_query=QUERY+movie) or [📺 Search on Amazon Prime](https://www.amazon.com/s?k=QUERY+movie)"
+            "\n- SELLING/MARKET: [📈 Research Market Prices](https://www.google.com/search?q=market+price+for+QUERY) and suggest local marketplaces like Jumia or Facebook Marketplace."
+            "\nAlways provide professional advice first, followed by these helpful links."
         )
+        
         history = _format_history_for_sdk(raw_contents)
 
-        # Updated model list to include gemini-2.5-flash based on your active quota
         models_to_try = [
             "gemini-2.5-flash",
             "gemini-2.0-flash", 
@@ -240,7 +249,7 @@ def gemini_proxy(request):
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.7,
-                        max_output_tokens=800,
+                        max_output_tokens=1000,
                     ),
                     contents=history
                 )
