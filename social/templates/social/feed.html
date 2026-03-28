@@ -32,6 +32,10 @@
         right: 24px;
         z-index: 50;
     }
+
+    /* Immersive Chat Styling */
+    #chat-messages::-webkit-scrollbar { width: 4px; }
+    #chat-messages::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 10px; }
 </style>
 
 <div class="publish-fab">
@@ -54,21 +58,21 @@
 
         <div class="absolute right-4 bottom-32 flex flex-col space-y-6 items-center z-30">
             <button onclick="toggleLike(this, '{{ reel.id }}')" class="flex flex-col items-center group">
-                <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75">
+                <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75 group-hover:bg-white/20">
                     <span class="text-2xl heart-icon {% if user in reel.likes.all %}heart-active{% endif %}">❤️</span>
                 </div>
                 <span class="text-[10px] mt-1 font-bold text-white/70" id="like-count-{{ reel.id }}">{{ reel.total_likes }}</span>
             </button>
 
             <button onclick="shareReel('{{ reel.id }}', '{{ reel.share_token }}')" class="flex flex-col items-center group">
-                <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75">
+                <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75 group-hover:bg-white/20">
                     <span class="text-2xl">🔗</span>
                 </div>
                 <span class="text-[10px] mt-1 font-bold text-white/70">Share</span>
             </button>
 
             <button onclick="downloadWithBranding('{{ reel.id }}', '{{ reel.video.url }}')" class="flex flex-col items-center group">
-                <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75">
+                <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 transition-all active:scale-75 group-hover:bg-white/20">
                     <span class="text-2xl">📥</span>
                 </div>
                 <span class="text-[10px] mt-1 font-bold text-white/70 italic">Elite</span>
@@ -119,7 +123,7 @@
                     {% endif %}
 
                     <button onclick="openSecureChat('{{ reel.author.username }}', '{{ reel.id }}', '{{ reel.caption|truncatechars:25 }}')" class="flex flex-col items-center group">
-                        <div class="p-4 bg-indigo-600 rounded-2xl group-active:scale-95 transition-all shadow-xl border border-indigo-400/30">
+                        <div class="p-4 bg-indigo-600 rounded-2xl group-active:scale-95 transition-all shadow-xl border border-indigo-400/30 hover:bg-indigo-500">
                             <span class="text-2xl">💼</span>
                         </div>
                         <span class="text-[10px] mt-1 font-bold uppercase text-indigo-300">Hire</span>
@@ -133,7 +137,7 @@
         <div class="text-6xl mb-4">🌍</div>
         <h2 class="text-2xl font-black italic uppercase tracking-tighter">Feed is Offline</h2>
         <p class="text-gray-500 text-sm max-w-xs">No reels found in your area. Be the first to deploy content!</p>
-        <a href="{% url 'social:upload_reel' %}" class="mt-6 bg-indigo-600 px-8 py-3 rounded-2xl font-bold">PUBLISH NOW</a>
+        <a href="{% url 'social:upload_reel' %}" class="mt-6 bg-indigo-600 px-8 py-3 rounded-2xl font-bold hover:scale-105 transition-transform">PUBLISH NOW</a>
     </div>
     {% endfor %}
 </div>
@@ -147,7 +151,7 @@
                 <span class="text-[8px] text-green-400 font-mono uppercase tracking-widest">Pillar 4 Encrypted</span>
             </div>
         </div>
-        <button onclick="closeChat()" class="text-white/40 text-sm uppercase font-bold hover:text-white">Close</button>
+        <button onclick="closeChat()" class="text-white/40 text-sm uppercase font-bold hover:text-white transition-colors">Close</button>
     </div>
     
     <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
@@ -159,8 +163,8 @@
 
     <div class="p-6 bg-gray-900/50 border-t border-white/10 mb-safe">
         <div class="relative">
-            <textarea id="message-text" rows="2" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Enter message..."></textarea>
-            <button onclick="sendSecureMessage()" class="absolute bottom-3 right-3 bg-indigo-600 p-2 rounded-xl hover:bg-indigo-500 transition-all">
+            <textarea id="message-text" rows="2" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-gray-600" placeholder="Enter message..."></textarea>
+            <button onclick="sendSecureMessage()" class="absolute bottom-3 right-3 bg-indigo-600 p-2 rounded-xl hover:bg-indigo-500 transition-all active:scale-90">
                 <span class="text-lg">🚀</span>
             </button>
         </div>
@@ -185,7 +189,6 @@
                 const countSpan = document.getElementById(`like-count-${reelId}`);
                 countSpan.innerText = data.total_likes;
                 
-                // Add minor feedback
                 if(heart.classList.contains('heart-active')) {
                     countSpan.classList.add('text-red-400');
                 } else {
@@ -193,17 +196,19 @@
                 }
             }
         } catch (e) { 
-            console.error("Like failed. Ensure the URL '/social/reel/ID/like/' exists in urls.py"); 
+            console.error("Like failed. Path: /social/reel/ID/like/"); 
         }
     }
 
     async function shareReel(reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`;
         if (navigator.share) {
-            await navigator.share({ title: 'Africana AI Reel', url: shareUrl });
+            try {
+                await navigator.share({ title: 'Africana AI Reel', url: shareUrl });
+            } catch (err) {}
         } else {
             navigator.clipboard.writeText(shareUrl);
-            alert("Link copied!");
+            alert("Secure Link Copied.");
         }
         fetch(`/social/reel/${reelId}/track-share/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
     }
@@ -219,7 +224,7 @@
     }
 
     async function triggerHaggle(reelId) {
-        const offer = prompt("Enter your offer price:");
+        const offer = prompt("AI Negotiator Active. Enter your offer price:");
         if (!offer) return;
         try {
             const response = await fetch(`/social/negotiate/${reelId}/`, {
@@ -240,7 +245,10 @@
         document.getElementById('chat-modal').classList.add('flex');
     }
 
-    function closeChat() { document.getElementById('chat-modal').classList.add('hidden'); }
+    function closeChat() { 
+        document.getElementById('chat-modal').classList.add('hidden'); 
+        document.getElementById('chat-modal').classList.remove('flex');
+    }
 
     async function sendSecureMessage() {
         const text = document.getElementById('message-text').value;
@@ -254,24 +262,34 @@
             const data = await response.json();
             if (data.status === 'SENT') {
                 const msgDiv = document.createElement('div');
-                msgDiv.className = 'ml-auto bg-indigo-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm text-white';
+                msgDiv.className = 'ml-auto bg-indigo-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm text-white shadow-lg border border-white/10';
                 msgDiv.innerText = text;
                 document.getElementById('chat-messages').appendChild(msgDiv);
                 document.getElementById('message-text').value = '';
                 const container = document.getElementById('chat-messages');
                 container.scrollTop = container.scrollHeight;
             }
-        } catch (e) { alert("Network Error."); }
+        } catch (e) { alert("Handshake Failed."); }
     }
 
+    // Pillar 2: Intersection Observer for immersive autoplay
+    const observerOptions = { threshold: 0.7 };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
-                video.play().catch(() => {});
-            } else { video.pause(); }
+                video.play().catch(e => console.log("Autoplay inhibited"));
+                // Preload next video
+                const next = entry.target.nextElementSibling;
+                if (next) {
+                    const nVid = next.querySelector('video');
+                    if (nVid) nVid.preload = "auto";
+                }
+            } else {
+                video.pause();
+            }
         });
-    }, { threshold: 0.7 });
+    }, observerOptions);
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 </script>
