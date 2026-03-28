@@ -25,32 +25,49 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 # --- PRODUCTION SECURITY & CSRF FIXES ---
+# Essential for apps behind proxies (Koyeb, Render, Heroku)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# --- FIX FOR "NOT SECURE" CHROME FLAG ---
 if not DEBUG:
+    # 1. Force Redirect to HTTPS
     SECURE_SSL_REDIRECT = True
+    
+    # 2. Strict Transport Security (HSTS) - This tells Chrome the site IS secure
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # 3. Secure Cookies (Only sent over HTTPS)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    
+    # 4. Modern Browser Protections
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    # Prevents your site from being embedded in frames on other sites
+    X_FRAME_OPTIONS = 'DENY' 
+    # Ensures Referrer header only sent for same-origin
+    SECURE_REFERRER_POLICY = "same-origin"
 
-# CSRF Trusted Origins Configuration
+# --- CSRF TRUSTED ORIGINS ---
+# Clean up origins: Production should ONLY use https
 CSRF_TRUSTED_ORIGINS = [
     'https://initial-danette-africana-60541726.koyeb.app',
     'https://uganda-languges-database.onrender.com',
 ]
 
+# Dynamically add hosts from ALLOWED_HOSTS (HTTPS only for safety)
 for host in ALLOWED_HOSTS:
     clean_host = host.strip()
     if clean_host and clean_host != '*':
         CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
-        CSRF_TRUSTED_ORIGINS.append(f"http://{clean_host}")
 
-CSRF_TRUSTED_ORIGINS.extend([
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-])
+# Local development origins
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS.extend([
+        'http://127.0.0.1:8000',
+        'http://localhost:8000',
+    ])
 
 # --- APPLICATION DEFINITION ---
 INSTALLED_APPS = [
@@ -148,12 +165,12 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-# --- CLOUDINARY (UPDATED FOR HTTPS SECURITY) ---
+# --- CLOUDINARY (FORCED HTTPS) ---
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-    'SECURE': True,  # Forces all Cloudinary URLs to use https://
+    'SECURE': True,  # Ensures all media URLs use https://
 }
 
 # --- API EXTERNAL CREDENTIALS ---
