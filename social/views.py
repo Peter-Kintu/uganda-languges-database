@@ -7,6 +7,7 @@ from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib import messages
 from django.db.models import F
@@ -68,11 +69,11 @@ def upload_reel(request):
         if form.is_valid():
             reel = form.save(commit=False)
             reel.author = request.user
-            # Generate unique share token if not handled by model save()
+            # Generate unique share token for viral loop metrics
             if not hasattr(reel, 'share_token') or not reel.share_token:
                 reel.share_token = uuid.uuid4().hex[:12]
             reel.save()
-            messages.success(request, "Deployment Successful: Your reel is live on Africana AI.")
+            messages.success(request, "Deployment Successful: Your reel is live.")
             return redirect('social:social_feed')
     else:
         form = BusinessReelUploadForm()
@@ -96,18 +97,17 @@ def toggle_like_reel(request, reel_id):
         liked = True
     
     return JsonResponse({
-        'status': 'success', # Lowercase matches the JS in feed.html
+        'status': 'success',
         'liked': liked,
-        'total_likes': reel.total_likes() if callable(reel.total_likes) else reel.total_likes
+        'total_likes': reel.total_likes() if callable(getattr(reel, 'total_likes', None)) else getattr(reel, 'total_likes', 0)
     })
 
-@csrf_exempt # Or ensure X-CSRFToken is passed in JS headers
+@csrf_exempt
 @require_POST
 def track_share(request, reel_id):
     """
-    Branding: Increments the share count for metrics.
+    Branding: Increments the share count for reach metrics.
     """
-    reel = get_object_or_404(BusinessReel, id=reel_id)
     BusinessReel.objects.filter(id=reel_id).update(share_count=F('share_count') + 1)
     return JsonResponse({'status': 'SUCCESS'})
 
@@ -115,9 +115,8 @@ def track_share(request, reel_id):
 @require_POST
 def track_download(request, reel_id):
     """
-    Performance: Increments download count for professional content.
+    Performance: Increments download count for high-value content.
     """
-    reel = get_object_or_404(BusinessReel, id=reel_id)
     BusinessReel.objects.filter(id=reel_id).update(download_count=F('download_count') + 1)
     return JsonResponse({'status': 'SUCCESS'})
 
@@ -134,7 +133,7 @@ def initiate_hire_protocol(request, reel_id):
     content = request.POST.get('content')
     
     if content:
-        msg = SecureMessage.objects.create(
+        SecureMessage.objects.create(
             sender=request.user,
             recipient=reel.author,
             related_reel=reel,
@@ -142,7 +141,7 @@ def initiate_hire_protocol(request, reel_id):
         )
         return JsonResponse({'status': 'SENT', 'message': 'Secure Handshake Established.'})
     
-    return JsonResponse({'status': 'ERROR', 'message': 'Handshake Failed: Empty Message.'}, status=400)
+    return JsonResponse({'status': 'ERROR', 'message': 'Handshake Failed.'}, status=400)
 
 @login_required
 def ai_negotiate_price(request, reel_id):
@@ -160,51 +159,49 @@ def ai_negotiate_price(request, reel_id):
             })
         
         try:
-            # Handle both JSON and Form data for flexibility
             if request.content_type == 'application/json':
                 data = json.loads(request.body)
             else:
                 data = request.POST
                 
             buyer_offer = float(data.get('offer', 0))
-            # floor_price is the seller's absolute minimum
-            floor_price = float(reel.negotiation_floor if hasattr(reel, 'negotiation_floor') else reel.price * 0.8)
+            
+            # Floor logic: absolute minimum the user is willing to accept
+            floor_price = float(getattr(reel, 'negotiation_floor', reel.price * 0.8))
             public_price = float(reel.price)
             
-            # 1. Instant Acceptance (At or above asking price)
+            # 1. Instant Acceptance
             if buyer_offer >= public_price:
                 return JsonResponse({
                     'status': 'SUCCESS', 
-                    'message': 'Offer accepted immediately. Proceed to secure checkout.',
+                    'message': 'Offer accepted immediately. Proceed to checkout.',
                     'price': buyer_offer
                 })
 
-            # 2. Agentic Negotiation (Within acceptable range)
+            # 2. Agentic Negotiation
             if buyer_offer >= floor_price:
-                # If offer is within 5% of asking, accept it to close the deal
+                # 5% threshold for auto-closing the deal
                 if (public_price - buyer_offer) / public_price <= 0.05:
                      return JsonResponse({
                         'status': 'SUCCESS', 
-                        'message': 'The Agent has authorized this deal! Excellent value.',
+                        'message': 'The Agent has authorized this deal!',
                         'price': buyer_offer
                     })
                 
-                # Propose a midpoint if the offer is fair but low
                 suggested_midpoint = (public_price + buyer_offer) / 2
                 return JsonResponse({
                     'status': 'COUNTER',
-                    'message': 'You are close to a deal. The Agent proposes this middle ground:',
+                    'message': 'You are close. The Agent proposes this middle ground:',
                     'price': round(suggested_midpoint, 2)
                 })
             
-            # 3. Floor Defense (Below minimum acceptable price)
-            # The agent counters with the floor price plus a small margin
+            # 3. Floor Defense
             counter_offer = max(floor_price * 1.05, buyer_offer * 1.10) 
             counter_offer = min(counter_offer, public_price)
             
             return JsonResponse({
                 'status': 'COUNTER', 
-                'message': 'That offer is below the authorized floor. The Agent suggests this as the best possible deal:',
+                'message': 'That offer is below the authorized floor. Best possible deal:',
                 'price': round(counter_offer, 2)
             })
             
