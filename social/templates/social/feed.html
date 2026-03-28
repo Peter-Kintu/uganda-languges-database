@@ -195,12 +195,12 @@
                     </button>
                     {% endif %}
 
-                    <button onclick="openSecureChat('{{ reel.author.username }}', '{{ reel.id }}')" class="flex flex-col items-center group">
+                    <a href="{% url 'social:hire_protocol' reel.id %}" class="flex flex-col items-center group">
                         <div class="p-5 bg-indigo-600 rounded-[24px] group-hover:bg-indigo-500 transition-all shadow-[0_0_30px_rgba(79,70,229,0.5)] border border-indigo-400/50">
                             <span class="text-2xl">💼</span>
                         </div>
                         <span class="text-[10px] mt-2 font-black uppercase text-indigo-300 tracking-widest">Hire Me</span>
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -214,31 +214,7 @@
     {% endfor %}
 </div>
 
-<div id="chat-modal" class="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl hidden flex-col items-center justify-center p-6">
-    <div class="w-full max-w-lg bg-gray-900 border border-white/10 rounded-3xl p-8 relative shadow-2xl">
-        <button onclick="closeChat()" class="absolute top-6 right-6 text-white/40 hover:text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
-        
-        <h3 class="text-2xl font-black mb-2 uppercase tracking-tighter text-white">Sovereign Inquiry</h3>
-        <p id="chat-target-label" class="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6">Encrypted Channel</p>
-        
-        <textarea id="chat-content" 
-            class="w-full bg-black border border-white/10 rounded-2xl p-4 text-white placeholder-gray-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all mb-6" 
-            rows="5" 
-            placeholder="Type your private inquiry here..."></textarea>
-        
-        <button id="send-btn" onclick="sendSecureMessage()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg active:scale-95">
-            Send Private Message
-        </button>
-    </div>
-</div>
-
 <script>
-    let activeReelId = '';
-    
     // Intersection Observer for Auto-play and Scrolling
     const observerOptions = { threshold: 0.8 };
     const observer = new IntersectionObserver((entries) => {
@@ -276,7 +252,6 @@
 
     async function shareReel(reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`;
-        // Log analytics via backend
         fetch(`/social/reel/${reelId}/track-share/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
 
         if (navigator.share) {
@@ -297,7 +272,6 @@
         document.body.removeChild(link);
     }
 
-    // Pillar 3: Agentic Commerce
     async function triggerHaggle(reelId) {
         const offer = prompt("AI Negotiator Active. Enter your offer price:");
         if (!offer) return;
@@ -310,58 +284,6 @@
             const data = await response.json();
             alert(`${data.status}: ${data.message}${data.price ? ' Suggested: ' + data.price : ''}`);
         } catch (e) { alert("Agent Unavailable."); }
-    }
-
-    // Pillar 4: Sovereign Messaging Control
-    function openSecureChat(username, reelId) {
-        activeReelId = reelId;
-        document.getElementById('chat-target-label').innerText = `To: @${username} (Secure Channel)`;
-        document.getElementById('chat-modal').classList.remove('hidden');
-        document.getElementById('chat-modal').classList.add('flex');
-        document.getElementById('chat-content').focus();
-    }
-
-    function closeChat() { 
-        document.getElementById('chat-modal').classList.add('hidden'); 
-        document.getElementById('chat-modal').classList.remove('flex');
-        document.getElementById('chat-content').value = '';
-    }
-
-    async function sendSecureMessage() {
-        const content = document.getElementById('chat-content').value.trim();
-        const sendBtn = document.getElementById('send-btn');
-        
-        if (!content || !activeReelId) return;
-
-        sendBtn.disabled = true;
-        sendBtn.innerText = "TRANSMITTING...";
-        
-        try {
-            const formData = new URLSearchParams();
-            formData.append('content', content);
-            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-            const response = await fetch(`/social/hire/${activeReelId}/`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': '{{ csrf_token }}' 
-                },
-                body: formData.toString()
-            });
-
-            if (response.ok) {
-                alert("Message Transmitted. This inquiry is private between you and the author.");
-                closeChat();
-            } else {
-                throw new Error("Protocol Failed");
-            }
-        } catch (e) { 
-            alert("Transmission Error. Check connection."); 
-        } finally {
-            sendBtn.disabled = false;
-            sendBtn.innerText = "Send Private Message";
-        }
     }
 </script>
 {% endblock %}
