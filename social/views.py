@@ -1,12 +1,15 @@
 import os
 import json
 import random
+import uuid
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.contrib import messages
+from django.db.models import F
 
 # Internal App Models and Forms
 from .models import BusinessReel, SocialProfile, SecureMessage
@@ -17,12 +20,11 @@ from users.models import CustomUser
 class FeedView(ListView):
     """
     Pillar 2: Main social feed displaying Business Reels.
-    Optimized with select_related for high-speed performance on mobile networks.
+    Optimized for high-speed performance on mobile networks.
     """
     model = BusinessReel
     template_name = 'social/feed.html'
     context_object_name = 'reels'
-    # Show both Business (priced) and Professional (unpriced) reels
     queryset = BusinessReel.objects.filter(is_active=True).select_related('author__social_profile')
     ordering = ['-created_at']
 
@@ -39,10 +41,10 @@ class BentoProfileView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Ensure profile exists via the signal-backed relation
+        # Safe access to social profile via the signal-backed relation
         context['social'] = getattr(self.object, 'social_profile', None)
         context['user_reels'] = BusinessReel.objects.filter(author=self.object, is_active=True)
-        # Fetch verified video endorsements for the 'Proof of Work' section
+        # Fetch verified video endorsements
         context['endorsements'] = self.object.received_endorsements.filter(is_verified_transaction=True)[:5]
         return context
 
@@ -50,7 +52,7 @@ class BentoProfileView(DetailView):
 def upload_reel(request):
     """
     Pillar 2 & 3: Africa-First Upload Flow.
-    Supports dual-mode uploads: Business (with price) and Professional (no price).
+    Supports Business (priced) and Professional (showcase) modes.
     """
     if request.method == 'POST':
         form = BusinessReelUploadForm(request.POST, request.FILES)
@@ -58,18 +60,61 @@ def upload_reel(request):
             reel = form.save(commit=False)
             reel.author = request.user
             reel.save()
-            messages.success(request, "Reel deployed successfully to the global feed.")
+            messages.success(request, "Deployment Successful: Your reel is live on Africana AI.")
             return redirect('social:social_feed')
     else:
         form = BusinessReelUploadForm()
 
     return render(request, 'social/upload.html', {'form': form})
 
+# --- INTERACTION PROTOCOLS (NEW) ---
+
+@login_required
+@require_POST
+def toggle_like_reel(request, reel_id):
+    """
+    Social Proof: Toggles a like on a reel.
+    """
+    reel = get_object_or_404(BusinessReel, id=reel_id)
+    if request.user in reel.likes.all():
+        reel.likes.remove(request.user)
+        liked = False
+    else:
+        reel.likes.add(request.user)
+        liked = True
+    
+    return JsonResponse({
+        'status': 'SUCCESS',
+        'liked': liked,
+        'total_likes': reel.total_likes
+    })
+
+@require_POST
+def track_share(request, reel_id):
+    """
+    Branding: Increments the share count for Africana AI metrics.
+    """
+    reel = get_object_or_404(BusinessReel, id=reel_id)
+    reel.share_count = F('share_count') + 1
+    reel.save()
+    return JsonResponse({'status': 'SUCCESS'})
+
+@require_POST
+def track_download(request, reel_id):
+    """
+    Performance: Increments download count for high-value professional content.
+    """
+    reel = get_object_or_404(BusinessReel, id=reel_id)
+    reel.download_count = F('download_count') + 1
+    reel.save()
+    return JsonResponse({'status': 'SUCCESS'})
+
+# --- AGENTIC & MESSAGING PROTOCOLS ---
+
 @login_required
 def initiate_hire_protocol(request, reel_id):
     """
     Sovereign Messaging: The 'Hire' Protocol.
-    Opens a secure channel between a buyer and a professional regarding a specific reel.
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
     
@@ -81,78 +126,66 @@ def initiate_hire_protocol(request, reel_id):
             msg.recipient = reel.author
             msg.related_reel = reel
             msg.save()
-            return JsonResponse({'status': 'SENT', 'message': 'Inquiry sent securely.'})
+            return JsonResponse({'status': 'SENT', 'message': 'Secure Handshake Established.'})
     
-    return JsonResponse({'status': 'ERROR', 'message': 'Invalid request.'}, status=400)
+    return JsonResponse({'status': 'ERROR', 'message': 'Handshake Failed.'}, status=400)
 
 @login_required
 def ai_negotiate_price(request, reel_id):
     """
     Pillar 3: The "Haggle" Protocol.
-    Autonomous agent handling price discovery. 
-    Gracefully exits if the reel is non-commercial (Professional Mode).
+    Autonomous agent handling price discovery.
     """
     if request.method == "POST":
         reel = get_object_or_404(BusinessReel, id=reel_id, is_active=True)
         
-        # SAFETY: Exit if the reel has no price (Professional Mode)
         if not reel.price:
             return JsonResponse({
                 'status': 'INFO', 
-                'message': 'This is a professional showcase. Use the "Hire" button to discuss rates.'
-            }, status=200)
+                'message': 'This is a professional showcase. Use "Hire" to discuss customized rates.'
+            })
         
         try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST
-                
+            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
             buyer_offer = float(data.get('offer', 0))
             floor_price = float(reel.get_negotiation_floor() or reel.price)
             public_price = float(reel.price)
             
-            # --- AGENTIC LOGIC: THE HAGGLE ---
-            
-            # 1. Instant Acceptance (At or above public price)
+            # 1. Instant Acceptance
             if buyer_offer >= public_price:
                 return JsonResponse({
                     'status': 'SUCCESS', 
-                    'message': 'Excellent choice! Your offer is accepted immediately.',
+                    'message': 'Offer accepted immediately. Proceed to payment.',
                     'price': buyer_offer
                 })
 
-            # 2. Strategic Negotiation (Above floor, below public)
+            # 2. Agentic Negotiation
             if buyer_offer >= floor_price:
-                # Close Deal Check: If within 5% of public price, just accept
                 if (public_price - buyer_offer) / public_price < 0.05:
                      return JsonResponse({
                         'status': 'SUCCESS', 
-                        'message': 'Deal! The Agent has accepted your offer.',
+                        'message': 'The Agent has authorized this deal!',
                         'price': buyer_offer
                     })
                 
-                # Meet in the middle logic
                 suggested_midpoint = (public_price + buyer_offer) / 2
                 return JsonResponse({
                     'status': 'COUNTER',
-                    'message': 'You are close! How about we meet in the middle?',
+                    'message': 'You are close. The Agent proposes this middle ground:',
                     'price': round(suggested_midpoint, 2)
                 })
             
-            # 3. Floor Protection (Offer is below floor)
-            # Counter with 5% above the absolute floor
+            # 3. Floor Defense
             counter_offer = max(floor_price * 1.05, buyer_offer * 1.10) 
-            # Ensure counter never exceeds public price
             counter_offer = min(counter_offer, public_price)
             
             return JsonResponse({
                 'status': 'COUNTER', 
-                'message': 'That is a bit low. Here is the best the Agent can do right now.',
+                'message': 'That offer is below the authorized floor. Best possible deal:',
                 'price': round(counter_offer, 2)
             })
             
         except (ValueError, TypeError, json.JSONDecodeError):
-            return JsonResponse({'status': 'ERROR', 'message': 'Invalid offer data.'}, status=400)
+            return JsonResponse({'status': 'ERROR', 'message': 'Data Handshake Error.'}, status=400)
             
-    return JsonResponse({'status': 'ERROR', 'message': 'Method not allowed.'}, status=405)
+    return JsonResponse({'status': 'ERROR', 'message': 'Protocol Violation.'}, status=405)

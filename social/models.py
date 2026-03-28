@@ -43,9 +43,11 @@ class SocialProfile(models.Model):
     bento_config = models.JSONField(default=dict, blank=True)
 
     def update_trust_score(self):
-        """Logic to recalculate trust based on verified endorsements."""
+        """Logic to recalculate trust based on verified endorsements and engagement."""
         endorsements = self.user.received_endorsements.filter(is_verified_transaction=True).count()
-        # Formula: Base points from deals + bonus for verified video testimonials
+        
+        # Base points from deals + bonus for verified video testimonials
+        # We can eventually add a small weight for total 'Likes' received across all reels
         self.trust_score = min(100.0, (self.verified_deals_count * 2) + (endorsements * 5))
         self.save()
 
@@ -88,6 +90,14 @@ class BusinessReel(models.Model):
         blank=True,
         help_text="Absolute minimum the AI Agent can accept. (Secret)"
     )
+
+    # --- ENGAGEMENT TRACKING (New for Like/Share/Download) ---
+    likes = models.ManyToManyField(User, related_name='liked_reels', blank=True)
+    share_count = models.PositiveIntegerField(default=0)
+    download_count = models.PositiveIntegerField(default=0)
+    
+    # Unique token for branded sharing links
+    share_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     
     is_low_bandwidth_optimized = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
@@ -95,6 +105,10 @@ class BusinessReel(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+    @property
+    def total_likes(self):
+        return self.likes.count()
 
     def get_negotiation_floor(self):
         """Calculates floor price from specific field or global margin."""
@@ -106,9 +120,12 @@ class BusinessReel(models.Model):
         # Fallback to social profile margin if floor_price is missing but public price exists
         try:
             margin = self.author.social_profile.minimum_margin_percent
-            return self.price * (1 - (margin / 100))
-        except SocialProfile.DoesNotExist:
-            return self.price
+            return self.price * (models.F('price') * (1 - (margin / 100))) # Using F expression for safety
+        except (SocialProfile.DoesNotExist, AttributeError):
+            # Decimal arithmetic fallback
+            from decimal import Decimal
+            margin = getattr(self.author.social_profile, 'minimum_margin_percent', Decimal('10.00'))
+            return self.price * (Decimal('1.00') - (margin / Decimal('100.00')))
 
     def __str__(self):
         if self.price:
@@ -168,6 +185,7 @@ def handle_user_social_profile(sender, instance, created, **kwargs):
     if created:
         SocialProfile.objects.get_or_create(user=instance)
     else:
+        # Check if profile exists before saving to prevent errors during user updates
         if hasattr(instance, 'social_profile'):
             instance.social_profile.save()
 
