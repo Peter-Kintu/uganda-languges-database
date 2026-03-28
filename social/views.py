@@ -149,6 +149,9 @@ def chat_detail(request, partner_id):
     thread = SecureMessage.objects.filter(
         (Q(sender=request.user) & Q(recipient=partner)) |
         (Q(sender=partner) & Q(recipient=request.user))
+    ).order_back('timestamp') if hasattr(SecureMessage.objects, 'order_back') else SecureMessage.objects.filter(
+        (Q(sender=request.user) & Q(recipient=partner)) |
+        (Q(sender=partner) & Q(recipient=request.user))
     ).order_by('timestamp')
     
     # Mark messages as read
@@ -174,9 +177,20 @@ def chat_detail(request, partner_id):
 def initiate_hire_protocol(request, reel_id):
     """
     Handles the "Secure Handshake" and redirects to the chat thread.
+    Fixes the 405 error by ensuring content is parsed from both 
+    standard POST and JSON fetch requests.
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
-    content = request.POST.get('content')
+    
+    # Support both standard form POST and JSON-based fetch
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+            content = data.get('content')
+        except json.JSONDecodeError:
+            content = None
+    else:
+        content = request.POST.get('content')
     
     if content:
         SecureMessage.objects.create(
@@ -185,15 +199,18 @@ def initiate_hire_protocol(request, reel_id):
             related_reel=reel,
             content=content
         )
-        # Add redirect URL for the frontend to handle the jump to the message thread
-        chat_url = f"/social/chat/{reel.author.id}/"
+        
+        # Construct the URL to the chat detail for this author
+        from django.urls import reverse
+        chat_url = reverse('social:chat_detail', kwargs={'partner_id': reel.author.id})
+        
         return JsonResponse({
             'status': 'SENT', 
             'message': 'Handshake Established.',
             'redirect_url': chat_url
         })
     
-    return JsonResponse({'status': 'ERROR', 'message': 'Handshake Failed.'}, status=400)
+    return JsonResponse({'status': 'ERROR', 'message': 'Handshake Failed: Empty Content.'}, status=400)
 
 @login_required
 def ai_negotiate_price(request, reel_id):
