@@ -195,12 +195,12 @@
                     </button>
                     {% endif %}
 
-                    <a href="{% url 'social:hire_protocol' reel.id %}" class="flex flex-col items-center group">
+                    <button onclick="initiateHire('{{ reel.id }}')" class="flex flex-col items-center group">
                         <div class="p-5 bg-indigo-600 rounded-[24px] group-hover:bg-indigo-500 transition-all shadow-[0_0_30px_rgba(79,70,229,0.5)] border border-indigo-400/50">
                             <span class="text-2xl">💼</span>
                         </div>
                         <span class="text-[10px] mt-2 font-black uppercase text-indigo-300 tracking-widest">Hire Me</span>
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -249,7 +249,6 @@
     }
 
     async function shareReel(reelId, token) {
-        // Ensure the origin is treated as secure
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`.replace('http://', 'https://');
         fetch(`/social/reel/${reelId}/track-share/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
 
@@ -262,7 +261,6 @@
     }
 
     function downloadWithBranding(reelId, url) {
-        // Force the download URL to be secure to avoid mixed content blockage
         const secureUrl = url.replace('http://', 'https://');
         fetch(`/social/reel/${reelId}/track-download/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
         const link = document.createElement('a');
@@ -285,6 +283,32 @@
             const data = await response.json();
             alert(`${data.status}: ${data.message}${data.price ? ' Suggested: ' + data.price : ''}`);
         } catch (e) { alert("Agent Unavailable."); }
+    }
+
+    /* NEW: Hire Me Protocol Handler */
+    async function initiateHire(reelId) {
+        const introMessage = prompt("Establish Connection: Send a brief requirement or greeting to the creator.");
+        if (!introMessage) return;
+
+        try {
+            const response = await fetch(`/social/hire/${reelId}/`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRFToken': '{{ csrf_token }}' 
+                },
+                body: JSON.stringify({ content: introMessage })
+            });
+            const data = await response.json();
+            
+            if (data.status === 'SENT') {
+                window.location.href = data.redirect_url;
+            } else {
+                alert("Protocol Error: " + data.message);
+            }
+        } catch (e) { 
+            alert("Handshake Interrupted. Please check your connection."); 
+        }
     }
 </script>
 {% endblock %}
