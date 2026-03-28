@@ -5,16 +5,26 @@
 
 <style>
     /* Global Overrides & Smoothness */
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background-color: black;
+    }
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* Ensure the container behaves like TikTok */
+    /* TikTok Scroll Container Logic */
     #reel-container {
         height: 100vh;
         width: 100%;
         scroll-snap-type: y mandatory;
         overflow-y: scroll;
+        overflow-x: hidden;
         background-color: black;
+        position: relative;
     }
 
     section {
@@ -23,11 +33,23 @@
         height: 100vh;
         width: 100%;
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .video-overlay {
-        background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 30%, transparent 100%);
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 60px 24px;
+        background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
+        z-index: 10;
+        pointer-events: none;
     }
+    
+    .video-overlay * { pointer-events: auto; }
 
     /* Floating Plus Button (Top Left) */
     .publish-fab {
@@ -97,10 +119,12 @@
             src="{{ reel.video.url }}" 
             playsinline 
             preload="auto"
-            muted>
+            loop
+            muted
+            onclick="this.paused ? this.play() : this.pause()">
         </video>
 
-        <div class="absolute right-4 bottom-28 flex flex-col space-y-6 items-center z-30">
+        <div class="absolute right-4 bottom-32 flex flex-col space-y-6 items-center z-30">
             <button onclick="toggleLike(this, '{{ reel.id }}')" class="flex flex-col items-center">
                 <div class="p-3.5 side-btn rounded-full">
                     <span class="text-2xl heart-icon {% if user in reel.likes.all %}heart-active{% endif %}">❤️</span>
@@ -192,23 +216,28 @@
     {% endfor %}
 </div>
 
-<div id="chat-modal" class="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl hidden flex-col transition-all">
+<div id="chat-modal" class="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl hidden flex-col transition-all items-center justify-center">
+    <div class="w-full max-w-lg p-6 bg-gray-900/50 rounded-3xl border border-white/10 relative">
+        <button onclick="closeChat()" class="absolute top-4 right-4 text-white/50 hover:text-white">✕</button>
+        <h3 class="text-xl font-black mb-4 uppercase tracking-tighter">Sovereign Inquiry</h3>
+        <p class="text-gray-400 text-sm mb-6">Send a direct, encrypted message to the professional.</p>
+        <textarea id="chat-content" class="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white mb-4" rows="4" placeholder="Request a quote or service..."></textarea>
+        <button onclick="sendSecureMessage()" class="w-full bg-indigo-600 py-4 rounded-xl font-bold uppercase tracking-widest">Send Message</button>
     </div>
+</div>
 
 <script>
-    let activeReel = '';
-    const container = document.getElementById('reel-container');
-
-    // Autoscroll & TikTok Scroll Logic
+    let activeReelId = '';
+    
+    // TikTok Scroll & Auto-Play Logic
     const observerOptions = { threshold: 0.8 };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
-                // Play video when in view
                 video.play().catch(e => console.log("User interaction required"));
                 
-                // Autoscroll Logic: When this video ends, scroll to next
+                // When video ends, scroll to next
                 video.onended = () => {
                     const nextSection = entry.target.nextElementSibling;
                     if (nextSection) {
@@ -217,14 +246,14 @@
                 };
             } else {
                 video.pause();
-                video.currentTime = 0; // Reset video when scrolled away
+                video.currentTime = 0; 
             }
         });
     }, observerOptions);
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 
-    // EXISTING LOGIC FUNCTIONS
+    // Social & Commerce Logic
     async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
@@ -273,8 +302,9 @@
         } catch (e) { alert("Agent Busy."); }
     }
 
+    // Modal Controls
     function openSecureChat(username, reelId, title) {
-        activeReel = reelId;
+        activeReelId = reelId;
         document.getElementById('chat-modal').classList.remove('hidden');
         document.getElementById('chat-modal').classList.add('flex');
     }
@@ -282,6 +312,22 @@
     function closeChat() { 
         document.getElementById('chat-modal').classList.add('hidden'); 
         document.getElementById('chat-modal').classList.remove('flex');
+    }
+
+    async function sendSecureMessage() {
+        const content = document.getElementById('chat-content').value;
+        if (!content) return;
+        
+        try {
+            const response = await fetch(`/social/hire/${activeReelId}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: `content=${encodeURIComponent(content)}`
+            });
+            const data = await response.json();
+            alert("Message Transmitted via Secure Protocol.");
+            closeChat();
+        } catch (e) { alert("Communication Error."); }
     }
 </script>
 {% endblock %}
