@@ -225,18 +225,16 @@ def gemini_proxy(request):
         )
         history = _format_history_for_sdk(raw_contents)
 
-        # UPDATED: Replaced legacy model names to resolve 404 NOT_FOUND errors.
-        # We prioritize 2.0-flash for speed and reliability in the 2025 environment.
+        # Updated model list to include gemini-2.5-flash based on your active quota
         models_to_try = [
+            "gemini-2.5-flash",
             "gemini-2.0-flash", 
-            "gemini-1.5-flash", 
-            "gemini-1.5-pro"
+            "gemini-1.5-flash",
         ]
         
         last_err = ""
         for model_id in models_to_try:
             try:
-                # Use standard 2025 SDK method
                 response = client.models.generate_content(
                     model=model_id, 
                     config=types.GenerateContentConfig(
