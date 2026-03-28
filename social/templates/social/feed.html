@@ -239,6 +239,7 @@
 <script>
     let activeReelId = '';
     
+    // Intersection Observer for Auto-play and Scrolling
     const observerOptions = { threshold: 0.8 };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -258,6 +259,7 @@
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 
+    // Social Interaction Endpoints
     async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
@@ -269,11 +271,14 @@
                 btn.querySelector('span').classList.toggle('heart-active');
                 document.getElementById(`like-count-${reelId}`).innerText = data.total_likes;
             }
-        } catch (e) {}
+        } catch (e) { console.error("Like protocol failed."); }
     }
 
     async function shareReel(reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`;
+        // Log analytics via backend
+        fetch(`/social/reel/${reelId}/track-share/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+
         if (navigator.share) {
             try { await navigator.share({ title: 'Africana AI', url: shareUrl }); } catch (err) {}
         } else {
@@ -283,6 +288,7 @@
     }
 
     function downloadWithBranding(reelId, url) {
+        fetch(`/social/reel/${reelId}/track-download/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
         const link = document.createElement('a');
         link.href = url;
         link.download = `Africana_Elite_${reelId}.mp4`;
@@ -291,6 +297,7 @@
         document.body.removeChild(link);
     }
 
+    // Pillar 3: Agentic Commerce
     async function triggerHaggle(reelId) {
         const offer = prompt("AI Negotiator Active. Enter your offer price:");
         if (!offer) return;
@@ -301,11 +308,11 @@
                 body: JSON.stringify({ offer: offer })
             });
             const data = await response.json();
-            alert(`${data.status}: ${data.message}`);
+            alert(`${data.status}: ${data.message}${data.price ? ' Suggested: ' + data.price : ''}`);
         } catch (e) { alert("Agent Unavailable."); }
     }
 
-    // Modal Control Functions
+    // Pillar 4: Sovereign Messaging Control
     function openSecureChat(username, reelId) {
         activeReelId = reelId;
         document.getElementById('chat-target-label').innerText = `To: @${username} (Secure Channel)`;
@@ -326,12 +333,10 @@
         
         if (!content || !activeReelId) return;
 
-        // Visual Feedback
         sendBtn.disabled = true;
         sendBtn.innerText = "TRANSMITTING...";
         
         try {
-            // Using URLSearchParams to ensure proper form encoding for Django's request.POST
             const formData = new URLSearchParams();
             formData.append('content', content);
             formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
