@@ -27,6 +27,14 @@ class SocialProfile(models.Model):
         default=False, 
         help_text="Awarded after AI assessment and identity verification."
     )
+
+    # --- CONTACT SETTINGS ---
+    whatsapp_number = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True, 
+        help_text="Enter with country code (e.g., 256700000000). Used for 'Hire Me' / 'Order' buttons."
+    )
     
     # --- PILLAR 3: GLOBAL AGENTIC SETTINGS ---
     auto_negotiation_enabled = models.BooleanField(
@@ -45,9 +53,6 @@ class SocialProfile(models.Model):
     def update_trust_score(self):
         """Logic to recalculate trust based on verified endorsements and engagement."""
         endorsements = self.user.received_endorsements.filter(is_verified_transaction=True).count()
-        
-        # Base points from deals + bonus for verified video testimonials
-        # We can eventually add a small weight for total 'Likes' received across all reels
         self.trust_score = min(100.0, (self.verified_deals_count * 2) + (endorsements * 5))
         self.save()
 
@@ -117,12 +122,10 @@ class BusinessReel(models.Model):
         if self.floor_price:
             return self.floor_price
         
-        # Fallback to social profile margin if floor_price is missing but public price exists
         try:
             margin = self.author.social_profile.minimum_margin_percent
-            return self.price * (models.F('price') * (1 - (margin / 100))) # Using F expression for safety
+            return self.price * (models.F('price') * (1 - (margin / 100))) 
         except (SocialProfile.DoesNotExist, AttributeError):
-            # Decimal arithmetic fallback
             from decimal import Decimal
             margin = getattr(self.author.social_profile, 'minimum_margin_percent', Decimal('10.00'))
             return self.price * (Decimal('1.00') - (margin / Decimal('100.00')))
@@ -137,15 +140,12 @@ class BusinessReel(models.Model):
 
 class SecureMessage(models.Model):
     """
-    Native messaging for the 'Hire' protocol. 
-    Keeps users within the ecosystem instead of moving to WhatsApp.
+    Internal 'Hire' protocol. 
+    Note: Front-end may redirect to WhatsApp based on creator settings.
     """
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
-    
-    # Context: Which product/service triggered this conversation?
     related_reel = models.ForeignKey(BusinessReel, on_delete=models.SET_NULL, null=True, blank=True)
-    
     content = models.TextField()
     is_encrypted = models.BooleanField(default=True)
     is_read = models.BooleanField(default=False)
@@ -164,7 +164,6 @@ class VideoEndorsement(models.Model):
     """
     professional = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_endorsements')
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_endorsements')
-    
     video_clip = CloudinaryField(
         'video', 
         resource_type='video', 
@@ -185,7 +184,6 @@ def handle_user_social_profile(sender, instance, created, **kwargs):
     if created:
         SocialProfile.objects.get_or_create(user=instance)
     else:
-        # Check if profile exists before saving to prevent errors during user updates
         if hasattr(instance, 'social_profile'):
             instance.social_profile.save()
 

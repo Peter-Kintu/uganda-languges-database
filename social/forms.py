@@ -6,7 +6,18 @@ class BusinessReelUploadForm(forms.ModelForm):
     Pillar 3: The 'Agentic' Upload Form.
     Binds directly to BusinessReel model to handle AI negotiation floors.
     Supports Professional (showcase) and Business (priced) content modes.
+    UPDATED: Includes WhatsApp number input for the 'Hire Me' / 'Order' protocol.
     """
+    
+    whatsapp_number = forms.CharField(
+        required=False,
+        help_text="Format: 256700000000",
+        widget=forms.TextInput(attrs={
+            'placeholder': 'WhatsApp Number (e.g., 256...)',
+            'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-600'
+        })
+    )
+
     class Meta:
         model = BusinessReel
         # Explicitly defining fields to ensure security of the AI Floor Price (Pillar 3)
@@ -54,7 +65,7 @@ class BusinessReelUploadForm(forms.ModelForm):
         self.fields['floor_price'].required = False
         self.fields['currency'].required = False
         
-        # Setting default currency for the Ugandan market context
+        # Setting default currency for the local market context
         self.fields['currency'].initial = 'UGX'
 
     def clean_video(self):

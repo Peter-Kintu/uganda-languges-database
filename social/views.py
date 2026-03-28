@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib import messages
 from django.db.models import F, Q
+from django.urls import reverse
 
 # Internal App Models and Forms
 from .models import BusinessReel, SocialProfile, SecureMessage
@@ -62,21 +63,34 @@ class BentoProfileView(DetailView):
 def upload_reel(request):
     """
     Pillar 2 & 3: Africa-First Upload Flow.
-    Supports Business (priced) and Professional (showcase) modes.
+    UPDATED: Now captures and saves WhatsApp number to the SocialProfile.
     """
     if request.method == 'POST':
         form = BusinessReelUploadForm(request.POST, request.FILES)
         if form.is_valid():
             reel = form.save(commit=False)
             reel.author = request.user
+            
             # Generate unique share token for viral loop metrics
             if not hasattr(reel, 'share_token') or not reel.share_token:
                 reel.share_token = uuid.uuid4().hex[:12]
             reel.save()
+
+            # --- WHATSAPP UPDATE LOGIC ---
+            whatsapp = form.cleaned_data.get('whatsapp_number')
+            if whatsapp:
+                profile, created = SocialProfile.objects.get_or_create(user=request.user)
+                profile.whatsapp_number = whatsapp
+                profile.save()
+            
             messages.success(request, "Deployment Successful: Your reel is live.")
             return redirect('social:social_feed')
     else:
-        form = BusinessReelUploadForm()
+        # Pre-fill WhatsApp number if it already exists in the profile
+        initial_data = {}
+        if hasattr(request.user, 'social_profile'):
+            initial_data['whatsapp_number'] = request.user.social_profile.whatsapp_number
+        form = BusinessReelUploadForm(initial=initial_data)
 
     return render(request, 'social/upload.html', {'form': form})
 
@@ -126,9 +140,7 @@ def track_download(request, reel_id):
 def inbox(request):
     """
     Pillar 4: Inbox view to see all ongoing conversations.
-    Groups messages to show unique chat partners.
     """
-    # Get IDs of people the user has interacted with
     sent_ids = SecureMessage.objects.filter(sender=request.user).values_list('recipient', flat=True)
     received_ids = SecureMessage.objects.filter(recipient=request.user).values_list('sender', flat=True)
     
@@ -141,20 +153,14 @@ def inbox(request):
 def chat_detail(request, partner_id):
     """
     Pillar 4: The Chat Thread between sender and receiver.
-    Displays messages in chronological order.
     """
     partner = get_object_or_404(CustomUser, id=partner_id)
     
-    # Fetch conversation history
     thread = SecureMessage.objects.filter(
-        (Q(sender=request.user) & Q(recipient=partner)) |
-        (Q(sender=partner) & Q(recipient=request.user))
-    ).order_back('timestamp') if hasattr(SecureMessage.objects, 'order_back') else SecureMessage.objects.filter(
         (Q(sender=request.user) & Q(recipient=partner)) |
         (Q(sender=partner) & Q(recipient=request.user))
     ).order_by('timestamp')
     
-    # Mark messages as read
     thread.filter(recipient=request.user, is_read=False).update(is_read=True)
 
     if request.method == "POST":
@@ -176,13 +182,12 @@ def chat_detail(request, partner_id):
 @require_POST
 def initiate_hire_protocol(request, reel_id):
     """
-    Handles the "Secure Handshake" and redirects to the chat thread.
-    Fixes the 405 error by ensuring content is parsed from both 
-    standard POST and JSON fetch requests.
+    Handles the "Secure Handshake".
+    UPDATED: Now includes WhatsApp redirection data if the creator has a number linked.
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
+    creator_profile = getattr(reel.author, 'social_profile', None)
     
-    # Support both standard form POST and JSON-based fetch
     if request.content_type == 'application/json':
         try:
             data = json.loads(request.body)
@@ -193,6 +198,7 @@ def initiate_hire_protocol(request, reel_id):
         content = request.POST.get('content')
     
     if content:
+        # Create internal record for logs/trust score
         SecureMessage.objects.create(
             sender=request.user,
             recipient=reel.author,
@@ -200,14 +206,29 @@ def initiate_hire_protocol(request, reel_id):
             content=content
         )
         
-        # Construct the URL to the chat detail for this author
-        from django.urls import reverse
-        chat_url = reverse('social:chat_detail', kwargs={'partner_id': reel.author.id})
+        # Check if we should redirect to WhatsApp
+        whatsapp_number = getattr(creator_profile, 'whatsapp_number', None)
         
+        if whatsapp_number:
+            # Construct WhatsApp link with the user's message
+            import urllib.parse
+            encoded_msg = urllib.parse.quote(content)
+            wa_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}"
+            
+            return JsonResponse({
+                'status': 'SENT', 
+                'message': 'Redirecting to WhatsApp...',
+                'redirect_url': wa_url,
+                'is_whatsapp': True
+            })
+
+        # Fallback to internal chat if no WhatsApp number is set
+        chat_url = reverse('social:chat_detail', kwargs={'partner_id': reel.author.id})
         return JsonResponse({
             'status': 'SENT', 
             'message': 'Handshake Established.',
-            'redirect_url': chat_url
+            'redirect_url': chat_url,
+            'is_whatsapp': False
         })
     
     return JsonResponse({'status': 'ERROR', 'message': 'Handshake Failed: Empty Content.'}, status=400)
@@ -216,7 +237,6 @@ def initiate_hire_protocol(request, reel_id):
 def ai_negotiate_price(request, reel_id):
     """
     Pillar 3: The "Haggle" Protocol.
-    Autonomous agent handling price discovery.
     """
     if request.method == "POST":
         reel = get_object_or_404(BusinessReel, id=reel_id, is_active=True)
@@ -231,7 +251,6 @@ def ai_negotiate_price(request, reel_id):
             data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
             buyer_offer = float(data.get('offer', 0))
             
-            # Floor logic from reel attributes
             floor_price = float(getattr(reel, 'floor_price', reel.price * 0.8))
             public_price = float(reel.price)
             

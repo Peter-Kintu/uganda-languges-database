@@ -10,6 +10,7 @@ urlpatterns = [
     path('feed/', views.FeedView.as_view(), name='social_feed'),
     
     # Africa-First Upload Flow: Optimized for low-latency video publishing
+    # UPDATED: Now also captures/updates WhatsApp contact info via the upload form
     path('publish/', views.upload_reel, name='upload_reel'),
 
     # --- SOCIAL INTERACTION PROTOCOLS ---
@@ -32,6 +33,7 @@ urlpatterns = [
     path('chat/<int:partner_id>/', views.chat_detail, name='chat_detail'),
 
     # The 'Hire' Protocol: Gateway to initiate the secure handshake
+    # UPDATED: Now returns a WhatsApp redirect URL if the creator has a linked number
     path('hire/<int:reel_id>/', views.initiate_hire_protocol, name='hire_protocol'),
     
     # --- PILLAR 4: TRUST & IDENTITY ---
