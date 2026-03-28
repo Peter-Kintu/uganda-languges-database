@@ -113,21 +113,18 @@
     const priceHealth = document.getElementById('price-health');
     const modeText = document.getElementById('mode-text');
 
-    // Video Pre-processing logic
     input.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
             const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
             fileSizeText.innerText = sizeInMB + "MB";
             sizeBadge.classList.remove('hidden');
-            
             if (sizeInMB > 50) {
                 alert("File too large. Please keep under 50MB.");
                 input.value = "";
                 sizeBadge.classList.add('hidden');
                 return;
             }
-
             const url = URL.createObjectURL(file);
             preview.src = url;
             preview.classList.remove('hidden');
@@ -135,16 +132,16 @@
         }
     }
 
-    // Dynamic Intent Handling
+    // Dynamic Intent Handling Logic
     const validatePricingAndIntent = () => {
         const publicPrice = parseFloat(priceInput.value);
         const floorPrice = parseFloat(floorInput.value);
         
         if (!isNaN(publicPrice) && publicPrice > 0) {
-            btnText.innerText = "BUY NOW";
-            modeText.innerText = "COMMERCIAL PRODUCT / SERVICE";
+            // MERCHANT MODE
+            btnText.innerText = "PUBLISH PRODUCT";
+            modeText.innerText = "COMMERCIAL PRODUCT / SERVICE (MERCHANT)";
             btn.classList.replace('bg-indigo-600', 'bg-green-600');
-            btn.classList.replace('shadow-indigo-600/30', 'shadow-green-600/30');
             
             if (!isNaN(floorPrice) && floorPrice > publicPrice) {
                 priceHealth.classList.remove('hidden');
@@ -156,11 +153,10 @@
                 btn.classList.remove('grayscale', 'opacity-50', 'cursor-not-allowed');
             }
         } else {
-            btnText.innerText = "HIRE ME";
-            modeText.innerText = "PROFESSIONAL SHOWCASE";
+            // PROFESSIONAL MODE
+            btnText.innerText = "POST SHOWCASE";
+            modeText.innerText = "PROFESSIONAL SHOWCASE (HIRE ME)";
             btn.classList.replace('bg-green-600', 'bg-indigo-600');
-            btn.classList.replace('shadow-green-600/30', 'shadow-indigo-600/30');
-            
             priceHealth.classList.add('hidden');
             btn.disabled = false;
             btn.classList.remove('grayscale', 'opacity-50', 'cursor-not-allowed');

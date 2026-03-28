@@ -164,10 +164,10 @@
                         <div>
                             <h2 class="font-black text-lg tracking-tighter flex items-center">
                                 @{{ reel.author.username }}
-                                {% if not reel.price %}
-                                <span class="ml-2 bg-indigo-500/20 text-indigo-300 text-[8px] px-2 py-0.5 rounded-full border border-indigo-500/30 uppercase tracking-widest">Professional</span>
-                                {% else %}
+                                {% if reel.price %}
                                 <span class="ml-2 bg-green-500/20 text-green-400 text-[8px] px-2 py-0.5 rounded-full border border-green-500/30 uppercase tracking-widest">Merchant</span>
+                                {% else %}
+                                <span class="ml-2 bg-indigo-500/20 text-indigo-300 text-[8px] px-2 py-0.5 rounded-full border border-indigo-500/30 uppercase tracking-widest">Professional</span>
                                 {% endif %}
                             </h2>
                             <p class="text-green-400 text-[9px] font-mono uppercase tracking-[0.2em]">
@@ -274,37 +274,27 @@
         document.body.removeChild(link);
     }
 
-    // WhatsApp Buying Logic
     async function triggerHaggle(reelId, whatsapp, caption, price, currency) {
         if (!whatsapp || whatsapp === 'None' || whatsapp === '') {
             alert("Creator contact not available. Please try again later.");
             return;
         }
-
         const cleanNumber = whatsapp.replace(/\D/g, ''); 
         const text = `Hello! I'm interested in buying this: "${caption.substring(0, 50)}..." for ${currency} ${price}. Is it available?`;
         const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
-        
-        // Track the buy-intent before redirecting
         fetch(`/social/reel/${reelId}/track-buy/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
-        
         window.open(waUrl, '_blank');
     }
 
-    // WhatsApp Hiring Logic
     async function initiateHire(reelId, whatsapp, caption) {
         if (!whatsapp || whatsapp === 'None' || whatsapp === '') {
             alert("Creator contact not available. Please try again later.");
             return;
         }
-
         const cleanNumber = whatsapp.replace(/\D/g, '');
         const text = `Hi! I saw your work: "${caption.substring(0, 60)}..." and I would like to discuss a professional project with you.`;
         const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
-
-        // Track the hire-intent before redirecting
         fetch(`/social/reel/${reelId}/track-hire/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
-
         window.open(waUrl, '_blank');
     }
 </script>
