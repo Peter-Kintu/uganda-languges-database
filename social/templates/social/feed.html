@@ -25,12 +25,12 @@
     .heart-icon { color: rgba(255, 255, 255, 0.5); transition: all 0.3s ease; }
     .heart-active { color: #ef4444 !important; transform: scale(1.2); filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6)); }
     
-    /* Floating Publish Button */
+    /* Floating Publish Button - Fixed Position */
     .publish-fab {
         position: fixed;
         top: 24px;
         right: 24px;
-        z-index: 50;
+        z-index: 100; /* Increased to stay above all elements */
     }
 
     /* Immersive Chat Styling */
@@ -39,8 +39,8 @@
 </style>
 
 <div class="publish-fab">
-    <a href="{% url 'social:upload_reel' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-2xl font-black italic tracking-tighter text-xs flex items-center shadow-2xl border border-white/20 transition-all active:scale-90">
-        <span class="mr-2">⚡</span> PUBLISH
+    <a href="{% url 'social:upload_reel' %}" class="bg-indigo-600/90 backdrop-blur-md hover:bg-indigo-500 text-white px-6 py-3 rounded-2xl font-black italic tracking-tighter text-xs flex items-center shadow-[0_0_20px_rgba(79,70,229,0.4)] border border-white/20 transition-all active:scale-90">
+        <span class="mr-2 text-sm">⚡</span> PUBLISH
     </a>
 </div>
 
@@ -142,13 +142,13 @@
     {% endfor %}
 </div>
 
-<div id="chat-modal" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl hidden flex-col transition-all">
+<div id="chat-modal" class="fixed inset-0 z-[110] bg-black/95 backdrop-blur-2xl hidden flex-col transition-all">
     <div class="p-6 flex justify-between items-center border-b border-white/10">
         <div>
             <h3 id="chat-with" class="font-black text-xl text-white italic tracking-tighter uppercase">SECURE SESSION</h3>
             <div class="flex items-center space-x-1">
                 <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                <span class="text-[8px] text-green-400 font-mono uppercase tracking-widest">Pillar 4 Encrypted</span>
+                <span class="text-[8px] text-green-400 font-mono uppercase tracking-widest">Encrypted</span>
             </div>
         </div>
         <button onclick="closeChat()" class="text-white/40 text-sm uppercase font-bold hover:text-white transition-colors">Close</button>
@@ -156,7 +156,7 @@
     
     <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
         <div class="bg-indigo-600/20 border border-indigo-500/30 p-4 rounded-2xl text-xs text-indigo-200">
-            🔒 Protocol: This channel is sovereign. Only you and the professional hold the keys to this conversation.
+            🔒 Protocol: This channel is sovereign.
         </div>
         <div id="context-box" class="bg-white/5 p-3 rounded-xl border border-white/10 text-[10px] text-gray-400 italic"></div>
     </div>
@@ -172,9 +172,9 @@
 </div>
 
 <script>
+    // Intersection Observer logic and helper functions remain as you provided
     let activeReel = '';
 
-    // Fixed Like Interaction
     async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
@@ -185,27 +185,16 @@
             if (data.status === 'success') {
                 const heart = btn.querySelector('span');
                 heart.classList.toggle('heart-active');
-                
                 const countSpan = document.getElementById(`like-count-${reelId}`);
                 countSpan.innerText = data.total_likes;
-                
-                if(heart.classList.contains('heart-active')) {
-                    countSpan.classList.add('text-red-400');
-                } else {
-                    countSpan.classList.remove('text-red-400');
-                }
             }
-        } catch (e) { 
-            console.error("Like failed. Path: /social/reel/ID/like/"); 
-        }
+        } catch (e) { console.error("Like failed."); }
     }
 
     async function shareReel(reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`;
         if (navigator.share) {
-            try {
-                await navigator.share({ title: 'Africana AI Reel', url: shareUrl });
-            } catch (err) {}
+            try { await navigator.share({ title: 'Africana AI Reel', url: shareUrl }); } catch (err) {}
         } else {
             navigator.clipboard.writeText(shareUrl);
             alert("Secure Link Copied.");
@@ -272,14 +261,12 @@
         } catch (e) { alert("Handshake Failed."); }
     }
 
-    // Pillar 2: Intersection Observer for immersive autoplay
     const observerOptions = { threshold: 0.7 };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
                 video.play().catch(e => console.log("Autoplay inhibited"));
-                // Preload next video
                 const next = entry.target.nextElementSibling;
                 if (next) {
                     const nVid = next.querySelector('video');
