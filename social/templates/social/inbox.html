@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-black min-h-screen text-white flex flex-col">
+    <div class="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10 p-8">
+        <div class="flex items-center justify-between mb-2">
+            <h1 class="text-3xl font-black tracking-tighter uppercase italic text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-400 to-gray-500">
+                Transmissions
+            </h1>
+            <div class="p-2 bg-indigo-600/20 rounded-xl border border-indigo-500/30">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Secure Node</span>
+            </div>
+        </div>
+        <p class="text-xs font-mono text-gray-500 uppercase tracking-widest">End-to-End Encrypted Professional Network</p>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar pb-24">
+        {% for partner in chat_partners %}
+        <a href="{% url 'social:chat_detail' partner_id=partner.id %}" 
+           class="block group bg-gray-900/40 border border-white/5 hover:border-indigo-500/50 hover:bg-gray-900/80 rounded-[32px] p-5 transition-all duration-300">
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 p-[2px] group-hover:scale-105 transition-transform">
+                        <div class="w-full h-full rounded-[14px] bg-black overflow-hidden flex items-center justify-center">
+                            {% if partner.profile_image %}
+                                <img src="{{ partner.profile_image.url }}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+                            {% else %}
+                                <span class="font-black text-xl text-indigo-400">{{ partner.username|slice:":1"|upper }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-4 border-black rounded-full"></div>
+                </div>
+
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-1">
+                        <h3 class="font-black text-lg tracking-tight group-hover:text-indigo-400 transition-colors">@{{ partner.username }}</h3>
+                        <span class="text-[9px] font-mono text-gray-600 uppercase tracking-tighter">Active Protocol</span>
+                    </div>
+                    <p class="text-sm text-gray-500 line-clamp-1 group-hover:text-gray-300 transition-colors">
+                        Open secure channel to discuss project deployment...
+                    </p>
+                </div>
+
+                <div class="p-3 bg-white/5 rounded-2xl group-hover:bg-indigo-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="h-[60vh] flex flex-col items-center justify-center text-center px-10">
+            <div class="w-24 h-24 bg-gray-900 rounded-[40px] flex items-center justify-center mb-6 border border-white/5 animate-pulse">
+                <span class="text-4xl text-gray-700">🛰️</span>
+            </div>
+            <h2 class="text-xl font-black uppercase tracking-tighter text-gray-400">No Active Transmissions</h2>
+            <p class="text-xs text-gray-600 mt-2 max-w-[200px] leading-relaxed">Navigate to the feed to initiate a professional handshake.</p>
+            <a href="{% url 'social:social_feed' %}" class="mt-8 px-8 py-3 bg-indigo-600 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all">Explore Network</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Smooth fade-in for list items */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .block {
+        animation: fadeInUp 0.4s ease forwards;
+    }
+</style>
+{% endblock %}
