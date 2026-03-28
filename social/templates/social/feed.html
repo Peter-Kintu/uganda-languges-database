@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Pillar 2: Smooth immersive scrolling */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .video-overlay {
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
+    }
+    /* Pulse effect for the AI Agent button */
+    .agent-pulse {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+    }
+</style>
+
+<div class="h-screen w-full snap-y snap-mandatory overflow-y-scroll bg-black no-scrollbar" id="reel-container">
+    {% for reel in reels %}
+    <section class="relative h-screen w-full snap-start flex items-center justify-center group" data-reel-id="{{ reel.id }}">
+        <video class="w-full h-full object-cover" 
+               src="{{ reel.video.url }}" 
+               loop muted playsinline autoplay
+               preload="auto"></video>
+
+        <div class="absolute bottom-0 left-0 w-full p-8 video-overlay text-white">
+            <div class="flex items-end justify-between">
+                <div class="flex-1">
+                    <a href="{% url 'social:bento_profile' reel.author.username %}" class="flex items-center space-x-3 mb-4">
+                        {% if reel.author.social_profile.profile_image %}
+                            <img src="{{ reel.author.social_profile.profile_image.url }}" class="w-14 h-14 rounded-2xl border-2 border-white/20 object-cover shadow-xl">
+                        {% else %}
+                            <div class="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center font-bold border-2 border-white/20">
+                                {{ reel.author.username|slice:":1"|upper }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h2 class="font-black text-xl flex items-center">
+                                {{ reel.author.get_full_name|default:reel.author.username }}
+                                {% if reel.author.social_profile.is_verified_merchant %}
+                                <span class="ml-2 text-blue-400 text-sm" title="Verified Expert">✔</span>
+                                {% endif %}
+                            </h2>
+                            <p class="text-green-400 text-xs font-mono uppercase tracking-widest">
+                                {{ reel.author.social_profile.trust_score|default:"0" }}% Trust Ledger
+                            </p>
+                        </div>
+                    </a>
+
+                    <p class="text-sm opacity-90 max-w-md line-clamp-2 mb-2">{{ reel.caption }}</p>
+                    <div class="flex items-center space-x-2 mb-6">
+                        <span class="bg-white/10 px-3 py-1 rounded-full text-xs font-bold text-yellow-400 border border-yellow-400/30">
+                            {{ reel.currency }} {{ reel.price }}
+                        </span>
+                        {% if reel.is_low_bandwidth_optimized %}
+                        <span class="text-[8px] text-white/40 uppercase tracking-widest">Data Optimized</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center space-y-6 pb-4">
+                    <button onclick="triggerHaggle('{{ reel.id }}')" class="flex flex-col items-center group">
+                        <div class="p-3 bg-white/10 backdrop-blur-md rounded-full group-active:scale-90 transition-all border border-white/10 agent-pulse">
+                            <span class="text-2xl">🤝</span>
+                        </div>
+                        <span class="text-[10px] mt-1 font-bold uppercase tracking-tighter">Haggle</span>
+                    </button>
+
+                    <button onclick="triggerHire('{{ reel.author.username }}', '{{ reel.id }}')" class="flex flex-col items-center group">
+                        <div class="p-3 bg-indigo-600 rounded-full group-active:scale-90 transition-all shadow-lg border border-indigo-400/30">
+                            <span class="text-2xl">💼</span>
+                        </div>
+                        <span class="text-[10px] mt-1 font-bold uppercase tracking-tighter text-indigo-300">Hire</span>
+                    </button>
+
+                    <button onclick="window.location.href='{% url 'eshop:delivery_location' %}?reel_id={{ reel.id }}&intent=buy'" class="p-3 bg-yellow-400 rounded-2xl shadow-[0_0_20px_rgba(250,204,21,0.4)] active:scale-95 transition-all">
+                        <span class="text-black font-black text-xs px-2 uppercase">Pay</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% empty %}
+    <div class="flex flex-col items-center justify-center h-screen text-white p-6 text-center">
+        <span class="text-6xl mb-4">🌍</span>
+        <h2 class="text-2xl font-black italic">AFRICANA AI</h2>
+        <p class="text-gray-500 max-w-xs mt-2">The commerce feed is quiet. Be the first to publish a business reel.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<a href="{% url 'social:upload_reel' %}" class="fixed bottom-8 right-8 z-50 bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-transform">
+    <span class="text-3xl font-light">+</span>
+</a>
+
+<script>
+    /**
+     * Pillar 1: The "Hire" Protocol
+     */
+    function triggerHire(username, reelId) {
+        if (confirm(`Initiate hiring request for @${username}?`)) {
+            const deliveryUrl = "{% url 'eshop:delivery_location' %}";
+            window.location.href = `${deliveryUrl}?reel_id=${reelId}&intent=hire&professional=${username}`;
+        }
+    }
+
+    /**
+     * Pillar 3: The "Haggle" Protocol (Agentic Commerce)
+     */
+    async function triggerHaggle(reelId) {
+        const offer = prompt("Africana AI: What is your price offer?");
+        if (!offer) return;
+
+        try {
+            const response = await fetch(`/social/negotiate/${reelId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ offer: offer })
+            });
+            const data = await response.json();
+            
+            if (data.status === 'SUCCESS') {
+                alert(`🤝 Deal! Africana AI Agent accepted: ${data.price}`);
+                const deliveryUrl = "{% url 'eshop:delivery_location' %}";
+                window.location.href = `${deliveryUrl}?reel_id=${reelId}&negotiated_price=${data.price}&intent=negotiated_buy`;
+            } else if (data.status === 'COUNTER') {
+                alert(`🤖 Counter-offer from Seller's Agent: ${data.price}\n"${data.message}"`);
+            } else {
+                alert(`⚠️ ${data.message}`);
+            }
+        } catch (e) {
+            console.error("Negotiation failed", e);
+            alert("Connection error. Try again later.");
+        }
+    }
+
+    /**
+     * Pillar 2: Low-Latency Intersection Observer
+     * Ensures only visible videos play to save data and battery.
+     */
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target.querySelector('video');
+            if (entry.isIntersecting) {
+                video.play().catch(e => console.log("Autoplay blocked:", e));
+                // Predictive pre-load of the next video
+                const next = entry.target.nextElementSibling;
+                if (next) {
+                    const nextVid = next.querySelector('video');
+                    if (nextVid) nextVid.preload = "auto";
+                }
+            } else {
+                video.pause();
+            }
+        });
+    }, { threshold: 0.7 });
+
+    document.querySelectorAll('section').forEach(s => observer.observe(s));
+</script>
+{% endblock %}
