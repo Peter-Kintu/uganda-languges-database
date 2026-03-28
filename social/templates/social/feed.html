@@ -30,7 +30,7 @@
         position: fixed;
         top: 24px;
         right: 24px;
-        z-index: 100; /* Increased to stay above all elements */
+        z-index: 100;
     }
 
     /* Immersive Chat Styling */
@@ -122,6 +122,13 @@
                     </button>
                     {% endif %}
 
+                    <a href="{% url 'social:upload_reel' %}" title="Publish Video" class="flex flex-col items-center group">
+                        <div class="p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 hover:bg-white/20 transition-all active:scale-90 shadow-lg">
+                            <span class="text-2xl font-bold text-indigo-400">+</span>
+                        </div>
+                        <span class="text-[10px] mt-1 font-bold uppercase tracking-tighter text-white/50 group-hover:text-white transition-colors">Publish</span>
+                    </a>
+
                     <button onclick="openSecureChat('{{ reel.author.username }}', '{{ reel.id }}', '{{ reel.caption|truncatechars:25 }}')" class="flex flex-col items-center group">
                         <div class="p-4 bg-indigo-600 rounded-2xl group-active:scale-95 transition-all shadow-xl border border-indigo-400/30 hover:bg-indigo-500">
                             <span class="text-2xl">💼</span>
@@ -172,7 +179,6 @@
 </div>
 
 <script>
-    // Intersection Observer logic and helper functions remain as you provided
     let activeReel = '';
 
     async function toggleLike(btn, reelId) {
