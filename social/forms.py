@@ -5,11 +5,11 @@ class BusinessReelUploadForm(forms.ModelForm):
     """
     Pillar 3: The 'Agentic' Upload Form.
     Binds directly to BusinessReel model to handle AI negotiation floors.
-    Now supports both Professional (no price) and Business (priced) content.
+    Supports Professional (showcase) and Business (priced) content modes.
     """
     class Meta:
         model = BusinessReel
-        # Explicitly defining fields to ensure security of the AI Floor Price
+        # Explicitly defining fields to ensure security of the AI Floor Price (Pillar 3)
         fields = [
             'video', 
             'caption', 
@@ -26,11 +26,11 @@ class BusinessReelUploadForm(forms.ModelForm):
                 'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-600'
             }),
             'price': forms.NumberInput(attrs={
-                'placeholder': 'Public Price (Leave blank for Professional/Work Samples)',
+                'placeholder': 'Public Price (Leave blank for Professional Showcase)',
                 'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all'
             }),
             'floor_price': forms.NumberInput(attrs={
-                'placeholder': 'AI Minimum (Hidden from buyers)',
+                'placeholder': 'AI Agent Minimum (Hidden from buyers)',
                 'class': 'w-full bg-gray-900 border-indigo-900 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all shadow-[0_0_15px_rgba(79,70,229,0.1)]'
             }),
             'currency': forms.Select(attrs={
@@ -42,47 +42,53 @@ class BusinessReelUploadForm(forms.ModelForm):
         }
         
         labels = {
-            'price': 'Public Price (Optional)',
-            'floor_price': 'AI Agent Floor Price (Optional)',
-            'is_low_bandwidth_optimized': 'Optimize for Low Data (3G/4G)'
+            'price': 'Public Listing Price',
+            'floor_price': 'AI Agent Floor (Private)',
+            'is_low_bandwidth_optimized': 'Optimize for Low-Data Networks (3G/4G)'
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Explicitly marking pricing as optional for Professional/Freelancer reels
+        # Marking pricing as optional to support "Professional Mode" (Pillar 2)
         self.fields['price'].required = False
         self.fields['floor_price'].required = False
         self.fields['currency'].required = False
+        
+        # Setting default currency for the Ugandan market context
+        self.fields['currency'].initial = 'UGX'
 
     def clean_video(self):
         """
-        Pillar 2 Optimization:
-        Ensures video files are within the 50MB stability threshold for African networks.
+        Pillar 2 Optimization: 
+        Ensures video files remain under the 50MB stability threshold 
+        for reliable uploads on local infrastructure.
         """
         video = self.cleaned_data.get('video')
         if video:
             if video.size > 50 * 1024 * 1024:
-                raise forms.ValidationError("Video file too large. Please keep it under 50MB for reliable delivery.")
+                raise forms.ValidationError(
+                    "Video too large for low-latency delivery. Please keep under 50MB."
+                )
         return video
 
     def clean(self):
         """
         Agentic Safety Protocol: 
-        Ensures the AI Agent has a valid negotiation range if prices are set.
+        Validates the negotiation corridor for the AI Agent.
         """
         cleaned_data = super().clean()
         price = cleaned_data.get("price")
         floor_price = cleaned_data.get("floor_price")
 
-        # Validation logic only triggers if the user is attempting a "Business" upload with prices
+        # 1. Validation for Business Mode: Floor cannot exceed Public Price
         if price is not None and floor_price is not None:
             if floor_price > price:
                 raise forms.ValidationError(
-                    "Safety Check: Your AI Floor Price cannot be higher than your Public Price. "
-                    "The Agent needs room to bargain!"
+                    "Safety Check Failed: The AI Floor Price cannot be higher than your Public Price. "
+                    "The Agent cannot negotiate if the minimum is higher than the asking price!"
                 )
         
-        # Logic check: If floor is set but price is not, assume floor is the public price
+        # 2. Logic Correction: If only floor is set, default public price to floor
         if floor_price and not price:
              cleaned_data['price'] = floor_price
              
@@ -92,18 +98,18 @@ class BusinessReelUploadForm(forms.ModelForm):
 class SecureMessageForm(forms.ModelForm):
     """
     Sovereign Messaging: The 'Hire' Protocol Form.
-    Universal contact gateway for both Business inquiries and Professional hiring.
+    Native gateway for encrypted inquiries (Pillar 4).
     """
     class Meta:
         model = SecureMessage
         fields = ['content']
         widgets = {
             'content': forms.Textarea(attrs={
-                'placeholder': 'Inquire about this service, propose a deal, or request a quote...',
+                'placeholder': 'Request a quote, propose a deal, or inquire about this professional work...',
                 'rows': 3,
                 'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all'
             }),
         }
         labels = {
-            'content': 'Secure Message'
+            'content': 'Secure Inquiry'
         }

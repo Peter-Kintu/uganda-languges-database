@@ -7,7 +7,7 @@ from .models import SocialProfile, BusinessReel, VideoEndorsement, SecureMessage
 class SocialProfileAdminForm(forms.ModelForm):
     """
     Pillar 4: Bento Configuration Form.
-    Provides a better UI for editing the profile grid layout.
+    Provides a cleaner UI for editing the profile JSON grid layout.
     """
     class Meta:
         model = SocialProfile
@@ -71,20 +71,22 @@ class SocialProfileAdmin(admin.ModelAdmin):
 class BusinessReelAdmin(admin.ModelAdmin):
     """
     Command center for shoppable and professional reels. 
-    Monitors speed and negotiation floors.
+    Monitors speed, engagement metrics, and negotiation floors.
     """
     list_display = (
         'caption_summary', 
         'author', 
         'mode_display',
         'price_display', 
-        'floor_display', 
+        'likes_count',
+        'share_count',
+        'download_count',
         'is_low_bandwidth_optimized', 
         'created_at'
     )
     list_filter = ('currency', 'is_low_bandwidth_optimized', 'created_at')
-    search_fields = ('author__username', 'caption')
-    readonly_fields = ('created_at',)
+    search_fields = ('author__username', 'caption', 'share_token')
+    readonly_fields = ('created_at', 'share_token', 'share_count', 'download_count')
     
     fieldsets = (
         ('Content', {
@@ -93,6 +95,10 @@ class BusinessReelAdmin(admin.ModelAdmin):
         ('Pillar 3: Agentic Pricing', {
             'fields': ('price', 'currency', 'floor_price'),
             'description': "Set the listing price and private floor. Leave empty for Professional Mode."
+        }),
+        ('Engagement & Sharing', {
+            'fields': ('likes', 'share_count', 'download_count', 'share_token'),
+            'description': "Social proof and tracking metrics for this reel."
         }),
         ('Pillar 2: Performance', {
             'fields': ('is_low_bandwidth_optimized', 'created_at'),
@@ -108,6 +114,10 @@ class BusinessReelAdmin(admin.ModelAdmin):
         return obj.caption[:50] + "..." if len(obj.caption) > 50 else obj.caption
     caption_summary.short_description = 'Caption'
 
+    def likes_count(self, obj):
+        return obj.total_likes
+    likes_count.short_description = '❤️'
+
     def price_display(self, obj):
         if obj.price:
             return f"{obj.currency} {obj.price:,}"
@@ -115,11 +125,14 @@ class BusinessReelAdmin(admin.ModelAdmin):
     price_display.short_description = 'Public Price'
 
     def floor_display(self, obj):
-        # Shows what the AI is actually using as a floor
         if not obj.price:
             return "N/A"
         floor = obj.get_negotiation_floor()
-        return f"{obj.currency} {floor:,.2f}"
+        # Handle cases where get_negotiation_floor might return an F() expression or None
+        try:
+            return f"{obj.currency} {float(floor):,.2f}"
+        except (TypeError, ValueError):
+            return "Calculating..."
     floor_display.short_description = 'AI Floor'
 
 
