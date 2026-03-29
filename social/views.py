@@ -101,7 +101,7 @@ def upload_reel(request):
 def toggle_like_reel(request, reel_id):
     """
     Social Proof: Toggles a like on a reel via AJAX.
-    UPDATED: Now triggers author trust score recalculation (5% per like).
+    UPDATED: Now triggers author trust score recalculation and returns verification status.
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
     if request.user in reel.likes.all():
@@ -111,16 +111,23 @@ def toggle_like_reel(request, reel_id):
         reel.likes.add(request.user)
         liked = True
     
-    # --- TRIGGER TRUST SCORE UPDATE ---
-    # Update the author's score immediately so the 5% per like is reflected
+    # --- TRIGGER TRUST SCORE UPDATE & CRYPTOGRAPHIC SEAL ---
+    # Update the author's score immediately (5% per like)
+    is_verified = False
+    new_trust_score = 0
+    
     if hasattr(reel.author, 'social_profile'):
-        reel.author.social_profile.update_trust_score()
+        profile = reel.author.social_profile
+        profile.update_trust_score() # This method now includes .save() and .generate_trust_signature()
+        new_trust_score = profile.trust_score
+        is_verified = profile.is_trust_verified # Verify the 'Digital Seal'
     
     return JsonResponse({
         'status': 'success',
         'liked': liked,
         'total_likes': reel.likes.count(),
-        'new_trust_score': reel.author.social_profile.trust_score
+        'new_trust_score': new_trust_score,
+        'is_verified': is_verified  # Digital Seal proof sent to frontend
     })
 
 @csrf_exempt

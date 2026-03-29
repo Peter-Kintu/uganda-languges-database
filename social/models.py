@@ -5,6 +5,8 @@ from django.dispatch import receiver
 from django.db.models import Count
 from cloudinary.models import CloudinaryField
 import uuid
+import hashlib
+import hmac
 
 # Link to your existing CustomUser
 User = settings.AUTH_USER_MODEL
@@ -23,6 +25,9 @@ class SocialProfile(models.Model):
         default=0.0, 
         help_text="Dynamic score (0-100) based on verified transactions."
     )
+    # NEW: Cryptographic signature to prevent database tampering (The Digital Seal)
+    trust_signature = models.CharField(max_length=255, blank=True)
+    
     verified_deals_count = models.PositiveIntegerField(default=0)
     is_verified_merchant = models.BooleanField(
         default=False, 
@@ -51,6 +56,16 @@ class SocialProfile(models.Model):
     # --- PILLAR 4: BENTO LAYOUT ---
     bento_config = models.JSONField(default=dict, blank=True)
 
+    def generate_trust_signature(self):
+        """Creates a cryptographic hash of the score using the server's secret key."""
+        # Data payload to be 'sealed'
+        data = f"{self.user.id}-{self.trust_score}"
+        return hmac.new(
+            settings.SECRET_KEY.encode(),
+            data.encode(),
+            hashlib.sha256
+        ).hexdigest()
+
     def update_trust_score(self):
         """
         Logic to recalculate trust based on verified endorsements and engagement.
@@ -69,7 +84,17 @@ class SocialProfile(models.Model):
         
         # Cap at 100.0%
         self.trust_score = min(100.0, float(new_score))
+        
+        # 4. Generate the 'Digital Seal' before saving
+        self.trust_signature = self.generate_trust_signature()
         self.save()
+
+    @property
+    def is_trust_verified(self):
+        """Protocol check: Verifies if the database score matches the cryptographic seal."""
+        if not self.trust_signature:
+            return False
+        return hmac.compare_digest(self.trust_signature, self.generate_trust_signature())
 
     def __str__(self):
         return f"Social Layer: {self.user.username} ({self.trust_score}%)"
@@ -139,10 +164,12 @@ class BusinessReel(models.Model):
         
         try:
             margin = self.author.social_profile.minimum_margin_percent
-            return self.price * (models.F('price') * (1 - (margin / 100))) 
+            # Updated logic for proper Decimal handling
+            from decimal import Decimal
+            return self.price * (Decimal('1.0') - (Decimal(str(margin)) / Decimal('100.0')))
         except (SocialProfile.DoesNotExist, AttributeError):
             from decimal import Decimal
-            margin = getattr(self.author.social_profile, 'minimum_margin_percent', Decimal('10.00'))
+            margin = Decimal('10.00')
             return self.price * (Decimal('1.00') - (margin / Decimal('100.00')))
 
     def __str__(self):
@@ -197,7 +224,10 @@ class VideoEndorsement(models.Model):
 def handle_user_social_profile(sender, instance, created, **kwargs):
     """Ensures every user has a SocialProfile and handles sync."""
     if created:
-        SocialProfile.objects.get_or_create(user=instance)
+        profile, _ = SocialProfile.objects.get_or_create(user=instance)
+        # Sign the initial 0.0 trust score
+        profile.trust_signature = profile.generate_trust_signature()
+        profile.save()
     else:
         if hasattr(instance, 'social_profile'):
             instance.social_profile.save()
