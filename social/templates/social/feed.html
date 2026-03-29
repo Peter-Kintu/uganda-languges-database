@@ -37,13 +37,13 @@
         justify-content: center;
     }
 
+    /* UPDATED: Increased bottom padding to 180px for extra small screens to clear Nav Bar */
     .video-overlay {
         position: absolute;
         bottom: 0;
         left: 0;
         width: 100%;
-        /* PUSHED UP: Increased bottom padding to 140px to clear the nav bar and safe area */
-        padding: 20px 20px 140px 20px; 
+        padding: 20px 20px 180px 20px; 
         background: linear-gradient(to top, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.5) 50%, transparent 100%);
         z-index: 40; 
         pointer-events: none;
@@ -54,6 +54,22 @@
     }
 
     .video-overlay * { pointer-events: auto; }
+
+    /* UPDATED: Pushed side buttons up further for mobile (bottom-80) to clear nav bar */
+    .side-action-container {
+        position: absolute;
+        right: 16px;
+        bottom: 320px; /* Higher up on mobile */
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        align-items: center;
+        z-index: 50;
+    }
+
+    @media (min-width: 768px) {
+        .side-action-container { bottom: 128px; }
+    }
 
     .publish-fab {
         position: fixed;
@@ -135,7 +151,7 @@
             onclick="toggleAudio(this)">
         </video>
 
-        <div class="absolute right-4 bottom-64 md:bottom-32 flex flex-col space-y-6 items-center z-50">
+        <div class="side-action-container">
             <button onclick="toggleLike(this, '{{ reel.id }}')" class="flex flex-col items-center">
                 <div class="p-3 md:p-3.5 side-btn rounded-full">
                     <span class="text-xl md:text-2xl heart-icon {% if user in reel.likes.all %}heart-active{% endif %}">❤️</span>
@@ -229,17 +245,16 @@
 
 <script>
     const observerOptions = { 
-        threshold: 0.6, // Trigger slightly earlier to ensure smooth transitions
+        threshold: 0.6, 
         root: document.getElementById('reel-container')
     };
     
-    // Global flag to remember if the user wants sound enabled
     let userEnabledSound = false;
 
     function toggleAudio(video) {
         if (video.muted) {
             video.muted = false;
-            userEnabledSound = true; // User intentionally turned on sound
+            userEnabledSound = true; 
             video.play();
         } else {
             video.paused ? video.play() : video.pause();
@@ -250,14 +265,11 @@
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
-                // When coming into view, ensure it respects user's sound preference
-                // But start muted if it's the first interaction to satisfy browser policy
                 video.muted = !userEnabledSound;
                 
                 const playPromise = video.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        // Autoplay was prevented
                         console.log("Autoplay prevented");
                     });
                 }
@@ -267,7 +279,6 @@
                     if (next) next.scrollIntoView({ behavior: 'smooth' });
                 };
             } else {
-                // HARD STOP: When video leaves view, stop and mute it immediately
                 video.pause();
                 video.muted = true; 
                 video.currentTime = 0; 
