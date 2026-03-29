@@ -131,6 +131,7 @@
             playsinline 
             preload="auto"
             loop
+            muted
             onclick="toggleAudio(this)">
         </video>
 
@@ -227,14 +228,20 @@
 </div>
 
 <script>
-    const observerOptions = { threshold: 0.8 };
+    const observerOptions = { 
+        threshold: 0.6, // Trigger slightly earlier to ensure smooth transitions
+        root: document.getElementById('reel-container')
+    };
     
-    // Function to handle tap-to-unmute / pause-play
+    // Global flag to remember if the user wants sound enabled
+    let userEnabledSound = false;
+
     function toggleAudio(video) {
         if (video.muted) {
             video.muted = false;
+            userEnabledSound = true; // User intentionally turned on sound
+            video.play();
         } else {
-            // Standard TikTok behavior: If already unmuted, toggle pause/play
             video.paused ? video.play() : video.pause();
         }
     }
@@ -243,16 +250,26 @@
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
-                // We keep it muted for autoplay to work initially due to browser policies
-                video.muted = true;
-                video.play().catch(e => {});
+                // When coming into view, ensure it respects user's sound preference
+                // But start muted if it's the first interaction to satisfy browser policy
+                video.muted = !userEnabledSound;
+                
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        // Autoplay was prevented
+                        console.log("Autoplay prevented");
+                    });
+                }
                 
                 video.onended = () => {
                     const next = entry.target.nextElementSibling;
                     if (next) next.scrollIntoView({ behavior: 'smooth' });
                 };
             } else {
+                // HARD STOP: When video leaves view, stop and mute it immediately
                 video.pause();
+                video.muted = true; 
                 video.currentTime = 0; 
             }
         });
