@@ -100,6 +100,21 @@
         transition: all 0.2s;
     }
     .side-btn:active { transform: scale(0.9); }
+
+    /* Verification Seal Style */
+    .verification-seal {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 12px;
+        height: 12px;
+        background: #3b82f6;
+        color: white;
+        border-radius: 50%;
+        font-size: 8px;
+        margin-left: 4px;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+    }
 </style>
 
 <div class="publish-fab">
@@ -170,8 +185,9 @@
                                 <span class="ml-2 bg-indigo-500/20 text-indigo-300 text-[8px] px-2 py-0.5 rounded-full border border-indigo-500/30 uppercase tracking-widest">Professional</span>
                                 {% endif %}
                             </h2>
-                            <p class="text-green-400 text-[9px] font-mono uppercase tracking-[0.2em]">
+                            <p class="text-green-400 text-[9px] font-mono uppercase tracking-[0.2em] flex items-center">
                                 Trust Score: <span class="trust-display-{{ reel.author.id }}">{{ reel.author.social_profile.trust_score|floatformat:0 }}</span>%
+                                <span id="verification-seal-{{ reel.author.id }}" class="verification-seal {% if not reel.author.social_profile.is_trust_verified %}hidden{% endif %}">✓</span>
                             </p>
                         </div>
                     </div>
@@ -210,7 +226,7 @@
     </section>
     {% empty %}
     <div class="h-screen w-full flex flex-col items-center justify-center text-white p-10 text-center">
-        <div class="text-7xl mb-6">🏜️</div>
+        <div class="text-7xl mb-6"> Desert 🏜️</div>
         <h2 class="text-3xl font-black italic uppercase tracking-tighter">The Feed is Quiet</h2>
         <a href="{% url 'social:upload_reel' %}" class="mt-8 bg-indigo-600 px-10 py-4 rounded-2xl font-black tracking-widest hover:scale-105 transition-transform shadow-2xl">DEPLOY CONTENT</a>
     </div>
@@ -250,15 +266,25 @@
                 const likeCountElem = document.getElementById(`like-count-${reelId}`);
                 if (likeCountElem) likeCountElem.innerText = data.total_likes;
                 
-                // 2. Update Author-Wide Trust Score in Real-Time
-                // Since an author can have many videos, we update all displays for this author ID
+                // 2. Update Author-Wide Trust Score & Verification Seal
                 const section = btn.closest('section');
                 const authorId = section.getAttribute('data-author-id');
+                
                 if (data.new_trust_score !== undefined) {
                     const trustDisplays = document.querySelectorAll(`.trust-display-${authorId}`);
                     trustDisplays.forEach(display => {
                         display.innerText = Math.round(data.new_trust_score);
                     });
+                }
+
+                // 3. Update the Digital Seal (Verification checkmark)
+                const sealElem = document.getElementById(`verification-seal-${authorId}`);
+                if (sealElem) {
+                    if (data.is_verified) {
+                        sealElem.classList.remove('hidden');
+                    } else {
+                        sealElem.classList.add('hidden');
+                    }
                 }
             }
         } catch (e) { console.error("Like protocol failed."); }
@@ -274,7 +300,6 @@
             });
             const data = await response.json();
             
-            // Update UI count for specific video
             const shareElem = document.getElementById(`share-count-${reelId}`);
             if (shareElem) shareElem.innerText = data.total_shares;
 
@@ -297,7 +322,6 @@
             });
             const data = await response.json();
             
-            // Update UI count for specific video
             const downElem = document.getElementById(`download-count-${reelId}`);
             if (downElem) downElem.innerText = data.total_downloads;
 
