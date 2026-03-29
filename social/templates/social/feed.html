@@ -101,7 +101,6 @@
     }
     .side-btn:active { transform: scale(0.9); }
 
-    /* Verification Seal Style */
     .verification-seal {
         display: inline-flex;
         align-items: center;
@@ -187,7 +186,7 @@
                             </h2>
                             <p class="text-green-400 text-[9px] font-mono uppercase tracking-[0.2em] flex items-center">
                                 Trust Score: <span class="trust-display-{{ reel.author.id }}">{{ reel.author.social_profile.trust_score|floatformat:0 }}</span>%
-                                <span id="verification-seal-{{ reel.author.id }}" class="verification-seal {% if not reel.author.social_profile.is_trust_verified %}hidden{% endif %}">✓</span>
+                                <span id="verification-seal-{{ reel.author.id }}" class="verification-seal {% if not reel.author.social_profile.is_verified_merchant %}hidden{% endif %}">✓</span>
                             </p>
                         </div>
                     </div>
@@ -261,12 +260,12 @@
             });
             const data = await response.json();
             if (data.status === 'success') {
-                // 1. Update Video-Specific Like UI
+                // Update Like UI for the specific reel
                 btn.querySelector('span').classList.toggle('heart-active');
                 const likeCountElem = document.getElementById(`like-count-${reelId}`);
                 if (likeCountElem) likeCountElem.innerText = data.total_likes;
                 
-                // 2. Update Author-Wide Trust Score & Verification Seal
+                // Update Trust Scores for ALL videos by this author on the page
                 const section = btn.closest('section');
                 const authorId = section.getAttribute('data-author-id');
                 
@@ -277,29 +276,27 @@
                     });
                 }
 
-                // 3. Update the Digital Seal (Verification checkmark)
-                const sealElem = document.getElementById(`verification-seal-${authorId}`);
-                if (sealElem) {
+                // Update Verification Seals for ALL videos by this author
+                const sealElems = document.querySelectorAll(`[id^="verification-seal-${authorId}"]`);
+                sealElems.forEach(seal => {
                     if (data.is_verified) {
-                        sealElem.classList.remove('hidden');
+                        seal.classList.remove('hidden');
                     } else {
-                        sealElem.classList.add('hidden');
+                        seal.classList.add('hidden');
                     }
-                }
+                });
             }
         } catch (e) { console.error("Like protocol failed."); }
     }
 
     async function shareReel(btn, reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`.replace('http://', 'https://');
-        
         try {
             const response = await fetch(`/social/reel/${reelId}/track-share/`, { 
                 method: 'POST', 
                 headers: { 'X-CSRFToken': '{{ csrf_token }}' } 
             });
             const data = await response.json();
-            
             const shareElem = document.getElementById(`share-count-${reelId}`);
             if (shareElem) shareElem.innerText = data.total_shares;
 
@@ -314,14 +311,12 @@
 
     async function downloadWithBranding(btn, reelId, url) {
         const secureUrl = url.replace('http://', 'https://');
-        
         try {
             const response = await fetch(`/social/reel/${reelId}/track-download/`, { 
                 method: 'POST', 
                 headers: { 'X-CSRFToken': '{{ csrf_token }}' } 
             });
             const data = await response.json();
-            
             const downElem = document.getElementById(`download-count-${reelId}`);
             if (downElem) downElem.innerText = data.total_downloads;
 
