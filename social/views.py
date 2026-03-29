@@ -2,6 +2,7 @@ import os
 import json
 import random
 import uuid
+import urllib.parse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
@@ -56,7 +57,7 @@ class BentoProfileView(DetailView):
         if hasattr(self.object, 'received_endorsements'):
             context['endorsements'] = self.object.received_endorsements.filter(
                 is_verified_transaction=True
-            )[:5]
+            ).order_by('-created_at')[:5]
         return context
 
 @login_required
@@ -112,33 +113,33 @@ def toggle_like_reel(request, reel_id):
         liked = True
     
     # --- TRIGGER TRUST SCORE UPDATE & CRYPTOGRAPHIC SEAL ---
-    # Update the author's score immediately (5% per like)
     is_verified = False
     new_trust_score = 0
     
     if hasattr(reel.author, 'social_profile'):
         profile = reel.author.social_profile
-        profile.update_trust_score() # This method now includes .save() and .generate_trust_signature()
+        # Atomic update of Trust Ledger (Pillar 1)
+        profile.update_trust_score() 
         new_trust_score = profile.trust_score
-        is_verified = profile.is_trust_verified # Verify the 'Digital Seal'
+        is_verified = getattr(profile, 'is_trust_verified', False) 
     
     return JsonResponse({
         'status': 'success',
         'liked': liked,
         'total_likes': reel.likes.count(),
         'new_trust_score': new_trust_score,
-        'is_verified': is_verified  # Digital Seal proof sent to frontend
+        'is_verified': is_verified
     })
 
 @csrf_exempt
 @require_POST
 def track_share(request, reel_id):
     """
-    Branding: Increments the share count and returns new total for front-end display.
+    Branding: Increments the share count (Viral Loop metric).
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
     reel.share_count = F('share_count') + 1
-    reel.save()
+    reel.save(update_fields=['share_count'])
     reel.refresh_from_db()
     
     return JsonResponse({
@@ -150,11 +151,11 @@ def track_share(request, reel_id):
 @require_POST
 def track_download(request, reel_id):
     """
-    Performance: Increments download count and returns new total for front-end display.
+    Performance: Increments download count (Offline utility metric).
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
     reel.download_count = F('download_count') + 1
-    reel.save()
+    reel.save(update_fields=['download_count'])
     reel.refresh_from_db()
     
     return JsonResponse({
@@ -162,7 +163,7 @@ def track_download(request, reel_id):
         'total_downloads': reel.download_count
     })
 
-# --- SOVEREIGN MESSAGING PROTOCOLS (WHATSAPP STYLE) ---
+# --- SOVEREIGN MESSAGING PROTOCOLS ---
 
 @login_required
 def inbox(request):
@@ -189,6 +190,7 @@ def chat_detail(request, partner_id):
         (Q(sender=partner) & Q(recipient=request.user))
     ).order_by('timestamp')
     
+    # Mark messages as read upon entering thread
     thread.filter(recipient=request.user, is_read=False).update(is_read=True)
 
     if request.method == "POST":
@@ -210,7 +212,7 @@ def chat_detail(request, partner_id):
 @require_POST
 def initiate_hire_protocol(request, reel_id):
     """
-    Handles the "Secure Handshake".
+    Handles the "Secure Handshake" / Hire Me protocol.
     UPDATED: Now includes WhatsApp redirection data if the creator has a number linked.
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
@@ -226,7 +228,7 @@ def initiate_hire_protocol(request, reel_id):
         content = request.POST.get('content')
     
     if content:
-        # Create internal record for logs/trust score
+        # Create internal record for logs and trust score building
         SecureMessage.objects.create(
             sender=request.user,
             recipient=reel.author,
@@ -234,27 +236,25 @@ def initiate_hire_protocol(request, reel_id):
             content=content
         )
         
-        # Check if we should redirect to WhatsApp
+        # Check if we should redirect to WhatsApp for the deal closure
         whatsapp_number = getattr(creator_profile, 'whatsapp_number', None)
         
         if whatsapp_number:
-            # Construct WhatsApp link with the user's message
-            import urllib.parse
             encoded_msg = urllib.parse.quote(content)
             wa_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}"
             
             return JsonResponse({
                 'status': 'SENT', 
-                'message': 'Redirecting to WhatsApp...',
+                'message': 'Handshake Logged. Redirecting to WhatsApp...',
                 'redirect_url': wa_url,
                 'is_whatsapp': True
             })
 
-        # Fallback to internal chat if no WhatsApp number is set
+        # Fallback to internal chat
         chat_url = reverse('social:chat_detail', kwargs={'partner_id': reel.author.id})
         return JsonResponse({
             'status': 'SENT', 
-            'message': 'Handshake Established.',
+            'message': 'Handshake Established internally.',
             'redirect_url': chat_url,
             'is_whatsapp': False
         })
@@ -265,6 +265,7 @@ def initiate_hire_protocol(request, reel_id):
 def ai_negotiate_price(request, reel_id):
     """
     Pillar 3: The "Haggle" Protocol.
+    Agentic negotiation floor logic.
     """
     if request.method == "POST":
         reel = get_object_or_404(BusinessReel, id=reel_id, is_active=True)
@@ -272,7 +273,7 @@ def ai_negotiate_price(request, reel_id):
         if not reel.price:
             return JsonResponse({
                 'status': 'INFO', 
-                'message': 'This is a professional showcase. Use "Hire" to discuss customized rates.'
+                'message': 'Professional showcase mode. Use "Hire" for custom rates.'
             })
         
         try:
@@ -290,6 +291,7 @@ def ai_negotiate_price(request, reel_id):
                 })
 
             if buyer_offer >= floor_price:
+                # If offer is within 5% of public price, accept automatically
                 if (public_price - buyer_offer) / public_price <= 0.05:
                      return JsonResponse({
                         'status': 'SUCCESS', 
@@ -304,12 +306,13 @@ def ai_negotiate_price(request, reel_id):
                     'price': round(suggested_midpoint, 2)
                 })
             
+            # Offer is too low, counter with floor + small margin
             counter_offer = max(floor_price * 1.05, buyer_offer * 1.10) 
             counter_offer = min(counter_offer, public_price)
             
             return JsonResponse({
                 'status': 'COUNTER', 
-                'message': 'Best possible deal:',
+                'message': 'Best possible deal from the Agent:',
                 'price': round(counter_offer, 2)
             })
             

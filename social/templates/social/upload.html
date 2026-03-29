@@ -46,11 +46,11 @@
                         <span class="mr-1">💬</span> WhatsApp Number
                     </label>
                     {{ form.whatsapp_number }}
-                    <p class="text-[9px] text-gray-500 italic">Include country code (e.g., +256...)</p>
+                    <p class="text-[9px] text-gray-500 italic">Include country code (e.g., 256700000000)</p>
                 </div>
 
                 <div id="professional-notice" class="text-[10px] text-gray-400 bg-white/5 p-3 rounded-xl border border-white/5 italic">
-                    💡 <span class="text-indigo-300">Mode:</span> <span id="mode-text" class="text-white font-bold">PROFESSIONAL SHOWCASE</span>
+                    💡 <span class="text-indigo-300">Mode:</span> <span id="mode-text" class="text-white font-bold uppercase">PROFESSIONAL SHOWCASE</span>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -99,6 +99,7 @@
 </div>
 
 <script>
+    // Elements
     const input = document.getElementById('video-upload');
     const preview = document.getElementById('preview');
     const prompt = document.getElementById('upload-prompt');
@@ -108,23 +109,28 @@
     const btnSpinner = document.getElementById('btn-spinner');
     const sizeBadge = document.getElementById('size-badge');
     const fileSizeText = document.getElementById('file-size');
+    const modeText = document.getElementById('mode-text');
+    const priceHealth = document.getElementById('price-health');
+
+    // Django Form Inputs
     const priceInput = document.querySelector('input[name="price"]');
     const floorInput = document.querySelector('input[name="floor_price"]');
-    const priceHealth = document.getElementById('price-health');
-    const modeText = document.getElementById('mode-text');
 
+    // 1. Handle Video Preview
     input.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
             const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
             fileSizeText.innerText = sizeInMB + "MB";
             sizeBadge.classList.remove('hidden');
+            
             if (sizeInMB > 50) {
                 alert("File too large. Please keep under 50MB.");
                 input.value = "";
                 sizeBadge.classList.add('hidden');
                 return;
             }
+
             const url = URL.createObjectURL(file);
             preview.src = url;
             preview.classList.remove('hidden');
@@ -132,17 +138,19 @@
         }
     }
 
-    // Dynamic Intent Handling Logic
+    // 2. Dynamic Intent Logic (Merchant vs Professional Showcase)
     const validatePricingAndIntent = () => {
         const publicPrice = parseFloat(priceInput.value);
         const floorPrice = parseFloat(floorInput.value);
         
+        // If there is a price, it's a Commercial Product
         if (!isNaN(publicPrice) && publicPrice > 0) {
-            // MERCHANT MODE
             btnText.innerText = "PUBLISH PRODUCT";
             modeText.innerText = "COMMERCIAL PRODUCT / SERVICE (MERCHANT)";
-            btn.classList.replace('bg-indigo-600', 'bg-green-600');
+            btn.classList.remove('bg-indigo-600');
+            btn.classList.add('bg-green-600');
             
+            // Check if AI floor is valid
             if (!isNaN(floorPrice) && floorPrice > publicPrice) {
                 priceHealth.classList.remove('hidden');
                 btn.disabled = true;
@@ -153,20 +161,25 @@
                 btn.classList.remove('grayscale', 'opacity-50', 'cursor-not-allowed');
             }
         } else {
-            // PROFESSIONAL MODE
+            // No price = Professional Portfolio/Showcase
             btnText.innerText = "POST SHOWCASE";
             modeText.innerText = "PROFESSIONAL SHOWCASE (HIRE ME)";
-            btn.classList.replace('bg-green-600', 'bg-indigo-600');
+            btn.classList.remove('bg-green-600');
+            btn.classList.add('bg-indigo-600');
             priceHealth.classList.add('hidden');
             btn.disabled = false;
             btn.classList.remove('grayscale', 'opacity-50', 'cursor-not-allowed');
         }
     };
 
-    priceInput.addEventListener('input', validatePricingAndIntent);
-    floorInput.addEventListener('input', validatePricingAndIntent);
+    // Attach Listeners
+    if(priceInput) priceInput.addEventListener('input', validatePricingAndIntent);
+    if(floorInput) floorInput.addEventListener('input', validatePricingAndIntent);
+    
+    // Initial check on load
     validatePricingAndIntent();
 
+    // 3. Loading State on Submit
     form.onsubmit = () => {
         btn.disabled = true;
         btn.classList.add('opacity-70', 'animate-pulse');

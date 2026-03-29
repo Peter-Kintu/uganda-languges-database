@@ -114,7 +114,13 @@ class BusinessReel(models.Model):
         resource_type='video',
         folder='africana_reels/',
         overwrite=True,
-        help_text="Optimized for low-bandwidth delivery."
+        # Updated: Compression with original width and 5-minute duration limit
+        transformation=[
+            {'width': "iw", 'crop': "scale"},      # Original Width
+            {'quality': "auto", 'fetch_format': "auto"}, # AI Compression
+            {'duration': "300", 'crop': "limit"}   # Limit to 5 mins (300s)
+        ],
+        help_text="Compressed to original width, max 5 minutes duration."
     )
     thumbnail = CloudinaryField('image', folder='africana_thumbnails/', blank=True, null=True)
     caption = models.TextField(max_length=500)
