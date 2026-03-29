@@ -131,8 +131,7 @@
             playsinline 
             preload="auto"
             loop
-            muted
-            onclick="this.paused ? this.play() : this.pause()">
+            onclick="toggleAudio(this)">
         </video>
 
         <div class="absolute right-4 bottom-64 md:bottom-32 flex flex-col space-y-6 items-center z-50">
@@ -229,11 +228,25 @@
 
 <script>
     const observerOptions = { threshold: 0.8 };
+    
+    // Function to handle tap-to-unmute / pause-play
+    function toggleAudio(video) {
+        if (video.muted) {
+            video.muted = false;
+        } else {
+            // Standard TikTok behavior: If already unmuted, toggle pause/play
+            video.paused ? video.play() : video.pause();
+        }
+    }
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             if (entry.isIntersecting) {
+                // We keep it muted for autoplay to work initially due to browser policies
+                video.muted = true;
                 video.play().catch(e => {});
+                
                 video.onended = () => {
                     const next = entry.target.nextElementSibling;
                     if (next) next.scrollIntoView({ behavior: 'smooth' });
