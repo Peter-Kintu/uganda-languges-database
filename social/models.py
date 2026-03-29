@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db.models import Count
 from cloudinary.models import CloudinaryField
 import uuid
 
@@ -51,9 +52,23 @@ class SocialProfile(models.Model):
     bento_config = models.JSONField(default=dict, blank=True)
 
     def update_trust_score(self):
-        """Logic to recalculate trust based on verified endorsements and engagement."""
+        """
+        Logic to recalculate trust based on verified endorsements and engagement.
+        UPDATED: Each like on any of the user's reels adds 5% to the score.
+        """
+        # 1. Count total likes across all reels owned by this user
+        total_likes = BusinessReel.objects.filter(author=self.user).aggregate(
+            total=models.Count('likes')
+        )['total'] or 0
+
+        # 2. Count verified endorsements
         endorsements = self.user.received_endorsements.filter(is_verified_transaction=True).count()
-        self.trust_score = min(100.0, (self.verified_deals_count * 2) + (endorsements * 5))
+        
+        # 3. Calculate score: (Likes * 5) + (Deals * 2) + (Endorsements * 5)
+        new_score = (total_likes * 5) + (self.verified_deals_count * 2) + (endorsements * 5)
+        
+        # Cap at 100.0%
+        self.trust_score = min(100.0, float(new_score))
         self.save()
 
     def __str__(self):

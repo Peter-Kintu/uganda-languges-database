@@ -112,7 +112,7 @@
 
 <div id="reel-container" class="no-scrollbar">
     {% for reel in reels %}
-    <section data-reel-id="{{ reel.id }}">
+    <section data-reel-id="{{ reel.id }}" data-author-id="{{ reel.author.id }}">
         <video 
             class="w-full h-full object-cover" 
             src="{{ reel.video.url }}" 
@@ -131,18 +131,18 @@
                 <span class="text-[10px] mt-1 font-bold text-white/90" id="like-count-{{ reel.id }}">{{ reel.total_likes }}</span>
             </button>
 
-            <button onclick="shareReel('{{ reel.id }}', '{{ reel.share_token }}')" class="flex flex-col items-center">
+            <button onclick="shareReel(this, '{{ reel.id }}', '{{ reel.share_token }}')" class="flex flex-col items-center">
                 <div class="p-3.5 side-btn rounded-full">
                     <span class="text-2xl">🔗</span>
                 </div>
-                <span class="text-[10px] mt-1 font-bold text-white/90">Share</span>
+                <span class="text-[10px] mt-1 font-bold text-white/90" id="share-count-{{ reel.id }}">{{ reel.share_count|default:"Share" }}</span>
             </button>
 
-            <button onclick="downloadWithBranding('{{ reel.id }}', '{{ reel.video.url }}')" class="flex flex-col items-center">
+            <button onclick="downloadWithBranding(this, '{{ reel.id }}', '{{ reel.video.url }}')" class="flex flex-col items-center">
                 <div class="p-3.5 side-btn rounded-full border-indigo-500/30">
                     <span class="text-2xl">📥</span>
                 </div>
-                <span class="text-[10px] mt-1 font-bold text-indigo-400 italic">Elite</span>
+                <span class="text-[10px] mt-1 font-bold text-indigo-400 italic" id="download-count-{{ reel.id }}">{{ reel.download_count|default:"Elite" }}</span>
             </button>
         </div>
 
@@ -171,7 +171,7 @@
                                 {% endif %}
                             </h2>
                             <p class="text-green-400 text-[9px] font-mono uppercase tracking-[0.2em]">
-                                Trust Score: {{ reel.author.social_profile.trust_score|floatformat:0 }}%
+                                Trust Score: <span class="trust-display-{{ reel.author.id }}">{{ reel.author.social_profile.trust_score|floatformat:0 }}</span>%
                             </p>
                         </div>
                     </div>
@@ -237,6 +237,7 @@
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 
+    // --- REAL-TIME TOGGLE LIKE ---
     async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
@@ -245,33 +246,72 @@
             });
             const data = await response.json();
             if (data.status === 'success') {
+                // Toggle visual heart
                 btn.querySelector('span').classList.toggle('heart-active');
+                
+                // Update specific Reel like count
                 document.getElementById(`like-count-${reelId}`).innerText = data.total_likes;
+                
+                // --- REAL-TIME TRUST UPDATE ---
+                // Find the author's ID from the section data and update ALL instances of their trust score on the page
+                const section = btn.closest('section');
+                const authorId = section.getAttribute('data-author-id');
+                const trustDisplays = document.querySelectorAll(`.trust-display-${authorId}`);
+                trustDisplays.forEach(display => {
+                    display.innerText = Math.round(data.new_trust_score);
+                });
             }
         } catch (e) { console.error("Like protocol failed."); }
     }
 
-    async function shareReel(reelId, token) {
+    // --- REAL-TIME SHARE TRACKING ---
+    async function shareReel(btn, reelId, token) {
         const shareUrl = `${window.location.origin}/social/feed/?ref=${token}`.replace('http://', 'https://');
-        fetch(`/social/reel/${reelId}/track-share/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+        
+        try {
+            const response = await fetch(`/social/reel/${reelId}/track-share/`, { 
+                method: 'POST', 
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' } 
+            });
+            const data = await response.json();
+            
+            // Update UI count immediately
+            if (data.total_shares) {
+                document.getElementById(`share-count-${reelId}`).innerText = data.total_shares;
+            }
 
-        if (navigator.share) {
-            try { await navigator.share({ title: 'Africana AI', url: shareUrl }); } catch (err) {}
-        } else {
-            navigator.clipboard.writeText(shareUrl);
-            alert("Link Copied to Clipboard.");
-        }
+            if (navigator.share) {
+                await navigator.share({ title: 'Africana AI', url: shareUrl });
+            } else {
+                navigator.clipboard.writeText(shareUrl);
+                alert("Link Copied to Clipboard.");
+            }
+        } catch (err) { console.error("Share tracking failed."); }
     }
 
-    function downloadWithBranding(reelId, url) {
+    // --- REAL-TIME DOWNLOAD TRACKING ---
+    async function downloadWithBranding(btn, reelId, url) {
         const secureUrl = url.replace('http://', 'https://');
-        fetch(`/social/reel/${reelId}/track-download/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
-        const link = document.createElement('a');
-        link.href = secureUrl;
-        link.download = `Africana_Elite_${reelId}.mp4`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        
+        try {
+            const response = await fetch(`/social/reel/${reelId}/track-download/`, { 
+                method: 'POST', 
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' } 
+            });
+            const data = await response.json();
+
+            // Update UI count immediately
+            if (data.total_downloads) {
+                document.getElementById(`download-count-${reelId}`).innerText = data.total_downloads;
+            }
+
+            const link = document.createElement('a');
+            link.href = secureUrl;
+            link.download = `Africana_Elite_${reelId}.mp4`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) { console.error("Download tracking failed."); }
     }
 
     async function triggerHaggle(reelId, whatsapp, caption, price, currency) {
@@ -282,7 +322,6 @@
         const cleanNumber = whatsapp.replace(/\D/g, ''); 
         const text = `Hello! I'm interested in buying this: "${caption.substring(0, 50)}..." for ${currency} ${price}. Is it available?`;
         const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
-        fetch(`/social/reel/${reelId}/track-buy/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
         window.open(waUrl, '_blank');
     }
 
@@ -294,7 +333,6 @@
         const cleanNumber = whatsapp.replace(/\D/g, '');
         const text = `Hi! I saw your work: "${caption.substring(0, 60)}..." and I would like to discuss a professional project with you.`;
         const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
-        fetch(`/social/reel/${reelId}/track-hire/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
         window.open(waUrl, '_blank');
     }
 </script>
