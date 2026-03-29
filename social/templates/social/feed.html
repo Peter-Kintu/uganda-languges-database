@@ -42,12 +42,16 @@
         bottom: 0;
         left: 0;
         width: 100%;
-        padding: 60px 24px;
+        padding: 40px 20px; /* Adjusted padding for better mobile fit */
         background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
-        z-index: 10;
+        z-index: 40; /* Higher than video */
         pointer-events: none;
     }
     
+    @media (min-width: 768px) {
+        .video-overlay { padding: 60px 24px; }
+    }
+
     .video-overlay * { pointer-events: auto; }
 
     .publish-fab {
@@ -137,68 +141,68 @@
             onclick="this.paused ? this.play() : this.pause()">
         </video>
 
-        <div class="absolute right-4 bottom-32 flex flex-col space-y-6 items-center z-30">
+        <div class="absolute right-4 bottom-40 md:bottom-32 flex flex-col space-y-6 items-center z-50">
             <button onclick="toggleLike(this, '{{ reel.id }}')" class="flex flex-col items-center">
-                <div class="p-3.5 side-btn rounded-full">
-                    <span class="text-2xl heart-icon {% if user in reel.likes.all %}heart-active{% endif %}">❤️</span>
+                <div class="p-3 md:p-3.5 side-btn rounded-full">
+                    <span class="text-xl md:text-2xl heart-icon {% if user in reel.likes.all %}heart-active{% endif %}">❤️</span>
                 </div>
                 <span class="text-[10px] mt-1 font-bold text-white/90" id="like-count-{{ reel.id }}">{{ reel.total_likes }}</span>
             </button>
 
             <button onclick="shareReel(this, '{{ reel.id }}', '{{ reel.share_token }}')" class="flex flex-col items-center">
-                <div class="p-3.5 side-btn rounded-full">
-                    <span class="text-2xl">🔗</span>
+                <div class="p-3 md:p-3.5 side-btn rounded-full">
+                    <span class="text-xl md:text-2xl">🔗</span>
                 </div>
                 <span class="text-[10px] mt-1 font-bold text-white/90" id="share-count-{{ reel.id }}">{{ reel.share_count|default:"0" }}</span>
             </button>
 
             <button onclick="downloadWithBranding(this, '{{ reel.id }}', '{{ reel.video.url }}')" class="flex flex-col items-center">
-                <div class="p-3.5 side-btn rounded-full border-indigo-500/30">
-                    <span class="text-2xl">📥</span>
+                <div class="p-3 md:p-3.5 side-btn rounded-full border-indigo-500/30">
+                    <span class="text-xl md:text-2xl">📥</span>
                 </div>
                 <span class="text-[10px] mt-1 font-bold text-indigo-400 italic" id="download-count-{{ reel.id }}">{{ reel.download_count|default:"0" }}</span>
             </button>
         </div>
 
-        <div class="absolute bottom-0 left-0 w-full p-8 video-overlay text-white">
+        <div class="absolute bottom-0 left-0 w-full p-6 md:p-8 video-overlay text-white">
             <div class="flex items-end justify-between max-w-5xl mx-auto">
-                <div class="flex-1 mr-4">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 p-[2px] shadow-xl profile-static">
+                <div class="flex-1 mr-2 md:mr-4">
+                    <div class="flex items-center space-x-3 mb-3 md:mb-4">
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 p-[2px] shadow-xl profile-static">
                             <div class="w-full h-full rounded-[14px] bg-black overflow-hidden">
                                 {% if reel.author.profile_image %}
                                     <img src="{{ reel.author.profile_image.url }}" class="w-full h-full object-cover">
                                 {% else %}
-                                    <div class="w-full h-full flex items-center justify-center font-black text-indigo-400">
+                                    <div class="w-full h-full flex items-center justify-center font-black text-indigo-400 text-sm">
                                         {{ reel.author.username|slice:":1"|upper }}
                                     </div>
                                 {% endif %}
                             </div>
                         </div>
                         <div>
-                            <h2 class="font-black text-lg tracking-tighter flex items-center">
+                            <h2 class="font-black text-sm md:text-lg tracking-tighter flex items-center">
                                 @{{ reel.author.username }}
                                 {% if reel.price %}
-                                <span class="ml-2 bg-green-500/20 text-green-400 text-[8px] px-2 py-0.5 rounded-full border border-green-500/30 uppercase tracking-widest">Merchant</span>
+                                <span class="ml-2 bg-green-500/20 text-green-400 text-[7px] md:text-[8px] px-2 py-0.5 rounded-full border border-green-500/30 uppercase tracking-widest">Merchant</span>
                                 {% else %}
-                                <span class="ml-2 bg-indigo-500/20 text-indigo-300 text-[8px] px-2 py-0.5 rounded-full border border-indigo-500/30 uppercase tracking-widest">Professional</span>
+                                <span class="ml-2 bg-indigo-500/20 text-indigo-300 text-[7px] md:text-[8px] px-2 py-0.5 rounded-full border border-indigo-500/30 uppercase tracking-widest">Professional</span>
                                 {% endif %}
                             </h2>
-                            <p class="text-green-400 text-[9px] font-mono uppercase tracking-[0.2em] flex items-center">
-                                Trust Score: <span class="trust-display-{{ reel.author.id }}">{{ reel.author.social_profile.trust_score|floatformat:0 }}</span>%
+                            <p class="text-green-400 text-[8px] md:text-[9px] font-mono uppercase tracking-[0.1em] md:tracking-[0.2em] flex items-center mt-0.5">
+                                Trust: <span class="trust-display-{{ reel.author.id }}">{{ reel.author.social_profile.trust_score|floatformat:0 }}</span>%
                                 <span id="verification-seal-{{ reel.author.id }}" class="verification-seal {% if not reel.author.social_profile.is_verified_merchant %}hidden{% endif %}">✓</span>
                             </p>
                         </div>
                     </div>
 
-                    <p class="text-sm text-gray-200 max-w-md line-clamp-2 mb-6 leading-relaxed">
+                    <p class="text-xs md:text-sm text-gray-200 max-w-[200px] md:max-w-md line-clamp-2 mb-4 md:mb-6 leading-relaxed">
                         {{ reel.caption }}
                     </p>
                     
                     {% if reel.price %}
-                    <div class="inline-flex items-center bg-white/5 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10">
-                        <span class="text-xs font-black text-indigo-400 mr-2 uppercase">{{ reel.currency }}</span>
-                        <span class="text-lg font-bold tracking-tight">{{ reel.price|floatformat:0 }}</span>
+                    <div class="inline-flex items-center bg-white/5 backdrop-blur-xl px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl border border-white/10">
+                        <span class="text-[10px] md:text-xs font-black text-indigo-400 mr-2 uppercase">{{ reel.currency }}</span>
+                        <span class="text-base md:text-lg font-bold tracking-tight">{{ reel.price|floatformat:0 }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -206,17 +210,17 @@
                 <div class="flex flex-col items-center">
                     {% if reel.price %}
                         <button onclick="triggerHaggle('{{ reel.id }}', '{{ reel.author.social_profile.whatsapp_number }}', '{{ reel.caption|escapejs }}', '{{ reel.price }}', '{{ reel.currency }}')" class="flex flex-col items-center group">
-                            <div class="p-5 bg-green-600 rounded-[24px] group-hover:bg-green-500 transition-all shadow-[0_0_30px_rgba(34,197,94,0.5)] border border-green-400/50 agent-pulse">
-                                <span class="text-2xl">🤝</span>
+                            <div class="p-4 md:p-5 bg-green-600 rounded-[20px] md:rounded-[24px] group-hover:bg-green-500 transition-all shadow-[0_0_20px_rgba(34,197,94,0.4)] border border-green-400/50 agent-pulse">
+                                <span class="text-xl md:text-2xl">🤝</span>
                             </div>
-                            <span class="text-[10px] mt-2 font-black uppercase text-green-400 tracking-widest">Buy Now</span>
+                            <span class="text-[8px] md:text-[10px] mt-2 font-black uppercase text-green-400 tracking-widest">Buy Now</span>
                         </button>
                     {% else %}
                         <button onclick="initiateHire('{{ reel.id }}', '{{ reel.author.social_profile.whatsapp_number }}', '{{ reel.caption|escapejs }}')" class="flex flex-col items-center group">
-                            <div class="p-5 bg-indigo-600 rounded-[24px] group-hover:bg-indigo-500 transition-all shadow-[0_0_30px_rgba(79,70,229,0.5)] border border-indigo-400/50">
-                                <span class="text-2xl">💼</span>
+                            <div class="p-4 md:p-5 bg-indigo-600 rounded-[20px] md:rounded-[24px] group-hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] border border-indigo-400/50">
+                                <span class="text-xl md:text-2xl">💼</span>
                             </div>
-                            <span class="text-[10px] mt-2 font-black uppercase text-indigo-300 tracking-widest">Hire Me</span>
+                            <span class="text-[8px] md:text-[10px] mt-2 font-black uppercase text-indigo-300 tracking-widest">Hire Me</span>
                         </button>
                     {% endif %}
                 </div>
@@ -260,12 +264,10 @@
             });
             const data = await response.json();
             if (data.status === 'success') {
-                // Update Like UI for the specific reel
                 btn.querySelector('span').classList.toggle('heart-active');
                 const likeCountElem = document.getElementById(`like-count-${reelId}`);
                 if (likeCountElem) likeCountElem.innerText = data.total_likes;
                 
-                // Update Trust Scores for ALL videos by this author on the page
                 const section = btn.closest('section');
                 const authorId = section.getAttribute('data-author-id');
                 
@@ -276,7 +278,6 @@
                     });
                 }
 
-                // Update Verification Seals for ALL videos by this author
                 const sealElems = document.querySelectorAll(`[id^="verification-seal-${authorId}"]`);
                 sealElems.forEach(seal => {
                     if (data.is_verified) {
