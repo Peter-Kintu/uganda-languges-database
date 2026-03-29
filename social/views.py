@@ -101,6 +101,7 @@ def upload_reel(request):
 def toggle_like_reel(request, reel_id):
     """
     Social Proof: Toggles a like on a reel via AJAX.
+    UPDATED: Now triggers author trust score recalculation (5% per like).
     """
     reel = get_object_or_404(BusinessReel, id=reel_id)
     if request.user in reel.likes.all():
@@ -110,29 +111,49 @@ def toggle_like_reel(request, reel_id):
         reel.likes.add(request.user)
         liked = True
     
+    # --- TRIGGER TRUST SCORE UPDATE ---
+    # Update the author's score immediately so the 5% per like is reflected
+    if hasattr(reel.author, 'social_profile'):
+        reel.author.social_profile.update_trust_score()
+    
     return JsonResponse({
         'status': 'success',
         'liked': liked,
-        'total_likes': reel.likes.count()
+        'total_likes': reel.likes.count(),
+        'new_trust_score': reel.author.social_profile.trust_score
     })
 
 @csrf_exempt
 @require_POST
 def track_share(request, reel_id):
     """
-    Branding: Increments the share count for reach metrics.
+    Branding: Increments the share count and returns new total for front-end display.
     """
-    BusinessReel.objects.filter(id=reel_id).update(share_count=F('share_count') + 1)
-    return JsonResponse({'status': 'SUCCESS'})
+    reel = get_object_or_404(BusinessReel, id=reel_id)
+    reel.share_count = F('share_count') + 1
+    reel.save()
+    reel.refresh_from_db()
+    
+    return JsonResponse({
+        'status': 'SUCCESS',
+        'total_shares': reel.share_count
+    })
 
 @csrf_exempt
 @require_POST
 def track_download(request, reel_id):
     """
-    Performance: Increments download count for high-value content.
+    Performance: Increments download count and returns new total for front-end display.
     """
-    BusinessReel.objects.filter(id=reel_id).update(download_count=F('download_count') + 1)
-    return JsonResponse({'status': 'SUCCESS'})
+    reel = get_object_or_404(BusinessReel, id=reel_id)
+    reel.download_count = F('download_count') + 1
+    reel.save()
+    reel.refresh_from_db()
+    
+    return JsonResponse({
+        'status': 'SUCCESS',
+        'total_downloads': reel.download_count
+    })
 
 # --- SOVEREIGN MESSAGING PROTOCOLS (WHATSAPP STYLE) ---
 
