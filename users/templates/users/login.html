@@ -38,9 +38,8 @@
 
     h1 { font-size: clamp(2.5rem, 8vw, 4rem); line-height: 1.1; margin-bottom: 1.5rem; }
     h2 { font-size: clamp(1.8rem, 5vw, 2.5rem); }
-    h3 { font-size: 1.35rem; margin-bottom: 0.75rem; color: var(--text-light); }
-
-    /* Glass Effect Refinement */
+    
+    /* Glass Card Style */
     .glass-card { 
         background: var(--bg-card); 
         backdrop-filter: blur(16px); 
@@ -51,61 +50,51 @@
         width: 100%;
         max-width: 450px;
         margin: 0 auto;
-        position: relative;
-        overflow: hidden;
     }
 
-    /* Layout Components */
-    .hero { 
-        min-height: 90vh; 
-        display: flex; 
-        align-items: center; 
-        padding: 80px 24px; 
-    }
-    .hero-grid { 
-        display: grid; 
-        grid-template-columns: 1fr; 
-        gap: 60px; 
-        max-width: 1200px; 
-        margin: 0 auto; 
-        align-items: center; 
-    }
-    @media (min-width: 968px) {
-        .hero-grid { grid-template-columns: 1.2fr 0.8fr; }
-    }
-    
-    .badge { 
-        display: inline-flex; 
-        align-items: center; 
-        gap: 8px; 
-        padding: 8px 16px; 
-        background: rgba(99, 102, 241, 0.1); 
-        border: 1px solid rgba(99, 102, 241, 0.2); 
-        border-radius: 100px; 
-        font-size: 14px; 
-        font-weight: 600;
-        margin-bottom: 32px; 
-        color: var(--accent);
+    /* Live Job Feed Component */
+    .job-ticker-container {
+        margin-top: 30px;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 20px;
+        border: 1px solid var(--border-light);
     }
 
-    .form-input { 
-        width: 100%; 
-        padding: 16px; 
-        background: rgba(15, 23, 42, 0.4); 
-        border: 1px solid var(--border-light); 
-        border-radius: 14px; 
-        color: white; 
-        margin-top: 8px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-sizing: border-box;
+    .job-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
     }
 
-    .form-input:focus {
-        outline: none;
+    .job-item:hover {
+        background: rgba(129, 140, 248, 0.1);
         border-color: var(--accent);
-        background: rgba(15, 23, 42, 0.8);
-        box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.1);
+        transform: translateX(5px);
     }
+
+    .job-source-tag {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        color: white;
+    }
+
+    /* Partner Colors */
+    .bg-micro1 { background: #6366f1; }
+    .bg-copilot { background: #10b981; }
+    .bg-solid { background: #f59e0b; }
+    .bg-adzuna { background: #ec4899; }
 
     .btn-primary { 
         background: var(--gradient-1); 
@@ -115,158 +104,105 @@
         border: none; 
         color: white; 
         font-weight: 700; 
-        font-size: 1.1rem;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
     }
 
-    .btn-primary:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 25px -10px var(--accent);
-        filter: brightness(1.1);
-    }
-
-    /* Grid & Cards */
-    .grid-3 { 
-        display: grid; 
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-        gap: 32px; 
-    }
+    .hero { min-height: 90vh; display: flex; align-items: center; padding: 80px 24px; }
+    .hero-grid { display: grid; grid-template-columns: 1fr; gap: 60px; max-width: 1200px; margin: 0 auto; align-items: center; }
+    @media (min-width: 968px) { .hero-grid { grid-template-columns: 1.2fr 0.8fr; } }
     
-    .card-item { 
-        padding: 40px; 
-        background: rgba(255, 255, 255, 0.02); 
-        border: 1px solid var(--border-light); 
-        border-radius: 24px; 
-        transition: all 0.4s ease;
-    }
-    .card-item:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: var(--accent);
-        transform: translateY(-8px);
-    }
-
-    .icon-box {
-        width: 50px; height: 50px;
-        background: var(--gradient-1);
-        border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.5rem; margin-bottom: 24px;
-    }
-
-    /* States & Animations */
     #login-wrapper { display: none; opacity: 0; }
-
-    @media (max-width: 968px) { 
-        .hero-grid { text-align: center; }
-        .badge { margin-left: auto; margin-right: auto; }
-        .glass-card { padding: 32px 24px !important; }
-    }
 </style>
 
 <main>
     <section class="hero">
         <div class="hero-grid container">
             <div class="hero-text">
-                <div class="badge">
-                    <span style="width:8px; height:8px; background:#10b981; border-radius:50%; box-shadow: 0 0 10px #10b981"></span> 
-                    Africa's Premiere AI Ecosystem
+                <div class="badge" style="display:inline-flex; align-items:center; gap:8px; padding:8px 16px; background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.2); border-radius:100px; margin-bottom:32px; color:var(--accent); font-weight:600;">
+                    <span style="width:8px; height:8px; background:#10b981; border-radius:50%; box-shadow:0 0 10px #10b981"></span> 
+                    Live: Connecting Africa to Global Markets
                 </div>
-                <h1 class="font-heading">Revolutionize Your <br><span style="color: var(--accent)">Economic Reality</span></h1>
-                <p style="margin-bottom: 40px; color: var(--text-muted); font-size: 1.25rem; max-width: 600px;">
-                    Scale your commerce with autonomous AI agents and tap into a global job market optimized for African talent.
+                <h1 class="font-heading">Secure Your <br><span style="color: var(--accent)">Global Career</span></h1>
+                <p style="margin-bottom: 30px; color: var(--text-muted); font-size: 1.2rem;">
+                    We aggregate live roles from the world's top talent platforms directly to your dashboard.
                 </p>
-                
-                <div id="cta-action-area">
-                    <button id="show-login-btn" class="btn-primary" style="max-width: 280px;">Get Started Now &rarr;</button>
+
+                <div class="job-ticker-container">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                        <span style="font-size:12px; font-weight:700; color:var(--accent);">LIVE VACANCIES</span>
+                        <span style="font-size:12px; color:var(--text-muted);">Updated just now</span>
+                    </div>
+
+                    <a href="javascript:void(0)" onclick="triggerLogin()" class="job-item">
+                        <div>
+                            <div style="font-size:14px; font-weight:600; color:white;">Senior Full-Stack Developer</div>
+                            <div style="font-size:12px; color:var(--text-muted);">Remote • $80k - $120k</div>
+                        </div>
+                        <span class="job-source-tag bg-micro1">Micro1</span>
+                    </a>
+
+                    <a href="javascript:void(0)" onclick="triggerLogin()" class="job-item">
+                        <div>
+                            <div style="font-size:14px; font-weight:600; color:white;">AI Implementation Specialist</div>
+                            <div style="font-size:12px; color:var(--text-muted);">Contract • High Priority</div>
+                        </div>
+                        <span class="job-source-tag bg-copilot">JobCopilot</span>
+                    </a>
+
+                    <a href="javascript:void(0)" onclick="triggerLogin()" class="job-item">
+                        <div>
+                            <div style="font-size:14px; font-weight:600; color:white;">UI/UX Product Designer</div>
+                            <div style="font-size:12px; color:var(--text-muted);">Freelance • Top 1% Gigs</div>
+                        </div>
+                        <span class="job-source-tag bg-solid">SolidGigs</span>
+                    </a>
+
+                    <a href="javascript:void(0)" onclick="triggerLogin()" class="job-item">
+                        <div>
+                            <div style="font-size:14px; font-weight:600; color:white;">Cloud Infrastructure Engineer</div>
+                            <div style="font-size:12px; color:var(--text-muted);">Uganda • adzuna_jobs</div>
+                        </div>
+                        <span class="job-source-tag bg-adzuna">Adzuna</span>
+                    </a>
+                </div>
+
+                <div id="cta-action-area" style="margin-top: 30px;">
+                    <button id="show-login-btn" class="btn-primary" style="max-width: 280px;">Enter Dashboard &rarr;</button>
                 </div>
             </div>
             
             <div id="login-wrapper">
                 <div class="glass-card" style="padding: 48px;">
-                    <h2 class="font-heading" style="margin-bottom: 8px;">Welcome Back</h2>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px;">Please enter your credentials to access your dashboard.</p>
+                    <h2 class="font-heading" style="margin-bottom: 8px;">Sign In</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px;">Access your job applications and AI agents.</p>
                     
                     <form method="POST" action="{% url 'users:user_login' %}">
                         {% csrf_token %}
-                        <div style="margin-bottom: 24px; text-align: left;">
-                            <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Email or Username</label>
-                            <input type="text" name="username" class="form-input" placeholder="e.g. peter_kintu" required>
+                        <div style="margin-bottom: 24px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Username</label>
+                            <input type="text" name="username" class="form-input" placeholder="peter_kintu" required>
                         </div>
-                        <div style="margin-bottom: 24px; text-align: left;">
-                            <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Password</label>
+                        <div style="margin-bottom: 24px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Password</label>
                             <input type="password" name="password" class="form-input" placeholder="••••••••" required>
                         </div>
-                        <button type="submit" class="btn-primary">Sign In to Dashboard</button>
+                        <button type="submit" class="btn-primary">Login to Africana AI</button>
                     </form>
                     
-                    <div style="text-align: center; margin-top: 32px; border-top: 1px solid var(--border-light); padding-top: 24px;">
-                        <p style="font-size: 14px; color: var(--text-muted);">
-                            New to the platform? <a href="{% url 'users:user_register' %}" style="color: var(--accent); font-weight: 700; text-decoration: none;">Create Account</a>
-                        </p>
-                    </div>
+                    <p style="text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-muted);">
+                        New here? <a href="{% url 'users:user_register' %}" style="color: var(--accent); font-weight: 700; text-decoration: none;">Register Now</a>
+                    </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="stats" style="background: rgba(15, 23, 42, 0.5); padding: 60px 0; border-y: 1px solid var(--border-light);">
-        <div class="container grid-3">
-            <div style="text-align: center;">
-                <h2 class="font-heading" style="color: var(--accent); margin:0;">50K+</h2>
-                <p style="color: var(--text-muted); text-transform: uppercase; font-size: 12px; font-weight: 700;">Active Users</p>
-            </div>
-            <div style="text-align: center;">
-                <h2 class="font-heading" style="color: var(--accent); margin:0;">$5M+</h2>
-                <p style="color: var(--text-muted); text-transform: uppercase; font-size: 12px; font-weight: 700;">Sales Volume</p>
-            </div>
-            <div style="text-align: center;">
-                <h2 class="font-heading" style="color: var(--accent); margin:0;">2M+</h2>
-                <p style="color: var(--text-muted); text-transform: uppercase; font-size: 12px; font-weight: 700;">Daily Jobs</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="features" style="padding: 120px 0;">
-        <div class="container">
-            <div style="text-align: center; max-width: 800px; margin: 0 auto 80px;">
-                <h2 class="font-heading" style="margin-bottom: 20px;">Powerful AI Tools for the Modern Professional</h2>
-                <p style="color: var(--text-muted);">We integrate cutting-edge Large Language Models to automate the tedious and amplify your output.</p>
-            </div>
-            
-            <div class="grid-3">
-                <div class="card-item">
-                    <div class="icon-box">🎯</div>
-                    <h3>Career Strategist</h3>
-                    <p>Personalized coaching and automated job sourcing tailored to your specific professional trajectory.</p>
-                </div>
-                <div class="card-item">
-                    <div class="icon-box">🛍️</div>
-                    <h3>AI E-Shop</h3>
-                    <p>Deploy autonomous sales agents that manage inventory and close deals on WhatsApp and TikTok 24/7.</p>
-                </div>
-                <div class="card-item">
-                    <div class="icon-box">🤝</div>
-                    <h3>Auto-Negotiation</h3>
-                    <p>Proprietary algorithms that handle customer inquiries and price negotiations while you focus on scaling.</p>
-                </div>
-                <div class="card-item">
-                    <div class="icon-box">🏨</div>
-                    <h3>Lodge Finder</h3>
-                    <p>Hyper-local AI recommendations for travel and accommodation based on your real-time needs.</p>
-                </div>
-                <div class="card-item">
-                    <div class="icon-box">🎬</div>
-                    <h3>Media Curator</h3>
-                    <p>Intelligent content suggestions that learn from your preferences to keep you inspired.</p>
-                </div>
-                <div class="card-item" style="background: var(--gradient-1); border: none;">
-                    <div class="icon-box" style="background: rgba(255,255,255,0.2);">🚀</div>
-                    <h3 style="color: white;">And More...</h3>
-                    <p style="color: rgba(255,255,255,0.8);">We are constantly deploying new agents to solve local challenges with global technology.</p>
-                </div>
-            </div>
+    <section class="stats" style="background: rgba(15, 23, 42, 0.5); padding: 40px 0; border-top: 1px solid var(--border-light);">
+        <div class="container" style="display:flex; justify-content:space-around; text-align:center;">
+            <div><h3 class="font-heading" style="color:var(--accent); margin:0;">2.4k</h3><p style="font-size:12px; color:var(--text-muted);">Daily Roles</p></div>
+            <div><h3 class="font-heading" style="color:var(--accent); margin:0;">150+</h3><p style="font-size:12px; color:var(--text-muted);">Global Partners</p></div>
+            <div><h3 class="font-heading" style="color:var(--accent); margin:0;">12ms</h3><p style="font-size:12px; color:var(--text-muted);">API Latency</p></div>
         </div>
     </section>
 </main>
@@ -274,51 +210,32 @@
 <script>
     gsap.registerPlugin(ScrollTrigger);
 
-    document.addEventListener('DOMContentLoaded', () => {
-        // Initial Page Animations
-        const tl = gsap.timeline();
-        tl.from(".badge", { opacity: 0, scale: 0.8, duration: 0.6, ease: "back.out(1.7)" })
-          .from(".hero-text h1", { opacity: 0, y: 30, duration: 0.8, ease: "power3.out" }, "-=0.3")
-          .from(".hero-text p", { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" }, "-=0.5")
-          .from("#show-login-btn", { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" }, "-=0.5");
+    function triggerLogin() {
+        // If user clicks a job, scroll/reveal the login card
+        const btn = document.getElementById('show-login-btn');
+        if (btn) btn.click();
+    }
 
-        // Show Login Card Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const tl = gsap.timeline();
+        tl.from(".badge", { opacity: 0, scale: 0.8, duration: 0.6 })
+          .from(".hero-text h1", { opacity: 0, y: 30, duration: 0.8 }, "-=0.3")
+          .from(".job-item", { opacity: 0, x: -20, stagger: 0.1, duration: 0.5 }, "-=0.2")
+          .from("#show-login-btn", { opacity: 0, y: 20, duration: 0.8 }, "-=0.2");
+
         const showLoginBtn = document.getElementById('show-login-btn');
         const loginWrapper = document.getElementById('login-wrapper');
 
         showLoginBtn.addEventListener('click', () => {
-            // Smoothly hide button and slide in the login card
             gsap.to("#cta-action-area", { opacity: 0, y: -20, duration: 0.4, onComplete: () => {
                 document.getElementById('cta-action-area').style.display = 'none';
                 loginWrapper.style.display = 'block';
                 gsap.to(loginWrapper, { opacity: 1, y: 0, duration: 0.8, ease: "power4.out" });
+                // If on mobile, scroll to the login card
+                if (window.innerWidth < 968) {
+                    loginWrapper.scrollIntoView({ behavior: 'smooth' });
+                }
             }});
-        });
-
-        // Scroll Animations for Feature Cards
-        gsap.from(".card-item", {
-            scrollTrigger: {
-                trigger: ".features",
-                start: "top 80%"
-            },
-            opacity: 0,
-            y: 50,
-            stagger: 0.1,
-            duration: 1,
-            ease: "power3.out"
-        });
-
-        // Stats Counter Animation (Simple fade in for now)
-        gsap.from(".stats h2", {
-            scrollTrigger: {
-                trigger: ".stats",
-                start: "top 90%"
-            },
-            opacity: 0,
-            scale: 0.5,
-            stagger: 0.2,
-            duration: 1,
-            ease: "back.out(1.5)"
         });
     });
 </script>
