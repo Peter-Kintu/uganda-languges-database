@@ -181,8 +181,10 @@ def profile_edit(request):
 # ==============================================================================
 
 def _get_user_profile_data(user):
+    """Retrieves detailed user context for personalization."""
     return {
         "full_name": user.get_full_name() or user.username, 
+        "headline": getattr(user, 'headline', 'Professional'),
         "bio": getattr(user, 'about', 'No bio provided'),
         "skills": [skill.name for skill in Skill.objects.filter(user=user)],
         "experiences": [f"{exp.title} at {exp.company_name}" for exp in Experience.objects.filter(user=user)]
@@ -216,27 +218,30 @@ def gemini_proxy(request):
         data = json.loads(request.body)
         raw_contents = data.get('contents', [])
         
+        # Pull profile data for personalization
         profile = _get_user_profile_data(request.user)
         
-        # UPDATED SYSTEM INSTRUCTION: Added Search Link requirements
+        # SYSTEM INSTRUCTION: Branding and Personalized context
         system_instruction = (
-            f"You are the Africana AI Career & Business Companion. User: {profile['full_name']}. "
-            f"Skills: {', '.join(profile['skills'][:10])}. "
-            "Your goal is to assist job seekers, recruiters, business owners, and buyers. "
+            f"You are Africana AI, the premier Career & Business Companion developed by Mwene Groups of Companies Limited. "
+            f"You are speaking with {profile['full_name']}, a {profile['headline']}. "
+            f"User Expertise: {', '.join(profile['skills'][:10])}. "
+            "\n\nPERSONALIZATION RULE:"
+            f"Address the user by name ({profile['full_name']}) occasionally. Tailor all career, business, and tech "
+            f"advice to fit their specific role as a {profile['headline']} and their skills in {', '.join(profile['skills'][:3])}."
             "\n\nSEARCH LINK PROTOCOL:"
-            "\nWhenever the user asks for jobs, specific products, media (movies/shows), or how to buy/sell something, "
-            "you MUST provide clear Markdown links formatted as actionable search buttons. Use these templates:"
+            "\nWhenever the user asks for jobs, specific products, media, or market info, you MUST provide "
+            "Markdown links as actionable search buttons using these templates:"
             "\n- JOBS: [🔍 Search Jobs on Google](https://www.google.com/search?q=jobs+for+QUERY)"
             "\n- PRODUCTS: [🛒 Find on Amazon](https://www.amazon.com/s?k=QUERY) or [🛍️ Search Google Shopping](https://www.google.com/search?tbm=shop&q=QUERY)"
             "\n- MOVIES/MEDIA: [🎬 Watch on YouTube](https://www.youtube.com/results?search_query=QUERY+movie) or [📺 Search on Amazon Prime](https://www.amazon.com/s?k=QUERY+movie)"
-            "\n- SELLING/MARKET: [📈 Research Market Prices](https://www.google.com/search?q=market+price+for+QUERY) and suggest local marketplaces like Jumia or Facebook Marketplace."
-            "\nAlways provide professional advice first, followed by these helpful links."
+            "\n- SELLING/MARKET: [📈 Research Market Prices](https://www.google.com/search?q=market+price+for+QUERY)"
+            "\nAlways provide high-quality professional advice first, then the helpful links."
         )
         
         history = _format_history_for_sdk(raw_contents)
 
         models_to_try = [
-            "gemini-2.5-flash",
             "gemini-2.0-flash", 
             "gemini-1.5-flash",
         ]
