@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% load static %}
 
@@ -23,11 +24,61 @@
         background-color: var(--bg-dark);
         background-image: 
             radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-            radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
+            radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
+            url('/static/images/africana-ai-preview.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
         font-family: 'Poppins', sans-serif; 
         color: var(--text-light);
         line-height: 1.6;
         margin: 0;
+        animation: backgroundSlideshow 20s infinite;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: -1;
+    }
+
+    /* Floating Particles */
+    .particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: rgba(99, 102, 241, 0.3);
+        border-radius: 50%;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .particle:nth-child(2n) {
+        animation-delay: -2s;
+        background: rgba(168, 85, 247, 0.3);
+    }
+
+    .particle:nth-child(3n) {
+        animation-delay: -4s;
+        background: rgba(34, 197, 94, 0.3);
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+        50% { transform: translateY(-20px) rotate(180deg); opacity: 0.8; }
+    }
+
+    @keyframes backgroundSlideshow {
+        0%, 20% { background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%), url('/static/users/images/robot.png'); }
+        25%, 45% { background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%), url('/static/users/images/shop1.png'); }
+        50%, 70% { background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%), url('/static/users/images/job1.png'); }
+        75%, 95% { background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%), url('/static/users/images/collaboration.png'); }
+        100% { background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%), url('/static/users/images/pic4.png'); }
     }
     
     .font-heading { 
@@ -43,12 +94,12 @@
 
     /* Glass Effect */
     .glass-card { 
-        background: var(--bg-card); 
-        backdrop-filter: blur(12px); 
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid var(--border-light); 
+        background: rgba(30, 41, 59, 0.85); 
+        backdrop-filter: blur(20px); 
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15); 
         border-radius: 24px; 
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
         width: 100%;
         max-width: 450px; /* keep form from growing too wide on large screens */
         margin: 0 auto;
@@ -143,10 +194,36 @@
         background: rgba(255, 255, 255, 0.03); 
         border: 1px solid var(--border-light); 
         border-radius: 20px; 
-        transition: background 0.3s ease;
+        transition: background 0.3s ease, transform 0.3s ease;
+    }
+
+    .card-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-5px);
     }
 
     .card-item p { color: var(--text-muted); font-size: 0.95rem; }
+
+    .integration-card {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .integration-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-1);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .integration-card:hover::before {
+        opacity: 1;
+    }
 
     /* Fixes for "Funny" Mobile View */
     @media (max-width: 968px) { 
@@ -170,6 +247,16 @@
 </style>
 
 <main>
+    <!-- Floating Particles -->
+    <div class="particle" style="top: 20%; left: 10%;"></div>
+    <div class="particle" style="top: 40%; left: 80%;"></div>
+    <div class="particle" style="top: 60%; left: 20%;"></div>
+    <div class="particle" style="top: 80%; left: 70%;"></div>
+    <div class="particle" style="top: 30%; left: 50%;"></div>
+    <div class="particle" style="top: 70%; left: 30%;"></div>
+    <div class="particle" style="top: 50%; left: 90%;"></div>
+    <div class="particle" style="top: 10%; left: 60%;"></div>
+
     <section class="hero">
         <div class="hero-grid container">
             <div class="hero-text">
@@ -243,6 +330,82 @@
                 <h3>AI Movie Recommendations</h3>
                 <p>Get tailored movie suggestions based on your preferences and viewing history.</p>
             </div>
+            <div class="card-item">
+                <span style="font-size: 2rem;">🤖</span>
+                <h3>Social AI Feed</h3>
+                <p>Connect with entrepreneurs, share business reels, and build your network.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="integrations" style="padding: 100px 0; background: rgba(0,0,0,0.1);">
+        <div class="container">
+            <h2 class="font-heading" style="text-align: center; margin-bottom: 48px;">Powered by World-Class Integrations</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 1.1rem; margin-bottom: 60px;">
+                Seamlessly integrated with leading platforms to bring you the best opportunities and products.
+            </p>
+        </div>
+        <div class="container grid-3">
+            <div class="card-item integration-card">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                    <span style="font-size: 2rem; margin-right: 12px;">🎬</span>
+                    <h3>Amazon Movies</h3>
+                </div>
+                <p>Access a vast library of movies and TV shows with AI-curated recommendations tailored to your tastes.</p>
+                <div style="margin-top: 16px; padding: 8px 12px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px; font-size: 0.9rem; color: #fbbf24;">
+                    Premium streaming experience
+                </div>
+            </div>
+            <div class="card-item integration-card">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                    <span style="font-size: 2rem; margin-right: 12px;">🛒</span>
+                    <h3>AliExpress Products</h3>
+                </div>
+                <p>Source and sell global products effortlessly with automated listings and inventory management.</p>
+                <div style="margin-top: 16px; padding: 8px 12px; background: rgba(255, 20, 147, 0.1); border: 1px solid rgba(255, 20, 147, 0.3); border-radius: 8px; font-size: 0.9rem; color: #ff1493;">
+                    Global marketplace access
+                </div>
+            </div>
+            <div class="card-item integration-card">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                    <span style="font-size: 2rem; margin-right: 12px;">💼</span>
+                    <h3>Adzuna Job Card Macro1</h3>
+                </div>
+                <p>Advanced job matching with macro-level insights for career growth and opportunities worldwide.</p>
+                <div style="margin-top: 16px; padding: 8px 12px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 8px; font-size: 0.9rem; color: #22c55e;">
+                    AI-powered job discovery
+                </div>
+            </div>
+            <div class="card-item integration-card">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                    <span style="font-size: 2rem; margin-right: 12px;">🚀</span>
+                    <h3>Jobcopilot</h3>
+                </div>
+                <p>Your personal career co-pilot for resume optimization, interview prep, and job application automation.</p>
+                <div style="margin-top: 16px; padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; font-size: 0.9rem; color: #3b82f6;">
+                    Career acceleration tools
+                </div>
+            </div>
+            <div class="card-item integration-card">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                    <span style="font-size: 2rem; margin-right: 12px;">🔧</span>
+                    <h3>Solid Gig</h3>
+                </div>
+                <p>Reliable gig economy platform connecting freelancers with high-quality, steady work opportunities.</p>
+                <div style="margin-top: 16px; padding: 8px 12px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; font-size: 0.9rem; color: #a855f7;">
+                    Freelance marketplace
+                </div>
+            </div>
+            <div class="card-item integration-card">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                    <span style="font-size: 2rem; margin-right: 12px;">🌍</span>
+                    <h3>Africana AI Ecosystem</h3>
+                </div>
+                <p>Comprehensive AI suite designed specifically for African entrepreneurs and professionals.</p>
+                <div style="margin-top: 16px; padding: 8px 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; font-size: 0.9rem; color: var(--accent);">
+                    Africa-focused innovation
+                </div>
+            </div>
         </div>
     </section>
 </main>
@@ -292,6 +455,43 @@
             opacity: 0, 
             y: 40, 
             stagger: 0.15, 
+            duration: 0.8,
+            ease: "power2.out"
+        });
+
+        // Animation for Integrations Heading
+        gsap.from(".integrations h2", { 
+            scrollTrigger: { 
+                trigger: ".integrations",
+                start: "top 90%" 
+            },
+            opacity: 0, 
+            y: 20, 
+            duration: 0.8,
+            ease: "power2.out"
+        });
+
+        gsap.from(".integrations p", { 
+            scrollTrigger: { 
+                trigger: ".integrations",
+                start: "top 85%" 
+            },
+            opacity: 0, 
+            y: 15, 
+            duration: 0.8,
+            delay: 0.2,
+            ease: "power2.out"
+        });
+
+        // Animation for Integration Cards
+        gsap.from(".integrations .card-item", { 
+            scrollTrigger: { 
+                trigger: ".integrations .grid-3",
+                start: "top 80%" 
+            },
+            opacity: 0, 
+            y: 50, 
+            stagger: 0.1, 
             duration: 0.8,
             ease: "power2.out"
         });
