@@ -54,19 +54,19 @@ CSRF_TRUSTED_ORIGINS = [
     'https://uganda-languges-database.onrender.com',
 ]
 
-# Dynamically add hosts from ALLOWED_HOSTS (HTTPS only for safety)
-for host in ALLOWED_HOSTS:
-    clean_host = host.strip()
-    if clean_host and clean_host != '*':
-        if not clean_host.startswith(('http://', 'https://')):
-            CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
-
-# Local development origins
 if DEBUG:
+    # Local development origins
     CSRF_TRUSTED_ORIGINS.extend([
         'http://127.0.0.1:8000',
         'http://localhost:8000',
     ])
+else:
+    # Dynamically add hosts from ALLOWED_HOSTS (HTTPS only for safety)
+    for host in ALLOWED_HOSTS:
+        clean_host = host.strip()
+        if clean_host and clean_host != '*':
+            if not clean_host.startswith(('http://', 'https://')):
+                CSRF_TRUSTED_ORIGINS.append(f"https://{clean_host}")
 
 # --- APPLICATION DEFINITION ---
 INSTALLED_APPS = [
