@@ -31,6 +31,7 @@
         body {
             font-family: 'Inter', sans-serif;
             padding-bottom: 70px;
+            background-color: #f8fafc;
         }
         @media (min-width: 768px) {
             body { padding-bottom: 0; }
@@ -44,7 +45,7 @@
             bottom: -5px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #6366f1;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
             transition: width 0.3s ease-in-out;
         }
         .nav-link:hover:after {
@@ -52,17 +53,18 @@
         }
 
         .footer-link { transition: color 0.2s; }
-        .footer-link:hover { color: #818cf8; }
+        .footer-link:hover { color: #3b82f6; }
 
         .header-glass {
-            background-color: rgba(17, 24, 39, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(129, 140, 248, 0.2);
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
             z-index: 100;
             position: sticky;
             top: 0;
             pointer-events: auto !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
         #drawer-menu-links {
@@ -73,7 +75,7 @@
             padding: 0 4px;
             justify-content: space-between;
             align-items: center;
-            border-top: 2px solid #374151;
+            border-top: 2px solid #e5e7eb;
         }
 
         .nav-link-mobile {
@@ -109,7 +111,7 @@
             left: 50%;
             transform: translate(-50%, 5px);
             white-space: nowrap;
-            background-color: #4f46e5;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             color: white;
             padding: 4px 8px;
             border-radius: 6px;
@@ -136,12 +138,25 @@
             transform: translateX(-50%);
             border-width: 5px;
             border-style: solid;
-            border-color: transparent transparent #4f46e5 transparent;
+            border-color: transparent transparent #3b82f6 transparent;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+<body class="bg-white text-gray-900 min-h-screen flex flex-col">
 
     <header class="header-glass">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -153,7 +168,7 @@
                 </div>
                  
                 <div class="hidden md:flex md:space-x-8 lg:space-x-12 items-center">
-                    <a href="{% url 'social:social_feed' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                    <a href="{% url 'social:social_feed' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
                         <span class="nav-icon-container">
                             <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V15a3 3 0 0 0-3-3h-3a3 3 0 0 0-3 3v3.72c0 .247.202.45.45.45h4.8a.45.45 0 0 0 .45-.45ZM6.75 20.25h3.75a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Zm0-12h3.75a.75.75 0 0 0 .75-.75V5.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Z" />
@@ -162,7 +177,7 @@
                         </span>
                     </a>
 
-                    <a href="{% url 'eshop:product_list' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                    <a href="{% url 'eshop:product_list' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
                         <span class="nav-icon-container">
                             <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.5.856 8.528a2.25 2.25 0 0 1-.676 1.76l-.44.437c-.322.32-.744.498-1.18.498H5.986c-.436 0-.858-.178-1.18-.498l-.44-.438a2.25 2.25 0 0 1-.676-1.757l.856-8.527M12 8.25h.008v.008H12V8.25Z" />
@@ -171,7 +186,7 @@
                         </span>
                     </a>
 
-                    <a href="{% url 'hotel:hotel_list' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                    <a href="{% url 'hotel:hotel_list' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
                         <span class="nav-icon-container">
                             <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 11.25l1.5 1.5.75-.75V8.758l2.276-.61a.48.48 0 00.349-.464V4.41c0-.26-.14-.5-.367-.632A4.49 4.49 0 0015 3.125a4.49 4.49 0 00-2.258.653c-.227.132-.367.372-.367.632v3.274c0 .19.113.361.289.437l1.711.737v2.398zm-1.5 8.25V18a3 3 0 00-6 0v1.5m10.5-3v-1.312c0-.361-.137-.71-.384-.977L14.5 14.25m-9 0l-3.116 3.213c-.247.267-.384.616-.384.977V19.5m13.5-3H3.75" />
@@ -180,7 +195,7 @@
                         </span>
                     </a>
 
-                    <a href="{% url 'languages:home' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                    <a href="{% url 'languages:home' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
                         <span class="nav-icon-container">
                             <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 .414-.336.75-.75.75H4.5a.75.75 0 0 1-.75-.75v-4.25m16.5 0a3 3 0 0 0-3-3H6.75a3 3 0 0 0-3 3m16.5 0V10.5A3.75 3.75 0 0 0 16.5 6.75h-9A3.75 3.75 0 0 0 3.75 10.5v3.65" />
@@ -189,7 +204,7 @@
                         </span>
                     </a>
 
-                    <a href="{% url 'movie:movie_list' %}" class="nav-link text-gray-300 hover:text-indigo-400 py-2 text-base font-medium">
+                    <a href="{% url 'movie:movie_list' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
                         <span class="nav-icon-container">
                             <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653Z" />
@@ -210,9 +225,9 @@
                     <div class="border-l border-gray-700 h-8"></div> 
 
                     {% if user.is_authenticated %}
-                    <a href="{% url 'languages:user_profile' %}" class="nav-link flex items-center text-indigo-400 hover:text-indigo-300 py-2 text-base font-medium group">
+                    <a href="{% url 'languages:user_profile' %}" class="nav-link flex items-center text-green-600 hover:text-green-700 py-2 text-base font-medium group">
                         <span class="nav-icon-container">
-                            <svg class="w-6 h-6 text-indigo-500 group-hover:text-indigo-300 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                            <svg class="w-6 h-6 text-green-600 group-hover:text-green-700 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
                             </svg>
                             <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Dashboard</span>
@@ -222,7 +237,7 @@
                         Logout
                     </a>
                     {% else %}
-                    <a href="{% url 'users:user_register' %}" class="ml-4 inline-flex items-center justify-center px-5 py-2 border border-transparent rounded-full shadow-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition duration-150 ease-in-out transform hover:scale-105">
+                    <a href="{% url 'users:user_register' %}" class="ml-4 inline-flex items-center justify-center px-5 py-2 border border-transparent rounded-full shadow-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out transform hover:scale-105">
                         Sign Up
                     </a>
                     {% endif %}
@@ -232,32 +247,41 @@
     </header>
 
     <main class="flex-grow">
+        {% if messages %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            {% for message in messages %}
+            <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-900/50 border border-red-500 text-red-200{% elif message.tags == 'success' %}bg-green-900/50 border border-green-500 text-green-200{% else %}bg-blue-900/50 border border-blue-500 text-blue-200{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 
     <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 md:hidden py-2" 
-        style="background-color: rgba(17, 24, 39, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+        style="background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
         
         <div id="drawer-menu-links" class="max-w-7xl mx-auto px-4 sm:px-6">
-            <a href="{% url 'social:social_feed' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
+            <a href="{% url 'social:social_feed' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
                 <span class="flex items-center">
                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V15a3 3 0 0 0-3-3h-3a3 3 0 0 0-3 3v3.72c0 .247.202.45.45.45h4.8a.45.45 0 0 0 .45-.45ZM6.75 20.25h3.75a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Zm0-12h3.75a.75.75 0 0 0 .75-.75V5.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Z" /></svg> connect
                 </span>
             </a>
               
-            <a href="{% url 'eshop:product_list' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
+            <a href="{% url 'eshop:product_list' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
                 <span class="flex items-center">
                     <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.5.856 8.528a2.25 2.25 0 0 1-.676 1.76l-.44.437c-.322.32-.744.498-1.18.498H5.986c-.436 0-.858-.178-1.18-.498l-.44-.438a2.25 2.25 0 0 1-.676-1.757l.856-8.527M12 8.25h.008v.008H12V8.25Z" /></svg> Market
                 </span>
             </a>
 
-            <a href="{% url 'languages:home' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
+            <a href="{% url 'languages:home' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
                 <span class="flex items-center">
                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 .414-.336.75-.75.75H4.5a.75.75 0 0 1-.75-.75v-4.25m16.5 0a3 3 0 0 0-3-3H6.75a3 3 0 0 0-3 3m16.5 0V10.5A3.75 3.75 0 0 0 16.5 6.75h-9A3.75 3.75 0 0 0 3.75 10.5v3.65" /></svg> Jobs
                 </span>
             </a>
 
-            <a href="{% url 'movie:movie_list' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
+            <a href="{% url 'movie:movie_list' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
                 <span class="flex items-center">
                     <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653Z" />
@@ -266,7 +290,7 @@
                 </span>
             </a>
 
-            <a href="{% url 'users:profile' %}" class="nav-link-mobile block text-gray-200 hover:text-indigo-400">
+            <a href="{% url 'users:profile' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
                 <span class="flex items-center">
                     <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg> Profile
                 </span>
@@ -274,15 +298,15 @@
         </div>
     </nav>
 
-    <footer class="bg-gray-800 text-gray-400 py-10 border-t border-indigo-700/30">
+    <footer class="bg-gray-100 text-gray-600 py-10 border-t border-green-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-sm font-light">&copy; {% now "Y" %} All rights reserved. Built with passion for Africana AI.</p>
             <div class="mt-4 space-x-4 flex justify-center items-center text-sm">
-                <a href="https://wa.me/256789746493" class="footer-link flex items-center hover:text-green-400">
+                <a href="https://wa.me/256789746493" class="footer-link flex items-center hover:text-green-600">
                     WhatsApp
                 </a>
-                <span class="hidden sm:inline text-gray-600">|</span>
-                <a href="mailto:kintupeter7@gmail.com" class="footer-link flex items-center hover:text-red-400">
+                <span class="hidden sm:inline text-gray-400">|</span>
+                <a href="mailto:kintupeter7@gmail.com" class="footer-link flex items-center hover:text-green-600">
                     Email
                 </a>
             </div>

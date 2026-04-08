@@ -6,47 +6,47 @@
 
 {% block content %}
 <header class="relative bg-center bg-cover h-64 md:h-80" style="background-image: url('https://images.unsplash.com/photo-1542450893-a9d701dfc6a9?q=80&w=2940&auto=format&fit=crop');">
-    <div class="absolute inset-0 bg-indigo-900/80 flex items-center justify-center">
+    <div class="absolute inset-0 bg-gradient-to-r from-blue-600/80 to-purple-600/80 flex items-center justify-center">
         <div class="text-center text-white p-4">
             <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-3 animate-fade-in-up">
                 Share Your Product, Unlock Prosperity 🌍
             </h1>
-            <p class="text-lg md:text-2xl font-light text-indigo-200 animate-fade-in-up delay-150">
+            <p class="text-lg md:text-2xl font-light text-blue-100 animate-fade-in-up delay-150">
                 List a product and connect with a global community instantly.
             </p>
         </div>
     </div>
 </header>
 
-<div class="container mx-auto px-4 py-8 -mt-16 relative z-10">
-    <div class="max-w-4xl mx-auto p-10 bg-gray-800 rounded-3xl shadow-2xl border border-gray-700">
+<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-16 relative z-10">
+    <div class="w-full max-w-4xl mx-auto p-10 bg-white rounded-3xl shadow-2xl border border-gray-200">
 
-        <h2 class="text-3xl font-bold text-white mb-8 border-b border-gray-700 pb-4">Product Listing Form</h2>
+        <h2 class="text-3xl font-bold text-gray-800 mb-8 border-b border-gray-200 pb-4">Product Listing Form</h2>
 
         <form method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %} 
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Name</label>
-                    {{ form.name|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder:e.g., Hand-carved Luganda Drum" }}
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Product Name</label>
+                    {{ form.name|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder:text-gray-500" }}
                 </div>
                 
                 <div>
-                    <label for="{{ form.country.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Country of Origin</label>
-                    {{ form.country|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 placeholder:e.g., Uganda, Kenya" }}
+                    <label for="{{ form.country.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Country of Origin</label>
+                    {{ form.country|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder:text-gray-500" }}
                 </div>
             </div>
 
             <div>
-                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Description</label>
-                {{ form.description|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 h-32" }}
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Product Description</label>
+                {{ form.description|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 h-32" }}
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                 <div class="md:col-span-1">
-                    <label for="{{ form.currency.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Preferred Currency</label>
-                    {{ form.currency|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200" }}
+                    <label for="{{ form.currency.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Preferred Currency</label>
+                    {{ form.currency|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" }}
                 </div>
 
                 <div class="md:col-span-1">
@@ -91,29 +91,29 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                 <div>
-                    <label for="{{ form.vendor_name.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Your Vendor Name</label>
-                    {{ form.vendor_name|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200" }}
+                    <label for="{{ form.vendor_name.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Your Vendor Name</label>
+                    {{ form.vendor_name|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" }}
                 </div>
 
                 <div>
-                    <label for="{{ form.whatsapp_number.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">WhatsApp Contact</label>
-                    {{ form.whatsapp_number|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200" }}
+                    <label for="{{ form.whatsapp_number.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">WhatsApp Contact</label>
+                    {{ form.whatsapp_number|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" }}
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="{{ form.tiktok_url.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">TikTok Video URL (Optional)</label>
-                    {{ form.tiktok_url|attr:"class:w-full px-4 py-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200" }}
+                    <label for="{{ form.tiktok_url.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">TikTok Video URL (Optional)</label>
+                    {{ form.tiktok_url|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" }}
                 </div>
                 <div>
-                    <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Product Image/Media</label>
-                    {{ form.image|attr:"class:block w-full text-sm text-gray-300 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 bg-gray-700 rounded-lg p-2 border border-gray-600" }}
+                    <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Product Image/Media</label>
+                    {{ form.image|attr:"class:block w-full text-sm text-gray-600 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 bg-gray-50 rounded-lg p-2 border border-gray-300" }}
                 </div>
             </div>
             
             {% if form.errors %}
-                <div class="p-4 bg-red-800/50 border border-red-700 rounded-xl text-red-300 shadow-xl">
+                <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 shadow-xl">
                     <p class="font-bold mb-2">Please correct the following errors:</p>
                     <ul class="list-disc list-inside ml-2 space-y-1 text-sm">
                         {% for field in form %}
@@ -125,9 +125,13 @@
                 </div>
             {% endif %}
 
-            <button type="submit" 
-                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 px-8 rounded-xl text-lg transition-colors duration-300 transform hover:scale-[1.01] shadow-2xl shadow-indigo-600/40 mt-8">
-                List Product Now
+            <button type="submit" id="submit-btn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 px-8 rounded-xl text-lg transition-colors duration-300 transform hover:scale-[1.01] shadow-2xl shadow-blue-600/40 mt-8 flex items-center justify-center">
+                <span id="btn-text">List Product Now</span>
+                <svg id="btn-spinner" class="animate-spin ml-2 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
             </button>
         </form>
 
@@ -181,5 +185,15 @@
         }
     }
     window.addEventListener("load", setupConverter);
+
+    // Loading state for form submission
+    document.querySelector('form').addEventListener('submit', function() {
+        const btn = document.getElementById('submit-btn');
+        const text = document.getElementById('btn-text');
+        const spinner = document.getElementById('btn-spinner');
+        btn.disabled = true;
+        text.textContent = 'Listing Product...';
+        spinner.classList.remove('hidden');
+    });
 </script>
 {% endblock %}

@@ -180,7 +180,7 @@
                 <header class="flex flex-col md:flex-row items-center md:items-start gap-8 mb-12">
                     <div class="relative">
                         {% if selected_job.company_logo_or_media %}
-                            <img src="{{ selected_job.company_logo_or_media.url }}" class="h-24 w-24 rounded-3xl object-cover ring-4 ring-slate-800 bg-white" alt="Company Logo">
+                            <img src="{{ selected_job.company_logo_or_media.url }}" class="h-24 w-24 rounded-3xl object-cover ring-4 ring-slate-800 bg-white" alt="Company Logo" loading="lazy">
                         {% else %}
                             <div class="h-24 w-24 rounded-3xl bg-indigo-600 flex items-center justify-center text-3xl font-black text-white shadow-2xl">
                                 {{ selected_job.recruiter_name|slice:":1" }}

@@ -2589,6 +2589,7 @@ data = {
  '1734997':{'en': 'Ann Arbor, MI'},
  '1734998':{'en': 'Ann Arbor, MI'},
  '1737':{'en': 'Texas'},
+ '1738':{'en': 'California'},
  '1740':{'en': 'Ohio'},
  '1740223':{'en': 'Marion, OH'},
  '1740246':{'en': 'Thornville, OH'},
@@ -10018,5 +10019,4 @@ data = {
  '1918832':{'en': 'Tulsa, OK'},
  '1918834':{'en': 'Tulsa, OK'},
  '1918835':{'en': 'Tulsa, OK'},
- '1918836':{'en': 'Tulsa, OK'},
 }
