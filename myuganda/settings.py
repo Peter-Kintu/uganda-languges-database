@@ -182,14 +182,33 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
 
 # --- STORAGE BACKENDS ---
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
+# Check if Cloudinary is properly configured
+CLOUDINARY_CONFIGURED = (
+    os.environ.get('CLOUDINARY_CLOUD_NAME') and 
+    os.environ.get('CLOUDINARY_API_KEY') and
+    not os.environ.get('CLOUDINARY_API_KEY').startswith('your-')  # Placeholder check
+)
+
+if CLOUDINARY_CONFIGURED and not DEBUG:
+    # Use Cloudinary in production when credentials are set
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+else:
+    # Use local file storage in development or when Cloudinary is not configured
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

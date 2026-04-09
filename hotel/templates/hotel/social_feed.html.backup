@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Social Feed | MyUganda{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="fixed top-24 right-6 z-[100] space-y-4">
+    {% for message in messages %}
+    <div class="flex items-center p-4 rounded-2xl backdrop-blur-2xl border border-white/10 {% if message.tags == 'success' %}bg-emerald-500/20 text-emerald-400{% else %}bg-rose-500/20 text-rose-400{% endif %} shadow-xl">
+        <span class="text-xs font-bold uppercase tracking-widest">{{ message }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="bg-gray-50 min-h-screen text-gray-900 selection:bg-indigo-500/30 font-sans overflow-x-hidden">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <h1 class="text-2xl font-bold text-gray-900">Social Feed</h1>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Feed -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Create Post -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'hotel:create_post' %}">
+                        {% csrf_token %}
+                        <div class="space-y-4">
+                            <div>
+                                <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">What's on your mind?</label>
+                                {{ form.content|add_class:"w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" }}
+                            </div>
+                            <div>
+                                <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Add an image (optional)</label>
+                                {{ form.image|add_class:"w-full" }}
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    Post
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Posts Feed -->
+                {% for feed_item in feed_items %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    {% if feed_item.type == 'post' %}
+                        {% with post=feed_item.item %}
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <span class="text-indigo-600 font-semibold">{{ post.author.username|first|upper }}</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="font-semibold text-gray-900">{{ post.author.get_full_name|default:post.author.username }}</h3>
+                                    <span class="text-gray-500 text-sm">{{ post.created_at|timesince }} ago</span>
+                                </div>
+                                <p class="text-gray-700 mt-2">{{ post.content }}</p>
+                                {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="Post image" class="mt-3 rounded-lg max-w-full h-auto">
+                                {% endif %}
+                                <div class="flex items-center space-x-4 mt-4">
+                                    <button class="flex items-center space-x-1 text-gray-600 hover:text-indigo-600" onclick="likePost({{ post.id }})">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                        </svg>
+                                        <span>{{ post.likes.count }}</span>
+                                    </button>
+                                    <button class="flex items-center space-x-1 text-gray-600 hover:text-indigo-600" onclick="toggleComments({{ post.id }})">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                        </svg>
+                                        <span>{{ post.comments.count }}</span>
+                                    </button>
+                                    <a href="{% url 'hotel:share_post' post.id %}" class="flex items-center space-x-1 text-gray-600 hover:text-indigo-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+                                        </svg>
+                                        <span>Share</span>
+                                    </a>
+                                </div>
+                                <!-- Comments Section -->
+                                <div id="comments-{{ post.id }}" class="hidden mt-4 space-y-3">
+                                    {% for comment in post.comments.all %}
+                                    <div class="flex items-start space-x-2">
+                                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                            <span class="text-gray-600 font-semibold text-sm">{{ comment.author.username|first|upper }}</span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="bg-gray-100 rounded-lg px-3 py-2">
+                                                <p class="text-sm font-semibold text-gray-900">{{ comment.author.get_full_name|default:comment.author.username }}</p>
+                                                <p class="text-sm text-gray-700">{{ comment.content }}</p>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">{{ comment.created_at|timesince }} ago</p>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                    <!-- Add Comment Form -->
+                                    <form method="post" action="{% url 'hotel:add_comment' post.id %}" class="flex items-center space-x-2">
+                                        {% csrf_token %}
+                                        <input type="text" name="content" placeholder="Write a comment..." class="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Comment</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% elif feed_item.type == 'share' %}
+                        {% with share=feed_item.item %}
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <span class="text-green-600 font-semibold">{{ share.sharer.username|first|upper }}</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="font-semibold text-gray-900">{{ share.sharer.get_full_name|default:share.sharer.username }}</h3>
+                                    <span class="text-gray-500 text-sm">shared a post • {{ share.created_at|timesince }} ago</span>
+                                </div>
+                                {% if share.caption %}
+                                <p class="text-gray-700 mt-2">{{ share.caption }}</p>
+                                {% endif %}
+                                
+                                <!-- Original Post -->
+                                <div class="mt-3 bg-gray-50 rounded-lg p-4 border-l-4 border-indigo-200">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                            <span class="text-indigo-600 font-semibold text-sm">{{ share.original_post.author.username|first|upper }}</span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2">
+                                                <h4 class="font-semibold text-gray-900 text-sm">{{ share.original_post.author.get_full_name|default:share.original_post.author.username }}</h4>
+                                                <span class="text-gray-500 text-xs">{{ share.original_post.created_at|timesince }} ago</span>
+                                            </div>
+                                            <p class="text-gray-700 text-sm mt-1">{{ share.original_post.content }}</p>
+                                            {% if share.original_post.image %}
+                                            <img src="{{ share.original_post.image.url }}" alt="Shared post image" class="mt-2 rounded-lg max-w-full h-auto max-h-48 object-cover">
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-4 mt-4">
+                                    <button class="flex items-center space-x-1 text-gray-600 hover:text-indigo-600" onclick="likePost({{ share.original_post.id }})">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                        </svg>
+                                        <span>{{ share.original_post.likes.count }}</span>
+                                    </button>
+                                    <a href="{% url 'hotel:share_post' share.original_post.id %}" class="flex items-center space-x-1 text-gray-600 hover:text-indigo-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+                                        </svg>
+                                        <span>Share</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Connections -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="font-semibold text-gray-900 mb-4">Connections</h3>
+                    <div class="space-y-3">
+                        {% for connection in connections %}
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <span class="text-indigo-600 font-semibold text-sm">{{ connection.to_user.username|first|upper }}</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900">{{ connection.to_user.get_full_name|default:connection.to_user.username }}</p>
+                                <p class="text-xs text-gray-500">{{ connection.to_user.headline|truncatechars:30 }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-900">Messages</h3>
+                        <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800 text-sm">View All</a>
+                    </div>
+                    <div id="messages-list" class="space-y-3">
+                        <!-- Messages will be loaded here -->
+                    </div>
+                    <button onclick="openMessageModal()" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 mt-4">
+                        New Message
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Send Message</h3>
+        <form id="message-form">
+            <div class="mb-4">
+                <label for="recipient" class="block text-sm font-medium text-gray-700 mb-2">To:</label>
+                <select id="recipient" name="recipient" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <option value="">Select a user</option>
+                    {% for user in all_users %}
+                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="message-content" class="block text-sm font-medium text-gray-700 mb-2">Message:</label>
+                <textarea id="message-content" name="content" rows="4" placeholder="Type your message..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" required></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeMessageModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Send</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function likePost(postId) {
+    fetch(`/hotel/like_post/${postId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function toggleComments(postId) {
+    const commentsDiv = document.getElementById(`comments-${postId}`);
+    commentsDiv.classList.toggle('hidden');
+}
+
+function openMessageModal() {
+    document.getElementById('message-modal').classList.remove('hidden');
+}
+
+function closeMessageModal() {
+    document.getElementById('message-modal').classList.add('hidden');
+}
+
+// Load messages from server
+function loadMessages() {
+    fetch('/hotels/get_recent_messages/')
+    .then(response => response.json())
+    .then(data => {
+        const messagesList = document.getElementById('messages-list');
+        messagesList.innerHTML = '';
+        data.messages.forEach(message => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'bg-gray-100 rounded-lg p-3';
+            messageDiv.innerHTML = `
+                <p class="text-sm font-semibold text-gray-900">${message.sender}</p>
+                <p class="text-sm text-gray-700">${message.content}</p>
+                <p class="text-xs text-gray-500">${new Date(message.created_at).toLocaleString()}</p>
+            `;
+            messagesList.appendChild(messageDiv);
+        });
+    })
+    .catch(error => {
+        console.log('Could not load messages:', error);
+    });
+}
+
+// Handle message form submission
+document.getElementById('message-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const recipientId = formData.get('recipient');
+    const content = formData.get('content');
+
+    // Send message via AJAX
+    fetch(`/hotels/send_message/${recipientId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `content=${encodeURIComponent(content)}`
+    })
+    .then(response => {
+        if (response.ok) {
+            closeMessageModal();
+            this.reset();
+            alert('Message sent successfully!');
+        } else {
+            alert('Failed to send message.');
+        }
+    });
+});
+
+// Load messages on page load
+loadMessages();
+</script>
+{% endblock %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
+            <div class="group relative bg-white/5 border border-white/10 rounded-2xl sm:rounded-[40px] overflow-hidden hover:border-indigo-500/30 transition-transform duration-500 hover:-translate-y-2">
+                <div class="relative h-60 sm:h-80 overflow-hidden">
+                    <img src="{% if stay.image %}{{ stay.image.url }}{% else %}{{ stay.image_url }}{% endif %}" 
+                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                         alt="{{ stay.name }}">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-80"></div>
+                    
+                    <div class="absolute top-4 sm:top-6 left-4 sm:left-6 flex flex-col gap-2">
+                        <span class="bg-black/40 backdrop-blur-md text-white text-xs sm:text-sm font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-white/10">
+                            {{ stay.city }}
+                        </span>
+                        {% if stay.is_verified_vendor %}
+                        <span class="bg-indigo-600 text-white text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                            ✓ Verified Local
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="p-4 sm:p-6 lg:p-8">
+                    <h3 class="text-base sm:text-xl md:text-2xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight line-clamp-1 italic">{{ stay.name }}</h3>
+                    <div class="flex items-center justify-between pt-4 sm:pt-6 border-t border-white/10">
+                        <div>
+                            <span class="text-slate-500 text-xs uppercase font-bold mb-1 block">Nightly Rate</span>
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-xs font-bold text-indigo-400">{{ stay.currency }}</span>
+                                <span class="text-base sm:text-xl md:text-2xl font-extrabold text-white tracking-tight">
+                                    {% if stay.price_per_night > 0 %}{{ stay.price_per_night|floatformat:0 }}{% else %}Enquire{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <a href="{% url 'hotel:hotel_detail' stay.slug %}" class="bg-white text-black hover:bg-indigo-600 hover:text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold transition-colors duration-300 text-xs sm:text-sm uppercase tracking-widest">
+                            Discover
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-16 sm:py-24 border-2 border-dashed border-white/5 rounded-2xl sm:rounded-[40px]">
+                <h3 class="text-white text-base sm:text-xl font-extrabold tracking-tight mb-2">Curating Excellence</h3>
+                <p class="text-slate-500 text-sm font-light italic">Authenticating the next wave of African sanctuaries...</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+
+<script>
+    /**
+     * SMART GPS DISCOVERY SCRIPT
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(fetchNearby);
+        }
+
+        function fetchNearby(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            fetch(`/hotel/nearby/?lat=${lat}&lon=${lon}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.data.length > 0) {
+                        const zone = document.getElementById('nearby-discovery-zone');
+                        const resultsContainer = document.getElementById('nearby-results');
+                        
+                        data.data.forEach(item => {
+                            const card = `
+                                <div class="bg-indigo-600/5 border border-indigo-500/20 rounded-2xl sm:rounded-[30px] p-4 sm:p-6 flex items-center gap-4 sm:gap-6 hover:bg-indigo-600/10 transition-all">
+                                    <img src="${item.image}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl object-cover border border-white/10">
+                                    <div class="flex-1">
+                                        <h4 class="text-white font-extrabold text-sm uppercase tracking-tight">${item.name}</h4>
+                                        <p class="text-indigo-400 text-xs font-bold uppercase mt-1">${item.city} • ${item.price}</p>
+                                        <a href="/hotel/hotel/${item.slug}/" class="text-white/50 text-xs font-bold uppercase tracking-widest mt-2 sm:mt-3 block hover:text-white">View Proximity →</a>
+                                    </div>
+                                </div>
+                            `;
+                            resultsContainer.innerHTML += card;
+                        });
+
+                        zone.classList.remove('hidden');
+                        setTimeout(() => zone.classList.add('opacity-100'), 100);
+                    }
+                });
+        }
+    });
+</script>
+{% endblock %}

@@ -18,6 +18,8 @@ class CustomUser(AbstractUser):
     about = models.TextField(_("About Summary"), blank=True, null=True, 
                              help_text=_("A summary of your professional journey and goals."))
     location = models.CharField(_("Location"), max_length=100, blank=True, null=True)
+    language = models.CharField(_("Preferred Language"), max_length=10, default='en', 
+                                help_text=_("User's preferred language for content, e.g., 'en', 'sw', 'fr'"))
 
     profile_image = CloudinaryField('profile_image', blank=True, null=True, 
                                     help_text=_("Upload a professional profile picture."))
