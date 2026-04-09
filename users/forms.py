@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from django.core.exceptions import ValidationError
 from .models import CustomUser, Experience, Education, Skill
 
 # --- Authentication Forms ---
@@ -17,6 +18,12 @@ class CustomUserCreationForm(UserCreationForm):
         # Apply Tailwind classes to all form fields for consistent styling
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500'
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if username and CustomUser.objects.filter(username__iexact=username).exists():
+            raise ValidationError("A user with that username already exists.")
+        return username
 
 
 # --- Profile Forms ---
