@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
+from django.db import IntegrityError
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -107,12 +108,19 @@ def user_register(request):
                         user.referrer = referrer_user
                 except User.DoesNotExist:
                     pass 
-            user.save()
-            login(request, user)
-            if 'referrer' in request.session:
-                del request.session['referrer']
-            messages.success(request, "Registration successful. Welcome!")
-            return redirect('languages:browse_job_listings')
+            try:
+                user.save()
+            except IntegrityError as e:
+                if 'username' in str(e).lower():
+                    form.add_error('username', 'A user with that username already exists.')
+                else:
+                    form.add_error(None, 'Unable to complete registration. Please try again.')
+            else:
+                login(request, user)
+                if 'referrer' in request.session:
+                    del request.session['referrer']
+                messages.success(request, "Registration successful. Welcome!")
+                return redirect('languages:browse_job_listings')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
