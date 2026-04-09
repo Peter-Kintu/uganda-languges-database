@@ -1,53 +1,14 @@
 from django import forms
-from .models import Accommodation
+from .models import Post
 
-class AccommodationForm(forms.ModelForm):  # FIXED: Removed the underscore
+class PostForm(forms.ModelForm):
     class Meta:
-        model = Accommodation
-        # These fields match the ones used in your add_accommodation.html template
-        # UPDATED: Added latitude and longitude for the 5KM Discovery Engine
-        fields = [
-            'name', 
-            'city', 
-            'country', 
-            'price_per_night', 
-            'currency', 
-            'stars', 
-            'image', 
-            'whatsapp_number', 
-            'tiktok_url', 
-            'description',
-            'latitude',
-            'longitude'
-        ]
-        
-        # Adding styling widgets to match your dark-mode UI
+        model = Post
+        fields = ['content', 'image']
         widgets = {
-            'description': forms.Textarea(attrs={
-                'rows': 4, 
-                'placeholder': 'Describe the lodge...',
-                'class': 'w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all'
-            }),
-            'price_per_night': forms.NumberInput(attrs={'step': '1'}),
-            # Hidden or Readonly widgets for GPS data to prevent manual typing errors
-            'latitude': forms.TextInput(attrs={
-                'readonly': 'readonly', 
-                'placeholder': 'Lat',
-                'class': 'bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-indigo-400 font-mono'
-            }),
-            'longitude': forms.TextInput(attrs={
-                'readonly': 'readonly', 
-                'placeholder': 'Lon',
-                'class': 'bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-indigo-400 font-mono'
+            'content': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Share your thoughts...',
+                'class': 'w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500'
             }),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # We ensure that manually added lodges are marked as 'local'
-        if not self.instance.pk:
-            self.instance.source = 'local'
-            
-        # Optional: Make GPS fields required to ensure the Discovery Engine works
-        self.fields['latitude'].required = False
-        self.fields['longitude'].required = False

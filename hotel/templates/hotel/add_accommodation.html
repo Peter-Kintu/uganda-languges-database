@@ -2,52 +2,44 @@
 {% load static %}
 {% load widget_tweaks %}
 
+{% block title %}Create Post | MyUganda{% endblock %}
+
 {% block content %}
-<div class="bg-[#020617] min-h-screen py-16 px-4 relative overflow-hidden">
-    <div class="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
-    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-600/5 blur-[120px] rounded-full pointer-events-none"></div>
+<div class="bg-gray-50 min-h-screen py-16 px-4">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">Create a New Post</h1>
 
-    <div class="max-w-4xl mx-auto relative z-10">
-        <div class="text-center mb-12">
-            <span class="text-indigo-500 text-[9px] font-black uppercase tracking-[0.4em]">Partner Portal</span>
-            <h1 class="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mt-3 leading-none">
-                List Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Sanctuary</span>
-            </h1>
-            <p class="text-slate-500 mt-4 text-base max-w-lg mx-auto font-light">Join the elite collection of African stays. Go live on the global marketplace.</p>
-        </div>
-
-        <div class="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-[40px] p-8 md:p-12 shadow-2xl">
-            <form method="POST" enctype="multipart/form-data" class="space-y-10">
+            <form method="POST" enctype="multipart/form-data" class="space-y-6">
                 {% csrf_token %}
-                
-                <div class="space-y-6">
-                    <div class="flex items-center gap-4">
-                        <span class="bg-indigo-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black">01</span>
-                        <h2 class="text-white font-black uppercase tracking-widest text-xs">Property Identity</h2>
-                    </div>
-                    <div class="grid grid-cols-1 gap-6">
-                        <div class="space-y-2">
-                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Lodge Name</label>
-                            {% render_field form.name class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-700" placeholder="e.g. Serengeti Whisper Lodge" %}
-                        </div>
-                    </div>
+
+                <div>
+                    <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">What's on your mind?</label>
+                    {{ form.content|add_class:"w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" }}
+                    {% if form.content.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.content.errors.0 }}</p>
+                    {% endif %}
                 </div>
 
-                <div class="space-y-6">
-                    <div class="flex items-center gap-4">
-                        <span class="bg-indigo-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black">02</span>
-                        <h2 class="text-white font-black uppercase tracking-widest text-xs">Location Discovery</h2>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-2">
-                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">Country</label>
-                            {% render_field form.country class="w-full bg-[#0f172a] border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all" %}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-slate-400 text-[9px] font-black uppercase tracking-widest ml-2">City/Hub</label>
-                            {% render_field form.city class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="e.g. Arusha" %}
-                        </div>
+                <div>
+                    <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Add an image (optional)</label>
+                    {{ form.image|add_class:"w-full" }}
+                    {% if form.image.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.image.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'hotel:social_feed' %}" class="px-6 py-2 text-gray-600 hover:text-gray-800">Cancel</a>
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        Create Post
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
                     </div>
 
                     <div class="bg-indigo-500/5 border border-indigo-500/20 rounded-[30px] p-6 space-y-4">

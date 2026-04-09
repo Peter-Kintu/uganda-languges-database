@@ -11,7 +11,7 @@ class CustomUserCreationForm(UserCreationForm):
     """
     class Meta(UserCreationForm.Meta):
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'headline', 'location')
+        fields = ('username', 'email', 'first_name', 'last_name', 'headline', 'location', 'language')
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,7 +43,7 @@ class ProfileEditForm(forms.ModelForm):
     """
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'headline', 'about', 'location', 'profile_image')
+        fields = ('first_name', 'last_name', 'headline', 'about', 'location', 'language', 'profile_image')
         widgets = {
             'about': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Tell us about your professional journey...'}),
         }

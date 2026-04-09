@@ -1,172 +1,179 @@
-import os
-import requests
-import time
-import uuid
 from django.shortcuts import render, redirect, get_object_or_404
-from django.conf import settings
-from django.contrib import messages
-from django.utils.text import slugify
+from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from urllib.parse import quote
-from .models import Accommodation
-from .forms import AccommodationForm
+from django.contrib import messages
+from django.db.models import Q
+from .models import Post, Comment, Like, Connection, Message, Share
+from .forms import PostForm
+from users.models import CustomUser
+from django.conf import settings
+import requests
 
-def ajax_nearby_accommodations(request):
-    """
-    THE 5KM PROXIMITY ENGINE:
-    Calculates distance using a coordinate bounding box (+/- 0.045 degrees).
-    Prioritizes verified local vendors in the results.
-    """
-    lat = request.GET.get('lat')
-    lon = request.GET.get('lon')
+@login_required
+def social_feed(request):
+    # Get user's connections
+    connected_users = Connection.objects.filter(
+        Q(sender=request.user) | Q(receiver=request.user),
+        status='accepted'
+    ).values_list('sender', 'receiver')
     
-    if not lat or not lon:
-        return JsonResponse({'status': 'error', 'message': 'Location required'}, status=400)
-
-    try:
-        # Math: 0.045 degrees is roughly 5 kilometers
-        range_delta = 0.045
-        lat_min, lat_max = float(lat) - range_delta, float(lat) + range_delta
-        lon_min, lon_max = float(lon) - range_delta, float(lon) + range_delta
-
-        # Query: Within 5KM, prioritizing local community hosts
-        nearby = Accommodation.objects.filter(
-            latitude__range=(lat_min, lat_max),
-            longitude__range=(lon_min, lon_max)
-        ).order_by('-is_verified_vendor')[:6]
-
-        results = [{
-            'name': item.name,
-            'city': item.city,
-            'price': f"{item.currency} {item.price_per_night}",
-            'slug': item.slug,
-            'image': item.image.url if item.image else item.image_url,
-            'is_verified': item.is_verified_vendor
-        } for item in nearby]
-
-        return JsonResponse({'status': 'success', 'data': results})
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-
-def sync_hotels_travelpayouts(request):
-    """
-    REAL-TIME API SYNC ENGINE:
-    Updated to also store GPS coordinates for the discovery engine.
-    """
-    if not request.user.is_staff:
-        messages.error(request, "Access Denied: Staff credentials required for API Sync.")
-        return redirect('hotel:hotel_list')
-
-    api_token = os.environ.get('TRAVEL_PAYOUTS_TOKEN')
-    marker = "703979" # Your Travelpayouts Affiliate Marker
+    # Flatten the list and remove duplicates, excluding current user
+    connected_user_ids = set()
+    for sender, receiver in connected_users:
+        if sender != request.user.id:
+            connected_user_ids.add(sender)
+        if receiver != request.user.id:
+            connected_user_ids.add(receiver)
     
-    search_areas = [
-        {'city': 'Kampala', 'country': 'Uganda', 'lat': '0.3476', 'lon': '32.5825'},
-        {'city': 'Entebbe', 'country': 'Uganda', 'lat': '0.0512', 'lon': '32.4637'},
-        {'city': 'Nairobi', 'country': 'Kenya', 'lat': '-1.2921', 'lon': '36.8219'},
-        {'city': 'Zanzibar', 'country': 'Tanzania', 'lat': '-6.1659', 'lon': '39.2026'},
-        {'city': 'Kigali', 'country': 'Rwanda', 'lat': '-1.9441', 'lon': '30.0619'},
-        {'city': 'Cape Town', 'country': 'South Africa', 'lat': '-33.9249', 'lon': '18.4241'},
-    ]
+    # Include the current user
+    connected_user_ids.add(request.user.id)
+    
+    # Get posts from user and connections
+    posts = Post.objects.filter(author_id__in=connected_user_ids).order_by('-created_at')
+    
+    # Get shares from user and connections
+    shares = Share.objects.filter(sharer_id__in=connected_user_ids).order_by('-created_at')
+    
+    # Combine posts and shares into a single feed
+    feed_items = []
+    
+    for post in posts:
+        feed_items.append({
+            'type': 'post',
+            'item': post,
+            'created_at': post.created_at
+        })
+    
+    for share in shares:
+        feed_items.append({
+            'type': 'share',
+            'item': share,
+            'created_at': share.created_at
+        })
+    
+    # Sort by creation date
+    feed_items.sort(key=lambda x: x['created_at'], reverse=True)
+    
+    connections = Connection.objects.filter(
+        Q(sender=request.user) | Q(receiver=request.user),
+        status='accepted'
+    )
+    all_users = CustomUser.objects.exclude(id=request.user.id)
+    context = {
+        'feed_items': feed_items,
+        'connections': connections,
+        'all_users': all_users,
+    }
+    return render(request, 'hotel/social_feed.html', context)
 
-    hotels_synced = 0
-    headers = {'X-Access-Token': api_token} if api_token else {}
-
-    if not api_token:
-        messages.warning(request, "API Sync failed: TRAVEL_PAYOUTS_TOKEN is missing.")
-        return redirect('hotel:hotel_list')
-
-    for area in search_areas:
-        try:
-            url = f"https://api.travelpayouts.com/v1/hotels/search.json?lat={area['lat']}&lon={area['lon']}&limit=15&currency=USD"
-            response = requests.get(url, headers=headers, timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                hotels = data if isinstance(data, list) else data.get('hotels', [])
-
-                for h in hotels:
-                    hotel_name = h.get('name')
-                    ext_id = str(h.get('id'))
-                    
-                    obj, created = Accommodation.objects.update_or_create(
-                        external_id=ext_id,
-                        defaults={
-                            'source': 'travelpayouts',
-                            'name': hotel_name,
-                            'slug': slugify(f"{hotel_name}-{area['city']}") if not Accommodation.objects.filter(external_id=ext_id).exists() else None,
-                            'city': area['city'],
-                            'country': area['country'],
-                            'stars': h.get('stars', 4),
-                            'price_per_night': h.get('price', 0),
-                            'currency': 'USD',
-                            'latitude': h.get('lat'), # GPS Capture
-                            'longitude': h.get('lon'), # GPS Capture
-                            'description': f"A premium sanctuary located in {area['city']}. Verified as part of The Collection's global partner network.",
-                            'affiliate_url': f"https://search.tp.st/hotels?hotelId={ext_id}&marker={marker}&locale=en"
-                        }
-                    )
-                    
-                    if created:
-                        if not obj.slug:
-                            obj.slug = slugify(f"{hotel_name}-{str(uuid.uuid4())[:4]}")
-                        obj.save()
-                        hotels_synced += 1
-                
-                time.sleep(0.5)
-                
-        except Exception as e:
-            print(f"Error syncing {area['city']}: {str(e)}")
-            continue
-
-    if hotels_synced > 0:
-        messages.success(request, f"Marketplace Updated: {hotels_synced} new live properties synchronized.")
-    else:
-        messages.info(request, "The collection is already synced with the latest live data.")
-
-    return redirect('hotel:hotel_list')
-
-
-def hotel_list(request):
-    """Displays all properties from the database."""
-    accommodations = Accommodation.objects.all().order_by('-id')
-    return render(request, 'hotel_list.html', {'accommodations': accommodations})
-
-
-def hotel_detail(request, slug):
-    """Detailed view for a single lodge/hotel."""
-    accommodation = get_object_or_404(Accommodation, slug=slug)
-    return render(request, 'hotel_detail.html', {'accommodation': accommodation})
-
-
-def add_accommodation(request):
-    """
-    Manual entry form for local lodges.
-    Updated to associate properties with the logged-in vendor.
-    """
+@login_required
+def create_post(request):
     if request.method == 'POST':
-        form = AccommodationForm(request.POST, request.FILES)
+        form = PostForm(request.POST, request.FILES)
         if form.is_valid():
-            accommodation = form.save(commit=False)
-            # Associate the property with the user (vendor)
-            if request.user.is_authenticated:
-                accommodation.owner = request.user
-            accommodation.save()
-            messages.success(request, "Property successfully added to your sanctuary collection.")
-            return redirect('hotel:hotel_list')
+            post = form.save(commit=False)
+            post.author = request.user
+            post.save()
+            messages.success(request, 'Post created successfully!')
+            return redirect('hotel:social_feed')
     else:
-        form = AccommodationForm()
-    return render(request, 'add_accommodation.html', {'form': form})
+        form = PostForm()
+    return render(request, 'hotel/create_post.html', {'form': form})
 
+@login_required
+def like_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    like, created = Like.objects.get_or_create(post=post, user=request.user)
+    if not created:
+        like.delete()
+    return JsonResponse({'likes_count': post.likes.count()})
 
-def book_hotel(request, pk):
-    """Directs users to Affiliate Booking or Direct WhatsApp."""
-    hotel = get_object_or_404(Accommodation, pk=pk)
-    
-    if hotel.source == 'travelpayouts' and hotel.affiliate_url:
-        return redirect(hotel.affiliate_url)
-    
-    raw_num = hotel.whatsapp_number or "256000000000"
-    message = quote(f"Hello The Collection Africa, I am interested in booking {hotel.name} in {hotel.city}.")
-    return redirect(f"https://wa.me/{raw_num}?text={message}")
+@login_required
+def add_comment(request, post_id):
+    if request.method == 'POST':
+        post = get_object_or_404(Post, id=post_id)
+        content = request.POST.get('content')
+        if content:
+            Comment.objects.create(post=post, author=request.user, content=content)
+    return redirect('hotel:social_feed')
+
+@login_required
+def send_connection_request(request, user_id):
+    receiver = get_object_or_404(settings.AUTH_USER_MODEL, id=user_id)
+    if receiver != request.user:
+        Connection.objects.get_or_create(sender=request.user, receiver=receiver)
+        messages.success(request, f'Connection request sent to {receiver.username}!')
+    return redirect('hotel:social_feed')
+
+@login_required
+def accept_connection(request, connection_id):
+    connection = get_object_or_404(Connection, id=connection_id, receiver=request.user)
+    connection.status = 'accepted'
+    connection.save()
+    messages.success(request, f'Connected with {connection.sender.username}!')
+    return redirect('hotel:social_feed')
+
+@login_required
+def translate_text(request):
+    text = request.GET.get('text', '')
+    target_lang = request.user.language or 'en'
+    translated = translate_via_api(text, target_lang)
+    return JsonResponse({'translated': translated})
+
+def translate_via_api(text, target_lang):
+    """
+    Simple translation function. For now, returns original text.
+    In production, integrate with a proper translation service.
+    """
+    # TODO: Implement proper translation API
+    # For now, just return the original text
+    return text
+
+@login_required
+def send_message(request, user_id):
+    receiver = get_object_or_404(CustomUser, id=user_id)
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            content = data.get('content', '')
+        except:
+            content = request.POST.get('content', '')
+        
+        if content:
+            Message.objects.create(sender=request.user, receiver=receiver, content=content)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'})
+            else:
+                messages.success(request, f'Message sent to {receiver.username}!')
+                return redirect('users:profile', username=receiver.username)
+    return redirect('users:profile', username=receiver.username)
+
+@login_required
+def inbox(request):
+    messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')
+    return render(request, 'hotel/inbox.html', {'messages': messages_list})
+
+@login_required
+def share_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    if request.method == 'POST':
+        caption = request.POST.get('caption', '')
+        Share.objects.create(original_post=post, sharer=request.user, caption=caption)
+        messages.success(request, 'Post shared successfully!')
+        return redirect('hotel:social_feed')
+    return render(request, 'hotel/share_post.html', {'post': post})
+
+@login_required
+def get_recent_messages(request):
+    messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')[:5]
+    messages_data = []
+    for msg in messages_list:
+        messages_data.append({
+            'sender': msg.sender.username,
+            'sender_id': msg.sender.id,
+            'content': msg.content[:50],
+            'created_at': msg.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_read': msg.is_read
+        })
+    return JsonResponse({'messages': messages_data})

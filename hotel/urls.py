@@ -4,18 +4,13 @@ from . import views
 app_name = 'hotel'
 
 urlpatterns = [
-    # 1. Static/Specific paths first
-    path('', views.hotel_list, name='hotel_list'),
-    path('add/', views.add_accommodation, name='add_accommodation'),
-    
-    # NEW: Smart Ecosystem Discovery Endpoint (The 5KM Proximity Engine)
-    # This powers the real-time GPS search without refreshing the page
-    path('nearby/', views.ajax_nearby_accommodations, name='ajax_nearby'),
-    
-    # hotel/urls.py
-    path('sync/', views.sync_hotels_travelpayouts, name='sync_hotels_travelpayouts'),
-    
-    # 2. Dynamic/Variable paths last
-    path('hotel/<slug:slug>/', views.hotel_detail, name='hotel_detail'),
-    path('book/<int:pk>/', views.book_hotel, name='book_hotel'),
+    path('', views.social_feed, name='social_feed'),
+    path('create_post/', views.create_post, name='create_post'),
+    path('like_post/<int:post_id>/', views.like_post, name='like_post'),
+    path('add_comment/<int:post_id>/', views.add_comment, name='add_comment'),
+    path('translate/', views.translate_text, name='translate_text'),
+    path('send_message/<int:user_id>/', views.send_message, name='send_message'),
+    path('inbox/', views.inbox, name='inbox'),
+    path('share_post/<int:post_id>/', views.share_post, name='share_post'),
+    path('get_recent_messages/', views.get_recent_messages, name='get_recent_messages'),
 ]
