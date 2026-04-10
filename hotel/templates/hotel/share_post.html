@@ -28,9 +28,34 @@
                 </div>
             </div>
 
-            <!-- Share Form -->
+            <!-- External Share Buttons (Web Share API) -->
+            <div class="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">📤 Share Externally</h2>
+                <p class="text-sm text-gray-600 mb-4">Share this post directly to WhatsApp, social media, or copy the link</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button onclick="shareToWhatsApp('{{ post.content|truncatewords:20 }}', '{{ request.build_absolute_uri }}/')" class="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium">
+                        <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.272-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.67-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421-7.403h-.004a9.87 9.87 0 00-9.746 9.798c0 2.734.75 5.404 2.177 7.697L2.185 22l8.104-2.273c2.205 1.2 4.686 1.836 7.188 1.836 5.381 0 9.748-4.367 9.748-9.746 0-2.604-.996-5.054-2.799-6.899-1.802-1.844-4.251-2.856-6.833-2.856z"/></svg>
+                        WhatsApp
+                    </button>
+                    <button onclick="shareToTwitter('{{ post.content|truncatewords:20 }}', '{{ request.build_absolute_uri }}/')" class="flex items-center justify-center px-4 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors duration-200 text-sm font-medium">
+                        <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75 2.25 7-2 7-2z"/></svg>
+                        Twitter
+                    </button>
+                    <button onclick="shareTelegram('{{ post.content|truncatewords:20 }}', '{{ request.build_absolute_uri }}/')" class="flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm font-medium">
+                        <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a11.955 11.955 0 0 0-.624.03c-.611.053-1.21.174-1.79.357a6.002 6.002 0 0 0-1.712-1.088 5.822 5.822 0 0 0-1.88-.306m.735 15.642v-5.604h2.176v5.604m3.02 0v-5.604h2.176v5.604m3.02 0v-5.604h2.176v5.604"/></svg>
+                        Telegram
+                    </button>
+                    <button onclick="copyShareLink('{{ request.build_absolute_uri }}/')" class="flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm font-medium">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                        Copy Link
+                    </button>
+                </div>
+            </div>
+
+            <!-- Internal Share Form -->
             <form method="POST" class="space-y-4">
                 {% csrf_token %}
+                <h2 class="text-lg font-semibold text-gray-800">📝 Share Internally</h2>
                 <div>
                     <label for="caption" class="block text-sm font-medium text-gray-700 mb-2">Add a caption (optional)</label>
                     <textarea name="caption" id="caption" rows="3" placeholder="What do you think about this post?" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
@@ -46,4 +71,63 @@
         </div>
     </div>
 </div>
+
+<script>
+// ============================================================================
+// WEB SHARE API - Share to WhatsApp, Twitter, Telegram, etc.
+// ============================================================================
+
+/**
+ * Share to WhatsApp using Web Share API or fallback URL
+ */
+function shareToWhatsApp(text, url) {
+    if (navigator.share) {
+        // Native Web Share API
+        navigator.share({
+            title: '{{ post.author.get_full_name|default:post.author.username }}\'s Post',
+            text: text,
+            url: url
+        }).catch(err => console.log('Share failed:', err));
+    } else {
+        // Fallback: Open WhatsApp direct link
+        const message = encodeURIComponent(`"${text}"\n\nCheck out this post: ${url}`);
+        window.open(`https://wa.me/?text=${message}`, '_blank');
+    }
+}
+
+/**
+ * Share to Twitter
+ */
+function shareToTwitter(text, url) {
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(twitterUrl, '_blank', 'width=550,height=420');
+}
+
+/**
+ * Share to Telegram
+ */
+function shareTelegram(text, url) {
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    window.open(telegramUrl, '_blank');
+}
+
+/**
+ * Copy share link to clipboard
+ */
+function copyShareLink(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Copied!';
+        btn.classList.add('bg-green-600', 'hover:bg-green-700');
+        btn.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.add('bg-gray-600', 'hover:bg-gray-700');
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        }, 2000);
+    }).catch(() => alert('Failed to copy. Please try again.'));
+}
+</script>
 {% endblock %}
