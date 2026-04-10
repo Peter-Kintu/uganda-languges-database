@@ -363,14 +363,8 @@
     }
 
     async function triggerHaggle(reelId, whatsapp, caption, price, currency) {
-        if (!whatsapp || whatsapp === 'None' || whatsapp === '') {
-            alert("Creator contact not available.");
-            return;
-        }
-        const cleanNumber = whatsapp.replace(/\D/g, ''); 
-        const text = `Hello! I'm interested in buying this: "${caption.substring(0, 50)}..." for ${currency} ${price}.`;
-        const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
-        window.open(waUrl, '_blank');
+        // Redirect to negotiation page instead of WhatsApp
+        window.location.href = `/social/negotiate-page/${reelId}/`;
     }
 
     async function initiateHire(reelId, whatsapp, caption) {

@@ -9,10 +9,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
         :root {
-            --brand-primary: #6366f1;
-            --brand-glow: rgba(99, 102, 241, 0.15);
-            --bg-dark: #020617;
-            --card-bg: #0f172a;
+            --brand-primary: #3b82f6;
+            --brand-glow: rgba(59, 130, 246, 0.15);
+            --bg-dark: #ffffff;
+            --card-bg: #f8fafc;
             --adzuna-blue: #3b82f6;
         }
 
@@ -20,43 +20,56 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-dark);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.05) 0px, transparent 50%);
-            color: #f8fafc;
+                radial-gradient(at 40% 20%, rgba(59, 130, 246, 0.03) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgba(139, 92, 246, 0.03) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, rgba(16, 185, 129, 0.02) 0px, transparent 50%);
+            color: #1f2937;
             line-height: 1.6;
         }
 
         /* WORLD-CLASS SEARCH UI - IMPROVED RESPONSIVENESS */
         .search-orchestrator {
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 20px 50px -12px rgba(0, 0, 0, 0.8);
-            border-radius: 24px;
-            padding: 12px;
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
         }
         
         @media (min-width: 768px) {
             .search-orchestrator {
-                border-radius: 40px;
-                padding: 10px;
+                border-radius: 20px;
+                padding: 20px;
             }
         }
 
         .search-orchestrator:focus-within {
-            border-color: rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 80px -10px rgba(99, 102, 241, 0.15);
-            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.12), 0 0 0 1px rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
         }
 
         .search-input-group {
             position: relative;
             display: flex;
             align-items: center;
-            min-height: 56px;
+            min-height: 48px;
             width: 100%;
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .search-input-group:focus-within {
+            background: rgba(59, 130, 246, 0.02);
+            border-color: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
         }
         
         .search-input-group input, .search-input-group select {
@@ -65,54 +78,57 @@
             box-shadow: none !important;
             height: 100%;
             width: 100%;
-            color: white !important;
-            padding-left: 54px;
-            padding-right: 15px;
-            font-size: 15px;
+            color: #1f2937 !important;
+            padding-left: 48px;
+            padding-right: 12px;
+            font-size: 16px;
             font-weight: 500;
             outline: none;
+            placeholder-color: #6b7280;
         }
 
-        /* FIX: Dropdown Visibility (White background/invisible text fix) */
-        .search-input-group select option {
-            background-color: #0f172a; /* Matches card-bg */
-            color: white;
-        }
-
-        /* Select styling reset */
         .search-input-group select {
-            appearance: none;
+            padding-left: 12px;
+            padding-right: 32px;
             cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
         }
 
         .search-input-group svg {
             position: absolute;
-            left: 20px;
-            color: #64748b;
-            transition: color 0.3s ease;
+            left: 16px;
+            color: #6b7280;
+            transition: color 0.2s ease;
             pointer-events: none;
+            width: 20px;
+            height: 20px;
         }
         .search-input-group:focus-within svg {
-            color: var(--brand-primary);
+            color: #3b82f6;
         }
 
         /* NEU-JOB CARDS */
         .job-card {
             background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.06);
             transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            border-radius: 32px;
+            border-radius: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         .job-card:hover {
-            transform: translateY(-8px) scale(1.01);
-            border-color: rgba(99, 102, 241, 0.4);
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
+            transform: translateY(-4px) scale(1.01);
+            border-color: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
         }
 
         /* PREMIUM ANIMATED CARD */
         .premium-card {
-            background: linear-gradient(165deg, #1e1b4b 0%, #020617 100%);
-            border: 1px solid rgba(129, 140, 248, 0.3);
+            background: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
             position: relative;
             overflow: hidden;
         }
@@ -121,7 +137,7 @@
             position: absolute;
             top: -50%; left: -50%;
             width: 200%; height: 200%;
-            background: conic-gradient(from 0deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+            background: conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.05), transparent);
             animation: rotate 10s linear infinite;
             pointer-events: none;
         }
@@ -222,48 +238,48 @@
 
     {% else %}
         {# LIST VIEW - UNIFIED SEARCH & FILTER HEADER #}
-        <header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md shadow-2xl -mx-4 sm:-mx-6 lg:-mx-8 mb-12">
-            <div class="container mx-auto px-4 py-3">
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-50 backdrop-blur-md shadow-sm">
+            <div class="container mx-auto px-4 py-4">
                 <form method="GET" action="{% url 'languages:browse_job_listings' %}" id="search-filter-form">
-                    <div class="flex items-center justify-between gap-4 mb-3">
-                        <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-1 group whitespace-nowrap">
-                            <h1 class="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white transition-all group-hover:tracking-normal">
-                                Listed<span class="text-indigo-500">.Jobs</span>
+                    <div class="flex items-center justify-between gap-4 mb-4">
+                        <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-2 group whitespace-nowrap">
+                            <h1 class="text-2xl font-black tracking-tight text-gray-900 transition-all group-hover:tracking-normal">
+                                Listed<span class="text-blue-600">.Jobs</span>
                             </h1>
                         </a>
 
-                        <div class="hidden md:flex flex-grow max-w-2xl">
-                            <div class="flex w-full group rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/50 bg-slate-800/50 border border-slate-700 shadow-inner transition-all">
+                        <div class="hidden md:flex flex-grow max-w-lg">
+                            <div class="flex w-full group rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 bg-gray-50 border border-gray-200 shadow-sm transition-all">
                                 <input type="text" name="q" id="search-q-desktop" value="{{ search_query|default:'' }}" placeholder="Search job titles, skills, or keywords..." 
-                                       class="w-full bg-transparent text-white text-sm py-2.5 px-4 outline-none placeholder-slate-500">
+                                       class="w-full bg-transparent text-gray-900 text-sm py-3 px-4 outline-none placeholder-gray-500">
                                 
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 transition-all group-hover:px-8">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-6 transition-all group-hover:px-8">
                                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 </button>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2 sm:gap-4">
-                            <a href="{% url 'languages:post_job' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-bold py-2.5 px-5 rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
+                        <div class="flex items-center gap-3">
+                            <a href="{% url 'languages:post_job' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 px-5 rounded-lg transition-all active:scale-95 shadow-sm">
                                 + Post a Job
                             </a>
                         </div>
                     </div>
 
-                    <div class="md:hidden mb-3">
+                    <div class="md:hidden mb-4">
                         <input type="text" id="search-q-mobile" value="{{ search_query|default:'' }}" placeholder="Search jobs..." 
-                               class="w-full bg-slate-800/50 border border-slate-700 text-white text-sm rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 outline-none">
+                               class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
 
-                    <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-t border-slate-800 pt-2 mt-2">
-                        <div class="flex gap-2">
+                    <div class="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar border-t border-gray-100 pt-3 mt-3">
+                        <div class="flex gap-3">
                             <div class="relative">
                                 <input type="text" name="where" value="{{ location_query|default:'' }}" placeholder="Location (City/Remote)" 
-                                       class="bg-slate-800/50 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-32 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                                       class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg py-2 px-3 w-36 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                             </div>
                             
                             <div class="relative">
-                                <select name="category" class="bg-slate-800/50 border border-slate-700 text-white text-[10px] rounded-lg py-1.5 px-3 w-36 focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer">
+                                <select name="category" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg py-2 px-3 w-40 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none cursor-pointer">
                                     <option value="all">All Categories</option>
                                     {% for key, val in job_categories %}
                                         <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
@@ -271,8 +287,8 @@
                                 </select>
                             </div>
 
-                            <button type="submit" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-5 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-lg shadow-yellow-500/10 active:scale-95">
-                                AI search
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold text-sm uppercase shadow-sm active:scale-95">
+                                AI Search
                             </button>
                         </div>
                     </div>
