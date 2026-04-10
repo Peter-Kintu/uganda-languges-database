@@ -180,287 +180,345 @@
 {% endblock %}
 
 {% block content %}
-<main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-    
-    {% if selected_job %}
-        {# SINGLE JOB VIEW #}
-        <div class="max-w-4xl mx-auto">
-            <a href="{% url 'languages:browse_job_listings' %}" class="group flex items-center text-slate-400 hover:text-white mb-8 transition">
-                <div class="p-2 rounded-full bg-slate-800 mr-3 group-hover:-translate-x-1 transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                </div>
-                Return to Matrix
-            </a>
+<main class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {% if selected_job %}
+            {# SINGLE JOB VIEW #}
+            <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="p-6 sm:p-8 lg:p-12">
+                    <a href="{% url 'languages:browse_job_listings' %}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Back to Jobs
+                    </a>
 
-            <div class="bg-slate-900/50 rounded-[40px] p-8 md:p-16 border border-white/5 backdrop-blur-xl">
-                <header class="flex flex-col md:flex-row items-center md:items-start gap-8 mb-12">
-                    <div class="relative">
-                        {% if selected_job.company_logo_or_media %}
-                            <img src="{{ selected_job.company_logo_or_media.url }}" class="h-24 w-24 rounded-3xl object-cover ring-4 ring-slate-800 bg-white" alt="Company Logo" loading="lazy">
-                        {% else %}
-                            <div class="h-24 w-24 rounded-3xl bg-indigo-600 flex items-center justify-center text-3xl font-black text-white shadow-2xl">
-                                {{ selected_job.recruiter_name|slice:":1" }}
+                    <div class="flex flex-col lg:flex-row gap-8">
+                        <div class="flex-shrink-0">
+                            {% if selected_job.company_logo_or_media %}
+                                <img src="{{ selected_job.company_logo_or_media.url }}" class="w-24 h-24 rounded-xl object-cover shadow-md" alt="Company Logo">
+                            {% else %}
+                                <div class="w-24 h-24 rounded-xl bg-blue-600 flex items-center justify-center text-2xl font-bold text-white shadow-md">
+                                    {{ selected_job.recruiter_name|slice:":1"|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex-1">
+                            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                                {{ selected_job.post_content|truncatechars:100 }}
+                            </h1>
+                            <div class="flex flex-wrap gap-4 items-center text-gray-600 mb-6">
+                                <span class="font-semibold text-blue-600">{{ selected_job.recruiter_name }}</span>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    </svg>
+                                    {{ selected_job.recruiter_location }}
+                                </span>
                             </div>
-                        {% endif %}
-                        <div class="absolute -bottom-2 -right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-slate-900"></div>
-                    </div>
-                    
-                    <div class="text-center md:text-left flex-1">
-                        <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
-                            {{ selected_job.post_content|truncatechars:80 }}
-                        </h1>
-                        <div class="flex flex-wrap justify-center md:justify-start gap-4 text-slate-400 items-center">
-                            <span class="text-indigo-400 font-bold text-lg px-4 py-1 bg-indigo-500/10 rounded-full">{{ selected_job.recruiter_name }}</span>
-                            <span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg> {{ selected_job.recruiter_location }}</span>
                         </div>
                     </div>
-                </header>
-                
-                <div class="prose prose-invert max-w-none border-t border-white/5 pt-12">
-                    <div class="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap mb-12 font-light">
-                        {{ selected_job.post_content }}
-                    </div>
                     
-                    <div class="flex flex-wrap gap-6 items-center">
-                        {% if selected_job.application_url %}
-                            <a href="{{ selected_job.application_url }}" 
-                               {% if selected_job.is_external %}onclick="trackClick('{{ selected_job.pk }}')"{% endif %}
-                               target="_blank" 
-                               class="btn-primary text-white font-bold py-5 px-12 rounded-2xl text-lg shadow-2xl">Initialize Application</a>
-                        {% else %}
-                            <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" 
-                                    class="bg-white text-black hover:bg-indigo-50 font-bold py-5 px-12 rounded-2xl text-lg transition-all active:scale-95 shadow-2xl">Secure Apply Now</button>
-                        {% endif %}
+                    <div class="border-t border-gray-200 pt-8 mt-8">
+                        <div class="prose prose-gray max-w-none">
+                            <div class="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap">
+                                {{ selected_job.post_content }}
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 mt-8">
+                            {% if selected_job.application_url %}
+                                <a href="{{ selected_job.application_url }}" 
+                                   {% if selected_job.is_external %}onclick="trackClick('{{ selected_job.pk }}')"{% endif %}
+                                   target="_blank" 
+                                   class="inline-flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-md">
+                                    Apply Now
+                                </a>
+                            {% else %}
+                                <button onclick="openEasyApplyModal('{{ selected_job.post_content|escapejs }}', '{{ selected_job.recruiter_name|escapejs }}', '{{ selected_job.recruiter_email|escapejs }}', '{{ selected_job.recruiter_whatsapp|escapejs }}')" 
+                                        class="inline-flex items-center justify-center px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-colors shadow-md">
+                                    Apply Now
+                                </button>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-    {% else %}
-        {# LIST VIEW - UNIFIED SEARCH & FILTER HEADER #}
-        <header class="bg-white border-b border-gray-200 sticky top-0 z-50 backdrop-blur-md shadow-sm">
-            <div class="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
-                <form method="GET" action="{% url 'languages:browse_job_listings' %}" id="search-filter-form">
-                    <!-- Top Row: Logo and Desktop Search -->
-                    <div class="flex items-center justify-between gap-2 sm:gap-4 mb-3">
-                        <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-2 group whitespace-nowrap">
-                            <h1 class="text-lg sm:text-xl font-black tracking-tight text-gray-900">
-                                Listed<span class="text-blue-600">.Jobs</span>
-                            </h1>
-                        </a>
+        {% else %}
+            {# LIST VIEW - UNIFIED SEARCH & FILTER HEADER #}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 mb-8">
+                <div class="p-4 sm:p-6 lg:p-8">
+                    <form method="GET" action="{% url 'languages:browse_job_listings' %}" id="search-filter-form">
+                        <!-- Header Row -->
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+                            <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-2 group">
+                                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
+                                    Listed<span class="text-blue-600">.Jobs</span>
+                                </h1>
+                            </a>
 
-                        <div class="hidden md:flex flex-grow max-w-md">
-                            <div class="flex w-full group rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 bg-gray-50 border border-gray-300">
-                                <input type="text" name="q" id="search-q-desktop" value="{{ search_query|default:'' }}" placeholder="Search jobs..." 
-                                       class="w-full bg-transparent text-gray-900 text-sm py-2 px-3 outline-none placeholder-gray-500 font-medium">
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-4 transition-all">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2 sm:gap-3">
-                            <a href="{% url 'languages:post_job' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold py-2 px-3 sm:px-4 rounded-lg transition-all active:scale-95 shadow-sm whitespace-nowrap">
+                            <a href="{% url 'languages:post_job' %}" class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm whitespace-nowrap">
                                 + Post Job
                             </a>
                         </div>
-                    </div>
 
-                    <!-- Mobile Search -->
-                    <div class="md:hidden mb-3">
-                        <input type="text" id="search-q-mobile" value="{{ search_query|default:'' }}" placeholder="Search jobs..." 
-                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg py-2 px-3 focus:ring-2 focus:ring-blue-500 outline-none font-medium">
-                    </div>
+                        <!-- Search Row -->
+                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+                            <!-- Main Search -->
+                            <div class="lg:col-span-2">
+                                <div class="relative">
+                                    <input type="text" 
+                                           id="search-q-desktop" 
+                                           name="q" 
+                                           value="{{ search_query|default:'' }}" 
+                                           placeholder="Search jobs..." 
+                                           class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
 
-                    <!-- Filters Row - Scrollable on Mobile -->
-                    <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar border-t border-gray-200 pt-3 mt-2 scroll-smooth">
-                        <div class="flex gap-2 whitespace-nowrap">
-                            <input type="text" name="where" value="{{ location_query|default:'' }}" placeholder="Location" 
-                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none">
-                            
-                            <select name="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none">
-                                <option value="all">All Jobs</option>
-                                {% for key, val in job_categories %}
-                                    <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
-                                {% endfor %}
-                            </select>
+                            <!-- Location -->
+                            <div>
+                                <input type="text" 
+                                       name="where" 
+                                       value="{{ location_query|default:'' }}" 
+                                       placeholder="Location" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            </div>
 
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-semibold text-sm uppercase shadow-sm active:scale-95 transition-all">
-                                Search
+                            <!-- Category -->
+                            <div>
+                                <select name="category" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                    <option value="all">All Categories</option>
+                                    {% for key, val in job_categories %}
+                                        <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Search (hidden on desktop) -->
+                        <div class="lg:hidden mb-4">
+                            <input type="text" 
+                                   id="search-q-mobile" 
+                                   value="{{ search_query|default:'' }}" 
+                                   placeholder="Search jobs..." 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+
+                        <!-- Search Button -->
+                        <div class="flex justify-center">
+                            <button type="submit" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm">
+                                Search Jobs
                             </button>
                         </div>
-                    </div>
-                </form>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            
-            {# 1. MICRO1 PREMIUM CARD #}
-            <div class="job-card p-6 sm:p-8 flex flex-col h-full group border-t-4 border-indigo-400 shadow-md" style="background: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%); color: #1f2937;">
-                <div class="flex justify-between items-start mb-6">
-                    <div class="bg-indigo-500/15 text-indigo-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border border-indigo-300">Official Opportunity</div>
-                    <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                    </form>
                 </div>
+            </div>
 
-                <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3 tracking-tight">Micro1 AI Specialist</h3>
+            <!-- Job Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+                
+                {# 1. MICRO1 PREMIUM CARD #}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200">
+                            Official Opportunity
+                        </span>
+                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    </div>
 
-                <p class="text-gray-700 text-sm mb-6 sm:mb-8 leading-relaxed">Join the world's most elite network training frontier AI models. High-compensation roles for subject matter experts, writers, and developers.</p>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Micro1 AI Specialist</h3>
 
-                <div class="mt-auto">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span class="text-indigo-700 font-bold text-xs px-3 py-1 bg-indigo-50 rounded-lg">Priority Global Hiring</span>
-                        <span class="text-green-700 font-bold text-xs px-3 py-1 bg-green-50 rounded-lg">Top-Tier Pay</span>
+                    <p class="text-gray-600 text-sm mb-6 leading-relaxed">
+                        Join the world's most elite network training frontier AI models. High-compensation roles for subject matter experts, writers, and developers.
+                    </p>
+
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg">Priority Global Hiring</span>
+                        <span class="px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-lg">Top-Tier Pay</span>
                     </div>
 
                     <a href="https://refer.micro1.ai/referral/jobs?referralCode=ab667ca0-d5d0-430a-b035-e3b87dda7148&utm_source=referral&utm_medium=share&utm_campaign=job_referral" 
-                    target="_blank" 
-                    class="w-full block text-center py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95 uppercase text-[11px] tracking-widest">
-                    Secure Your Spot
+                       target="_blank" 
+                       class="w-full block text-center py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
+                        Apply Now
                     </a>
                 </div>
-            </div>
 
-            {# 2. JOBCOPILOT PREMIUM CARD #}
-            <div class="job-card p-6 sm:p-8 flex flex-col h-full group border-t-4 border-emerald-500 shadow-md" style="background: linear-gradient(165deg, #f0fdf4 0%, #f8fafc 100%); color: #1f2937;">
-                <div class="flex justify-between items-start mb-6">
-                    <div class="bg-emerald-500/15 text-emerald-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border border-emerald-300">Smart Career Automation</div>
-                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                </div>
-
-                <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3 tracking-tight">JobCopilot AI</h3>
-
-                <p class="text-gray-700 text-sm mb-6 sm:mb-8 leading-relaxed">Let AI find and apply to 1,000+ remote jobs for you. Skip the manual search and land interviews while you sleep with advanced auto-apply technology.</p>
-
-                <div class="mt-auto">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span class="text-emerald-700 font-bold text-xs px-3 py-1 bg-emerald-50 rounded-lg">Smart Automation</span>
-                        <span class="text-blue-700 font-bold text-xs px-3 py-1 bg-blue-50 rounded-lg">Reliable Tools</span>
+                {# 2. JOBCOPILOT PREMIUM CARD #}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">
+                            Smart Automation
+                        </span>
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                     </div>
 
-                <h3 class="text-2xl font-black text-white mb-3 tracking-tight">JobCopilot AI</h3>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">JobCopilot AI</h3>
 
-                <p class="text-slate-400 text-sm mb-8 leading-relaxed">Let AI find and apply to 1,000+ remote jobs for you. Skip the manual search and land interviews while you sleep with advanced auto-apply technology.</p>
+                    <p class="text-gray-600 text-sm mb-6 leading-relaxed">
+                        Let AI find and apply to 1,000+ remote jobs for you. Skip the manual search and land interviews while you sleep with advanced auto-apply technology.
+                    </p>
 
-                <div class="mt-auto">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span class="text-emerald-300 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Auto-Apply Active</span>
-                        <span class="text-emerald-300 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Remote-First</span>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-lg">Auto-Apply</span>
+                        <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg">Remote Jobs</span>
                     </div>
 
                     <a href="https://jobcopilot.com/?linkId=lp_494205&sourceId=kintu-peter&tenantId=jobcopilot" 
-                    target="_blank" 
-                    class="w-full block text-center py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95 uppercase text-[11px] tracking-widest">
-                    Automate My Job Search
+                       target="_blank" 
+                       class="w-full block text-center py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors">
+                        Try JobCopilot
                     </a>
                 </div>
-            </div>
 
-            {# 3. SOLIDGIGS PREMIUM CARD #}
-            {% if solidgigs %}
-                <div class="job-card premium-card p-8 flex flex-col group h-full border-t-4 border-indigo-400" style="background: linear-gradient(165deg, #1e1b4b 0%, #0f172a 100%);">
-                    <div class="relative z-10 h-full flex flex-col">
-                        <div class="flex justify-between items-start mb-8">
-                            <div class="bg-indigo-500/20 text-indigo-300 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-indigo-500/30">Top 1% Freelance Leads</div>
-                            <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
-                        </div>
-
-                        <h3 class="text-3xl font-black text-white mb-4 leading-tight">{{ solidgigs.name }}</h3>
-
-                        <p class="text-slate-400 text-sm mb-8 leading-relaxed">Stop hunting for work. Get hand-picked, high-budget freelance gigs delivered to your inbox. We find the leads, you land the contracts.</p>
-                        
-                        <div class="mt-auto">
-                            <div class="flex items-center gap-2 mb-6">
-                                <span class="text-indigo-300 font-bold text-[10px] px-3 py-1 bg-indigo-500/10 rounded-lg uppercase">Pre-Vetted</span>
-                                <span class="text-indigo-300 font-bold text-[10px] px-3 py-1 bg-indigo-500/10 rounded-lg uppercase">Daily Updates</span>
-                            </div>
-
-                            <a href="{{ solidgigs.url }}" 
-                            target="_blank" 
-                            class="w-full block text-center py-4 bg-white text-indigo-900 font-black rounded-2xl hover:bg-indigo-50 transition-all shadow-xl active:scale-95 uppercase text-[11px] tracking-widest">
-                            Access Premium Leads
-                            </a>
-                        </div>
+                {# 3. SOLIDGIGS PREMIUM CARD #}
+                {% if solidgigs %}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full border border-purple-200">
+                            Premium Freelance
+                        </span>
+                        <div class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
                     </div>
-                </div>
-            {% endif %}
 
-            {# REST OF THE DYNAMIC JOBS #}
-            {% for job in job_posts %}
-                <div class="job-card p-8 flex flex-col h-full group">
-                    <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">{{ solidgigs.name }}</h3>
+
+                    <p class="text-gray-600 text-sm mb-6 leading-relaxed">
+                        Stop hunting for work. Get hand-picked, high-budget freelance gigs delivered to your inbox. We find the leads, you land the contracts.
+                    </p>
+
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded-lg">Pre-Vetted</span>
+                        <span class="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded-lg">Daily Updates</span>
+                    </div>
+
+                    <a href="{{ solidgigs.url }}" 
+                       target="_blank" 
+                       class="w-full block text-center py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors">
+                        Access Leads
+                    </a>
+                </div>
+                {% endif %}
+
+                {# DYNAMIC JOB CARDS #}
+                {% for job in job_posts %}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
                         <div class="flex items-center gap-2">
-                             <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
-                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Node_Verified</span>
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Verified</span>
                         </div>
                         <form action="{% url 'languages:upvote_job_application' job.pk %}" method="POST" class="upvote-form">
                             {% csrf_token %}
-                            <button type="submit" class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-full text-slate-400 hover:text-indigo-400 transition-all border border-white/5">
-                                <span class="upvote-count text-xs font-bold">{{ job.upvotes }}</span>
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"></path></svg>
+                            <button type="submit" class="flex items-center gap-1 px-3 py-1 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors">
+                                <span class="upvote-count text-sm font-medium text-gray-700">{{ job.upvotes }}</span>
+                                <svg class="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"></path>
+                                </svg>
                             </button>
                         </form>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-2 leading-tight group-hover:text-indigo-400 transition">
-                        <a href="?job_id={{ job.pk }}">{{ job.post_content|truncatechars:70 }}</a>
+
+                    <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight">
+                        <a href="?job_id={{ job.pk }}" class="hover:text-blue-600 transition-colors">
+                            {{ job.post_content|truncatechars:80 }}
+                        </a>
                     </h3>
-                    <p class="text-slate-400 font-medium text-sm mb-6">{{ job.recruiter_name }}</p>
-                    <div class="mt-auto pt-6 border-t border-white/5 flex justify-between items-center">
-                        <span class="text-slate-500 text-[10px] font-black uppercase tracking-widest">{{ job.recruiter_location }}</span>
-                        <a href="?job_id={{ job.pk }}" class="p-2 rounded-full bg-slate-800 text-indigo-400 hover:bg-indigo-600 hover:text-white transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    
+                    <p class="text-gray-600 font-medium text-sm mb-4">{{ job.recruiter_name }}</p>
+                    
+                    <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                        <span class="text-gray-500 text-xs font-medium uppercase tracking-wide">{{ job.recruiter_location }}</span>
+                        <a href="?job_id={{ job.pk }}" class="p-2 rounded-full bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                            </svg>
                         </a>
                     </div>
                 </div>
-            {% endfor %}
+                {% endfor %}
 
-            {% for job in careerjet_jobs %}
-                <div class="job-card p-8 flex flex-col border-t-4 border-orange-500 h-full">
-                    <span class="text-[10px] font-black text-orange-500 mb-6 uppercase tracking-[0.2em]">Aggregated Partner</span>
-                    <h3 class="text-xl font-bold text-white mb-2">{{ job.title|safe }}</h3>
-                    <p class="text-slate-500 font-bold text-xs uppercase mb-1">{{ job.company }}</p>
-                    <div class="mt-auto">
-                        {# Careerjet returns jobviewtrack.com URLs — tracking is embedded; no ?publisher= needed #}
-                        <a href="{{ job.url }}" target="_blank" class="w-full block text-center py-4 bg-slate-800 hover:bg-orange-600 text-white text-xs font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest">External Application</a>
+                {# EXTERNAL JOB CARDS #}
+                {% for job in careerjet_jobs %}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-orange-50 text-orange-700 text-xs font-semibold rounded-full border border-orange-200">
+                            Partner Job
+                        </span>
                     </div>
+
+                    <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight">{{ job.title|safe }}</h3>
+                    <p class="text-gray-600 font-medium text-sm mb-4">{{ job.company }}</p>
+
+                    <a href="{{ job.url }}" 
+                       target="_blank" 
+                       class="w-full block text-center py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors">
+                        Apply Externally
+                    </a>
                 </div>
-            {% endfor %}
+                {% endfor %}
 
-            {% for job in adzuna_jobs %}
-                <div class="job-card p-8 border-l-4 border-blue-500 flex flex-col h-full">
-                    <div class="flex justify-between items-center mb-6">
-                        <span class="badge-adzuna text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">Global Node</span>
-                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                {% for job in adzuna_jobs %}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200">
+                            Global Job
+                        </span>
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                        </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-2 line-clamp-2">{{ job.title|safe }}</h3>
-                    <p class="text-blue-400 font-bold text-xs uppercase mb-1">{{ job.company.display_name }}</p>
-                    <div class="mt-auto">
-                        <a href="{{ job.redirect_url }}" target="_blank" class="w-full block text-center py-4 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-600/30 text-xs font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest">External Application</a>
-                    </div>
+
+                    <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight line-clamp-2">{{ job.title|safe }}</h3>
+                    <p class="text-blue-600 font-medium text-sm mb-4">{{ job.company.display_name }}</p>
+
+                    <a href="{{ job.redirect_url }}" 
+                       target="_blank" 
+                       class="w-full block text-center py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
+                        Apply Externally
+                    </a>
                 </div>
-            {% endfor %}
-        </div>
-
-        {# PAGINATION #}
-        {% if job_posts.paginator.num_pages > 1 %}
-        <div class="flex justify-center items-center mt-24 mb-12 gap-8">
-            {% if job_posts.has_previous %}
-                <a href="?page={{ job_posts.previous_page_number }}&q={{ search_query }}&category={{ selected_category }}&where={{ location_query }}" class="h-14 w-14 flex items-center justify-center rounded-full bg-slate-800 text-white border border-white/5 hover:bg-indigo-600 transition shadow-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                </a>
-            {% endif %}
-            <div class="px-8 py-3 bg-slate-800/50 backdrop-blur-md rounded-full border border-white/5">
-                <span class="text-slate-400 text-sm font-bold uppercase tracking-widest">Iteration {{ job_posts.number }} <span class="text-slate-600 px-2">/</span> {{ job_posts.paginator.num_pages }}</span>
+                {% endfor %}
             </div>
-            {% if job_posts.has_next %}
-                <a href="?page={{ job_posts.next_page_number }}&q={{ search_query }}&category={{ selected_category }}&where={{ location_query }}" class="h-14 w-14 flex items-center justify-center rounded-full bg-slate-800 text-white border border-white/5 hover:bg-indigo-600 transition shadow-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                </a>
-            {% endif %}
-        </div>
-        {% endif %}
 
-    {% endif %}
+            {# PAGINATION #}
+            {% if job_posts.paginator.num_pages > 1 %}
+            <div class="flex justify-center items-center gap-4 mt-12 mb-8">
+                {% if job_posts.has_previous %}
+                    <a href="?page={{ job_posts.previous_page_number }}&q={{ search_query }}&category={{ selected_category }}&where={{ location_query }}" 
+                       class="flex items-center justify-center w-12 h-12 rounded-xl bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors shadow-sm">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                {% endif %}
+                
+                <div class="px-6 py-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <span class="text-gray-700 font-medium">
+                        Page {{ job_posts.number }} of {{ job_posts.paginator.num_pages }}
+                    </span>
+                </div>
+                
+                {% if job_posts.has_next %}
+                    <a href="?page={{ job_posts.next_page_number }}&q={{ search_query }}&category={{ selected_category }}&where={{ location_query }}" 
+                       class="flex items-center justify-center w-12 h-12 rounded-xl bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors shadow-sm">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        {% endif %}
+    </div>
 </main>
 
 <button id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-10 right-10 bg-indigo-600/20 backdrop-blur-xl border border-indigo-500/30 hover:bg-indigo-600 text-white p-5 rounded-full shadow-3xl transition-all transform hover:scale-110 active:scale-90 z-50">
