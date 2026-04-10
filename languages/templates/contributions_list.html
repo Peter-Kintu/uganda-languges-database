@@ -239,56 +239,54 @@
     {% else %}
         {# LIST VIEW - UNIFIED SEARCH & FILTER HEADER #}
         <header class="bg-white border-b border-gray-200 sticky top-0 z-50 backdrop-blur-md shadow-sm">
-            <div class="container mx-auto px-4 py-4">
+            <div class="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
                 <form method="GET" action="{% url 'languages:browse_job_listings' %}" id="search-filter-form">
-                    <div class="flex items-center justify-between gap-4 mb-4">
+                    <!-- Top Row: Logo and Desktop Search -->
+                    <div class="flex items-center justify-between gap-2 sm:gap-4 mb-3">
                         <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-2 group whitespace-nowrap">
-                            <h1 class="text-2xl font-black tracking-tight text-gray-900 transition-all group-hover:tracking-normal">
+                            <h1 class="text-lg sm:text-xl font-black tracking-tight text-gray-900">
                                 Listed<span class="text-blue-600">.Jobs</span>
                             </h1>
                         </a>
 
-                        <div class="hidden md:flex flex-grow max-w-lg">
-                            <div class="flex w-full group rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 bg-gray-50 border border-gray-200 shadow-sm transition-all">
-                                <input type="text" name="q" id="search-q-desktop" value="{{ search_query|default:'' }}" placeholder="Search job titles, skills, or keywords..." 
-                                       class="w-full bg-transparent text-gray-900 text-sm py-3 px-4 outline-none placeholder-gray-500">
-                                
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-6 transition-all group-hover:px-8">
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <div class="hidden md:flex flex-grow max-w-md">
+                            <div class="flex w-full group rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 bg-gray-50 border border-gray-300">
+                                <input type="text" name="q" id="search-q-desktop" value="{{ search_query|default:'' }}" placeholder="Search jobs..." 
+                                       class="w-full bg-transparent text-gray-900 text-sm py-2 px-3 outline-none placeholder-gray-500 font-medium">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-4 transition-all">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 </button>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-3">
-                            <a href="{% url 'languages:post_job' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 px-5 rounded-lg transition-all active:scale-95 shadow-sm">
-                                + Post a Job
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <a href="{% url 'languages:post_job' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold py-2 px-3 sm:px-4 rounded-lg transition-all active:scale-95 shadow-sm whitespace-nowrap">
+                                + Post Job
                             </a>
                         </div>
                     </div>
 
-                    <div class="md:hidden mb-4">
+                    <!-- Mobile Search -->
+                    <div class="md:hidden mb-3">
                         <input type="text" id="search-q-mobile" value="{{ search_query|default:'' }}" placeholder="Search jobs..." 
-                               class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 outline-none">
+                               class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg py-2 px-3 focus:ring-2 focus:ring-blue-500 outline-none font-medium">
                     </div>
 
-                    <div class="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar border-t border-gray-100 pt-3 mt-3">
-                        <div class="flex gap-3">
-                            <div class="relative">
-                                <input type="text" name="where" value="{{ location_query|default:'' }}" placeholder="Location (City/Remote)" 
-                                       class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg py-2 px-3 w-36 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                            </div>
+                    <!-- Filters Row - Scrollable on Mobile -->
+                    <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar border-t border-gray-200 pt-3 mt-2 scroll-smooth">
+                        <div class="flex gap-2 whitespace-nowrap">
+                            <input type="text" name="where" value="{{ location_query|default:'' }}" placeholder="Location" 
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none">
                             
-                            <div class="relative">
-                                <select name="category" class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg py-2 px-3 w-40 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none cursor-pointer">
-                                    <option value="all">All Categories</option>
-                                    {% for key, val in job_categories %}
-                                        <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                            <select name="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="all">All Jobs</option>
+                                {% for key, val in job_categories %}
+                                    <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
+                                {% endfor %}
+                            </select>
 
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold text-sm uppercase shadow-sm active:scale-95">
-                                AI Search
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-semibold text-sm uppercase shadow-sm active:scale-95 transition-all">
+                                Search
                             </button>
                         </div>
                     </div>
@@ -296,23 +294,23 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             
             {# 1. MICRO1 PREMIUM CARD #}
-            <div class="job-card p-8 flex flex-col h-full group border-t-4 border-indigo-400 shadow-2xl" style="background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 100%);">
+            <div class="job-card p-6 sm:p-8 flex flex-col h-full group border-t-4 border-indigo-400 shadow-md" style="background: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%); color: #1f2937;">
                 <div class="flex justify-between items-start mb-6">
-                    <div class="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-indigo-500/20">Official AGI Contributor</div>
-                    <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+                    <div class="bg-indigo-500/15 text-indigo-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border border-indigo-300">Official Opportunity</div>
+                    <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
                 </div>
 
-                <h3 class="text-2xl font-black text-white mb-3 tracking-tight">Micro1 AI Specialist</h3>
+                <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3 tracking-tight">Micro1 AI Specialist</h3>
 
-                <p class="text-slate-400 text-sm mb-8 leading-relaxed">Join the world's most elite network training frontier AI models. High-compensation roles for subject matter experts, writers, and developers.</p>
+                <p class="text-gray-700 text-sm mb-6 sm:mb-8 leading-relaxed">Join the world's most elite network training frontier AI models. High-compensation roles for subject matter experts, writers, and developers.</p>
 
                 <div class="mt-auto">
                     <div class="flex items-center gap-3 mb-6">
-                        <span class="text-indigo-300 font-bold text-xs px-3 py-1 bg-indigo-500/10 rounded-lg">Priority Global Hiring</span>
-                        <span class="text-emerald-400 font-bold text-xs px-3 py-1 bg-emerald-500/10 rounded-lg">Top-Tier Pay</span>
+                        <span class="text-indigo-700 font-bold text-xs px-3 py-1 bg-indigo-50 rounded-lg">Priority Global Hiring</span>
+                        <span class="text-green-700 font-bold text-xs px-3 py-1 bg-green-50 rounded-lg">Top-Tier Pay</span>
                     </div>
 
                     <a href="https://refer.micro1.ai/referral/jobs?referralCode=ab667ca0-d5d0-430a-b035-e3b87dda7148&utm_source=referral&utm_medium=share&utm_campaign=job_referral" 
@@ -324,11 +322,21 @@
             </div>
 
             {# 2. JOBCOPILOT PREMIUM CARD #}
-            <div class="job-card p-8 flex flex-col h-full group border-t-4 border-emerald-500 shadow-2xl" style="background: linear-gradient(165deg, #020617 0%, #064e3b 100%);">
+            <div class="job-card p-6 sm:p-8 flex flex-col h-full group border-t-4 border-emerald-500 shadow-md" style="background: linear-gradient(165deg, #f0fdf4 0%, #f8fafc 100%); color: #1f2937;">
                 <div class="flex justify-between items-start mb-6">
-                    <div class="bg-emerald-500/10 text-emerald-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-emerald-500/20">Smart Career Automation</div>
-                    <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                    <div class="bg-emerald-500/15 text-emerald-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border border-emerald-300">Smart Career Automation</div>
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                 </div>
+
+                <h3 class="text-xl sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3 tracking-tight">JobCopilot AI</h3>
+
+                <p class="text-gray-700 text-sm mb-6 sm:mb-8 leading-relaxed">Let AI find and apply to 1,000+ remote jobs for you. Skip the manual search and land interviews while you sleep with advanced auto-apply technology.</p>
+
+                <div class="mt-auto">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="text-emerald-700 font-bold text-xs px-3 py-1 bg-emerald-50 rounded-lg">Smart Automation</span>
+                        <span class="text-blue-700 font-bold text-xs px-3 py-1 bg-blue-50 rounded-lg">Reliable Tools</span>
+                    </div>
 
                 <h3 class="text-2xl font-black text-white mb-3 tracking-tight">JobCopilot AI</h3>
 
