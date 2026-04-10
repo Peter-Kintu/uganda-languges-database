@@ -28,41 +28,15 @@
         }
 
         /* WORLD-CLASS SEARCH UI - IMPROVED RESPONSIVENESS */
-        .search-orchestrator {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 16px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        @media (min-width: 768px) {
-            .search-orchestrator {
-                border-radius: 20px;
-                padding: 20px;
-            }
-        }
-
-        .search-orchestrator:focus-within {
-            border-color: rgba(59, 130, 246, 0.3);
-            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.12), 0 0 0 1px rgba(59, 130, 246, 0.1);
-            transform: translateY(-1px);
-        }
-
         .search-input-group {
             position: relative;
             display: flex;
             align-items: center;
-            min-height: 48px;
+            min-height: 44px;
             width: 100%;
             background: rgba(0, 0, 0, 0.02);
             border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 12px;
+            border-radius: 8px;
             transition: all 0.2s ease;
         }
 
@@ -71,7 +45,7 @@
             border-color: rgba(59, 130, 246, 0.2);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
         }
-        
+
         .search-input-group input, .search-input-group select {
             background: transparent !important;
             border: none !important;
@@ -79,9 +53,9 @@
             height: 100%;
             width: 100%;
             color: #1f2937 !important;
-            padding-left: 48px;
+            padding-left: 40px;
             padding-right: 12px;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
             outline: none;
             placeholder-color: #6b7280;
@@ -100,12 +74,12 @@
 
         .search-input-group svg {
             position: absolute;
-            left: 16px;
+            left: 12px;
             color: #6b7280;
             transition: color 0.2s ease;
             pointer-events: none;
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
         }
         .search-input-group:focus-within svg {
             color: #3b82f6;
@@ -249,34 +223,49 @@
 
         {% else %}
             {# LIST VIEW - UNIFIED SEARCH & FILTER HEADER #}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 mb-8">
-                <div class="p-4 sm:p-6 lg:p-8">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6 sm:mb-8">
+                <div class="p-3 sm:p-4 lg:p-6">
                     <form method="GET" action="{% url 'languages:browse_job_listings' %}" id="search-filter-form">
                         <!-- Header Row -->
-                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
                             <a href="{% url 'languages:browse_job_listings' %}" class="flex items-center gap-2 group">
-                                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
+                                <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
                                     Listed<span class="text-blue-600">.Jobs</span>
                                 </h1>
                             </a>
 
-                            <a href="{% url 'languages:post_job' %}" class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm whitespace-nowrap">
+                            <a href="{% url 'languages:post_job' %}" class="inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg sm:rounded-xl transition-colors shadow-sm text-sm sm:text-base whitespace-nowrap">
                                 + Post Job
                             </a>
                         </div>
 
-                        <!-- Search Row -->
-                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+                        <!-- Mobile Search (compact design) -->
+                        <div class="block lg:hidden mb-4">
+                            <div class="relative">
+                                <input type="text"
+                                       id="search-q-mobile"
+                                       name="q"
+                                       value="{{ search_query|default:'' }}"
+                                       placeholder="Search jobs, companies, locations..."
+                                       class="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors">
+                                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Desktop Search Row -->
+                        <div class="hidden lg:grid lg:grid-cols-4 gap-4 mb-4">
                             <!-- Main Search -->
                             <div class="lg:col-span-2">
                                 <div class="relative">
-                                    <input type="text" 
-                                           id="search-q-desktop" 
-                                           name="q" 
-                                           value="{{ search_query|default:'' }}" 
-                                           placeholder="Search jobs..." 
-                                           class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <input type="text"
+                                           id="search-q-desktop"
+                                           name="q"
+                                           value="{{ search_query|default:'' }}"
+                                           placeholder="Search jobs, companies, locations..."
+                                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors">
+                                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                     </svg>
                                 </div>
@@ -284,16 +273,16 @@
 
                             <!-- Location -->
                             <div>
-                                <input type="text" 
-                                       name="where" 
-                                       value="{{ location_query|default:'' }}" 
-                                       placeholder="Location" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <input type="text"
+                                       name="where"
+                                       value="{{ location_query|default:'' }}"
+                                       placeholder="Location"
+                                       class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors text-sm">
                             </div>
 
                             <!-- Category -->
                             <div>
-                                <select name="category" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                <select name="category" class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors text-sm">
                                     <option value="all">All Categories</option>
                                     {% for key, val in job_categories %}
                                         <option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ val }}</option>
@@ -302,19 +291,11 @@
                             </div>
                         </div>
 
-                        <!-- Mobile Search (hidden on desktop) -->
-                        <div class="lg:hidden mb-4">
-                            <input type="text" 
-                                   id="search-q-mobile" 
-                                   value="{{ search_query|default:'' }}" 
-                                   placeholder="Search jobs..." 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        </div>
-
-                        <!-- Search Button -->
+                        <!-- Search Button - Compact on mobile -->
                         <div class="flex justify-center">
-                            <button type="submit" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm">
-                                Search Jobs
+                            <button type="submit" class="px-6 py-2 sm:px-8 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg sm:rounded-xl transition-colors shadow-sm text-sm sm:text-base">
+                                <span class="sm:hidden">AI Search</span>
+                                <span class="hidden sm:inline">AI Search</span>
                             </button>
                         </div>
                     </form>
@@ -539,11 +520,11 @@
 </div>
 
 <script>
-    // Logic to sync the mobile search input to the desktop search input
+    // Logic to sync the mobile and desktop search inputs
     const desktopQ = document.getElementById('search-q-desktop');
     const mobileQ = document.getElementById('search-q-mobile');
     const form = document.getElementById('search-filter-form');
-    
+
     if(mobileQ && desktopQ) {
         // Sync values when typing
         mobileQ.addEventListener('input', (e) => {
@@ -552,24 +533,30 @@
         desktopQ.addEventListener('input', (e) => {
             mobileQ.value = e.target.value;
         });
-        
+
         // Initial sync
         if (mobileQ.value !== desktopQ.value) {
             mobileQ.value = desktopQ.value || '';
         }
 
-        // Before submitting, ensure only one 'q' parameter is active
-        form.addEventListener('submit', () => {
-            if (window.innerWidth < 768) {
-                // If on mobile, make sure the desktop input is disabled or its name is removed 
-                // so it doesn't send duplicate 'q' params
-                desktopQ.setAttribute('name', '');
+        // Ensure proper name attributes based on visibility
+        function updateSearchInputs() {
+            if (window.innerWidth < 1024) { // lg breakpoint
+                // Mobile view: mobile input should have name, desktop should not
+                desktopQ.removeAttribute('name');
                 mobileQ.setAttribute('name', 'q');
             } else {
-                mobileQ.setAttribute('name', '');
+                // Desktop view: desktop input should have name, mobile should not
+                mobileQ.removeAttribute('name');
                 desktopQ.setAttribute('name', 'q');
             }
-        });
+        }
+
+        // Initial setup
+        updateSearchInputs();
+
+        // Update on window resize
+        window.addEventListener('resize', updateSearchInputs);
     }
 </script>
 {% endblock %}
