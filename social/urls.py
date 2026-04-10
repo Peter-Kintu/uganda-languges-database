@@ -24,6 +24,7 @@ urlpatterns = [
     # --- PILLAR 3: AGENTIC COMMERCE & NEGOTIATION ---
     # The 'Haggle' Protocol: Real-time AI price negotiation endpoint
     path('negotiate/<int:reel_id>/', views.ai_negotiate_price, name='ai_negotiate'),
+    path('negotiate-page/<int:reel_id>/', views.negotiation_page, name='negotiation_page'),
     
     # --- PILLAR 4: SOVEREIGN MESSAGING (WHATSAPP STYLE) ---
     # View all ongoing conversations (The Inbox)

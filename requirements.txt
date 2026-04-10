@@ -1,5 +1,5 @@
 # Framework & Server
-Django
+Django==5.0.6
 gunicorn
 
 # Database (Neon.tech / Postgres)

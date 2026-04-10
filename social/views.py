@@ -320,3 +320,21 @@ def ai_negotiate_price(request, reel_id):
             return JsonResponse({'status': 'ERROR', 'message': 'Data Handshake Error.'}, status=400)
             
     return JsonResponse({'status': 'ERROR', 'message': 'Protocol Violation.'}, status=405)
+
+@login_required
+def negotiation_page(request, reel_id):
+    """
+    Page for AI-powered price negotiation with a reel.
+    """
+    reel = get_object_or_404(BusinessReel, id=reel_id, is_active=True)
+    
+    if not reel.price:
+        messages.error(request, "This item is not for sale.")
+        return redirect('social:social_feed')
+    
+    context = {
+        'reel': reel,
+        'floor_price': getattr(reel, 'floor_price', reel.price * 0.8),
+        'currency': reel.currency,
+    }
+    return render(request, 'social/negotiation.html', context)

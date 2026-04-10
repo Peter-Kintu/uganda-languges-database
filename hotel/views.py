@@ -28,11 +28,11 @@ def social_feed(request):
     # Include the current user
     connected_user_ids.add(request.user.id)
     
-    # Get posts from user and connections
-    posts = Post.objects.filter(author_id__in=connected_user_ids).order_by('-created_at')
+    # Get posts from user and connections - OR show all posts for public feed
+    posts = Post.objects.all().order_by('-created_at')[:50]  # Show recent posts from everyone
     
     # Get shares from user and connections
-    shares = Share.objects.filter(sharer_id__in=connected_user_ids).order_by('-created_at')
+    shares = Share.objects.all().order_by('-created_at')[:20]
     
     # Combine posts and shares into a single feed
     feed_items = []
