@@ -170,6 +170,60 @@
             transform: translateY(-4px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
+
+        /* Mobile nav toggle styles */
+        #mobile-nav-toggle {
+            display: none;
+        }
+
+        @media (max-width: 767px) {
+            #mobile-nav-toggle {
+                display: block;
+            }
+
+            #mobile-bottom-nav {
+                transform: translateY(100%);
+                transition: transform 0.3s ease-in-out;
+            }
+
+            #mobile-bottom-nav.active {
+                transform: translateY(0);
+            }
+
+            body.nav-open {
+                padding-bottom: 280px;
+            }
+
+            body:not(.nav-open) {
+                padding-bottom: 60px;
+            }
+        }
+
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            width: 24px;
+            height: 2px;
+            background-color: currentColor;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(8px, 8px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -183,6 +237,15 @@
                         Africana AI
                     </a>
                 </div>
+                
+                <!-- Mobile Menu Toggle Button -->
+                <button id="mobile-nav-toggle" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition" aria-label="Toggle menu" aria-expanded="false">
+                    <div class="hamburger" id="hamburger-menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
                  
                 <div class="hidden md:flex md:space-x-8 lg:space-x-12 items-center">
                     <a href="{% url 'social:social_feed' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
@@ -277,9 +340,9 @@
     </main>
 
     <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 md:hidden" 
-        style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 244, 248, 0.98) 100%); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+        style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 244, 248, 0.98) 100%); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transform: translateY(100%); transition: transform 0.3s ease-in-out;">
         
-        <div id="drawer-menu-links" class="max-w-7xl mx-auto px-2 sm:px-4">
+        <div id="drawer-menu-links" class="max-w-7xl mx-auto px-2 sm:px-4 py-2">
             <a href="{% url 'social:social_feed' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
                 <span class="flex items-center flex-col text-center">
                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V15a3 3 0 0 0-3-3h-3a3 3 0 0 0-3 3v3.72c0 .247.202.45.45.45h4.8a.45.45 0 0 0 .45-.45ZM6.75 20.25h3.75a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Zm0-12h3.75a.75.75 0 0 0 .75-.75V5.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Z" /></svg>
@@ -337,5 +400,47 @@
     </footer>
     
     {% block footer_scripts %}{% endblock %}
+
+    <script>
+        // Mobile nav toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('mobile-nav-toggle');
+            const mobileNav = document.getElementById('mobile-bottom-nav');
+            const hamburger = document.getElementById('hamburger-menu');
+            const body = document.body;
+            let isOpen = false;
+
+            toggleBtn.addEventListener('click', function() {
+                isOpen = !isOpen;
+                
+                if (isOpen) {
+                    mobileNav.classList.add('active');
+                    mobileNav.style.transform = 'translateY(0)';
+                    hamburger.classList.add('active');
+                    body.classList.add('nav-open');
+                    toggleBtn.setAttribute('aria-expanded', 'true');
+                } else {
+                    mobileNav.classList.remove('active');
+                    mobileNav.style.transform = 'translateY(100%)';
+                    hamburger.classList.remove('active');
+                    body.classList.remove('nav-open');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            // Close menu when a nav link is clicked
+            const navLinks = mobileNav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    isOpen = false;
+                    mobileNav.classList.remove('active');
+                    mobileNav.style.transform = 'translateY(100%)';
+                    hamburger.classList.remove('active');
+                    body.classList.remove('nav-open');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                });
+            });
+        });
+    </script>
 </body>
 </html>

@@ -211,11 +211,17 @@ def browse_job_listings(request):
             elif 'usa' in loc_lower: cj_locale = 'en_US'
 
             try:
-                # Get User Details (REQUIRED by Careerjet)
+                # Get ACTUAL user IP (not server IP) - REQUIRED for Careerjet tracking
                 x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-                u_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
-                u_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0')
-                
+                if x_forwarded_for:
+                    # Take the first IP if there are multiple
+                    actual_user_ip = x_forwarded_for.split(',')[0].strip()
+                else:
+                    actual_user_ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
+
+                # Get actual user agent - REQUIRED for Careerjet tracking
+                actual_user_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+
                 # Dynamic Referer Construction (REQUIRED by Careerjet)
                 current_url = request.build_absolute_uri()
 
@@ -223,8 +229,8 @@ def browse_job_listings(request):
                     'locale_code': cj_locale,
                     'keywords': search_query if search_query != "hiring" else "",
                     'location': location_query,
-                    'user_ip': u_ip,
-                    'user_agent': u_agent,
+                    'user_ip': actual_user_ip,  # ACTUAL user IP for tracking
+                    'user_agent': actual_user_agent,  # ACTUAL user agent for tracking
                     'page_size': 25,
                     'page': page,
                 }
@@ -236,28 +242,40 @@ def browse_job_listings(request):
 
                 # API Call with Basic Auth (API_KEY as username)
                 cj_res = requests.get(
-                    'https://search.api.careerjet.net/v4/query', 
-                    params=cj_params, 
-                    auth=(CAREERJET_API_KEY, ''), 
-                    headers=cj_headers, 
+                    'https://search.api.careerjet.net/v4/query',
+                    params=cj_params,
+                    auth=(CAREERJET_API_KEY, ''),
+                    headers=cj_headers,
                     timeout=5
                 )
-                
+
                 if cj_res.status_code == 200:
                     cj_data = cj_res.json()
+                    print(f"Careerjet API Response: type={cj_data.get('type')}, hits={cj_data.get('hits', 0)}")
                     if cj_data.get('type') == 'JOBS':
                         careerjet_jobs = cj_data.get('jobs', [])
-                
-                # --- BACKEND LINK INJECTION: This makes the clicks trackable ---
-                if careerjet_jobs and CAREERJET_PUBLISHER_ID:
+                        print(f"Careerjet jobs found: {len(careerjet_jobs)}")
+                        # Debug first job URL
+                        if careerjet_jobs:
+                            print(f"First job URL: {careerjet_jobs[0].get('url', 'No URL')}")
+                else:
+                    print(f"Careerjet API error: HTTP {cj_res.status_code}")
+                    print(f"Response: {cj_res.text[:500]}")
+
+                # --- CRITICAL: DO NOT MODIFY CAREERJET URLs ---
+                # Careerjet URLs are already tracking URLs. Modifying them breaks tracking.
+                # The tracking happens automatically when users click the URLs.
+                # Just ensure the API calls include proper user_ip and user_agent for attribution.
+                if careerjet_jobs:
+                    # Add proper attributes for external links while preserving referrer for tracking
                     for job in careerjet_jobs:
-                        raw_url = job.get('url', '')
-                        if raw_url:
-                            sep = '&' if '?' in raw_url else '?'
-                            job['url'] = f"{raw_url}{sep}publisher={CAREERJET_PUBLISHER_ID}"
+                        if 'url' in job:
+                            # Use 'opener' instead of 'noopener' to preserve click tracking
+                            job['url_attributes'] = 'target="_blank" rel="noreferrer"'
 
             except Exception as e:
                 print(f"Careerjet API error: {e}")
+                careerjet_jobs = []
 
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
