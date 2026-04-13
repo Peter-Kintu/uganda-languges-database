@@ -12,7 +12,7 @@ python-dotenv
 # Static Files & Security
 whitenoise[brotli]
 django-cors-headers
-
+django-tailwind
 # Media (Cloudinary)
 Pillow
 cloudinary
@@ -21,6 +21,7 @@ django-cloudinary-storage
 # UI & Customization
 django-jazzmin
 django-widget-tweaks
+
 
 # Integrations & APIs
 python-aliexpress-api
