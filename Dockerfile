@@ -21,7 +21,7 @@ RUN pip install --upgrade pip \
 FROM python:3.12-slim
 
 # 1. Install System Dependencies:
-# - libpq5 for Postgres
+# - libpq5 for Postgres runtime
 # - nodejs/npm for Tailwind compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
@@ -43,9 +43,10 @@ ENV DEBUG="False"
 ENV SECRET_KEY="build-time-dummy-key"
 
 # 4. Compile Tailwind CSS
-# We use 'theme' because TAILWIND_APP_NAME = 'theme' in your settings.py
-RUN python manage.py theme install
-RUN python manage.py theme build
+# Use 'tailwind' as the command (the library maps this to your 'theme' app internally)
+# We run 'install' first to generate the local node_modules inside the 'theme' directory
+RUN python manage.py tailwind install --no-input
+RUN python manage.py tailwind build --no-input
 
 # 5. Run collectstatic with dummy DB
 RUN DATABASE_URL=sqlite:///:memory: python manage.py collectstatic --noinput
