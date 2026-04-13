@@ -46,7 +46,8 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY' 
-    SECURE_REFERRER_POLICY = "same-origin"
+    # IMPORTANT: Careerjet tracking requires referrer to be sent to external domains
+    SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
 
 # --- CSRF TRUSTED ORIGINS ---
 CSRF_TRUSTED_ORIGINS = [
@@ -86,6 +87,8 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     'whitenoise.runserver_nostatic',
+    'tailwind',
+    'theme',
 
     # Local Apps
     'users',
@@ -95,6 +98,8 @@ INSTALLED_APPS = [
     'movie',
     'social', # Optimized TikTok-style Business Reels & Sovereignty Layer
 ]
+
+TAILWIND_APP_NAME = 'theme'
 
 SITE_ID = 1
 

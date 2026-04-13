@@ -3,11 +3,13 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Install build-essential tools
+# Install build-essential tools + Node.js for Tailwind CSS
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     python3-dev \
     libpq-dev \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -36,6 +38,9 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 ENV DEBUG="False"
 ENV SECRET_KEY="dummy-key-for-build-only"
+
+# Compile Tailwind CSS
+RUN python manage.py tailwind build
 
 # Run collectstatic with dummy DB
 RUN DATABASE_URL=sqlite:///:memory: python manage.py collectstatic --noinput

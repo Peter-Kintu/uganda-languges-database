@@ -17,42 +17,47 @@
 
 <div class=\"min-h-screen\" style=\"background: linear-gradient(135deg, #f0f4f8 0%, #f8fafc 50%, #f0f4f8 100%);\">
     <!-- Header -->
-    <header class=\"bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg\">
-        <div class=\"max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center\">
-            <div>
-                <h1 class=\"text-xl sm:text-2xl md:text-3xl font-bold text-white\">Social Feed</h1>
-                <p class=\"text-blue-100 text-xs sm:text-sm mt-1\">Connect, share, and engage with your community</p>
-            </div>
-            <div class="flex space-x-2">
-                <a href="{% url 'hotel:translate_text' %}" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                    🌐 Translate
-                </a>
+    <header class=\"bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-16 z-40\">
+        <div class=\"max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-5\">
+            <div class=\"flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4\">
+                <div class=\"text-center sm:text-left\">
+                    <h1 class=\"text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-1\">Social Feed</h1>
+                    <p class=\"text-blue-100 text-sm sm:text-base font-medium\">Connect, share, and engage with your community</p>
+                </div>
+                <div class="flex flex-wrap gap-3 justify-center sm:justify-end">
+                    <button type="button" onclick="openLanguagePreferences()" class="bg-white/20 hover:bg-white/30 text-white px-4 sm:px-5 py-2.5 rounded-lg text-sm sm:text-base font-medium transition-colors backdrop-blur-sm border border-white/20">
+                        🌍 Language Prefs
+                    </button>
+                    <button type="button" onclick="openTranslateModalForAllContent()" class="bg-white/20 hover:bg-white/30 text-white px-4 sm:px-5 py-2.5 rounded-lg text-sm sm:text-base font-medium transition-colors backdrop-blur-sm border border-white/20">
+                        🔠 Translate Feed
+                    </button>
+                </div>
             </div>
         </div>
     </header>
 
-    <div class=\"max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-6\">
-        <div class=\"grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-6\">
+    <div class=\"max-w-7xl mx-auto px-2 sm:px-3 lg:px-6 py-4 sm:py-6\">
+        <div class=\"grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6\">
             <!-- Main Feed -->
-            <div class=\"md:col-span-3 space-y-3 sm:space-y-6\">
+            <div class=\"lg:col-span-3 space-y-4 sm:space-y-6\">
                 <!-- Profile Button for Small Screens -->
-                <div class="md:hidden">
-                    <a href="{% url 'users:profile' %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg class="w-5 h-5 mr-2 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                <div class="lg:hidden">
+                    <a href="{% url 'users:profile' %}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-sm text-sm font-medium hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                        <svg class="w-4 h-4 mr-2 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                         </svg>
-                        Profile
+                        My Profile
                     </a>
                 </div>
 
                 <!-- Search & Filter Feed -->
-                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-3 sm:p-4">
+                <div class="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4">
                     <div class="flex items-center space-x-2">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
-                        <input type="text" id="search-feed" placeholder="Search posts, people, #hashtags..." class="flex-1 bg-transparent text-gray-900 placeholder-gray-400 focus:outline-none text-sm" oninput="filterPosts()">
-                        <button onclick="toggleFeedFilters()" class="text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <input type="text" id="search-feed" placeholder="Search posts, people, #hashtags..." class="flex-1 bg-transparent text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:outline-none" oninput="filterPosts()">
+                        <button onclick="toggleFeedFilters()" class="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                             </svg>
@@ -61,31 +66,31 @@
                 </div>
 
                 <!-- Filter Options (Hidden by default) -->
-                <div id="filter-options" class="hidden bg-white rounded-2xl shadow-md border border-gray-100 p-4">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <button onclick="filterByType('all')" class="filter-btn px-3 py-2 rounded-lg bg-blue-100 text-blue-700 text-sm font-medium transition-colors">All Posts</button>
-                        <button onclick="filterByType('text')" class="filter-btn px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium transition-colors">Text Only</button>
-                        <button onclick="filterByType('image')" class="filter-btn px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium transition-colors">With Images</button>
-                        <button onclick="loadLocalFeed()" class="filter-btn px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium transition-colors" title="Shows posts from nearby users">📍 Nearby</button>
-                        <button onclick="sortPosts('recent')" class="filter-btn px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium transition-colors">Recent</button>
-                        <button onclick="sortPosts('popular')" class="filter-btn px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium transition-colors">Popular</button>
-                        <button onclick="clearFilters()" class="filter-btn px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 text-sm font-medium transition-colors col-span-2 sm:col-span-1">Clear</button>
+                <div id="filter-options" class="hidden bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                        <button onclick="filterByType('all')" class="filter-btn px-3 py-2 text-xs sm:text-sm rounded-lg bg-blue-100 text-blue-700 font-medium transition-colors">All Posts</button>
+                        <button onclick="filterByType('text')" class="filter-btn px-3 py-2 text-xs sm:text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors">Text Only</button>
+                        <button onclick="filterByType('image')" class="filter-btn px-3 py-2 text-xs sm:text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors">With Images</button>
+                        <button onclick="loadLocalFeed()" class="filter-btn px-3 py-2 text-xs sm:text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors" title="Shows posts from nearby users">📍 Nearby</button>
+                        <button onclick="sortPosts('recent')" class="filter-btn px-3 py-2 text-xs sm:text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors">Recent</button>
+                        <button onclick="sortPosts('popular')" class="filter-btn px-3 py-2 text-xs sm:text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors">Popular</button>
+                        <button onclick="clearFilters()" class="filter-btn px-3 py-2 text-xs sm:text-sm rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition-colors col-span-2 sm:col-span-1">Clear</button>
                     </div>
                     <div id="location-status" class="mt-3 text-xs text-gray-600"></div>
                 </div>
 
                 <!-- Create Post -->
-                <div class=\"bg-white rounded-2xl shadow-md border border-gray-100 p-4 sm:p-6 hover:shadow-lg transition-shadow duration-200\">
+                <div class=\"bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow duration-200\">
                     <form method="post" enctype="multipart/form-data" action="{% url 'hotel:create_post' %}">
                         {% csrf_token %}
                         <div class="space-y-4">
                             <div>
-                                <label for="{{ form.content.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">What's on your mind?</label>
-                                {{ form.content|add_class:"w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all duration-200" }}
+                                <label for="{{ form.content.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2\">What's on your mind?</label>
+                                {{ form.content|add_class:"w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all duration-200 text-sm" }}
                             </div>
                             <div>
-                                <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Add an image (optional)</label>
-                                {{ form.image|add_class:"w-full" }}
+                                <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2\">Add an image (optional)</label>
+                                {{ form.image|add_class:"w-full text-sm" }}
                             </div>
                             <div class="flex justify-end">
                                 <button type="submit" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold transition-all duration-200">
@@ -98,23 +103,23 @@
 
                 <!-- Posts Feed -->
                 {% for feed_item in feed_items %}
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 post-item" data-post-id="{{ feed_item.item.id }}" data-post-author="{{ feed_item.item.author.username }}" data-post-text="{{ feed_item.item.content|truncatewords:50 }}" data-post-type="{% if feed_item.type == 'post' and feed_item.item.image %}image{% else %}text{% endif %}" data-post-likes="{{ feed_item.item.likes.count }}" data-post-location="{{ feed_item.item.author.location|default:'' }}">
+                <div id="post-{{ feed_item.item.id }}" class="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 post-item" data-post-id="{{ feed_item.item.id }}" data-post-author="{{ feed_item.item.author.username }}" data-post-text="{{ feed_item.item.content|truncatewords:50 }}" data-post-type="{% if feed_item.type == 'post' and feed_item.item.image %}image{% else %}text{% endif %}" data-post-likes="{{ feed_item.item.likes.count }}" data-post-location="{{ feed_item.item.author.location|default:'' }}">
                     {% if feed_item.type == 'post' %}
                         {% with post=feed_item.item %}
                         <!-- Post Header -->
-                        <div class="p-4 pb-3">
-                            <div class="flex items-start justify-between">
-                                <div class="flex items-start space-x-3">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span class="text-white font-bold text-lg">{{ post.author.username|first|upper }}</span>
+                        <div class="p-3 sm:p-4 pb-2 sm:pb-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start space-x-3 flex-1 min-w-0">
+                                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white font-bold text-sm sm:text-lg">{{ post.author.username|first|upper }}</span>
                                     </div>
                                     <div class="min-w-0 flex-1">
-                                        <h3 class="font-semibold text-gray-900 text-base">{{ post.author.get_full_name|default:post.author.username }}</h3>
-                                        <p class="text-sm text-gray-600">{{ post.created_at|timesince }} ago</p>
+                                        <h3 class="font-semibold text-gray-900 text-sm sm:text-base truncate">{{ post.author.get_full_name|default:post.author.username }}</h3>
+                                        <p class="text-xs sm:text-sm text-gray-600">{{ post.created_at|timesince }} ago</p>
                                     </div>
                                 </div>
-                                <button class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <button class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 flex-shrink-0">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
                                     </svg>
                                 </button>
@@ -122,76 +127,82 @@
                         </div>
 
                         <!-- Post Content -->
-                        <div class="px-4 pb-3">
-                            <p class="text-gray-800 text-base leading-relaxed">{{ post.content }}</p>
+                        <div class="px-3 sm:px-4 pb-2 sm:pb-3">
+                            <p class="text-gray-800 text-sm sm:text-base leading-relaxed" data-original-text="{{ post.content|escapejs }}" data-translate-target="post-{{ post.id }}" data-translate-type="post">{{ post.content }}</p>
                         </div>
 
                         <!-- Post Image -->
                         {% if post.image %}
-                        <div class="px-4 pb-3">
-                            <img src="{{ post.image.url }}" alt="Post image" class="w-full rounded-lg max-h-96 md:max-h-[32rem] lg:max-h-[40rem] object-cover">
+                        <div class="px-3 sm:px-4 pb-2 sm:pb-3">
+                            <img src="{{ post.image.url }}" alt="Post image" class="w-full rounded-lg max-h-96 sm:max-h-[28rem] lg:max-h-[32rem] object-cover">
                         </div>
                         {% endif %}
 
                         <!-- Engagement Stats -->
-                        <div class="px-4 pb-2">
-                            <div class="flex items-center justify-between text-sm text-gray-600">
-                                <div class="flex items-center space-x-1">
+                        <div class="px-3 sm:px-4 pb-2">
+                            <div class="flex items-center justify-between text-xs sm:text-sm text-gray-600">
+                                <div class="flex items-center space-x-2">
                                     <div class="flex -space-x-1">
-                                        <div class="w-5 h-5 bg-blue-500 rounded-full border-2 border-white"></div>
-                                        <div class="w-5 h-5 bg-red-500 rounded-full border-2 border-white"></div>
-                                        <div class="w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
+                                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full border-2 border-white"></div>
+                                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full border-2 border-white"></div>
+                                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full border-2 border-white"></div>
                                     </div>
-                                    <span>{{ post.likes.count }} likes</span>
+                                    <span id="like-count-{{ post.id }}" class="font-semibold">{{ post.likes.count }}</span>
                                 </div>
-                                <span>{{ post.comments.count }} comments</span>
+                                <span id="comment-count-{{ post.id }}">{{ post.comments.count }} comments</span>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="border-t border-gray-100 px-4 py-2">
-                            <div class="flex items-center justify-around">
-                                <button class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200" onclick="likePost({{ post.id }})" id="like-btn-{{ post.id }}">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="border-t border-gray-100 px-2 sm:px-4 py-2 sm:py-3">
+                            <div class="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1 sm:gap-2">
+                                <button class="flex items-center justify-center space-x-1 sm:space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm" onclick="likePost({{ post.id }})" id="like-btn-{{ post.id }}">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">Like</span>
+                                    <span class="hidden sm:inline font-medium translatable" data-original-text="Like">Like</span>
                                 </button>
-                                <button class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200" onclick="toggleComments({{ post.id }})" id="comment-btn-{{ post.id }}">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button class="flex items-center justify-center space-x-1 sm:space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm" onclick="toggleComments({{ post.id }})" id="comment-btn-{{ post.id }}">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">Comment</span>
+                                    <span class="hidden sm:inline font-medium translatable" data-original-text="Comment">Comment</span>
                                 </button>
-                                <a href="{% url 'hotel:share_post' post.id %}" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <a href="{% url 'hotel:share_post' post.id %}" class="flex items-center justify-center space-x-1 sm:space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">Share</span>
+                                    <span class="hidden sm:inline font-medium translatable" data-original-text="Share">Share</span>
                                 </a>
-                                <a href="{% url 'hotel:send_message' post.author.id %}" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button type="button" class="flex items-center justify-center space-x-1 sm:space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm" onclick="openMessageModal({{ post.author.id }})">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">Send</span>
+                                    <span class="hidden sm:inline font-medium translatable" data-original-text="Send">Send</span>
+                                </button>
+                                <a href="{% url 'hotel:inbox' %}" class="flex items-center justify-center space-x-1 sm:space-x-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm font-medium">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span class="hidden sm:inline translatable" data-original-text="Inbox">Inbox</span>
                                 </a>
                             </div>
                         </div>
 
                         <!-- Comments Section -->
                         <div id="comments-{{ post.id }}" class="hidden border-t border-gray-100">
-                            <div class="p-4 space-y-4">
+                            <div class="p-3 sm:p-4 space-y-3 sm:space-y-4">
                                 {% for comment in post.comments.all %}
-                                <div class="flex items-start space-x-3">
-                                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span class="text-gray-600 font-semibold text-sm">{{ comment.author.username|first|upper }}</span>
+                                <div class="flex items-start space-x-2 sm:space-x-3">
+                                    <div class="w-7 h-7 sm:w-8 sm:h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-gray-600 font-semibold text-xs sm:text-sm">{{ comment.author.username|first|upper }}</span>
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="bg-gray-100 rounded-lg px-3 py-2">
-                                            <p class="text-sm font-semibold text-gray-900">{{ comment.author.get_full_name|default:comment.author.username }}</p>
-                                            <p class="text-sm text-gray-700">{{ comment.content }}</p>
+                                            <p class="text-xs sm:text-sm font-semibold text-gray-900">{{ comment.author.get_full_name|default:comment.author.username }}</p>
+                                            <p class="text-xs sm:text-sm text-gray-700" data-original-text="{{ comment.content|escapejs }}" data-translate-target="comment-{{ comment.id }}" data-translate-type="comment">{{ comment.content }}</p>
                                         </div>
-                                        <div class="flex items-center space-x-4 mt-1">
+                                        <div class="flex items-center space-x-2 sm:space-x-4 mt-1">
                                             <span class="text-xs text-gray-500">{{ comment.created_at|timesince }} ago</span>
                                             <button class="text-xs text-gray-500 hover:text-gray-700 font-medium">Like</button>
                                             <button class="text-xs text-gray-500 hover:text-gray-700 font-medium">Reply</button>
@@ -200,15 +211,15 @@
                                 </div>
                                 {% endfor %}
                                 <!-- Add Comment Form -->
-                                <div class="flex items-start space-x-3">
-                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span class="text-blue-600 font-semibold text-sm">{{ request.user.username|first|upper }}</span>
+                                <div class="flex items-start space-x-2 sm:space-x-3 pt-2 sm:pt-3 border-t border-gray-100">
+                                    <div class="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-blue-600 font-semibold text-xs sm:text-sm">{{ request.user.username|first|upper }}</span>
                                     </div>
                                     <form method="post" action="{% url 'hotel:add_comment' post.id %}" class="flex-1">
                                         {% csrf_token %}
                                         <div class="flex items-center space-x-2">
-                                            <input type="text" name="content" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
-                                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">Post</button>
+                                            <input type="text" name="content" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-full px-3 sm:px-4 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                                            <button type="submit" class="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex-shrink-0">Post</button>
                                         </div>
                                     </form>
                                 </div>
@@ -218,19 +229,19 @@
                     {% elif feed_item.type == 'share' %}
                         {% with share=feed_item.item %}
                         <!-- Share Header -->
-                        <div class="p-4 pb-3">
-                            <div class="flex items-start justify-between">
-                                <div class="flex items-start space-x-3">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span class="text-white font-bold text-lg">{{ share.sharer.username|first|upper }}</span>
+                        <div class="p-3 sm:p-4 pb-2 sm:pb-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start space-x-3 flex-1 min-w-0">
+                                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white font-bold text-sm sm:text-lg">{{ share.sharer.username|first|upper }}</span>
                                     </div>
                                     <div class="min-w-0 flex-1">
-                                        <h3 class="font-semibold text-gray-900 text-base">{{ share.sharer.get_full_name|default:share.sharer.username }}</h3>
-                                        <p class="text-sm text-gray-600">shared a post • {{ share.created_at|timesince }} ago</p>
+                                        <h3 class="font-semibold text-gray-900 text-sm sm:text-base truncate">{{ share.sharer.get_full_name|default:share.sharer.username }}</h3>
+                                        <p class="text-xs sm:text-sm text-gray-600">shared a post • {{ share.created_at|timesince }} ago</p>
                                     </div>
                                 </div>
-                                <button class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <button class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 flex-shrink-0">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
                                     </svg>
                                 </button>
@@ -239,71 +250,77 @@
 
                         <!-- Share Caption -->
                         {% if share.caption %}
-                        <div class="px-4 pb-3">
-                            <p class="text-gray-800 text-base leading-relaxed">{{ share.caption }}</p>
+                        <div class="px-3 sm:px-4 pb-2 sm:pb-3">
+                            <p class="text-gray-800 text-sm sm:text-base leading-relaxed" data-original-text="{{ share.caption|escapejs }}" data-translate-target="share-caption-{{ share.id }}" data-translate-type="share_caption">{{ share.caption }}</p>
                         </div>
                         {% endif %}
 
                         <!-- Original Post -->
-                        <div class="mx-4 mb-3 border border-gray-200 rounded-lg bg-gray-50">
-                            <div class="p-3">
-                                <div class="flex items-start space-x-3">
-                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span class="text-white font-bold text-sm">{{ share.original_post.author.username|first|upper }}</span>
+                        <div class="mx-3 sm:mx-4 mb-2 sm:mb-3 border border-gray-200 rounded-lg bg-gray-50">
+                            <div class="p-2 sm:p-3">
+                                <div class="flex items-start space-x-2 sm:space-x-3">
+                                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white font-bold text-xs sm:text-sm">{{ share.original_post.author.username|first|upper }}</span>
                                     </div>
                                     <div class="min-w-0 flex-1">
-                                        <h4 class="font-semibold text-gray-900 text-sm">{{ share.original_post.author.get_full_name|default:share.original_post.author.username }}</h4>
+                                        <h4 class="font-semibold text-gray-900 text-xs sm:text-sm truncate">{{ share.original_post.author.get_full_name|default:share.original_post.author.username }}</h4>
                                         <p class="text-xs text-gray-600">{{ share.original_post.created_at|timesince }} ago</p>
                                     </div>
                                 </div>
-                                <p class="text-gray-700 text-sm mt-2">{{ share.original_post.content }}</p>
+                                <p class="text-gray-700 text-xs sm:text-sm mt-2" data-original-text="{{ share.original_post.content|escapejs }}" data-translate-target="share-original-{{ share.original_post.id }}" data-translate-type="post">{{ share.original_post.content }}</p>
                                 {% if share.original_post.image %}
-                                <img src="{{ share.original_post.image.url }}" alt="Shared post image" class="mt-3 rounded-lg max-w-full h-auto max-h-64 md:max-h-80 lg:max-h-96 object-cover">
+                                <img src="{{ share.original_post.image.url }}" alt="Shared post image" class="mt-2 sm:mt-3 rounded-lg max-w-full h-auto max-h-48 sm:max-h-64 lg:max-h-80 object-cover">
                                 {% endif %}
                             </div>
                         </div>
 
                         <!-- Engagement Stats -->
-                        <div class="px-4 pb-2">
-                            <div class="flex items-center justify-between text-sm text-gray-600">
-                                <div class="flex items-center space-x-1">
+                        <div class="px-3 sm:px-4 pb-2">
+                            <div class="flex items-center justify-between text-xs sm:text-sm text-gray-600">
+                                <div class="flex items-center space-x-2">
                                     <div class="flex -space-x-1">
-                                        <div class="w-5 h-5 bg-blue-500 rounded-full border-2 border-white"></div>
-                                        <div class="w-5 h-5 bg-red-500 rounded-full border-2 border-white"></div>
-                                        <div class="w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
+                                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full border-2 border-white"></div>
+                                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full border-2 border-white"></div>
+                                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full border-2 border-white"></div>
                                     </div>
-                                    <span>{{ share.original_post.likes.count }} likes</span>
+                                    <span id="like-count-share-{{ share.original_post.id }}" class="font-semibold">{{ share.original_post.likes.count }}</span>
                                 </div>
-                                <span>{{ share.original_post.comments.count }} comments</span>
+                                <span id="comment-count-share-{{ share.original_post.id }}">{{ share.original_post.comments.count }} comments</span>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="border-t border-gray-100 px-4 py-2">
-                            <div class="flex items-center justify-around">
-                                <button class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200" onclick="likePost({{ share.original_post.id }})">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="border-t border-gray-100 px-2 sm:px-4 py-2 sm:py-3">
+                            <div class="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1 sm:gap-2">
+                                <button class="flex items-center justify-center space-x-1 sm:space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm" onclick="likePost({{ share.original_post.id }})">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">Like</span>
+                                    <span class="hidden sm:inline font-medium translatable" data-original-text="Like">Like</span>
                                 </button>
-                                <button class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200" onclick="toggleComments({{ share.original_post.id }})">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button class="flex items-center justify-center space-x-1 sm:space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm" onclick="toggleComments({{ share.original_post.id }})">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">Comment</span>
+                                    <span class="hidden sm:inline font-medium translatable" data-original-text="Comment">Comment</span>
                                 </button>
-                                <a href="{% url 'hotel:share_post' share.original_post.id %}" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <a href="{% url 'hotel:share_post' share.original_post.id %}" class="flex items-center justify-center space-x-1 sm:space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">Share</span>
+                                    <span class="hidden sm:inline font-medium translatable" data-original-text="Share">Share</span>
                                 </a>
-                                <a href="{% url 'hotel:send_message' share.original_post.author.id %}" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button type="button" class="flex items-center justify-center space-x-1 sm:space-x-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm" onclick="openMessageModal({{ share.original_post.author.id }})">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">Send</span>
+                                    <span class="hidden sm:inline font-medium translatable" data-original-text="Send">Send</span>
+                                </button>
+                                <a href="{% url 'hotel:inbox' %}" class="flex items-center justify-center space-x-1 sm:space-x-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 sm:px-3 py-2 rounded-lg transition-colors duration-200 text-xs sm:text-sm font-medium">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span class="hidden sm:inline translatable" data-original-text="Inbox">Inbox</span>
                                 </a>
                             </div>
                         </div>
@@ -314,19 +331,19 @@
             </div>
 
             <!-- Sidebar -->
-            <div class="space-y-6">
+            <div class="space-y-4 sm:space-y-6 lg:col-span-1">
                 <!-- Connections -->
-                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 sm:p-6 hover:shadow-lg transition-shadow duration-200">
-                    <h3 class="font-bold text-gray-900 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">My Connections</h3>
+                <div class="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-shadow duration-200">
+                    <h3 class="font-bold text-gray-900 mb-3 sm:mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-sm sm:text-base">My Connections</h3>
                     <div class="space-y-3">
                         {% for connection in connections %}
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                <span class="text-indigo-600 font-semibold text-sm">{% if connection.sender == request.user %}{{ connection.receiver.username|first|upper }}{% else %}{{ connection.sender.username|first|upper }}{% endif %}</span>
+                        <div class="flex items-center space-x-2 sm:space-x-3">
+                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-indigo-600 font-semibold text-xs sm:text-sm">{% if connection.sender == request.user %}{{ connection.receiver.username|first|upper }}{% else %}{{ connection.sender.username|first|upper }}{% endif %}</span>
                             </div>
-                            <div>
-                                <p class="text-sm font-semibold text-gray-900">{% if connection.sender == request.user %}{{ connection.receiver.get_full_name|default:connection.receiver.username }}{% else %}{{ connection.sender.get_full_name|default:connection.sender.username }}{% endif %}</p>
-                                <p class="text-xs text-gray-500">{% if connection.sender == request.user %}{{ connection.receiver.headline|truncatechars:30 }}{% else %}{{ connection.sender.headline|truncatechars:30 }}{% endif %}</p>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs sm:text-sm font-semibold text-gray-900 truncate">{% if connection.sender == request.user %}{{ connection.receiver.get_full_name|default:connection.receiver.username }}{% else %}{{ connection.sender.get_full_name|default:connection.sender.username }}{% endif %}</p>
+                                <p class="text-xs text-gray-500 truncate">{% if connection.sender == request.user %}{{ connection.receiver.headline|truncatechars:25 }}{% else %}{{ connection.sender.headline|truncatechars:25 }}{% endif %}</p>
                             </div>
                         </div>
                         {% endfor %}
@@ -334,15 +351,15 @@
                 </div>
 
                 <!-- Messages -->
-                <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 sm:p-6 hover:shadow-lg transition-shadow duration-200">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Messages</h3>
-                        <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800 text-sm">View All</a>
+                <div class="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-shadow duration-200">
+                    <div class="flex items-center justify-between mb-3 sm:mb-4">
+                        <h3 class="font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-sm sm:text-base">Messages</h3>
+                        <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800 text-xs sm:text-sm font-medium">View All</a>
                     </div>
-                    <div id="messages-list" class="space-y-3">
+                    <div id="messages-list" class="space-y-2 sm:space-y-3">
                         <!-- Messages will be loaded here -->
                     </div>
-                    <button onclick="openMessageModal()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold transition-all duration-200 mt-4">
+                    <button onclick="openMessageModal()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold transition-all duration-200 mt-3 sm:mt-4">
                         New Message
                     </button>
                 </div>
@@ -356,6 +373,7 @@
     <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 w-full max-w-md mx-4">
         <h3 class="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">Send Message</h3>
         <form id="message-form">
+            {% csrf_token %}
             <div class="mb-4">
                 <label for="recipient" class="block text-sm font-semibold text-gray-700 mb-2">To:</label>
                 <select id="recipient" name="recipient" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" required>
@@ -431,6 +449,61 @@
     </div>
 </div>
 
+<!-- Language Preferences Modal -->
+<div id="language-pref-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 w-full max-w-lg mx-4">
+        <div class="flex items-start justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">🌍 Language Preferences</h3>
+                <p class="text-sm text-gray-600 mt-1">Select your preferred language and translate the feed, comments, messages, and interface text.</p>
+            </div>
+            <button onclick="closeLanguagePreferences()" class="text-gray-400 hover:text-gray-700">✕</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 max-h-96 overflow-y-auto">
+            <button type="button" onclick="selectLanguagePreference('lg')" id="language-pref-lg" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">Luganda</span>
+                <span class="text-xs text-gray-500">Uganda</span>
+            </button>
+            <button type="button" onclick="selectLanguagePreference('sw')" id="language-pref-sw" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">Swahili</span>
+                <span class="text-xs text-gray-500">East Africa</span>
+            </button>
+            <button type="button" onclick="selectLanguagePreference('rw')" id="language-pref-rw" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">Kinyarwanda</span>
+                <span class="text-xs text-gray-500">Rwanda</span>
+            </button>
+            <button type="button" onclick="selectLanguagePreference('zu')" id="language-pref-zu" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">Zulu</span>
+                <span class="text-xs text-gray-500">South Africa</span>
+            </button>
+            <button type="button" onclick="selectLanguagePreference('ha')" id="language-pref-ha" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">Hausa</span>
+                <span class="text-xs text-gray-500">Nigeria</span>
+            </button>
+            <button type="button" onclick="selectLanguagePreference('fr')" id="language-pref-fr" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">French</span>
+                <span class="text-xs text-gray-500">International</span>
+            </button>
+            <button type="button" onclick="selectLanguagePreference('es')" id="language-pref-es" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">Spanish</span>
+                <span class="text-xs text-gray-500">International</span>
+            </button>
+            <button type="button" onclick="selectLanguagePreference('ar')" id="language-pref-ar" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">Arabic</span>
+                <span class="text-xs text-gray-500">North Africa</span>
+            </button>
+            <button type="button" onclick="selectLanguagePreference('am')" id="language-pref-am" class="w-full text-left border border-gray-200 rounded-xl px-4 py-3 hover:bg-blue-50 transition-colors duration-200 text-sm font-medium text-gray-700">
+                <span class="block">Amharic</span>
+                <span class="text-xs text-gray-500">Ethiopia</span>
+            </button>
+        </div>
+        <div class="flex justify-end space-x-3">
+            <button type="button" onclick="closeLanguagePreferences()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+            <button type="button" onclick="applyLanguagePreference()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200">Apply</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ============================================================================
 // NATIVE BROWSER TRANSLATOR API - Free, Private, On-Device Translation
@@ -442,6 +515,9 @@ let currentTranslationContext = {
     originalText: null,
     originalElement: null
 };
+
+let selectedLanguagePreference = localStorage.getItem('languagePreference') || null;
+let languagePreference = localStorage.getItem('languagePreference') || 'en';
 
 // Language code mapping - 20+ African languages including Luganda
 const LANGUAGE_MAP = {
@@ -472,6 +548,87 @@ const LANGUAGE_MAP = {
     'es': { name: 'Spanish', code: 'es', region: 'International' },
     'ar': { name: 'Arabic', code: 'ar', region: 'North Africa' }
 };
+
+const NLLB_LANGUAGE_MAP = {
+    'en': 'eng_Latn',
+    'fr': 'fra_Latn',
+    'zh': 'zho_Hans',
+    'zh-cn': 'zho_Hans',
+    'zh-tw': 'zho_Hant',
+    'lg': 'lug_Latn',
+    'sw': 'swh_Latn',
+    'yo': 'yor_Latn',
+    'ig': 'ibo_Latn',
+    'ha': 'hau_Latn',
+    'am': 'amh_Ethi',
+    'om': 'orm_Latn',
+    'zu': 'zul_Latn',
+    'xh': 'xho_Latn',
+    'st': 'sot_Latn',
+    'rw': 'kin_Latn',
+    'ach': 'ach_Latn',
+    'teo': 'teo_Latn',
+    'sna': 'sna_Latn',
+    'afr': 'afr_Latn'
+};
+
+let translatorWorker = null;
+let workerSupported = false;
+
+try {
+    translatorWorker = new Worker('{% static "js/translator_worker.js" %}', { type: 'module' });
+    workerSupported = true;
+    console.log('✅ Translation worker initialized successfully');
+    translatorWorker.onmessage = (event) => {
+        const { targetId, translatedText, error } = event.data;
+        console.log('📥 Worker response for', targetId, ':', translatedText ? 'SUCCESS' : 'ERROR', error || '');
+        const targetEl = document.querySelector(`[data-translate-target="${targetId}"]`);
+        if (!targetEl) {
+            console.warn('⚠️ Target element not found:', targetId);
+            return;
+        }
+
+        if (translatedText) {
+            targetEl.textContent = translatedText;
+            targetEl.style.opacity = '1';
+            targetEl.style.transition = 'opacity 0.3s ease';
+            console.log('✅ Translation applied to', targetId);
+
+            // Update progress
+            const completedElements = document.querySelectorAll('[data-translate-target]:not([style*="opacity: 0.5"])').length;
+            const totalElements = document.querySelectorAll('[data-translate-target]').length;
+            const progress = Math.round((completedElements / totalElements) * 100);
+            showTranslationProgress(`Translating... ${completedElements}/${totalElements}`, progress);
+
+            // Hide progress when all done
+            if (completedElements >= totalElements) {
+                setTimeout(() => hideTranslationProgress(), 1000);
+            }
+        } else if (error) {
+            console.warn('❌ Translation worker error for', targetId, error);
+            targetEl.style.opacity = '1'; // Reset opacity
+            showTranslationProgress('Worker failed - trying API fallback', null);
+
+            // Fallback to API translation for this element
+            setTimeout(async () => {
+                try {
+                    const originalText = targetEl.getAttribute('data-original-text') || targetEl.textContent || '';
+                    const fallbackTranslation = await translateWithBrowser(originalText, currentTranslationLanguage);
+                    if (fallbackTranslation && fallbackTranslation !== originalText) {
+                        targetEl.textContent = fallbackTranslation;
+                        console.log('✅ API fallback successful for', targetId);
+                    }
+                } catch (fallbackError) {
+                    console.error('❌ API fallback also failed for', targetId, fallbackError);
+                }
+                hideTranslationProgress();
+            }, 1000);
+        }
+    };
+} catch (err) {
+    console.warn('❌ Translation worker failed to initialize:', err);
+    workerSupported = false;
+}
 
 /**
  * Check if the browser supports the native Translator API
@@ -508,7 +665,32 @@ async function translateWithBrowser(text, targetLanguage) {
         }
     }
 
-    // Try 2: MyMemory free translation API (reliable, no auth needed)
+    // Try 2: LibreTranslate fallback with auto source detection
+    try {
+        console.log('🔄 Using LibreTranslate API for', targetLanguage);
+        const response = await fetch('https://libretranslate.de/translate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                q: text,
+                source: 'auto',
+                target: targetLanguage,
+                format: 'text'
+            })
+        });
+        const data = await response.json();
+        if (data && data.translatedText) {
+            if (loadingEl) loadingEl.classList.add('hidden');
+            console.log('✅ Translation successful with LibreTranslate');
+            return data.translatedText;
+        }
+    } catch (err) {
+        console.warn('⚠️ LibreTranslate failed:', err);
+    }
+
+    // Try 3: MyMemory free translation API (assumes English source)
     try {
         console.log('🔄 Using MyMemory Translation API for', targetLanguage);
         const params = new URLSearchParams({
@@ -532,7 +714,7 @@ async function translateWithBrowser(text, targetLanguage) {
         console.warn('⚠️ MyMemory API failed:', err);
     }
 
-    // Try 3: Google Translate via simple script tag (no CORS issues)
+    // Try 4: Google Translate via simple script tag (no CORS issues)
     try {
         console.log('🔄 Using Google Translate fallback');
         // Create a temporary element
@@ -598,19 +780,44 @@ function closeTranslateModal() {
     };
 }
 
+function openTranslateModalForAllContent() {
+    currentTranslationContext.postId = 'all';
+    currentTranslationContext.originalText = null;
+    currentTranslationContext.originalElement = null;
+    if (!isBrowserTranslatorSupported()) {
+        document.getElementById('browser-support-warning').classList.remove('hidden');
+    } else {
+        document.getElementById('browser-support-warning').classList.add('hidden');
+    }
+    document.getElementById('translate-modal').classList.remove('hidden');
+}
+
 /**
  * Translate to the selected language
  */
 async function translateTo(languageCode) {
     const postId = currentTranslationContext.postId;
-    const originalText = currentTranslationContext.originalText;
     const languageName = LANGUAGE_MAP[languageCode]?.name || languageCode;
 
-    if (!postId || !originalText) {
+    if (!postId) {
+        console.error('No post selected for translation');
+        alert('Error: No feed selected for translation');
+        return;
+    }
+
+    if (postId === 'all') {
+        await translateAllFeedAndComments(languageCode);
+        closeTranslateModal();
+        return;
+    }
+
+    const originalText = currentTranslationContext.originalText;
+    if (!originalText) {
         console.error('No post selected for translation');
         alert('Error: No post selected for translation');
         return;
     }
+
 
     // Find the post content element
     const postDiv = document.querySelector(`#post-${postId}`);
@@ -687,6 +894,147 @@ async function translateTo(languageCode) {
     closeTranslateModal();
 }
 
+let currentTranslationLanguage = null;
+
+async function translateAllFeedAndComments(languageCode) {
+    currentTranslationLanguage = languageCode; // Store for fallback use
+    console.log('🚀 Starting translation of all feed content to:', languageCode);
+    const allTextEls = Array.from(document.querySelectorAll('[data-translate-target]'));
+    console.log('📋 Found', allTextEls.length, 'elements to translate');
+
+    if (!allTextEls.length) {
+        alert('No feed or comment text found to translate. Please check if posts are loaded.');
+        return;
+    }
+
+    const nllbTarget = NLLB_LANGUAGE_MAP[languageCode] || NLLB_LANGUAGE_MAP['en'];
+    console.log('🎯 NLLB target language code:', nllbTarget);
+
+    if (workerSupported && translatorWorker) {
+        console.log('🤖 Using Web Worker for translation');
+
+        // Show global progress indicator
+        showTranslationProgress('Initializing translation model...', 0);
+
+        allTextEls.forEach((el, index) => {
+            const originalText = el.getAttribute('data-original-text') || el.textContent || '';
+            if (!originalText.trim()) return;
+            el.setAttribute('data-original-text', originalText);
+            el.style.opacity = '0.5';
+            console.log('📤 Sending to worker:', el.dataset.translateTarget, originalText.substring(0, 50) + '...');
+            translatorWorker.postMessage({
+                targetId: el.dataset.translateTarget,
+                text: originalText,
+                src_lang: 'eng_Latn',
+                tgt_lang: nllbTarget
+            });
+        });
+        const languageName = LANGUAGE_MAP[languageCode]?.name || languageCode;
+        alert('Feed and comment translation started for ' + languageName + '. Translations will appear as they complete.');
+        return;
+    }
+
+    console.log('⚠️ Worker not available, using fallback APIs');
+    const translationPromises = allTextEls.map(async el => {
+        const originalText = el.getAttribute('data-original-text') || el.textContent || '';
+        if (!originalText.trim()) return;
+        el.style.opacity = '0.5';
+        const translatedText = await translateTextValue(originalText, languageCode);
+        el.textContent = translatedText || originalText;
+        el.style.opacity = '1';
+    });
+
+    await Promise.all(translationPromises);
+    const languageName = LANGUAGE_MAP[languageCode]?.name || languageCode;
+    alert('Feed and comment translation completed to ' + languageName + '.');
+}
+
+async function translateTextValue(originalText, languageCode) {
+    const translated = await translateWithBrowser(originalText, languageCode);
+    if (translated && translated.trim() && translated !== originalText) {
+        return translated;
+    }
+
+    try {
+        console.log('🔄 Trying LibreTranslate fallback');
+        const response = await fetch('https://libretranslate.de/translate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                q: originalText,
+                source: 'auto',
+                target: languageCode,
+                format: 'text'
+            })
+        });
+        const data = await response.json();
+        if (data && data.translatedText) {
+            return data.translatedText;
+        }
+    } catch (error) {
+        console.warn('LibreTranslate fallback failed:', error);
+    }
+
+    return originalText;
+}
+
+function openLanguagePreferences() {
+    const modal = document.getElementById('language-pref-modal');
+    if (!modal) return;
+    selectedLanguagePreference = localStorage.getItem('languagePreference') || null;
+    highlightLanguagePreference();
+    modal.classList.remove('hidden');
+}
+
+function closeLanguagePreferences() {
+    const modal = document.getElementById('language-pref-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function highlightLanguagePreference() {
+    const buttons = document.querySelectorAll('[id^="language-pref-"]');
+    buttons.forEach(button => {
+        const code = button.id.replace('language-pref-', '');
+        if (code === selectedLanguagePreference) {
+            button.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+        } else {
+            button.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+        }
+    });
+}
+
+function selectLanguagePreference(languageCode) {
+    selectedLanguagePreference = languageCode;
+    highlightLanguagePreference();
+}
+
+function applyLanguagePreference() {
+    if (!selectedLanguagePreference) {
+        alert('Please select a language first.');
+        return;
+    }
+    languagePreference = selectedLanguagePreference;
+    localStorage.setItem('languagePreference', selectedLanguagePreference);
+    closeLanguagePreferences();
+    alert('Saved language preference: ' + (LANGUAGE_MAP[selectedLanguagePreference]?.name || selectedLanguagePreference));
+    translateAllFeedAndComments(selectedLanguagePreference);
+}
+
+function openTranslateModalForFirstPost() {
+    const firstPost = document.querySelector('.post-item');
+    if (!firstPost) {
+        alert('No post available to translate.');
+        return;
+    }
+    const postId = firstPost.dataset.postId;
+    const postText = firstPost.dataset.postText || firstPost.querySelector('p')?.textContent || '';
+    openTranslateModal(postId, postText);
+}
+
 /**
  * Show original text (revert translation)
  */
@@ -730,9 +1078,45 @@ function showBrowserWarning() {
     }
 }
 
-// ============================================================================
-// EXISTING FUNCTIONS
-// ============================================================================
+/**
+ * Show translation progress indicator
+ */
+function showTranslationProgress(message, progress = null) {
+    // Remove existing progress indicator
+    const existing = document.getElementById('translation-progress');
+    if (existing) existing.remove();
+
+    // Create progress indicator
+    const progressDiv = document.createElement('div');
+    progressDiv.id = 'translation-progress';
+    progressDiv.className = 'fixed top-20 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center space-x-2';
+    progressDiv.innerHTML = `
+        <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+        <span class="text-sm">${message}</span>
+        ${progress !== null ? `<span class="text-xs opacity-75">${progress}%</span>` : ''}
+    `;
+
+    document.body.appendChild(progressDiv);
+
+    // Auto-remove after 30 seconds
+    setTimeout(() => {
+        if (progressDiv.parentNode) {
+            progressDiv.remove();
+        }
+    }, 30000);
+}
+
+/**
+ * Hide translation progress indicator
+ */
+function hideTranslationProgress() {
+    const progressDiv = document.getElementById('translation-progress');
+    if (progressDiv) {
+        progressDiv.remove();
+    }
+}
+
+
 
 // Load messages on page load
 loadMessages();
@@ -799,8 +1183,13 @@ function loadMessages() {
 }
 
 // Open message modal
-function openMessageModal() {
-    document.getElementById('message-modal').classList.remove('hidden');
+function openMessageModal(recipientId = null) {
+    const messageModal = document.getElementById('message-modal');
+    const recipientSelect = document.getElementById('recipient');
+    if (recipientId && recipientSelect) {
+        recipientSelect.value = recipientId;
+    }
+    messageModal.classList.remove('hidden');
 }
 
 // Close message modal
@@ -852,6 +1241,12 @@ window.addEventListener('load', function() {
         console.log('✅ Native Browser Translator API detected - translations will be free and private!');
     } else {
         console.log('ℹ️ Native Browser Translator not available in this browser. Update to Chrome 131+ for best experience.');
+    }
+
+    const serverPreferredLang = "{{ request.user.language|default:'en' }}";
+    const preferredLang = localStorage.getItem('languagePreference') || serverPreferredLang || 'en';
+    if (preferredLang && preferredLang !== 'en') {
+        translateAllFeedAndComments(preferredLang);
     }
 });
 

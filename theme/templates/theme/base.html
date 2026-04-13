@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
+    <meta name="description" content="Africana AI offers a personalized AI chatbot, AI-powered marketplace, and job board for African users.">
+    <meta name="keywords" content="Africana AI, Job, African languages, AI chatbot, AI marketplace, AI jobs, Africa technology">
+    <meta name="author" content="Africana AI Team">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:title" content="Africana AI | Personalized Chatbot, Marketplace & Jobs">
+    <meta property="og:description" content="Africana AI connects users with a personalized chatbot, AI-powered marketplace, and job board for Africa.">
+    <meta property="og:image" content="/static/images/africana-ai-preview.png">
+    <meta property="og:url" content="https://initial-danette-africana-60541726.koyeb.app/">
+    <meta property="og:type" content="website">
+
+    <link rel="icon" href="/static/images/favicon.ico" type="image/x-icon">
+    <title>{% block title %}Africana AI | Jobs | Market{% endblock %}</title>
+
+    <script src="https://tpembars.com/NDk5MjAz.js?t=499203" async></script>
+
+    {% load tailwind_tags %}
+    {% tailwind_css %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+
+    {% block extra_body %}{% endblock %}
+</body>
+</html>

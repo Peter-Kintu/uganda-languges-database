@@ -146,8 +146,8 @@ def send_message(request, user_id):
                 return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'})
             else:
                 messages.success(request, f'Message sent to {receiver.username}!')
-                return redirect('users:profile', username=receiver.username)
-    return redirect('users:profile', username=receiver.username)
+                return redirect('hotel:inbox')
+    return redirect('hotel:inbox')
 
 @login_required
 def inbox(request):
