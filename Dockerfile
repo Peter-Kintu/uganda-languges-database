@@ -1,56 +1,56 @@
-# --- Stage 1: Build Dependencies ---
+# --- Stage 1: Build Python Dependencies ---
 FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Install build-essential tools + Node.js for Tailwind CSS
+# Install build tools for C-extensions (psycopg, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     python3-dev \
     libpq-dev \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
-# Install dependencies
+# Install dependencies into /install
 RUN pip install --upgrade pip \
     && pip install --prefix=/install -r requirements.txt
+
 
 # --- Stage 2: Final Runtime Image ---
 FROM python:3.12-slim
 
-# Install PostgreSQL runtime libraries
+# 1. Install System Dependencies:
+# - libpq5 for Postgres
+# - nodejs/npm for Tailwind compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy installed packages and project files
+# 2. Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
 COPY . /app
 
-# Production environment variables
+# 3. Production environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 ENV DEBUG="False"
-ENV SECRET_KEY="dummy-key-for-build-only"
+ENV SECRET_KEY="build-time-dummy-key"
 
-# Compile Tailwind CSS
-RUN python manage.py tailwind build
+# 4. Compile Tailwind CSS
+# We use 'theme' because TAILWIND_APP_NAME = 'theme' in your settings.py
+RUN python manage.py theme install
+RUN python manage.py theme build
 
-# Run collectstatic with dummy DB
+# 5. Run collectstatic with dummy DB
 RUN DATABASE_URL=sqlite:///:memory: python manage.py collectstatic --noinput
 
 # --- FINAL EXECUTION COMMAND ---
-# IMPROVEMENTS:
-# 1. Added --timeout 120: Gives AliExpress API time to respond (Default is only 30s).
-# 2. Added --workers 2: Better handling of concurrent requests on low-RAM instances.
-# 3. Added --worker-class gthread: Better for I/O bound tasks like API syncing.
-# 4. Added --threads 4: Allows workers to handle the sync without blocking the whole app.
 CMD ["bash", "-c", "\
     python manage.py migrate users --noinput && \
     python manage.py migrate --noinput && \
