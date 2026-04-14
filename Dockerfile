@@ -48,6 +48,9 @@ ENV SECRET_KEY="build-time-dummy-key"
 RUN python manage.py tailwind install --no-input
 RUN python manage.py tailwind build --no-input
 
+# 5. Collect static files
+RUN python manage.py collectstatic --noinput
+
 # 5. Run collectstatic with dummy DB
 RUN DATABASE_URL=sqlite:///:memory: python manage.py collectstatic --noinput
 
