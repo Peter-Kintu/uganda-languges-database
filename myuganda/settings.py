@@ -101,6 +101,9 @@ INSTALLED_APPS = [
 
 TAILWIND_APP_NAME = 'theme'
 
+# For Windows, specify npm path if not in PATH
+NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
+
 SITE_ID = 1
 
 MIDDLEWARE = [
