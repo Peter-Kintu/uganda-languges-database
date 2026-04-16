@@ -131,6 +131,14 @@ def get_exchange_rate(from_curr, to_curr="UGX"):
     except:
         return 1.0
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 @login_required
 def browse_job_listings(request):
     job_id = request.GET.get('job_id')
@@ -212,15 +220,10 @@ def browse_job_listings(request):
 
             try:
                 # Get ACTUAL user IP (not server IP) - REQUIRED for Careerjet tracking
-                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-                if x_forwarded_for:
-                    # Take the first IP if there are multiple
-                    actual_user_ip = x_forwarded_for.split(',')[0].strip()
-                else:
-                    actual_user_ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
+                actual_user_ip = get_client_ip(request)
 
                 # Get actual user agent - REQUIRED for Careerjet tracking
-                actual_user_agent = request.META.get('HTTP_USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+                actual_user_agent = request.META.get('HTTP_USER_AGENT')
 
                 # Dynamic Referer Construction (REQUIRED by Careerjet)
                 current_url = request.build_absolute_uri()
@@ -233,6 +236,7 @@ def browse_job_listings(request):
                     'user_agent': actual_user_agent,  # ACTUAL user agent for tracking
                     'page_size': 25,
                     'page': page,
+                    'affid': CAREERJET_PUBLISHER_ID,  # Affiliate ID for click tracking
                 }
 
                 cj_headers = {
@@ -253,11 +257,22 @@ def browse_job_listings(request):
                     cj_data = cj_res.json()
                     print(f"Careerjet API Response: type={cj_data.get('type')}, hits={cj_data.get('hits', 0)}")
                     if cj_data.get('type') == 'JOBS':
-                        careerjet_jobs = cj_data.get('jobs', [])
+                        raw_jobs = cj_data.get('jobs', [])
+                        careerjet_jobs = []
+                        for job in raw_jobs:
+                            careerjet_jobs.append({
+                                'title': job.get('title'),
+                                'company': job.get('company'),
+                                'location': job.get('locations'),
+                                'description': job.get('description'),
+                                'url': job.get('url'),  # Use url as returned by API
+                                'salary': job.get('salary'),
+                                'date': job.get('date'),
+                            })
                         print(f"Careerjet jobs found: {len(careerjet_jobs)}")
                         # Debug first job URL
                         if careerjet_jobs:
-                            print(f"First job URL: {careerjet_jobs[0].get('url', 'No URL')}")
+                            print(f"First job URL: {careerjet_jobs[0].get('redirect_url', 'No URL')}")
                 else:
                     print(f"Careerjet API error: HTTP {cj_res.status_code}")
                     print(f"Response: {cj_res.text[:500]}")
