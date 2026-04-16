@@ -1,0 +1,16 @@
+{
+  "name": "theme",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tailwindcss -i ./src/input.css -o ../css/main.css --watch=false",
+    "dev": "tailwindcss -i ./src/input.css -o ../css/main.css --watch=true"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}

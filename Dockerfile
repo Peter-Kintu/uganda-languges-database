@@ -45,8 +45,8 @@ ENV SECRET_KEY="build-time-dummy-key"
 # 4. Compile Tailwind CSS
 # Use 'tailwind' as the command (the library maps this to your 'theme' app internally)
 # We run 'install' first to generate the local node_modules inside the 'theme' directory
-RUN python manage.py tailwind install --no-input
-RUN python manage.py tailwind build --no-input
+RUN python manage.py tailwind install
+RUN python manage.py tailwind build
 
 # 5. Collect static files
 RUN python manage.py collectstatic --noinput
