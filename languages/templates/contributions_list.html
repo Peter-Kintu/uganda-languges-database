@@ -239,8 +239,22 @@
                             </a>
                         </div>
 
+                        {% if search_type == 'crawl' %}
+                        <div class="mb-4 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-800">
+                            <div class="flex items-start gap-2">
+                                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                <div>
+                                    <p class="font-semibold mb-1">Global web crawling active</p>
+                                    <p>Searching Indeed, LinkedIn, ZipRecruiter & Glassdoor for "{{ search_query|default:'jobs' }}" in {{ location_query|default:'Uganda' }}...</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <!-- Mobile Search (compact design) -->
-                        <div class="block lg:hidden mb-4">
+                        <div class="block lg:hidden mb-4 space-y-3">
                             <div class="relative">
                                 <input type="text"
                                        id="search-q-mobile"
@@ -251,6 +265,14 @@
                                 <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
+                            </div>
+                            <div>
+                                <input type="text"
+                                       id="search-where-mobile"
+                                       name="where"
+                                       value="{{ location_query|default:'' }}"
+                                       placeholder="Location"
+                                       class="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 focus:bg-white transition-colors">
                             </div>
                         </div>
 
@@ -274,6 +296,7 @@
                             <!-- Location -->
                             <div>
                                 <input type="text"
+                                       id="search-where-desktop"
                                        name="where"
                                        value="{{ location_query|default:'' }}"
                                        placeholder="Location"
@@ -291,12 +314,19 @@
                             </div>
                         </div>
 
-                        <!-- Search Button - Compact on mobile -->
-                        <div class="flex justify-center">
-                            <button type="submit" class="px-6 py-2 sm:px-8 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg sm:rounded-xl transition-colors shadow-sm text-sm sm:text-base">
-                                <span class="sm:hidden">AI Search</span>
-                                <span class="hidden sm:inline">AI Search</span>
+                        <input type="hidden" name="search_type" id="search_type_input" value="{{ search_type|default:'api' }}">
+
+                        <div class="flex flex-wrap items-center gap-3 mb-4">
+                            <button type="submit" id="search-api-btn" class="min-w-[140px] inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-sm text-sm">
+                                Search Jobs
                             </button>
+                            <button type="submit" id="search-crawl-btn" class="min-w-[140px] inline-flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors shadow-sm text-sm">
+                                <span class="crawl-label">AI Search</span>
+                                <span class="crawl-spinner hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            </button>
+                            <p class="flex-1 min-w-[180px] text-xs text-gray-500">
+                                Live AI search may take up to 15 seconds. Keep this page open while the search completes.
+                            </p>
                         </div>
                     </form>
                 </div>
@@ -431,7 +461,7 @@
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex justify-between items-start mb-4">
                         <span class="px-3 py-1 bg-orange-50 text-orange-700 text-xs font-semibold rounded-full border border-orange-200">
-                            Partner Job
+                            External Job
                         </span>
                     </div>
 
@@ -450,7 +480,7 @@
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex justify-between items-start mb-4">
                         <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200">
-                            Global Job
+                            External Job
                         </span>
                         <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
@@ -523,9 +553,11 @@
     // Logic to sync the mobile and desktop search inputs
     const desktopQ = document.getElementById('search-q-desktop');
     const mobileQ = document.getElementById('search-q-mobile');
+    const desktopWhere = document.getElementById('search-where-desktop');
+    const mobileWhere = document.getElementById('search-where-mobile');
     const form = document.getElementById('search-filter-form');
 
-    if(mobileQ && desktopQ) {
+    if (mobileQ && desktopQ && desktopWhere && mobileWhere) {
         // Sync values when typing
         mobileQ.addEventListener('input', (e) => {
             desktopQ.value = e.target.value;
@@ -534,21 +566,33 @@
             mobileQ.value = e.target.value;
         });
 
+        mobileWhere.addEventListener('input', (e) => {
+            desktopWhere.value = e.target.value;
+        });
+        desktopWhere.addEventListener('input', (e) => {
+            mobileWhere.value = e.target.value;
+        });
+
         // Initial sync
         if (mobileQ.value !== desktopQ.value) {
             mobileQ.value = desktopQ.value || '';
+        }
+        if (mobileWhere.value !== desktopWhere.value) {
+            mobileWhere.value = desktopWhere.value || '';
         }
 
         // Ensure proper name attributes based on visibility
         function updateSearchInputs() {
             if (window.innerWidth < 1024) { // lg breakpoint
-                // Mobile view: mobile input should have name, desktop should not
                 desktopQ.removeAttribute('name');
+                desktopWhere.removeAttribute('name');
                 mobileQ.setAttribute('name', 'q');
+                mobileWhere.setAttribute('name', 'where');
             } else {
-                // Desktop view: desktop input should have name, mobile should not
                 mobileQ.removeAttribute('name');
+                mobileWhere.removeAttribute('name');
                 desktopQ.setAttribute('name', 'q');
+                desktopWhere.setAttribute('name', 'where');
             }
         }
 
@@ -557,6 +601,28 @@
 
         // Update on window resize
         window.addEventListener('resize', updateSearchInputs);
+    }
+
+    const searchTypeInput = document.getElementById('search_type_input');
+    const apiSearchBtn = document.getElementById('search-api-btn');
+    const crawlSearchBtn = document.getElementById('search-crawl-btn');
+
+    if (searchTypeInput && apiSearchBtn && crawlSearchBtn) {
+        apiSearchBtn.addEventListener('click', () => {
+            searchTypeInput.value = 'api';
+        });
+
+        crawlSearchBtn.addEventListener('click', () => {
+            searchTypeInput.value = 'crawl';
+            apiSearchBtn.disabled = true;
+            crawlSearchBtn.disabled = true;
+            apiSearchBtn.classList.add('opacity-70', 'cursor-not-allowed');
+            crawlSearchBtn.classList.add('opacity-70', 'cursor-not-allowed');
+            const spinner = crawlSearchBtn.querySelector('.crawl-spinner');
+            const label = crawlSearchBtn.querySelector('.crawl-label');
+            if (spinner) spinner.classList.remove('hidden');
+            if (label) label.textContent = 'Crawling…';
+        });
     }
 </script>
 {% endblock %}

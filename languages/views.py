@@ -156,6 +156,7 @@ def browse_job_listings(request):
     category_filter = request.GET.get('category')
     search_query = request.GET.get('q') or "hiring" 
     location_query = request.GET.get('where') or ""
+    search_type = request.GET.get('search_type', 'api')
     page = request.GET.get('page', 1)
 
     display_query = search_query if search_query != "hiring" else "Freelance"
@@ -166,131 +167,215 @@ def browse_job_listings(request):
     }
 
     if selected_job is None:
-        job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
-        if category_filter and category_filter != 'all':
-            job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
-        if search_query and search_query != "hiring":
+        final_job_list = []
+        
+        # --- GLOBAL WEB CRAWL MODE ---
+        if search_type == 'crawl' and search_query and search_query != "hiring":
+            try:
+                from jobspy import scrape_jobs
+                print(f"Starting jobspy crawl for '{search_query}' in '{location_query}'...")
+                
+                scraped_df = scrape_jobs(
+                    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor"],
+                    search_term=search_query,
+                    location=location_query or "Uganda",
+                    results_wanted=15,
+                    hours_old=72,
+                )
+                
+                # Convert scraped data to display format
+                for _, row in scraped_df.iterrows():
+                    job_url = row.get('job_url') or row.get('url')
+                    if job_url:
+                        final_job_list.append({
+                            'post_content': row.get('title', search_query),
+                            'required_skills': (row.get('description', '')[:200] if row.get('description') else "Click to view full job details"),
+                            'recruiter_name': row.get('company', 'Global Employer'),
+                            'recruiter_location': row.get('location', location_query or 'Remote'),
+                            'application_url': job_url,
+                            'is_external': True,
+                            'external_source': 'jobspy',
+                            'timestamp': row.get('date_posted'),
+                            'upvotes': 0,
+                        })
+                
+                print(f"Crawl complete: found {len(final_job_list)} jobs")
+                
+            except ImportError:
+                messages.error(request, 'python-jobspy is not installed. Install with: pip install python-jobspy')
+                final_job_list = []
+            except Exception as e:
+                print(f"Crawl error: {e}")
+                messages.error(request, f"Global crawl failed: {str(e)}. Showing cached results instead.")
+                final_job_list = []
+        
+        else:
+            # --- STANDARD API & LOCAL SEARCH ---
+            job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
             job_posts_filtered = job_posts_filtered.filter(
-                Q(post_content__icontains=search_query) |
-                Q(recruiter_name__icontains=search_query) |
-                Q(recruiter_location__icontains=location_query)
+                Q(is_external=False) | Q(external_source__in=['adzuna', 'careerjet', 'jobspy'])
             )
-        final_job_list = list(job_posts_filtered)
+
+            if category_filter and category_filter != 'all':
+                job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
+            if search_query and search_query != "hiring":
+                job_posts_filtered = job_posts_filtered.filter(
+                    Q(post_content__icontains=search_query) |
+                    Q(recruiter_name__icontains=search_query) |
+                    Q(recruiter_location__icontains=location_query)
+                )
+            final_job_list = list(job_posts_filtered)
 
         loc_lower = location_query.lower()
         
-        # --- 1. Adzuna Integration ---
-        adzuna_country_map = {
-            'south africa': 'za', 'nigeria': 'ng', 'kenya': 'ke', 
-            'uganda': 'ug', 'egypt': 'eg', 'morocco': 'ma',
-            'ghana': 'gh', 'ivory coast': 'ci', 'tanzania': 'tz',
-            'usa': 'us', 'uk': 'gb', 'uae': 'ae'
-        }
-        
-        adzuna_code = 'za' 
-        for country, code in adzuna_country_map.items():
-            if country in loc_lower:
-                adzuna_code = code
-                break
+        # Only fetch from APIs if NOT in crawl mode
+        if search_type != 'crawl':
+            # --- 1. Adzuna Integration ---
+            adzuna_country_map = {
+                'south africa': 'za', 'nigeria': 'ng', 'kenya': 'ke', 
+                'uganda': 'ug', 'egypt': 'eg', 'morocco': 'ma',
+                'ghana': 'gh', 'ivory coast': 'ci', 'tanzania': 'tz',
+                'usa': 'us', 'uk': 'gb', 'uae': 'ae'
+            }
+            
+            adzuna_code = 'za' 
+            for country, code in adzuna_country_map.items():
+                if country in loc_lower:
+                    adzuna_code = code
+                    break
 
-        if ADZUNA_APP_ID and ADZUNA_APP_KEY:
-            try:
-                adzuna_url = f"https://api.adzuna.com/v1/api/jobs/{adzuna_code}/search/{page}"
-                adzuna_params = {
-                    "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
-                    "results_per_page": 15, "what": search_query,
-                    "where": location_query if adzuna_code not in ['us', 'gb'] else "",
-                    "content-type": "application/json"
-                }
-                res = requests.get(adzuna_url, params=adzuna_params, timeout=5)
-                if res.status_code == 200:
-                    adzuna_jobs = res.json().get('results', [])
-            except: pass
+            if ADZUNA_APP_ID and ADZUNA_APP_KEY:
+                try:
+                    adzuna_url = f"https://api.adzuna.com/v1/api/jobs/{adzuna_code}/search/{page}"
+                    adzuna_params = {
+                        "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
+                        "results_per_page": 15, "what": search_query,
+                        "where": location_query if adzuna_code not in ['us', 'gb'] else "",
+                        "content-type": "application/json"
+                    }
+                    res = requests.get(adzuna_url, params=adzuna_params, timeout=5)
+                    if res.status_code == 200:
+                        adzuna_jobs = res.json().get('results', [])
+                        # Add fallback descriptions for empty content
+                        for job in adzuna_jobs:
+                            if not job.get('description') or job['description'].strip() == '':
+                                job['description'] = f"View full job details at {job.get('company', 'Partner Job Board')}"
+                except requests.exceptions.Timeout:
+                    print(f"Adzuna API timeout for {adzuna_code}")
+                    adzuna_jobs = []
+                except requests.exceptions.RequestException as e:
+                    print(f"Adzuna API error: {e}")
+                    adzuna_jobs = []
+                except Exception as e:
+                    print(f"Unexpected Adzuna error: {e}")
+                    adzuna_jobs = []
 
-        # --- 2. Careerjet Integration ---
-        if CAREERJET_API_KEY:
-            # Map countries to Careerjet locales
-            cj_locale = 'en_GB' 
-            if 'uganda' in loc_lower: cj_locale = 'en_UG'
-            elif 'kenya' in loc_lower: cj_locale = 'en_KE'
-            elif 'nigeria' in loc_lower: cj_locale = 'en_NG'
-            elif 'south africa' in loc_lower: cj_locale = 'en_ZA'
-            elif 'ghana' in loc_lower: cj_locale = 'en_GH'
-            elif 'usa' in loc_lower: cj_locale = 'en_US'
+            # --- 2. Careerjet Integration ---
+            if CAREERJET_API_KEY:
+                # Map countries to Careerjet locales
+                cj_locale = 'en_GB'
+                if 'uganda' in loc_lower:
+                    cj_locale = 'en_UG'
+                elif 'kenya' in loc_lower:
+                    cj_locale = 'en_KE'
+                elif 'nigeria' in loc_lower:
+                    cj_locale = 'en_NG'
+                elif 'south africa' in loc_lower:
+                    cj_locale = 'en_ZA'
+                elif 'ghana' in loc_lower:
+                    cj_locale = 'en_GH'
+                elif 'usa' in loc_lower:
+                    cj_locale = 'en_US'
+                elif 'uk' in loc_lower:
+                    cj_locale = 'en_GB'
 
-            try:
-                # Get ACTUAL user IP (not server IP) - REQUIRED for Careerjet tracking
-                actual_user_ip = get_client_ip(request)
+                try:
+                    # Get ACTUAL user IP (not server IP) - REQUIRED for Careerjet tracking
+                    actual_user_ip = get_client_ip(request)
 
-                # Get actual user agent - REQUIRED for Careerjet tracking
-                actual_user_agent = request.META.get('HTTP_USER_AGENT')
+                    # Get actual user agent - REQUIRED for Careerjet tracking
+                    actual_user_agent = request.META.get('HTTP_USER_AGENT')
 
-                # Dynamic Referer Construction (REQUIRED by Careerjet)
-                current_url = request.build_absolute_uri()
+                    # Dynamic Referer Construction (REQUIRED by Careerjet)
+                    current_url = request.build_absolute_uri()
 
-                cj_params = {
-                    'locale_code': cj_locale,
-                    'keywords': search_query if search_query != "hiring" else "",
-                    'location': location_query,
-                    'user_ip': actual_user_ip,  # ACTUAL user IP for tracking
-                    'user_agent': actual_user_agent,  # ACTUAL user agent for tracking
-                    'page_size': 25,
-                    'page': page,
-                    'affid': CAREERJET_PUBLISHER_ID,  # Affiliate ID for click tracking
-                }
+                    cj_params = {
+                        'locale_code': cj_locale,
+                        'keywords': search_query if search_query != "hiring" else "",
+                        'location': location_query,
+                        'user_ip': actual_user_ip,  # ACTUAL user IP for tracking
+                        'user_agent': actual_user_agent,  # ACTUAL user agent for tracking
+                        'page_size': 25,
+                        'page': page,
+                        'affid': CAREERJET_PUBLISHER_ID,  # Affiliate ID for click tracking
+                    }
 
-                cj_headers = {
-                    'content-type': 'application/json',
-                    'Referer': current_url
-                }
+                    cj_headers = {
+                        'content-type': 'application/json',
+                        'Referer': current_url
+                    }
 
-                # API Call with Basic Auth (API_KEY as username)
-                cj_res = requests.get(
-                    'https://search.api.careerjet.net/v4/query',
-                    params=cj_params,
-                    auth=(CAREERJET_API_KEY, ''),
-                    headers=cj_headers,
-                    timeout=5
-                )
+                    # API Call with Basic Auth (API_KEY as username)
+                    cj_res = requests.get(
+                        'https://search.api.careerjet.net/v4/query',
+                        params=cj_params,
+                        auth=(CAREERJET_API_KEY, ''),
+                        headers=cj_headers,
+                        timeout=5
+                    )
 
-                if cj_res.status_code == 200:
-                    cj_data = cj_res.json()
-                    print(f"Careerjet API Response: type={cj_data.get('type')}, hits={cj_data.get('hits', 0)}")
-                    if cj_data.get('type') == 'JOBS':
-                        raw_jobs = cj_data.get('jobs', [])
-                        careerjet_jobs = []
-                        for job in raw_jobs:
-                            careerjet_jobs.append({
-                                'title': job.get('title'),
-                                'company': job.get('company'),
-                                'location': job.get('locations'),
-                                'description': job.get('description'),
-                                'url': job.get('url'),  # Use url as returned by API
-                                'salary': job.get('salary'),
-                                'date': job.get('date'),
-                            })
-                        print(f"Careerjet jobs found: {len(careerjet_jobs)}")
-                        # Debug first job URL
-                        if careerjet_jobs:
-                            print(f"First job URL: {careerjet_jobs[0].get('redirect_url', 'No URL')}")
-                else:
-                    print(f"Careerjet API error: HTTP {cj_res.status_code}")
-                    print(f"Response: {cj_res.text[:500]}")
+                    if cj_res.status_code == 200:
+                        cj_data = cj_res.json()
+                        print(f"Careerjet API Response: type={cj_data.get('type')}, hits={cj_data.get('hits', 0)}")
+                        if cj_data.get('type') == 'JOBS':
+                            raw_jobs = cj_data.get('jobs', [])
+                            careerjet_jobs = []
+                            for job in raw_jobs:
+                                # Add fallback descriptions
+                                description = job.get('description')
+                                if not description or description.strip() == '':
+                                    description = f"Click to view the full {job.get('title', 'job')} position at {job.get('company', 'Careerjet Partner')}"
+                                
+                                careerjet_jobs.append({
+                                    'title': job.get('title'),
+                                    'company': job.get('company'),
+                                    'location': job.get('locations'),
+                                    'description': description,
+                                    'url': job.get('url'),  # Use url as returned by API
+                                    'salary': job.get('salary'),
+                                    'date': job.get('date'),
+                                })
+                            print(f"Careerjet jobs found: {len(careerjet_jobs)}")
+                            # Debug first job URL
+                            if careerjet_jobs:
+                                print(f"First job URL: {careerjet_jobs[0].get('url', 'No URL')}")
+                    else:
+                        print(f"Careerjet API error: HTTP {cj_res.status_code}")
+                        print(f"Response: {cj_res.text[:500]}")
 
-                # --- CRITICAL: DO NOT MODIFY CAREERJET URLs ---
-                # Careerjet URLs are already tracking URLs. Modifying them breaks tracking.
-                # The tracking happens automatically when users click the URLs.
-                # Just ensure the API calls include proper user_ip and user_agent for attribution.
-                if careerjet_jobs:
-                    # Add proper attributes for external links while preserving referrer for tracking
-                    for job in careerjet_jobs:
-                        if 'url' in job:
-                            # Use 'opener' instead of 'noopener' to preserve click tracking
-                            job['url_attributes'] = 'target="_blank" rel="noreferrer"'
+                    # --- CRITICAL: DO NOT MODIFY CAREERJET URLs ---
+                    # Careerjet URLs are already tracking URLs. Modifying them breaks tracking.
+                    # The tracking happens automatically when users click the URLs.
+                    # Just ensure the API calls include proper user_ip and user_agent for attribution.
+                    if careerjet_jobs:
+                        # Add proper attributes for external links while preserving referrer for tracking
+                        for job in careerjet_jobs:
+                            if 'url' in job:
+                                # Use 'opener' instead of 'noopener' to preserve click tracking
+                                job['url_attributes'] = 'target="_blank" rel="noreferrer"'
 
-            except Exception as e:
-                print(f"Careerjet API error: {e}")
-                careerjet_jobs = []
+                except requests.exceptions.Timeout:
+                    print(f"Careerjet API timeout with locale {cj_locale}")
+                    careerjet_jobs = []
+                except requests.exceptions.RequestException as e:
+                    print(f"Careerjet API request error: {e}")
+                    careerjet_jobs = []
+                except ValueError as e:
+                    print(f"Careerjet JSON decode error: {e}")
+                    careerjet_jobs = []
+                except Exception as e:
+                    print(f"Unexpected Careerjet error: {e}")
+                    careerjet_jobs = []
 
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
@@ -309,6 +394,7 @@ def browse_job_listings(request):
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query if search_query != "hiring" else '',
         'location_query': location_query,
+        'search_type': search_type,
         'page_title': f"Jobs in {location_query}",
         # Keep variable for template filter fallback
         'CAREERJET_API_KEY': CAREERJET_PUBLISHER_ID,
