@@ -30,6 +30,7 @@
         scroll-behavior: smooth;
         position: relative;
         background: linear-gradient(180deg, rgba(12, 18, 45, 0.95) 0%, rgba(4, 9, 19, 1) 100%);
+        padding-top: 80px;
     }
 
     #reel-container::-webkit-scrollbar {
@@ -230,7 +231,7 @@
 
     .comment-input {
         position: absolute;
-        bottom: 20px;
+        bottom: 80px;
         left: 20px;
         right: 20px;
         z-index: 3;
@@ -525,7 +526,13 @@
         text-transform: uppercase;
     }
 
-    .topbar button {
+    .topbar-nav {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .topbar button, .topbar a {
         border: none;
         border-radius: 16px;
         padding: 12px 18px;
@@ -534,10 +541,55 @@
         background: rgba(99, 102, 241, 0.18);
         color: #eef2ff;
         transition: all 0.25s ease;
+        text-decoration: none;
+        font-size: 12px;
     }
 
-    .topbar button:hover {
+    .topbar button:hover, .topbar a:hover {
         background: rgba(99, 102, 241, 0.28);
+        transform: translateY(-1px);
+    }
+
+    .menu-toggle {
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+    }
+
+    .menu-toggle span {
+        width: 20px;
+        height: 2px;
+        background: #eef2ff;
+        transition: 0.3s;
+    }
+
+    @media (max-width: 720px) {
+        .topbar-nav {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(7, 12, 26, 0.95);
+            border-radius: 0 0 20px 20px;
+            padding: 16px;
+            flex-direction: column;
+            gap: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: none;
+        }
+
+        .topbar-nav.active {
+            display: flex;
+        }
+
+        .menu-toggle {
+            display: flex;
+        }
     }
 
     .empty-state {
@@ -607,20 +659,20 @@
         }
 
         .right-actions {
-            right: 15px;
+            right: 10px;
             bottom: 100px;
             gap: 12px;
         }
 
         .action-btn {
-            min-width: 50px;
-            min-height: 50px;
-            padding: 10px;
+            min-width: 45px;
+            min-height: 45px;
+            padding: 8px;
             font-size: 10px;
         }
 
         .action-btn span {
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .commerce-actions {
@@ -635,7 +687,7 @@
         }
 
         .comment-input {
-            bottom: 15px;
+            bottom: 70px;
             left: 15px;
             right: 15px;
             padding: 10px 14px;
@@ -660,7 +712,16 @@
 
 <div class="topbar">
     <div class="topbar-title">Africana Reels</div>
-    <button onclick="window.location.href='{% url 'social:upload_reel' %}'">Upload Reel</button>
+    <nav class="topbar-nav">
+        <a href="{% url 'social:upload_reel' %}">Upload</a>
+        <a href="{% url 'social:feed' %}">Feed</a>
+        <a href="{% url 'users:user_profile' %}">Profile</a>
+    </nav>
+    <button class="menu-toggle" onclick="toggleMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
 </div>
 
 <div id="reel-container" class="no-scrollbar">
@@ -757,6 +818,11 @@
 
 <script>
     const csrfToken = '{{ csrf_token }}';
+
+    function toggleMenu() {
+        const nav = document.querySelector('.topbar-nav');
+        nav.classList.toggle('active');
+    }
 
     function toggleAudio(video) {
         video.muted = !video.muted;
