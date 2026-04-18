@@ -3,7 +3,7 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
 from django.db.models import F, Q, Count
 from django.urls import reverse
-from datetime import date
+from datetime import date, datetime, timedelta
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.conf import settings
 import requests
 import os
+import re
 
 from .forms import JobPostForm
 from .models import JobPost, JOB_CATEGORIES, JOB_TYPES, Applicant 
@@ -121,6 +122,121 @@ CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
 CAREERJET_PUBLISHER_ID = os.getenv("CAREERJET_PUBLISHER_ID") or CAREERJET_API_KEY
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
+# Cache so you don't burn API limits
+cache = {"adzuna": {"data": [], "expires": datetime.now()},
+         "careerjet": {"data": [], "expires": datetime.now()}}
+
+BAD_TITLE_KEYWORDS = [
+    'we are hiring', 'hiring!', 'job opportunity', 'vacancy', 'apply now',
+    'urgent', 'staff needed', 'is for hiring', 'job alert'
+]
+BAD_TITLES_EXACT = ['hiring', 'we are hiring', 'is for hiring', 'jobs']
+
+def clean_adzuna_job(job):
+    """Returns job with clean_title or None if job is garbage"""
+    title = job.get('title', '').strip()
+    company = job.get('company', {}).get('display_name', '').strip()
+    location = job.get('location', {}).get('display_name', '')
+    description = job.get('description', '')
+    salary_min = job.get('salary_min')
+
+    # Rule 1: Drop garbage titles
+    if title.lower() in BAD_TITLES_EXACT:
+        return None
+    if any(bad in title.lower() for bad in BAD_TITLE_KEYWORDS):
+        # Try salvage from description first line
+        first_line = description.split('\n')[0][:80].strip()
+        if len(first_line) > 10 and not any(bad in first_line.lower() for bad in BAD_TITLE_KEYWORDS):
+            title = first_line
+        else:
+            return None
+
+    # Rule 2: Must have company + specific location. "Uganda" alone = spam
+    if not company or not location or location.lower() == 'uganda':
+        return None
+
+    # Rule 3: Clean the title
+    title = re.sub(r'\b(Hiring|Apply|Urgent|Now|!|Vacancy)\b', '', title, flags=re.I).strip()
+    title = re.sub(r'\s+', ' ', title)
+    # Title case but keep IT, CEO, HR, etc
+    title = ' '.join([w if w.isupper() and len(w) < 5 else w.capitalize() for w in title.split()])
+
+    # Add company if title too short
+    if len(title) < 18 and company:
+        title = f"{title} - {company}"
+
+    if len(title) > 65:
+        title = title[:62] + '...'
+
+    if len(title) < 8: # Still bad after cleaning
+        return None
+
+    job['clean_title'] = title
+    job['display_salary'] = f"UGX {int(salary_min):,}/mo" if salary_min else None
+    return job
+
+def get_adzuna_jobs(q="", where="Kampala"):
+    if cache["adzuna"]["data"] and cache["adzuna"]["expires"] > datetime.now():
+        return cache["adzuna"]["data"]
+
+    url = f"https://api.adzuna.com/v1/api/jobs/ug/search/1"
+    params = {
+        "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
+        "results_per_page": 30, "what": q, "where": where,
+        "sort_by": "relevance"
+    }
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        raw_jobs = r.json().get("results", [])
+        cleaned = []
+        seen = set()
+        for job in raw_jobs:
+            clean_job = clean_adzuna_job(job)
+            if clean_job:
+                key = f"{clean_job['clean_title']}-{clean_job['company']['display_name']}"
+                if key not in seen: # dedupe
+                    seen.add(key)
+                    cleaned.append(clean_job)
+        cache["adzuna"]["data"] = cleaned
+        cache["adzuna"]["expires"] = datetime.now() + timedelta(minutes=15)
+        return cleaned
+    except:
+        return []
+
+def is_careerjet_sponsored(job):
+    """CareerJet sponsored jobs have tracking params. Free jobs = direct company link"""
+    url = job.get('url', '')
+    company = job.get('company', '').strip()
+    # Sponsored = has affid, click, rc, or comes from careerjet redirect domain
+    sponsored_patterns = ['affid=', 'click', 'rc=', 'source=', 'careerjet.com/click']
+    has_tracking = any(p in url for p in sponsored_patterns)
+    has_company = len(company) > 1
+    return has_tracking and has_company
+
+def get_careerjet_jobs(q="", location="Kampala"):
+    if cache["careerjet"]["data"] and cache["careerjet"]["expires"] > datetime.now():
+        return cache["careerjet"]["data"]
+
+    url = "https://public.api.careerjet.net/search"
+    params = {
+        "affid": CAREERJET_PUBLISHER_ID,
+        "keywords": q,
+        "location": location,
+        "pagesize": 50,
+        "page": 1,
+        "sort": "relevance"
+    }
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        raw_jobs = r.json().get("jobs", [])
+        # Only keep sponsored that pay you
+        sponsored = [job for job in raw_jobs if is_careerjet_sponsored(job)]
+        cache["careerjet"]["data"] = sponsored
+        cache["careerjet"]["expires"] = datetime.now() + timedelta(minutes=15)
+        return sponsored
+    except:
+        return []
+
 def get_exchange_rate(from_curr, to_curr="UGX"):
     if not EXCHANGE_RATE_API_KEY or from_curr == to_curr:
         return 1.0
@@ -230,152 +346,8 @@ def browse_job_listings(request):
         
         # Only fetch from APIs if NOT in crawl mode
         if search_type != 'crawl':
-            # --- 1. Adzuna Integration ---
-            adzuna_country_map = {
-                'south africa': 'za', 'nigeria': 'ng', 'kenya': 'ke', 
-                'uganda': 'ug', 'egypt': 'eg', 'morocco': 'ma',
-                'ghana': 'gh', 'ivory coast': 'ci', 'tanzania': 'tz',
-                'usa': 'us', 'uk': 'gb', 'uae': 'ae'
-            }
-            
-            adzuna_code = 'za' 
-            for country, code in adzuna_country_map.items():
-                if country in loc_lower:
-                    adzuna_code = code
-                    break
-
-            if ADZUNA_APP_ID and ADZUNA_APP_KEY:
-                try:
-                    adzuna_url = f"https://api.adzuna.com/v1/api/jobs/{adzuna_code}/search/{page}"
-                    adzuna_params = {
-                        "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
-                        "results_per_page": 15, "what": search_query,
-                        "where": location_query if adzuna_code not in ['us', 'gb'] else "",
-                        "content-type": "application/json"
-                    }
-                    res = requests.get(adzuna_url, params=adzuna_params, timeout=5)
-                    if res.status_code == 200:
-                        adzuna_jobs = res.json().get('results', [])
-                        # Add fallback descriptions for empty content
-                        for job in adzuna_jobs:
-                            if not job.get('description') or job['description'].strip() == '':
-                                job['description'] = f"View full job details at {job.get('company', 'Partner Job Board')}"
-                except requests.exceptions.Timeout:
-                    print(f"Adzuna API timeout for {adzuna_code}")
-                    adzuna_jobs = []
-                except requests.exceptions.RequestException as e:
-                    print(f"Adzuna API error: {e}")
-                    adzuna_jobs = []
-                except Exception as e:
-                    print(f"Unexpected Adzuna error: {e}")
-                    adzuna_jobs = []
-
-            # --- 2. Careerjet Integration ---
-            if CAREERJET_API_KEY:
-                # Map countries to Careerjet locales
-                cj_locale = 'en_GB'
-                if 'uganda' in loc_lower:
-                    cj_locale = 'en_UG'
-                elif 'kenya' in loc_lower:
-                    cj_locale = 'en_KE'
-                elif 'nigeria' in loc_lower:
-                    cj_locale = 'en_NG'
-                elif 'south africa' in loc_lower:
-                    cj_locale = 'en_ZA'
-                elif 'ghana' in loc_lower:
-                    cj_locale = 'en_GH'
-                elif 'usa' in loc_lower:
-                    cj_locale = 'en_US'
-                elif 'uk' in loc_lower:
-                    cj_locale = 'en_GB'
-
-                try:
-                    # Get ACTUAL user IP (not server IP) - REQUIRED for Careerjet tracking
-                    actual_user_ip = get_client_ip(request)
-
-                    # Get actual user agent - REQUIRED for Careerjet tracking
-                    actual_user_agent = request.META.get('HTTP_USER_AGENT')
-
-                    # Dynamic Referer Construction (REQUIRED by Careerjet)
-                    current_url = request.build_absolute_uri()
-
-                    cj_params = {
-                        'locale_code': cj_locale,
-                        'keywords': search_query if search_query != "hiring" else "",
-                        'location': location_query,
-                        'user_ip': actual_user_ip,  # ACTUAL user IP for tracking
-                        'user_agent': actual_user_agent,  # ACTUAL user agent for tracking
-                        'page_size': 25,
-                        'page': page,
-                        'affid': CAREERJET_PUBLISHER_ID,  # Affiliate ID for click tracking
-                    }
-
-                    cj_headers = {
-                        'content-type': 'application/json',
-                        'Referer': current_url
-                    }
-
-                    # API Call with Basic Auth (API_KEY as username)
-                    cj_res = requests.get(
-                        'https://search.api.careerjet.net/v4/query',
-                        params=cj_params,
-                        auth=(CAREERJET_API_KEY, ''),
-                        headers=cj_headers,
-                        timeout=5
-                    )
-
-                    if cj_res.status_code == 200:
-                        cj_data = cj_res.json()
-                        print(f"Careerjet API Response: type={cj_data.get('type')}, hits={cj_data.get('hits', 0)}")
-                        if cj_data.get('type') == 'JOBS':
-                            raw_jobs = cj_data.get('jobs', [])
-                            careerjet_jobs = []
-                            for job in raw_jobs:
-                                # Add fallback descriptions
-                                description = job.get('description')
-                                if not description or description.strip() == '':
-                                    description = f"Click to view the full {job.get('title', 'job')} position at {job.get('company', 'Careerjet Partner')}"
-                                
-                                careerjet_jobs.append({
-                                    'title': job.get('title'),
-                                    'company': job.get('company'),
-                                    'location': job.get('locations'),
-                                    'description': description,
-                                    'url': job.get('url'),  # Use url as returned by API
-                                    'salary': job.get('salary'),
-                                    'date': job.get('date'),
-                                })
-                            print(f"Careerjet jobs found: {len(careerjet_jobs)}")
-                            # Debug first job URL
-                            if careerjet_jobs:
-                                print(f"First job URL: {careerjet_jobs[0].get('url', 'No URL')}")
-                    else:
-                        print(f"Careerjet API error: HTTP {cj_res.status_code}")
-                        print(f"Response: {cj_res.text[:500]}")
-
-                    # --- CRITICAL: DO NOT MODIFY CAREERJET URLs ---
-                    # Careerjet URLs are already tracking URLs. Modifying them breaks tracking.
-                    # The tracking happens automatically when users click the URLs.
-                    # Just ensure the API calls include proper user_ip and user_agent for attribution.
-                    if careerjet_jobs:
-                        # Add proper attributes for external links while preserving referrer for tracking
-                        for job in careerjet_jobs:
-                            if 'url' in job:
-                                # Use 'opener' instead of 'noopener' to preserve click tracking
-                                job['url_attributes'] = 'target="_blank" rel="noreferrer"'
-
-                except requests.exceptions.Timeout:
-                    print(f"Careerjet API timeout with locale {cj_locale}")
-                    careerjet_jobs = []
-                except requests.exceptions.RequestException as e:
-                    print(f"Careerjet API request error: {e}")
-                    careerjet_jobs = []
-                except ValueError as e:
-                    print(f"Careerjet JSON decode error: {e}")
-                    careerjet_jobs = []
-                except Exception as e:
-                    print(f"Unexpected Careerjet error: {e}")
-                    careerjet_jobs = []
+            adzuna_jobs = get_adzuna_jobs(q=search_query, where=location_query)
+            careerjet_jobs = get_careerjet_jobs(q=search_query, location=location_query)
 
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
