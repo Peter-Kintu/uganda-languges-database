@@ -128,9 +128,10 @@ cache = {"adzuna": {"data": [], "expires": datetime.now()},
 
 BAD_TITLE_KEYWORDS = [
     'we are hiring', 'hiring!', 'job opportunity', 'vacancy', 'apply now',
-    'urgent', 'staff needed', 'is for hiring', 'job alert'
+    'urgent', 'staff needed', 'is for hiring', 'job alert', 'job opening',
+    'career opportunity', 'join our team', 'work with us', 'employment opportunity'
 ]
-BAD_TITLES_EXACT = ['hiring', 'we are hiring', 'is for hiring', 'jobs']
+BAD_TITLES_EXACT = ['hiring', 'we are hiring', 'is for hiring', 'jobs', 'job', 'vacancies', 'careers', 'vacancy']
 
 def clean_adzuna_job(job):
     """Returns job with clean_title or None if job is garbage"""
@@ -191,31 +192,39 @@ def get_adzuna_jobs(q="", where="Kampala"):
         cleaned = []
         seen = set()
         for job in raw_jobs:
-            clean_job = clean_adzuna_job(job)
+            clean_job = clean_adzuna_job(job)  # USE THE FULL CLEANER
             if clean_job:
                 key = f"{clean_job['clean_title']}-{clean_job['company']['display_name']}"
-                if key not in seen: # dedupe
+                if key not in seen:
                     seen.add(key)
                     cleaned.append(clean_job)
         cache["adzuna"]["data"] = cleaned
         cache["adzuna"]["expires"] = datetime.now() + timedelta(minutes=15)
         return cleaned
-    except:
+    except Exception as e:
+        print(f"Adzuna API error: {e}")
         return []
 
 def is_careerjet_sponsored(job):
-    """CareerJet sponsored jobs have tracking params. Free jobs = direct company link"""
+    """Only show CareerJet jobs that pay you. Requires YOUR affid in URL."""
     url = job.get('url', '')
     company = job.get('company', '').strip()
-    # Sponsored = has affid, click, rc, or comes from careerjet redirect domain
-    sponsored_patterns = ['affid=', 'click', 'rc=', 'source=', 'careerjet.com/click']
-    has_tracking = any(p in url for p in sponsored_patterns)
-    has_company = len(company) > 1
-    return has_tracking and has_company
+
+    if not CAREERJET_PUBLISHER_ID or len(company) < 2:
+        return False
+
+    # Must have YOUR affid to earn commission. Generic 'click' isn't enough.
+    has_your_affid = f'affid={CAREERJET_PUBLISHER_ID}' in url
+    has_paid_redirect = 'careerjet.com/click' in url and 'rc=' in url
+
+    return has_your_affid or has_paid_redirect
 
 def get_careerjet_jobs(q="", location="Kampala"):
     if cache["careerjet"]["data"] and cache["careerjet"]["expires"] > datetime.now():
         return cache["careerjet"]["data"]
+
+    if not CAREERJET_PUBLISHER_ID:
+        return [] # Don't call API if you won't get paid
 
     url = "https://public.api.careerjet.net/search"
     params = {
@@ -229,12 +238,13 @@ def get_careerjet_jobs(q="", location="Kampala"):
     try:
         r = requests.get(url, params=params, timeout=10)
         raw_jobs = r.json().get("jobs", [])
-        # Only keep sponsored that pay you
+        # ONLY KEEP SPONSORED THAT PAY YOU
         sponsored = [job for job in raw_jobs if is_careerjet_sponsored(job)]
         cache["careerjet"]["data"] = sponsored
         cache["careerjet"]["expires"] = datetime.now() + timedelta(minutes=15)
         return sponsored
-    except:
+    except Exception as e:
+        print(f"CareerJet API error: {e}")
         return []
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
