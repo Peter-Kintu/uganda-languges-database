@@ -8,6 +8,8 @@ from .forms import PostForm
 from users.models import CustomUser
 from django.conf import settings
 import requests
+import json
+from google import genai
 
 @login_required
 def social_feed(request):
@@ -177,3 +179,52 @@ def get_recent_messages(request):
             'is_read': msg.is_read
         })
     return JsonResponse({'messages': messages_data})
+
+@login_required
+def gemini_translate(request):
+    """Translate text using Google Gemini API"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        text = data.get('text', '')
+        target_language = data.get('target_language', 'en')
+        
+        if not text:
+            return JsonResponse({'error': 'Text required'}, status=400)
+        
+        # Initialize Gemini client
+        api_key = settings.GEMINI_API_KEY
+        if not api_key:
+            return JsonResponse({'error': 'API key not configured'}, status=500)
+        
+        client = genai.Client(api_key=api_key)
+        
+        # Create translation prompt
+        prompt = f"""Translate the following text to {target_language}. 
+Return ONLY the translated text, nothing else:
+
+{text}"""
+        
+        # Call Gemini API
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=prompt
+        )
+        
+        translated_text = response.text.strip() if response.text else text
+        
+        return JsonResponse({
+            'success': True,
+            'translated': translated_text,
+            'source_text': text,
+            'target_language': target_language
+        })
+        
+    except Exception as e:
+        print(f"Gemini translation error: {e}")
+        return JsonResponse({
+            'error': str(e),
+            'success': False
+        }, status=500)
