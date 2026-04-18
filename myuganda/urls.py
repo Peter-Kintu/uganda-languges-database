@@ -35,7 +35,7 @@ urlpatterns = [
     path("eshop/", include("eshop.urls", namespace="eshop")),
 
     # 6. Hotels
-    path("hotels/", include("hotel.urls", namespace="hotel")),
+    path("hotel/", include("hotel.urls", namespace="hotel")),
 
         # 2. Movies
     path("movie/", include("movie.urls", namespace="movie")), 

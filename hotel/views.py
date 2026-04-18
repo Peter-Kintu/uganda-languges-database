@@ -13,6 +13,10 @@ from google import genai
 
 @login_required
 def social_feed(request):
+    # Check if user wants to translate the entire feed
+    translate_feed = request.GET.get('translate', 'false').lower() == 'true'
+    target_lang = request.GET.get('lang', request.user.language or 'en')
+    
     # Get user's connections
     connected_users = Connection.objects.filter(
         Q(sender=request.user) | Q(receiver=request.user),
@@ -56,6 +60,22 @@ def social_feed(request):
     # Sort by creation date
     feed_items.sort(key=lambda x: x['created_at'], reverse=True)
     
+    # Translate feed items if requested
+    if translate_feed and target_lang != 'en':
+        for item in feed_items:
+            if item['type'] == 'post':
+                try:
+                    translated_content = translate_via_gemini(item['item'].content, target_lang)
+                    item['translated_content'] = translated_content
+                except:
+                    item['translated_content'] = item['item'].content
+            elif item['type'] == 'share':
+                try:
+                    translated_caption = translate_via_gemini(item['item'].caption or '', target_lang)
+                    item['translated_caption'] = translated_caption
+                except:
+                    item['translated_caption'] = item['item'].caption or ''
+    
     connections = Connection.objects.filter(
         Q(sender=request.user) | Q(receiver=request.user),
         status='accepted'
@@ -65,6 +85,8 @@ def social_feed(request):
         'feed_items': feed_items,
         'connections': connections,
         'all_users': all_users,
+        'translate_feed': translate_feed,
+        'current_lang': target_lang,
     }
     return render(request, 'hotel/social_feed.html', context)
 
@@ -95,9 +117,16 @@ def add_comment(request, post_id):
     if request.method == 'POST':
         post = get_object_or_404(Post, id=post_id)
         content = request.POST.get('content')
+        if not content:
+            try:
+                data = json.loads(request.body)
+                content = data.get('content', '')
+            except json.JSONDecodeError:
+                content = ''
         if content:
             Comment.objects.create(post=post, author=request.user, content=content)
-    return redirect('hotel:social_feed')
+            return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)
 
 @login_required
 def send_connection_request(request, user_id):
@@ -124,12 +153,46 @@ def translate_text(request):
 
 def translate_via_api(text, target_lang):
     """
-    Simple translation function. For now, returns original text.
-    In production, integrate with a proper translation service.
+    Simple translation function using Gemini API.
     """
-    # TODO: Implement proper translation API
-    # For now, just return the original text
-    return text
+    return translate_via_gemini(text, target_lang)
+
+def translate_via_gemini(text, target_lang):
+    """
+    Translate text using Google Gemini API with support for African languages.
+    """
+    if not text or not text.strip():
+        return text
+    
+    try:
+        # Initialize Gemini client
+        api_key = settings.GEMINI_API_KEY
+        if not api_key:
+            return text
+        
+        client = genai.Client(api_key=api_key)
+        
+        # Create translation prompt with African language support
+        prompt = f"""Translate the following text to {target_lang}. 
+This is a social media post, so maintain the casual, friendly tone.
+Support for African languages: Swahili (sw), Luganda (lg), Zulu (zu), Xhosa (xh), Afrikaans (af), Amharic (am), Yoruba (yo), Hausa (ha), Arabic (ar), French (fr), Portuguese (pt), etc.
+
+Return ONLY the translated text, nothing else:
+
+{text}"""
+        
+        # Call Gemini API
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=prompt
+        )
+        
+        translated_text = response.text.strip() if response.text else text
+        return translated_text
+        
+    except Exception as e:
+        print(f"Gemini translation error: {e}")
+        return text
 
 @login_required
 def send_message(request, user_id):
@@ -139,17 +202,17 @@ def send_message(request, user_id):
         try:
             data = json.loads(request.body)
             content = data.get('content', '')
-        except:
+        except json.JSONDecodeError:
             content = request.POST.get('content', '')
         
         if content:
             Message.objects.create(sender=request.user, receiver=receiver, content=content)
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'})
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'} )
             else:
                 messages.success(request, f'Message sent to {receiver.username}!')
                 return redirect('hotel:inbox')
-    return redirect('hotel:inbox')
+    return JsonResponse({'success': False}, status=400)
 
 @login_required
 def inbox(request):
@@ -162,6 +225,13 @@ def share_post(request, post_id):
     if request.method == 'POST':
         caption = request.POST.get('caption', '')
         Share.objects.create(original_post=post, sharer=request.user, caption=caption)
+        # Return JSON for AJAX / fetch calls
+        is_ajax = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or 'application/json' in request.headers.get('Accept', '')
+        )
+        if is_ajax:
+            return JsonResponse({'success': True, 'shares_count': post.shares.count()})
         messages.success(request, 'Post shared successfully!')
         return redirect('hotel:social_feed')
     return render(request, 'hotel/share_post.html', {'post': post})

@@ -561,6 +561,131 @@
     .fade-in {
         animation: fadeIn 0.3s ease;
     }
+
+    /* ═════════════════════════════════════════════════════════════════ */
+    /* SHARE MODAL                                                        */
+    /* ═════════════════════════════════════════════════════════════════ */
+
+    .share-platforms {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .share-platform-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 8px;
+        border-radius: 12px;
+        border: 1px solid var(--gray-200);
+        background: var(--gray-50);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: var(--gray-900);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .share-platform-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: var(--gray-300);
+    }
+
+    .share-platform-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+    }
+
+    .share-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        color: var(--gray-400);
+        font-size: 12px;
+    }
+
+    .share-divider::before,
+    .share-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--gray-200);
+    }
+
+    .share-feed-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .share-feed-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    }
+
+    .share-copy-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .share-copy-input {
+        flex: 1;
+        background: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: var(--gray-600);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .share-copy-btn {
+        background: var(--gray-900);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .share-copy-btn:hover {
+        background: var(--primary);
+    }
+
+    .share-copy-btn.copied {
+        background: var(--success);
+    }
 </style>
 
 <!-- Header -->
@@ -568,7 +693,12 @@
     <div class="header-content">
         <h1 class="header-title">✨ Africana Social</h1>
         <div class="header-actions">
-            <button class="btn-header" onclick="openTranslateModal()">🌐 Translate</button>
+            <a href="{% url 'hotel:inbox' %}" class="btn-header">📥 Inbox</a>
+            {% if translate_feed %}
+            <a href="{% url 'hotel:social_feed' %}" class="btn-header" style="background: rgba(34, 197, 94, 0.15); color: #10b981;">🔄 Back to English</a>
+            {% else %}
+            <button class="btn-header" onclick="translateEntireFeed()">🌐 Translate Feed</button>
+            {% endif %}
             <button class="btn-header" onclick="openLanguageModal()">🗣️ Languages</button>
             <a href="{% url 'hotel:create_post' %}" class="btn-header">✍️ Create Post</a>
         </div>
@@ -591,9 +721,9 @@
             </div>
             <div class="create-post-footer">
                 <div class="post-actions">
-                    <button class="action-btn" title="Add Image">🖼️</button>
-                    <button class="action-btn" title="Add Link">🔗</button>
-                    <button class="action-btn" title="Add Emoji">😊</button>
+                    <a href="{% url 'hotel:create_post' %}?type=image" class="action-btn" title="Add Photo">🖼️</a>
+                    <a href="{% url 'hotel:create_post' %}?type=link" class="action-btn" title="Add Link">🔗</a>
+                    <a href="{% url 'hotel:create_post' %}?type=emoji" class="action-btn" title="Add Emoji / Feeling">😊</a>
                 </div>
                 <a href="{% url 'hotel:create_post' %}" class="btn-primary">Post</a>
             </div>
@@ -618,7 +748,16 @@
                         </div>
 
                         <!-- Content -->
-                        <div class="post-content" data-post-id="{{ post.id }}">{{ post.content }}</div>
+                        <div class="post-content" data-post-id="{{ post.id }}">
+                            {% if item.translated_content %}
+                                {{ item.translated_content }}
+                                <div style="font-size: 12px; color: var(--gray-500); margin-top: 4px;">
+                                    <em>Translated from English</em>
+                                </div>
+                            {% else %}
+                                {{ post.content }}
+                            {% endif %}
+                        </div>
 
                         <!-- Image -->
                         {% if post.image %}
@@ -627,7 +766,7 @@
 
                         <!-- Footer Actions -->
                         <div class="post-footer">
-                            <button class="post-action" onclick="likePost({{ post.id }}, this)">
+                            <button class="post-action" onclick="likePost({{ post.id }}, this)" data-url="{% url 'hotel:like_post' post.id %}">
                                 <span>❤️</span>
                                 <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
                             </button>
@@ -635,9 +774,12 @@
                                 <span>💬</span>
                                 <span>{{ post.comments.count }}</span>
                             </button>
-                            <button class="post-action" onclick="sharePost({{ post.id }})">
+                            <button class="post-action"
+                                    onclick="openShareModal({{ post.id }}, this)"
+                                    data-url="{% url 'hotel:share_post' post.id %}"
+                                    data-content="{{ post.content|truncatechars:80 }}">
                                 <span>🔄</span>
-                                <span>{{ post.shares.count|default:'0' }}</span>
+                                <span id="share-count-{{ post.id }}">{{ post.shares.count|default:'0' }}</span>
                             </button>
                             <button class="post-action" onclick="translatePost({{ post.id }}, this)">
                                 <span>🌐</span>
@@ -659,7 +801,7 @@
                             {% endfor %}
 
                             <!-- Comment Input -->
-                            <form onsubmit="addComment({{ post.id }}, this); return false;" class="comment-input-wrapper">
+                            <form onsubmit="addComment({{ post.id }}, this); return false;" class="comment-input-wrapper" data-url="{% url 'hotel:add_comment' post.id %}">
                                 {% csrf_token %}
                                 <input type="text" class="comment-input" name="content" placeholder="Write a comment..." maxlength="500">
                                 <button type="submit" class="btn-primary" style="padding: 8px 16px;">Reply</button>
@@ -669,22 +811,55 @@
                     {% endwith %}
                 {% endif %}
 
-                <!-- Adsterra Ad Every 3 Posts -->
-                {% if forloop.counter|divisibleby:3 and forloop.counter != 1 %}
-                <div class="post-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%); border: 2px solid rgba(99, 102, 241, 0.2);">
+                <!-- Ad — shown every 10 feed items, looks exactly like a post -->
+                {% if forloop.counter|divisibleby:10 %}
+                <div class="post-card">
+                    <!-- Post Header (identical structure to real posts) -->
                     <div class="post-header">
                         <div class="post-author">
-                            <div class="avatar" style="background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); font-size: 20px;">🎯</div>
+                            <div class="avatar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); font-size: 18px; width: 40px; height: 40px;">🎯</div>
                             <div class="post-author-info">
-                                <div class="author-name">Sponsored Content</div>
-                                <div class="author-meta">Hand-picked ads for you</div>
+                                <div class="author-name">
+                                    Africana Promotions
+                                    <span style="background: var(--primary); color: white; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: middle;">Sponsored</span>
+                                </div>
+                                <div class="author-meta">@africana_promo · Promoted for you</div>
                             </div>
                         </div>
-                        <span style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">📢 Featured</span>
+                        <button class="post-menu" title="Why am I seeing this?" onclick="alert('This is a sponsored post tailored for your interests.')">⋯</button>
                     </div>
-                    <div style="min-height: 200px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.04); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 16px 0;">
-                        <script async src="https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js"></script>
-                        <div id="container-2c34356cc6efc4c07773cf2861e26899"></div>
+
+                    <!-- Post Content (ad text, mirrors post-content) -->
+                    <div class="post-content">Discover amazing deals and opportunities curated just for you! 🌍✨</div>
+
+                    <!-- Ad Embed (mirrors post image area) -->
+                    <div style="border-radius: 12px; overflow: hidden; margin-bottom: 12px; min-height: 150px; background: var(--gray-100);">
+                        {% if forloop.counter == 10 %}
+                            <script async src="https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js"></script>
+                            <div id="container-2c34356cc6efc4c07773cf2861e26899"></div>
+                        {% else %}
+                            <div style="width:100%;min-height:150px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;text-align:center;">
+                                <div style="font-size:36px;">🛒</div>
+                                <div style="font-weight:700;color:#5b21b6;font-size:15px;">Exclusive Deal Just for You</div>
+                                <div style="color:#6d28d9;font-size:13px;">Limited time offer — check it out now!</div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Post Footer (identical to real post action bar) -->
+                    <div class="post-footer">
+                        <button class="post-action" onclick="this.classList.toggle('liked')">
+                            <span>❤️</span>
+                            <span>Like</span>
+                        </button>
+                        <button class="post-action">
+                            <span>💬</span>
+                            <span>Comment</span>
+                        </button>
+                        <button class="post-action" onclick="openShareModal(null, 'Check out this deal on Africana Social!')">
+                            <span>🔄</span>
+                            <span>Share</span>
+                        </button>
                     </div>
                 </div>
                 {% endif %}
@@ -716,13 +891,75 @@
         <div class="sidebar-card">
             <div class="sidebar-title">📊 Your Stats</div>
             <div class="sidebar-item">
-                <span style="font-weight: 600;">Posts:</span> {{ request.user.post_set.count }}
+                <span style="font-weight: 600;">Posts:</span> {{ request.user.posts.count }}
             </div>
             <div class="sidebar-item">
                 <span style="font-weight: 600;">Connections:</span> {{ connections.count }}
             </div>
         </div>
+
+        <!-- Messages -->
+        <div class="sidebar-card">
+            <div class="sidebar-title">✉️ Messages</div>
+            <div id="messages-list" class="space-y-3">
+                <p class="text-sm text-gray-600">Loading recent messages...</p>
+            </div>
+            <a href="{% url 'hotel:inbox' %}" class="sidebar-item" style="margin-top: 12px; font-weight: 700; color: var(--primary);">View all inbox</a>
+            <button class="btn-primary" style="width: 100%; margin-top: 12px;" onclick="openMessageModal()">New Message</button>
+        </div>
     </aside>
+</div>
+
+<!-- Share Modal -->
+<div id="share-modal" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-header">
+            <h2 class="modal-title">🔄 Share Post</h2>
+            <button class="modal-close" onclick="closeShareModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <!-- Social Platform Buttons -->
+            <div class="share-platforms">
+                <a id="share-whatsapp" href="#" target="_blank" rel="noopener" class="share-platform-btn">
+                    <div class="share-platform-icon" style="background: #25D366;">💬</div>
+                    WhatsApp
+                </a>
+                <a id="share-twitter" href="#" target="_blank" rel="noopener" class="share-platform-btn">
+                    <div class="share-platform-icon" style="background: #000;">𝕏</div>
+                    Twitter / X
+                </a>
+                <a id="share-facebook" href="#" target="_blank" rel="noopener" class="share-platform-btn">
+                    <div class="share-platform-icon" style="background: #1877F2;">f</div>
+                    Facebook
+                </a>
+                <a id="share-telegram" href="#" target="_blank" rel="noopener" class="share-platform-btn">
+                    <div class="share-platform-icon" style="background: #2AABEE;">✈️</div>
+                    Telegram
+                </a>
+                <a id="share-linkedin" href="#" target="_blank" rel="noopener" class="share-platform-btn">
+                    <div class="share-platform-icon" style="background: #0A66C2; font-size:16px; font-weight:800;">in</div>
+                    LinkedIn
+                </a>
+                <button class="share-platform-btn" onclick="copyShareLink()">
+                    <div class="share-platform-icon" style="background: var(--gray-600);">🔗</div>
+                    Copy Link
+                </button>
+            </div>
+
+            <!-- Copy Link Row -->
+            <div class="share-copy-row">
+                <div class="share-copy-input" id="share-link-display"></div>
+                <button class="share-copy-btn" id="copy-btn" onclick="copyShareLink()">Copy</button>
+            </div>
+
+            <div class="share-divider">or share to your feed</div>
+
+            <!-- Share on Feed (internal) -->
+            <button class="share-feed-btn" onclick="shareOnFeed()">
+                <span>🔄</span> Share on Africana Feed
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Translate Modal -->
@@ -737,15 +974,19 @@
                 <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">Select Language</label>
                 <select id="translate-lang" style="width: 100%; padding: 10px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 14px;">
                     <option value="en">🇺🇸 English</option>
-                    <option value="es">🇪🇸 Spanish</option>
-                    <option value="fr">🇫🇷 French</option>
-                    <option value="de">🇩🇪 German</option>
-                    <option value="it">🇮🇹 Italian</option>
-                    <option value="pt">🇵🇹 Portuguese</option>
-                    <option value="ja">🇯🇵 Japanese</option>
-                    <option value="zh">🇨🇳 Chinese</option>
                     <option value="sw">🇹🇿 Swahili</option>
                     <option value="lg">🇺🇬 Luganda</option>
+                    <option value="zu">🇿🇦 Zulu</option>
+                    <option value="xh">🇿🇦 Xhosa</option>
+                    <option value="af">🇿🇦 Afrikaans</option>
+                    <option value="am">🇪🇹 Amharic</option>
+                    <option value="yo">🇳🇬 Yoruba</option>
+                    <option value="ha">🇳🇬 Hausa</option>
+                    <option value="ar">🇸🇦 Arabic</option>
+                    <option value="fr">🇫🇷 French</option>
+                    <option value="pt">🇵🇹 Portuguese</option>
+                    <option value="es">🇪🇸 Spanish</option>
+                    <option value="de">🇩🇪 German</option>
                 </select>
             </div>
             <div id="translate-result" style="background: var(--gray-100); padding: 16px; border-radius: 8px; margin-bottom: 16px; display: none; min-height: 80px; line-height: 1.5;"></div>
@@ -767,23 +1008,73 @@
                 <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('en')">🇺🇸 English</button>
                 <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('sw')">🇹🇿 Swahili</button>
                 <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('lg')">🇺🇬 Luganda</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('es')">🇪🇸 Spanish</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('zu')">🇿🇦 Zulu</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('xh')">🇿🇦 Xhosa</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('af')">🇿🇦 Afrikaans</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('am')">🇪🇹 Amharic</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('yo')">🇳🇬 Yoruba</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('ha')">🇳🇬 Hausa</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('ar')">🇸🇦 Arabic</button>
                 <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('fr')">🇫🇷 French</button>
                 <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('pt')">🇵🇹 Portuguese</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('es')">🇪🇸 Spanish</button>
+                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('de')">🇩🇪 German</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div id="message-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Send Message</h2>
+            <button class="modal-close" onclick="closeMessageModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <form id="message-form">
+                <div style="margin-bottom: 16px;">
+                    <label for="recipient" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">To:</label>
+                    <select id="recipient" name="recipient" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 14px;" required>
+                        <option value="">Select a user</option>
+                        {% for user in all_users %}
+                        <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label for="message-content" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">Message:</label>
+                    <textarea id="message-content" name="content" rows="4" placeholder="Type your message..." style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 14px;" required></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" onclick="closeMessageModal()" class="btn-header" style="background: #f3f4f6; color: #111827;">Cancel</button>
+                    <button type="submit" class="btn-primary">Send</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <!-- JavaScript -->
 <script>
-    const csrfToken = '{{ csrf_token }}';
     let currentPostId = null;
-    let currentLanguage = localStorage.getItem('preferredLanguage') || 'en';
+    let currentLanguage = localStorage.getItem('preferredLanguage') || '{{ current_lang|default:"en" }}';
 
-    // Like Post
+    // Django-generated URL base — avoids hardcoding /hotel/ prefix
+    const _base = '{% url "hotel:social_feed" %}'; // resolves to '/hotel/'
+    const URLS = {
+        like:        (id) => `${_base}like-post/${id}/`,
+        comment:     (id) => `${_base}add-comment/${id}/`,
+        share:       (id) => `${_base}share-post/${id}/`,
+        gemini:      `${_base}gemini-translate/`,
+        getMessages: `${_base}get_recent_messages/`,
+        sendMessage: (id) => `${_base}send_message/${id}/`,
+    };
+
+    // Like Post — uses data-url from button
     function likePost(postId, btn) {
-        fetch(`/hotel/like-post/${postId}/`, {
+        const url = btn.dataset.url || URLS.like(postId);
+        fetch(url, {
             method: 'POST',
             headers: { 'X-CSRFToken': csrfToken }
         })
@@ -798,20 +1089,20 @@
     // Toggle Comments
     function toggleComments(postId, btn) {
         const commentsDiv = document.getElementById(`comments-${postId}`);
-        if (commentsDiv.style.display === 'none') {
-            commentsDiv.style.display = 'block';
-        } else {
-            commentsDiv.style.display = 'none';
-        }
+        commentsDiv.style.display = commentsDiv.style.display === 'none' ? 'block' : 'none';
     }
 
-    // Add Comment
+    // Add Comment — uses data-url from form
     function addComment(postId, form) {
+        const url = form.dataset.url || URLS.comment(postId);
         const formData = new FormData(form);
-        fetch(`/hotel/add-comment/${postId}/`, {
+        fetch(url, {
             method: 'POST',
             body: formData,
-            headers: { 'X-CSRFToken': csrfToken }
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
         .then(r => r.json())
         .then(data => {
@@ -823,15 +1114,193 @@
         .catch(e => console.error('Comment failed:', e));
     }
 
-    // Share Post
-    function sharePost(postId) {
-        fetch(`/hotel/share-post/${postId}/`, {
-            method: 'GET'
-        })
-        .then(r => r.text())
-        .then(() => alert('Post shared!'))
-        .catch(e => console.error('Share failed:', e));
+    // ── Share Modal ──────────────────────────────────────────────────
+    let _sharePostId  = null;
+    let _sharePostUrl = null;
+    let _shareText    = null;
+    let _shareBtn     = null;
+
+    function openShareModal(postId, btnOrText) {
+        _sharePostId = postId;
+
+        if (btnOrText && typeof btnOrText === 'object') {
+            // called from a real post button — read data attrs
+            _sharePostUrl = btnOrText.dataset.url || (postId ? URLS.share(postId) : null);
+            _shareText    = btnOrText.dataset.content || 'Check this out on Africana Social!';
+            _shareBtn     = btnOrText;
+        } else {
+            // called from ad card with a plain text string
+            _sharePostUrl = null;
+            _shareText    = (typeof btnOrText === 'string' && btnOrText) || 'Check this out on Africana Social!';
+            _shareBtn     = null;
+        }
+
+        // Build the shareable page URL (current feed URL anchored to the post)
+        const pageUrl = postId
+            ? `${window.location.origin}${window.location.pathname}#post-${postId}`
+            : window.location.href;
+
+        const encodedUrl  = encodeURIComponent(pageUrl);
+        const encodedText = encodeURIComponent(_shareText);
+
+        // Set platform links
+        document.getElementById('share-whatsapp').href  = `https://api.whatsapp.com/send?text=${encodedText}%20${encodedUrl}`;
+        document.getElementById('share-twitter').href   = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+        document.getElementById('share-facebook').href  = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+        document.getElementById('share-telegram').href  = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
+        document.getElementById('share-linkedin').href  = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+        document.getElementById('share-link-display').textContent = pageUrl;
+
+        // Reset copy button
+        const copyBtn = document.getElementById('copy-btn');
+        copyBtn.textContent = 'Copy';
+        copyBtn.classList.remove('copied');
+
+        document.getElementById('share-modal').classList.add('active');
     }
+
+    function closeShareModal() {
+        document.getElementById('share-modal').classList.remove('active');
+        _sharePostId = _sharePostUrl = _shareText = _shareBtn = null;
+    }
+
+    function copyShareLink() {
+        const link = document.getElementById('share-link-display').textContent;
+        navigator.clipboard.writeText(link).then(() => {
+            const copyBtn = document.getElementById('copy-btn');
+            copyBtn.textContent = 'Copied!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+                copyBtn.textContent = 'Copy';
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        }).catch(() => {
+            // Fallback for browsers without clipboard API
+            const el = document.createElement('textarea');
+            el.value = link;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            document.getElementById('copy-btn').textContent = 'Copied!';
+        });
+    }
+
+    function shareOnFeed() {
+        if (!_sharePostId || !_sharePostUrl) {
+            alert('Nothing to share on the feed.');
+            return;
+        }
+        fetch(_sharePostUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&caption=`
+        })
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const countEl = document.getElementById(`share-count-${_sharePostId}`);
+                if (countEl) countEl.textContent = data.shares_count;
+                if (_shareBtn) _shareBtn.classList.add('liked');
+                closeShareModal();
+                alert('Post shared to your Africana Feed! ✅');
+            } else {
+                alert('Could not share post. Please try again.');
+            }
+        })
+        .catch(e => {
+            console.error('Share failed:', e);
+            alert('Could not share post. Please try again.');
+        });
+    }
+
+    // Messages
+    function openMessageModal() {
+        document.getElementById('message-modal').classList.add('active');
+    }
+
+    function closeMessageModal() {
+        document.getElementById('message-modal').classList.remove('active');
+    }
+
+    function loadMessages() {
+        fetch(URLS.getMessages)
+            .then(r => r.json())
+            .then(data => {
+                const messagesList = document.getElementById('messages-list');
+                if (!messagesList) return;
+                messagesList.innerHTML = '';
+
+                if (!data.messages.length) {
+                    messagesList.innerHTML = '<p style="font-size:13px;color:var(--gray-600);">No recent messages yet.</p>';
+                    return;
+                }
+
+                data.messages.forEach(message => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.style.cssText = 'background:var(--gray-100);border-radius:8px;padding:10px;margin-bottom:8px;';
+                    messageDiv.innerHTML = `
+                        <p style="font-size:13px;font-weight:600;color:var(--gray-900);">${message.sender}</p>
+                        <p style="font-size:13px;color:var(--gray-600);">${message.content}</p>
+                        <p style="font-size:12px;color:var(--gray-400);">${new Date(message.created_at).toLocaleString()}</p>
+                    `;
+                    messagesList.appendChild(messageDiv);
+                });
+            })
+            .catch(error => console.error('Could not load messages:', error));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageForm = document.getElementById('message-form');
+        if (messageForm) {
+            messageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const recipientId = formData.get('recipient');
+                const content = formData.get('content');
+
+                if (!recipientId || !content) {
+                    alert('Please choose a recipient and enter a message.');
+                    return;
+                }
+
+                fetch(URLS.sendMessage(recipientId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ content })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        closeMessageModal();
+                        messageForm.reset();
+                        alert('Message sent successfully!');
+                        loadMessages();
+                    } else {
+                        alert('Unable to send message.');
+                    }
+                })
+                .catch(e => {
+                    console.error('Send message failed:', e);
+                    alert('Unable to send message.');
+                });
+            });
+        }
+
+        loadMessages();
+    });
 
     // Translate Modal
     function openTranslateModal(postId) {
@@ -848,12 +1317,18 @@
     function performTranslation() {
         const lang = document.getElementById('translate-lang').value;
         const postContent = document.querySelector(`[data-post-id="${currentPostId}"]`).textContent;
-        
-        fetch('/hotel/gemini-translate/', {
+
+        // Show loading
+        const btn = document.querySelector('#translate-modal button');
+        const originalText = btn.textContent;
+        btn.textContent = '⏳ Translating...';
+        btn.disabled = true;
+
+        fetch(URLS.gemini, {
             method: 'POST',
-            body: JSON.stringify({
-                text: postContent,
-                target_language: lang
+            body: JSON.stringify({ 
+                text: postContent, 
+                target_language: lang 
             }),
             headers: {
                 'Content-Type': 'application/json',
@@ -863,13 +1338,23 @@
         .then(r => r.json())
         .then(data => {
             const resultDiv = document.getElementById('translate-result');
-            resultDiv.innerHTML = data.translated || 'Translation unavailable';
-            resultDiv.style.display = 'block';
+            if (data.success && data.translated) {
+                resultDiv.innerHTML = `<strong>Translation:</strong><br>${data.translated}`;
+                resultDiv.style.display = 'block';
+            } else {
+                resultDiv.innerHTML = '❌ Translation failed. Please try again.';
+                resultDiv.style.display = 'block';
+            }
         })
         .catch(e => {
             console.error('Translation failed:', e);
-            document.getElementById('translate-result').innerHTML = '❌ Translation failed';
+            document.getElementById('translate-result').innerHTML = '❌ Translation failed. Please try again.';
             document.getElementById('translate-result').style.display = 'block';
+        })
+        .finally(() => {
+            // Reset button
+            btn.textContent = originalText;
+            btn.disabled = false;
         });
     }
 
@@ -891,7 +1376,50 @@
         localStorage.setItem('preferredLanguage', lang);
         currentLanguage = lang;
         closeLanguageModal();
-        alert(`Language set to: ${lang}`);
+        
+        // Update user's language preference via AJAX
+        fetch('/users/update-language/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ language: lang })
+        }).then(() => {
+            alert(`Language set to: ${getLanguageName(lang)}`);
+        }).catch(e => {
+            console.error('Failed to update language:', e);
+        });
+    }
+
+    function getLanguageName(code) {
+        const languages = {
+            'en': 'English', 'sw': 'Swahili', 'lg': 'Luganda', 'zu': 'Zulu',
+            'xh': 'Xhosa', 'af': 'Afrikaans', 'am': 'Amharic', 'yo': 'Yoruba',
+            'ha': 'Hausa', 'ar': 'Arabic', 'fr': 'French', 'pt': 'Portuguese',
+            'es': 'Spanish', 'de': 'German'
+        };
+        return languages[code] || code;
+    }
+
+    function translateEntireFeed() {
+        const lang = currentLanguage;
+        if (lang === 'en') {
+            alert('Please select a language other than English first using the Languages button.');
+            return;
+        }
+        
+        if (confirm(`Translate entire feed to ${getLanguageName(lang)}? This may take a moment.`)) {
+            // Show loading
+            const btn = document.querySelector('button[onclick="translateEntireFeed()"]');
+            if (btn) {
+                btn.innerHTML = '⏳ Translating...';
+                btn.disabled = true;
+            }
+            
+            // Redirect with translation parameters
+            window.location.href = `{% url 'hotel:social_feed' %}?translate=true&lang=${lang}`;
+        }
     }
 </script>
 

@@ -18,6 +18,9 @@ urlpatterns = [
     path('profile/', views.user_profile, name='profile'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
 
+    # --- Language Settings ---
+    path('update-language/', views.update_language, name='update_language'),
+
     # --- AI Services & Career Tools ---
     path("api/v1/gemini_proxy/", views.gemini_proxy, name="gemini_proxy"),
     path('profile/ai-companion/', views.profile_ai, name='profile_ai'),
