@@ -52,9 +52,8 @@
         width: 100%;
         position: relative;
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         justify-content: center;
-        padding: 20px;
     }
 
     section video {
@@ -70,30 +69,208 @@
     .video-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(8, 13, 26, 0) 0%, rgba(8, 13, 26, 0.45) 45%, rgba(8, 13, 26, 0.95) 100%);
+        background: linear-gradient(180deg, rgba(8, 13, 26, 0.3) 0%, rgba(8, 13, 26, 0.1) 50%, rgba(8, 13, 26, 0.8) 100%);
         z-index: 2;
         pointer-events: none;
     }
 
-    .feed-card {
-        position: relative;
+    .top-info {
+        position: absolute;
+        top: 80px;
+        left: 20px;
+        right: 100px;
         z-index: 3;
-        width: min(100%, 560px);
-        background: rgba(7, 12, 26, 0.88);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-bottom-left-radius: 32px;
-        border-bottom-right-radius: 32px;
-        border-top-left-radius: 16px;
-        border-top-right-radius: 16px;
-        backdrop-filter: blur(22px);
-        padding: 24px;
-        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
-        animation: slideUp 0.5s ease-out both;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    @keyframes slideUp {
-        from { transform: translateY(36px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
+    .creator-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        font-size: 16px;
+        color: white;
+        overflow: hidden;
+        border: 2px solid white;
+    }
+
+    .creator-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .creator-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: white;
+    }
+
+    .creator-subtitle {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .trust-score {
+        font-size: 10px;
+        color: #fbbf24;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .caption-overlay {
+        position: absolute;
+        bottom: 120px;
+        left: 20px;
+        right: 100px;
+        z-index: 3;
+        font-size: 14px;
+        line-height: 1.5;
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 12px;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        max-height: 100px;
+        overflow: hidden;
+    }
+
+    .right-actions {
+        position: absolute;
+        right: 20px;
+        bottom: 120px;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 12px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        cursor: pointer;
+        transition: transform 0.2s ease, background 0.2s ease;
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 60px;
+        min-height: 60px;
+        justify-content: center;
+    }
+
+    .action-btn:hover {
+        transform: scale(1.1);
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .action-btn span {
+        font-size: 20px;
+    }
+
+    .action-count {
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .commerce-actions {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        z-index: 3;
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .commerce-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        color: white;
+        cursor: pointer;
+        transition: transform 0.2s ease, background 0.2s ease;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .commerce-btn:hover {
+        transform: translateY(-2px);
+        background: rgba(34, 197, 94, 0.3);
+    }
+
+    .buy-now:hover {
+        background: rgba(34, 197, 94, 0.3);
+    }
+
+    .hire-me:hover {
+        background: rgba(59, 130, 246, 0.3);
+    }
+
+    .comment-input {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        z-index: 3;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        padding: 12px 16px;
+    }
+
+    .comment-input input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: white;
+        font-size: 14px;
+        outline: none;
+        placeholder-color: rgba(255, 255, 255, 0.7);
+    }
+
+    .comment-input input::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .comment-input button {
+        border: none;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-weight: 700;
+        transition: transform 0.2s ease;
+    }
+
+    .comment-input button:hover {
+        transform: translateY(-1px);
     }
 
     .feed-header {
@@ -400,14 +577,76 @@
     }
 
     @media (max-width: 720px) {
-        .feed-card {
-            width: 100%;
-            border-radius: 24px 24px 0 0;
-            padding: 18px;
+        .top-info {
+            top: 60px;
+            left: 15px;
+            right: 80px;
         }
 
-        .feed-actions {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        .creator-badge {
+            width: 35px;
+            height: 35px;
+            font-size: 14px;
+        }
+
+        .creator-name {
+            font-size: 12px;
+        }
+
+        .creator-subtitle {
+            font-size: 10px;
+        }
+
+        .caption-overlay {
+            bottom: 100px;
+            left: 15px;
+            right: 80px;
+            font-size: 12px;
+            padding: 10px;
+            max-height: 80px;
+        }
+
+        .right-actions {
+            right: 15px;
+            bottom: 100px;
+            gap: 12px;
+        }
+
+        .action-btn {
+            min-width: 50px;
+            min-height: 50px;
+            padding: 10px;
+            font-size: 10px;
+        }
+
+        .action-btn span {
+            font-size: 18px;
+        }
+
+        .commerce-actions {
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+        }
+
+        .commerce-btn {
+            padding: 10px 16px;
+            font-size: 12px;
+        }
+
+        .comment-input {
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            padding: 10px 14px;
+        }
+
+        .comment-input input {
+            font-size: 12px;
+        }
+
+        .comment-input button {
+            padding: 6px 12px;
         }
 
         .topbar {
@@ -439,84 +678,70 @@
             </video>
             <div class="video-overlay"></div>
 
-            <div class="feed-card">
-                <div class="feed-header">
-                    <div class="creator">
-                        <div class="creator-badge">
-                            {% if reel.author.profile_image %}
-                                <img src="{{ reel.author.profile_image.url }}" alt="{{ reel.author.username }}" style="width:100%; height:100%; object-fit:cover;" />
-                            {% else %}
-                                {{ reel.author.username|slice:":1"|upper }}
-                            {% endif %}
-                        </div>
-                        <div class="creator-meta">
-                            <div class="creator-name">@{{ reel.author.username }}</div>
-                            <div class="creator-subtitle">{{ reel.author.get_full_name|default:reel.author.username }}</div>
-                            {% if reel.author.social_profile %}
-                            <div class="trust-score">Trust: {{ reel.author.social_profile.trust_score|floatformat:1 }}%</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="top-pill">Reel {{ forloop.counter }} / {{ reels|length }}</div>
+            <div class="top-info">
+                <div class="creator-badge">
+                    {% if reel.author.profile_image %}
+                        <img src="{{ reel.author.profile_image.url }}" alt="{{ reel.author.username }}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
+                    {% else %}
+                        {{ reel.author.username|slice:":1"|upper }}
+                    {% endif %}
                 </div>
+                <div class="creator-meta">
+                    <div class="creator-name">@{{ reel.author.username }}</div>
+                    <div class="creator-subtitle">{{ reel.author.get_full_name|default:reel.author.username }}</div>
+                    {% if reel.author.social_profile %}
+                    <div class="trust-score">Trust: {{ reel.author.social_profile.trust_score|floatformat:1 }}%</div>
+                    {% endif %}
+                </div>
+            </div>
 
-                <div class="caption">{{ reel.caption }}</div>
-
+            <div class="caption-overlay">
+                {{ reel.caption }}
                 {% if reel.tags %}
-                <div class="tags">
-                    {% for tag in reel.tags|slice:":5" %}
-                        <span class="tag-pill">#{{ tag }}</span>
+                <div style="margin-top: 8px;">
+                    {% for tag in reel.tags|slice:":3" %}
+                        <span style="color: #c7d2fe; font-size: 12px;">#{{ tag }} </span>
                     {% endfor %}
                 </div>
                 {% endif %}
-
-                <div class="metrics">
-                    <div class="metric-card">
-                        <span>Likes</span><strong id="like-count-{{ reel.id }}">{{ reel.likes.count }}</strong>
-                    </div>
-                    <div class="metric-card">
-                        <span>Comments</span><strong>{{ reel.comments.count }}</strong>
-                    </div>
-                    <div class="metric-card">
-                        <span>Shares</span><strong>{{ reel.share_count|default:'0' }}</strong></div>
-                    <div class="metric-card">
-                        <span>Views</span><strong>{{ reel.views|default:'--' }}</strong>
-                    </div>
-                </div>
-
-                <div class="feed-actions">
-                    <button class="feed-action" onclick="toggleLike(this, '{{ reel.id }}')">
-                        <span>❤️</span> Like
-                    </button>
-                    <button class="feed-action" onclick="commentFocus('{{ reel.id }}')">
-                        <span>💬</span> Comment
-                    </button>
-                    <button class="feed-action" onclick="shareReel('{{ reel.id }}')">
-                        <span>🔗</span> Share
-                    </button>
-                    <button class="feed-action" onclick="downloadWithBranding('{{ reel.id }}', '{{ reel.video.url }}')">
-                        <span>⬇️</span> Download
-                    </button>
-                </div>
-
-                <div class="commerce-actions">
-                    {% if reel.price and reel.author.social_profile.whatsapp_number %}
-                    <a href="https://wa.me/{{ reel.author.social_profile.whatsapp_number }}?text={{ 'Hi, I am interested in buying your product: '|urlencode }}{{ reel.caption|urlencode }}" class="commerce-btn buy-now" target="_blank">
-                        <span>🛒</span> Buy Now
-                    </a>
-                    {% endif %}
-                    {% if reel.author.social_profile.whatsapp_number %}
-                    <a href="https://wa.me/{{ reel.author.social_profile.whatsapp_number }}?text={{ 'Hi, I would like to hire you for: '|urlencode }}{{ reel.caption|urlencode }}" class="commerce-btn hire-me" target="_blank">
-                        <span>💼</span> Hire Me
-                    </a>
-                    {% endif %}
-                </div>
-
-                <form class="comment-row" onsubmit="addComment('{{ reel.id }}', this); return false;">
-                    <input type="text" name="content" placeholder="Add a comment..." autocomplete="off" />
-                    <button type="submit">Send</button>
-                </form>
             </div>
+
+            <div class="right-actions">
+                <button class="action-btn" onclick="toggleLike(this, '{{ reel.id }}')">
+                    <span>❤️</span>
+                    <div class="action-count" id="like-count-{{ reel.id }}">{{ reel.likes.count }}</div>
+                </button>
+                <button class="action-btn" onclick="commentFocus('{{ reel.id }}')">
+                    <span>💬</span>
+                    <div class="action-count">{{ reel.comments.count }}</div>
+                </button>
+                <button class="action-btn" onclick="shareReel('{{ reel.id }}')">
+                    <span>🔗</span>
+                    <div class="action-count">{{ reel.share_count|default:'0' }}</div>
+                </button>
+                <button class="action-btn" onclick="downloadWithBranding('{{ reel.id }}', '{{ reel.video.url }}')">
+                    <span>⬇️</span>
+                    <div class="action-count">{{ reel.download_count|default:'0' }}</div>
+                </button>
+            </div>
+
+            <div class="commerce-actions">
+                {% if reel.price and reel.author.social_profile.whatsapp_number %}
+                <a href="https://wa.me/{{ reel.author.social_profile.whatsapp_number }}?text={{ 'Hi, I am interested in buying your product: '|urlencode }}{{ reel.caption|urlencode }}" class="commerce-btn buy-now" target="_blank">
+                    <span>🛒</span> Buy Now
+                </a>
+                {% endif %}
+                {% if reel.author.social_profile.whatsapp_number %}
+                <a href="https://wa.me/{{ reel.author.social_profile.whatsapp_number }}?text={{ 'Hi, I would like to hire you for: '|urlencode }}{{ reel.caption|urlencode }}" class="commerce-btn hire-me" target="_blank">
+                    <span>💼</span> Hire Me
+                </a>
+                {% endif %}
+            </div>
+
+            <form class="comment-input" onsubmit="addComment('{{ reel.id }}', this); return false;">
+                <input type="text" name="content" placeholder="Add a comment..." autocomplete="off" />
+                <button type="submit">Send</button>
+            </form>
         </section>
         {% endfor %}
     {% else %}

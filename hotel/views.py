@@ -207,6 +207,7 @@ def send_message(request, user_id):
         
         if content:
             Message.objects.create(sender=request.user, receiver=receiver, content=content)
+            return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'})
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
                 return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'} )
             else:

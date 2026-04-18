@@ -74,6 +74,66 @@
         flex-wrap: wrap;
     }
 
+    .header-search {
+        max-width: 1400px;
+        margin: 16px auto 0;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .header-search input {
+        flex: 1;
+        min-width: 260px;
+        padding: 14px 18px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .header-search input::placeholder {
+        color: rgba(255, 255, 255, 0.78);
+    }
+
+    .header-search button {
+        min-width: 180px;
+    }
+
+    .header-search {
+        max-width: 1400px;
+        margin: 16px auto 0;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .header-search input {
+        flex: 1;
+        min-width: 260px;
+        padding: 14px 18px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .header-search input::placeholder {
+        color: rgba(255, 255, 255, 0.78);
+    }
+
+    .header-search button {
+        min-width: 180px;
+    }
+
     .btn-header {
         background: rgba(255, 255, 255, 0.15);
         color: white;
@@ -703,6 +763,10 @@
             <a href="{% url 'hotel:create_post' %}" class="btn-header">✍️ Create Post</a>
         </div>
     </div>
+    <div class="header-search">
+        <input id="people-search" type="search" placeholder="Search people by name or username..." oninput="filterRecipientOptions()" />
+        <button class="btn-header" onclick="openMessageModal()">✉️ Direct Message</button>
+    </div>
 </div>
 
 <!-- Main Container -->
@@ -755,6 +819,10 @@
                                     <em>Translated from English</em>
                                 </div>
                             {% else %}
+                            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')">
+                                <span>✉️</span>
+                                <span>Message</span>
+                            </button>
                                 {{ post.content }}
                             {% endif %}
                         </div>
@@ -784,6 +852,10 @@
                             <button class="post-action" onclick="translatePost({{ post.id }}, this)">
                                 <span>🌐</span>
                                 <span>Translate</span>
+                            </button>
+                            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')">
+                                <span>✉️</span>
+                                <span>Message</span>
                             </button>
                         </div>
 
@@ -1003,22 +1075,22 @@
             <button class="modal-close" onclick="closeLanguageModal()">✕</button>
         </div>
         <div class="modal-body">
-            <p style="color: var(--gray-600); margin-bottom: 16px;">Choose your preferred language for the feed</p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('en')">🇺🇸 English</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('sw')">🇹🇿 Swahili</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('lg')">🇺🇬 Luganda</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('zu')">🇿🇦 Zulu</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('xh')">🇿🇦 Xhosa</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('af')">🇿🇦 Afrikaans</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('am')">🇪🇹 Amharic</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('yo')">🇳🇬 Yoruba</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('ha')">🇳🇬 Hausa</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('ar')">🇸🇦 Arabic</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('fr')">🇫🇷 French</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('pt')">🇵🇹 Portuguese</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('es')">🇪🇸 Spanish</button>
-                <button class="sidebar-item" style="text-align: center;" onclick="setLanguage('de')">🇩🇪 German</button>
+            <p style="margin-bottom: 16px; color: var(--gray-700);">Select a language to translate the feed and personalize your experience.</p>
+            <div class="language-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+                <button class="sidebar-item" onclick="setLanguage('en')">🇺🇸 English</button>
+                <button class="sidebar-item" onclick="setLanguage('sw')">🇹🇿 Swahili</button>
+                <button class="sidebar-item" onclick="setLanguage('lg')">🇺🇬 Luganda</button>
+                <button class="sidebar-item" onclick="setLanguage('zu')">🇿🇦 Zulu</button>
+                <button class="sidebar-item" onclick="setLanguage('xh')">🇿🇦 Xhosa</button>
+                <button class="sidebar-item" onclick="setLanguage('af')">🇿🇦 Afrikaans</button>
+                <button class="sidebar-item" onclick="setLanguage('am')">🇪🇹 Amharic</button>
+                <button class="sidebar-item" onclick="setLanguage('yo')">🇳🇬 Yoruba</button>
+                <button class="sidebar-item" onclick="setLanguage('ha')">🇳🇬 Hausa</button>
+                <button class="sidebar-item" onclick="setLanguage('ar')">🇸🇦 Arabic</button>
+                <button class="sidebar-item" onclick="setLanguage('fr')">🇫🇷 French</button>
+                <button class="sidebar-item" onclick="setLanguage('pt')">🇵🇹 Portuguese</button>
+                <button class="sidebar-item" onclick="setLanguage('es')">🇪🇸 Spanish</button>
+                <button class="sidebar-item" onclick="setLanguage('de')">🇩🇪 German</button>
             </div>
         </div>
     </div>
@@ -1033,14 +1105,15 @@
         </div>
         <div class="modal-body">
             <form id="message-form">
+                <div style="margin-bottom: 16px; position: relative;">
+                    <label for="recipient-search" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">Search Recipient</label>
+                    <input id="recipient-search" type="search" placeholder="Type name or username..." style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 14px;" oninput="updateRecipientSuggestions()" autocomplete="off" />
+                    <div id="recipient-suggestions" style="position: absolute; left: 0; right: 0; top: 100%; margin-top: 8px; max-height: 220px; overflow-y: auto; background: white; border: 1px solid rgba(209,213,219,.8); border-radius: 14px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12); z-index: 30; display: none;"></div>
+                </div>
                 <div style="margin-bottom: 16px;">
-                    <label for="recipient" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">To:</label>
-                    <select id="recipient" name="recipient" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 14px;" required>
-                        <option value="">Select a user</option>
-                        {% for user in all_users %}
-                        <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
-                        {% endfor %}
-                    </select>
+                    <label for="recipient-id" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">To:</label>
+                    <div id="recipient-selected" style="margin-bottom: 10px; font-size: 13px; color: var(--gray-600);">Choose a recipient by typing a letter or part of a name.</div>
+                    <input type="hidden" id="recipient-id" name="recipient" required />
                 </div>
                 <div style="margin-bottom: 16px;">
                     <label for="message-content" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">Message:</label>
@@ -1048,7 +1121,7 @@
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 12px;">
                     <button type="button" onclick="closeMessageModal()" class="btn-header" style="background: #f3f4f6; color: #111827;">Cancel</button>
-                    <button type="submit" class="btn-primary">Send</button>
+                    <button type="button" class="btn-primary" onclick="submitMessageForm()">Send</button>
                 </div>
             </form>
         </div>
@@ -1070,6 +1143,17 @@
         getMessages: `${_base}get_recent_messages/`,
         sendMessage: (id) => `${_base}send_message/${id}/`,
     };
+
+    const RECIPIENTS = [
+        {% for user in all_users %}
+        {
+            id: '{{ user.id }}',
+            label: '{{ user.get_full_name|default:user.username|escapejs }} (@{{ user.username }})',
+            displayName: '{{ user.get_full_name|default:user.username|escapejs }}',
+            username: '{{ user.username|escapejs }}',
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
 
     // Like Post — uses data-url from button
     function likePost(postId, btn) {
@@ -1175,7 +1259,6 @@
                 copyBtn.classList.remove('copied');
             }, 2000);
         }).catch(() => {
-            // Fallback for browsers without clipboard API
             const el = document.createElement('textarea');
             el.value = link;
             document.body.appendChild(el);
@@ -1184,6 +1267,92 @@
             document.body.removeChild(el);
             document.getElementById('copy-btn').textContent = 'Copied!';
         });
+    }
+
+    function openMessageModal(recipientId = '', recipientName = '') {
+        document.getElementById('message-modal').classList.add('active');
+        const searchInput = document.getElementById('recipient-search');
+        const recipientSelected = document.getElementById('recipient-selected');
+        const recipientIdInput = document.getElementById('recipient-id');
+        const suggestions = document.getElementById('recipient-suggestions');
+
+        if (searchInput) {
+            searchInput.value = recipientName || '';
+            updateRecipientSuggestions();
+        }
+
+        if (recipientSelected) {
+            recipientSelected.textContent = recipientName
+                ? `To: ${recipientName}`
+                : 'Choose a recipient by typing a letter or part of a name.';
+        }
+
+        if (recipientIdInput) {
+            recipientIdInput.value = recipientId || '';
+        }
+
+        if (suggestions) {
+            suggestions.style.display = 'block';
+        }
+
+        const messageContent = document.getElementById('message-content');
+        if (messageContent) {
+            setTimeout(() => messageContent.focus(), 100);
+        }
+    }
+
+    function updateRecipientSuggestions() {
+        const term = document.getElementById('recipient-search').value.trim().toLowerCase();
+        const suggestions = document.getElementById('recipient-suggestions');
+        const recipientIdInput = document.getElementById('recipient-id');
+        const recipientSelected = document.getElementById('recipient-selected');
+
+        if (!suggestions) return;
+
+        if (!term) {
+            suggestions.innerHTML = '<div style="padding: 14px; color: #6b7280;">Type a letter or username to search users.</div>';
+            suggestions.style.display = 'block';
+            recipientIdInput.value = '';
+            return;
+        }
+
+        const matches = RECIPIENTS.filter(user =>
+            user.label.toLowerCase().includes(term) ||
+            user.displayName.toLowerCase().includes(term) ||
+            user.username.toLowerCase().includes(term)
+        ).slice(0, 8);
+
+        if (!matches.length) {
+            suggestions.innerHTML = '<div style="padding: 14px; color: #6b7280;">No matching users found.</div>';
+            suggestions.style.display = 'block';
+            recipientIdInput.value = '';
+            return;
+        }
+
+        suggestions.innerHTML = matches.map(user =>
+            `<button type="button" class="suggestion-item" data-id="${user.id}" data-label="${user.label}" style="width:100%;text-align:left;padding:12px 14px;border:none;background:none;cursor:pointer;color:#111827;font-size:14px;border-bottom:1px solid rgba(203,213,225,.6);">${user.label}</button>`
+        ).join('');
+
+        suggestions.style.display = 'block';
+
+        suggestions.querySelectorAll('.suggestion-item').forEach(button => {
+            button.addEventListener('click', () => {
+                const id = button.dataset.id;
+                const label = button.dataset.label;
+                recipientIdInput.value = id;
+                recipientSelected.textContent = `To: ${label}`;
+                suggestions.style.display = 'none';
+                document.getElementById('recipient-search').value = label;
+            });
+        });
+    }
+
+    function closeMessageModal() {
+        document.getElementById('message-modal').classList.remove('active');
+        const suggestions = document.getElementById('recipient-suggestions');
+        if (suggestions) {
+            suggestions.style.display = 'none';
+        }
     }
 
     function shareOnFeed() {
@@ -1222,11 +1391,6 @@
         });
     }
 
-    // Messages
-    function openMessageModal() {
-        document.getElementById('message-modal').classList.add('active');
-    }
-
     function closeMessageModal() {
         document.getElementById('message-modal').classList.remove('active');
     }
@@ -1258,47 +1422,85 @@
             .catch(error => console.error('Could not load messages:', error));
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const messageForm = document.getElementById('message-form');
-        if (messageForm) {
-            messageForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const recipientId = formData.get('recipient');
-                const content = formData.get('content');
+    function submitMessageForm() {
+        const recipientIdInput = document.getElementById('recipient-id');
+        const recipientSearch = document.getElementById('recipient-search');
+        const messageContentEl = document.getElementById('message-content');
+        const sendBtn = document.querySelector('#message-form .btn-primary');
 
-                if (!recipientId || !content) {
-                    alert('Please choose a recipient and enter a message.');
-                    return;
-                }
-
-                fetch(URLS.sendMessage(recipientId), {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ content })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        closeMessageModal();
-                        messageForm.reset();
-                        alert('Message sent successfully!');
-                        loadMessages();
-                    } else {
-                        alert('Unable to send message.');
-                    }
-                })
-                .catch(e => {
-                    console.error('Send message failed:', e);
-                    alert('Unable to send message.');
-                });
-            });
+        const content = messageContentEl?.value?.trim();
+        if (!content) {
+            alert('Please enter a message.');
+            return;
         }
 
+        if (!recipientIdInput) {
+            alert('Recipient field is missing.');
+            return;
+        }
+
+        if (!recipientIdInput.value) {
+            const searchTerm = recipientSearch?.value?.trim().toLowerCase();
+            if (searchTerm) {
+                const match = RECIPIENTS.find(user =>
+                    user.label.toLowerCase() === searchTerm ||
+                    user.username.toLowerCase() === searchTerm ||
+                    user.displayName.toLowerCase() === searchTerm
+                );
+                if (match) {
+                    recipientIdInput.value = match.id;
+                }
+            }
+        }
+
+        if (!recipientIdInput.value) {
+            alert('Please choose a recipient from the suggestions before sending.');
+            return;
+        }
+
+        // Disable button and show loading
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+        }
+
+        fetch(URLS.sendMessage(recipientIdInput.value), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ content })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                closeMessageModal();
+                if (messageContentEl) messageContentEl.value = '';
+                recipientIdInput.value = '';
+                const recipientSelected = document.getElementById('recipient-selected');
+                if (recipientSelected) recipientSelected.textContent = 'Choose a recipient by typing a letter or part of a name.';
+                alert('Message sent successfully!');
+                loadMessages();
+            } else {
+                alert(data.message || 'Unable to send message.');
+            }
+        })
+        .catch(e => {
+            console.error('Send message failed:', e);
+            alert('Unable to send message.');
+        })
+        .finally(() => {
+            // Re-enable button
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
         loadMessages();
     });
 
