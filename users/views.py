@@ -18,6 +18,7 @@ from datetime import datetime
 # Official Google GenAI SDK imports (2025 Standard)
 from google import genai
 from google.genai import types
+from google.genai.types import Content, GenerateContentConfig, Part
 
 # Custom Forms and Models
 from .models import CustomUser, Experience, Education, Skill, SocialConnection 

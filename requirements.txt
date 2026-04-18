@@ -25,7 +25,7 @@ django-widget-tweaks
 
 # Integrations & APIs
 python-aliexpress-api
-google-generativeai
+google-genai
 phonenumbers
 
 # Required Core (The fix for your Pydantic error)
