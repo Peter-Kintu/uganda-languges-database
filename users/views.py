@@ -185,6 +185,29 @@ def profile_edit(request):
     except TemplateDoesNotExist:
         return render(request, 'profile_edit.html', {'form': form})
 
+@login_required
+@csrf_exempt
+def update_language(request):
+    """Update user's preferred language"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            language = data.get('language', 'en')
+            
+            # Validate language code
+            supported_languages = ['en', 'sw', 'lg', 'zu', 'xh', 'af', 'am', 'yo', 'ha', 'ar', 'fr', 'pt', 'es', 'de']
+            if language not in supported_languages:
+                language = 'en'
+            
+            request.user.language = language
+            request.user.save()
+            
+            return JsonResponse({'success': True, 'language': language})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
 # ==============================================================================
 # AI CHAT LOGIC (Fixed for 2025 Standards)
 # ==============================================================================
