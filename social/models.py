@@ -7,6 +7,7 @@ from cloudinary.models import CloudinaryField
 import uuid
 import hashlib
 import hmac
+from .utils import translate_text, detect_language, generate_tags
 
 # Link to your existing CustomUser
 User = settings.AUTH_USER_MODEL
@@ -124,6 +125,10 @@ class BusinessReel(models.Model):
     )
     thumbnail = CloudinaryField('image', folder='africana_thumbnails/', blank=True, null=True)
     caption = models.TextField(max_length=500)
+    language = models.CharField(max_length=10, default='en', help_text="ISO language code of the caption")
+    tags = models.JSONField(default=list, blank=True, help_text="AI-generated tags for search")
+    
+    # --- AGENTIC PRICING (Optional for Professional Reels) ---
     
     # --- AGENTIC PRICING (Optional for Professional Reels) ---
     price = models.DecimalField(
@@ -178,10 +183,103 @@ class BusinessReel(models.Model):
             margin = Decimal('10.00')
             return self.price * (Decimal('1.00') - (margin / Decimal('100.00')))
 
+    def get_translated_caption(self, target_lang='en'):
+        """Get caption translated to target language using Gemini."""
+        if self.language == target_lang:
+            return self.caption
+        return translate_text(self.caption, target_lang, self.language)
+
+    def update_tags(self):
+        """Generate and update AI tags for the reel."""
+        if not self.tags:
+            self.tags = generate_tags(self.caption)
+            self.save(update_fields=['tags'])
+
+    def save(self, *args, **kwargs):
+        # Auto-detect language if not set
+        if not self.language or self.language == 'en':
+            self.language = detect_language(self.caption)
+        # Auto-generate tags if empty
+        if not self.tags:
+            self.tags = generate_tags(self.caption)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         if self.price:
             return f"Business Reel by {self.author.username} - {self.currency} {self.price}"
         return f"Professional Reel by {self.author.username}"
+
+
+class Comment(models.Model):
+    """
+    Comments on BusinessReels for enhanced social interaction.
+    """
+    reel = models.ForeignKey(BusinessReel, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='social_comments')
+    content = models.TextField(max_length=500)
+    language = models.CharField(max_length=10, default='en')
+    translated_content = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    likes = models.ManyToManyField(User, related_name='liked_social_comments', blank=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def get_translated_content(self, target_lang='en'):
+        if self.language == target_lang:
+            return self.content
+        if self.translated_content:
+            return self.translated_content
+        translated = translate_text(self.content, target_lang, self.language)
+        self.translated_content = translated
+        self.save(update_fields=['translated_content'])
+        return translated
+
+    def save(self, *args, **kwargs):
+        if not self.language or self.language == 'en':
+            self.language = detect_language(self.content)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Comment by {self.author.username} on {self.reel}"
+
+
+class Follow(models.Model):
+    """
+    Follow relationships between users.
+    """
+    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='social_following')
+    followed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='social_followers')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('follower', 'followed')
+
+    def __str__(self):
+        return f"{self.follower.username} follows {self.followed.username}"
+
+
+class Story(models.Model):
+    """
+    Instagram-style stories for temporary content.
+    """
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stories')
+    media = CloudinaryField('image', folder='stories/', resource_type='auto')
+    caption = models.CharField(max_length=100, blank=True)
+    language = models.CharField(max_length=10, default='en')
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    views = models.ManyToManyField(User, related_name='viewed_stories', blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def is_expired(self):
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"Story by {self.author.username}"
 
 
 # --- SOVEREIGN MESSAGING ---
