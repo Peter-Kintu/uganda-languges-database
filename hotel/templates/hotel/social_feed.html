@@ -668,6 +668,26 @@
                     </div>
                     {% endwith %}
                 {% endif %}
+
+                <!-- Adsterra Ad Every 3 Posts -->
+                {% if forloop.counter|divisibleby:3 and forloop.counter != 1 %}
+                <div class="post-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%); border: 2px solid rgba(99, 102, 241, 0.2);">
+                    <div class="post-header">
+                        <div class="post-author">
+                            <div class="avatar" style="background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); font-size: 20px;">🎯</div>
+                            <div class="post-author-info">
+                                <div class="author-name">Sponsored Content</div>
+                                <div class="author-meta">Hand-picked ads for you</div>
+                            </div>
+                        </div>
+                        <span style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">📢 Featured</span>
+                    </div>
+                    <div style="min-height: 200px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.04); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 16px 0;">
+                        <script async src="https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js"></script>
+                        <div id="container-2c34356cc6efc4c07773cf2861e26899"></div>
+                    </div>
+                </div>
+                {% endif %}
             {% endfor %}
         {% else %}
             <div class="post-card" style="text-align: center; padding: 40px;">
