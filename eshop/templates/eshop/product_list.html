@@ -6,7 +6,7 @@
 {% block title %}Explore African Heritage Marketplace{% endblock %}
 
 {% block content %}
-<div class="bg-white min-h-screen text-gray-900 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+<div class="bg-slate-50 min-h-screen text-slate-900 font-sans selection:bg-blue-500/30 overflow-x-hidden">
     
     <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-r from-blue-500/5 to-purple-500/5 blur-[120px] pointer-events-none"></div>
 
@@ -55,6 +55,13 @@
                        class="w-full bg-gray-100/50 border border-gray-300 text-gray-800 text-sm rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-blue-500 outline-none">
             </form>
 
+            <div class="md:hidden flex items-center justify-between gap-3 mb-4">
+                <button type="button" id="filter-drawer-toggle" class="inline-flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3 px-4 rounded-2xl shadow-xl transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1 1h-4a1 1 0 01-1-1v-5.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
+                    Filter products
+                </button>
+            </div>
+
             <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-t border-gray-200 pt-2 mt-2">
                 <form method="GET" class="flex gap-2">
                     <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Filter by Country" 
@@ -68,6 +75,45 @@
             </div>
         </div>
     </header>
+
+    <div id="mobile-filter-overlay" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
+
+    <aside id="mobile-filter-drawer" class="fixed inset-y-0 left-0 w-full max-w-xs -translate-x-full md:hidden z-50 bg-slate-950/95 border-r border-slate-800 shadow-2xl transition-transform duration-300">
+        <div class="h-full flex flex-col">
+            <div class="flex items-center justify-between p-5 border-b border-slate-800">
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.3em] text-blue-300 font-black">Refine Search</p>
+                    <h2 class="text-xl font-bold text-white mt-1">Filters</h2>
+                </div>
+                <button type="button" id="filter-drawer-close" class="text-slate-300 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-5 flex-1 overflow-y-auto space-y-5">
+                <form method="GET" action="{% url 'eshop:product_list' %}" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">Search</label>
+                        <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search products..." 
+                            class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">Country</label>
+                        <input type="text" name="country" value="{{ country_query|default:'' }}" placeholder="Filter by Country" 
+                            class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">Vendor</label>
+                        <input type="text" name="vendor" value="{{ vendor_query|default:'' }}" placeholder="Filter by Vendor" 
+                            class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30">
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-2xl transition-all">Apply Filters</button>
+                        <a href="{% url 'eshop:product_list' %}" class="flex-1 inline-flex items-center justify-center bg-white/5 border border-white/10 text-white py-3 rounded-2xl transition-all hover:bg-white/10">Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </aside>
 
     <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div class="flex items-center justify-between mb-8">
@@ -257,6 +303,44 @@ function copyRefLink(btnEl) {
         alert("Referral Link: " + link);
     });
 }
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterToggle = document.getElementById('filter-drawer-toggle');
+        const filterDrawer = document.getElementById('mobile-filter-drawer');
+        const filterOverlay = document.getElementById('mobile-filter-overlay');
+        const filterClose = document.getElementById('filter-drawer-close');
+
+        function openDrawer() {
+            if (!filterDrawer || !filterOverlay) return;
+            filterDrawer.classList.remove('-translate-x-full');
+            filterDrawer.classList.add('translate-x-0');
+            filterOverlay.classList.remove('pointer-events-none', 'opacity-0');
+            filterOverlay.classList.add('opacity-100');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeDrawer() {
+            if (!filterDrawer || !filterOverlay) return;
+            filterDrawer.classList.add('-translate-x-full');
+            filterDrawer.classList.remove('translate-x-0');
+            filterOverlay.classList.add('opacity-0');
+            filterOverlay.classList.remove('opacity-100');
+            filterOverlay.classList.add('pointer-events-none');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        if (filterToggle) {
+            filterToggle.addEventListener('click', openDrawer);
+        }
+        if (filterClose) {
+            filterClose.addEventListener('click', closeDrawer);
+        }
+        if (filterOverlay) {
+            filterOverlay.addEventListener('click', closeDrawer);
+        }
+    });
 </script>
 
 <style>

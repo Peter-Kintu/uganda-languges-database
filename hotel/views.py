@@ -207,9 +207,12 @@ def send_message(request, user_id):
         
         if content:
             Message.objects.create(sender=request.user, receiver=receiver, content=content)
-            return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'})
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'} )
+            is_ajax = (
+                request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                'application/json' in request.headers.get('Content-Type', '')
+            )
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'})
             else:
                 messages.success(request, f'Message sent to {receiver.username}!')
                 return redirect('hotel:inbox')

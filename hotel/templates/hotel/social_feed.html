@@ -586,26 +586,220 @@
     /* RESPONSIVE DESIGN                                                 */
     /* ═════════════════════════════════════════════════════════════════ */
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
+        .header {
+            padding: 12px;
+        }
+
         .header-content {
-            flex-direction: column;
-            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: stretch;
         }
 
         .header-title {
-            font-size: 20px;
+            font-size: 18px;
+            flex: 0 0 auto;
+        }
+
+        .header-actions {
+            gap: 6px;
+            flex: 1 1 auto;
+            min-width: 100%;
+        }
+
+        .btn-header {
+            padding: 6px 10px;
+            font-size: 11px;
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .header-search {
+            width: 100%;
+            margin-top: 8px;
+            flex-direction: column;
+        }
+
+        .header-search input {
+            min-width: 100%;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        .container {
+            padding: 16px 12px;
+            gap: 16px;
+        }
+
+        .create-post-card {
+            padding: 14px;
         }
 
         .post-card {
-            padding: 16px;
+            padding: 14px;
         }
 
         .post-footer {
             font-size: 12px;
+            gap: 8px;
+        }
+
+        .post-action {
+            font-size: 12px;
+            gap: 2px;
+        }
+
+        .modal-content {
+            max-width: 95%;
+            max-height: 85vh;
+        }
+
+        .modal-header {
+            padding: 16px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+        }
+
+        .modal-body {
+            padding: 16px;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .header {
+            padding: 10px;
+        }
+
+        .header-content {
+            flex-direction: row;
+            gap: 6px;
+        }
+
+        .header-title {
+            font-size: 16px;
+            flex: 0 1 auto;
+        }
+
+        .header-actions {
+            gap: 4px;
+            flex: 1;
+            min-width: auto;
+        }
+
+        .btn-header {
+            padding: 5px 8px;
+            font-size: 10px;
+            border-radius: 6px;
+        }
+
+        .header-search {
+            margin-top: 8px;
+        }
+
+        .header-search input {
+            font-size: 12px;
+        }
+
+        .container {
+            padding: 12px 10px;
+            gap: 12px;
         }
 
         .create-post-card {
-            padding: 16px;
+            padding: 12px;
+        }
+
+        .create-post-header {
+            gap: 8px;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 13px;
+        }
+
+        .post-card {
+            padding: 12px;
+        }
+
+        .post-header {
+            gap: 8px;
+        }
+
+        .post-footer {
+            font-size: 11px;
+            gap: 4px;
+        }
+
+        .post-action {
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+
+        .post-action span:first-child {
+            margin-right: 2px;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 16px;
+        }
+
+        .modal-header {
+            padding: 14px;
+        }
+
+        .modal-title {
+            font-size: 15px;
+        }
+
+        .modal-close {
+            font-size: 20px;
+        }
+
+        .modal-body {
+            padding: 14px;
+        }
+
+        .sidebar {
+            display: none !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .header {
+            padding: 8px;
+        }
+
+        .header-title {
+            font-size: 14px;
+        }
+
+        .btn-header {
+            padding: 4px 6px;
+            font-size: 9px;
+        }
+
+        .header-search input {
+            font-size: 11px;
+            padding: 8px 10px;
+        }
+
+        .post-action {
+            font-size: 10px;
+            padding: 3px 6px;
+        }
+
+        .avatar {
+            width: 28px;
+            height: 28px;
+            font-size: 11px;
         }
     }
 
@@ -944,6 +1138,83 @@
                 <a href="{% url 'hotel:create_post' %}" class="btn-primary">Create First Post</a>
             </div>
         {% endif %}
+    </div>
+
+    @media (max-width: 1023px) {
+        .mobile-suggested-section {
+            display: block !important;
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 2px solid var(--gray-200);
+        }
+
+        .sidebar {
+            display: none;
+        }
+    }
+
+    .mobile-suggested-section .sidebar-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-200);
+    }
+
+    .mobile-suggested-section .sidebar-title {
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 12px;
+        color: var(--gray-900);
+    }
+
+    .mobile-suggested-section .sidebar-item {
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: var(--gray-900);
+        font-size: 13px;
+        display: block;
+        border: none;
+        background: none;
+        text-align: left;
+        margin-bottom: 8px;
+    }
+
+    .mobile-suggested-section .sidebar-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .mobile-suggested-section .sidebar-item:hover {
+        background: var(--gray-100);
+        color: var(--primary);
+    }
+        <div class="mobile-suggested-section" style="display: none;">
+            <!-- Suggested Users -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">👥 Suggested Users</div>
+                {% for user in all_users|slice:':8' %}
+                <button type="button" class="sidebar-item" onclick="openMessageModal('{{ user.id }}', '{{ user.get_full_name }}')">
+                    <div style="font-weight: 600;">{{ user.get_full_name }}</div>
+                    <div style="font-size: 12px; color: var(--gray-600);">@{{ user.username }}</div>
+                </button>
+                {% endfor %}
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">📊 Your Stats</div>
+                <div class="sidebar-item">
+                    <span style="font-weight: 600;">Posts:</span> {{ request.user.posts.count }}
+                </div>
+                <div class="sidebar-item">
+                    <span style="font-weight: 600;">Connections:</span> {{ connections.count }}
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Sidebar -->
@@ -1502,6 +1773,35 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         loadMessages();
+        
+        // Initialize message form
+        const messageForm = document.getElementById('message-form');
+        if (messageForm) {
+            messageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitMessageForm();
+            });
+        }
+
+        // Prevent accidental form submissions on Enter in message content
+        const messageContentEl = document.getElementById('message-content');
+        if (messageContentEl) {
+            messageContentEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                    // Allow normal line break; don't submit
+                    // To submit, user must click button
+                }
+            });
+        }
+
+        // Add click handlers to modals for backdrop click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
     });
 
     // Translate Modal
