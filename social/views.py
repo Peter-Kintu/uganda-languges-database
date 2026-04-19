@@ -47,6 +47,10 @@ class BentoProfileView(DetailView):
     slug_field = 'username'
     slug_url_kwarg = 'username'
 
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Safe access to social profile via the signal-backed relation
@@ -112,13 +116,6 @@ def toggle_like_reel(request, reel_id):
         reel.likes.add(request.user)
         liked = True
     
-    # --- TRUST SCORE INCREASE BASED ON LIKES ---
-    if liked and reel.likes.count() % 5 == 0:
-        if hasattr(reel.author, 'social_profile'):
-            profile = reel.author.social_profile
-            profile.trust_score = min(100.0, profile.trust_score + 1.0)
-            profile.save(update_fields=['trust_score'])
-    
     # --- TRIGGER TRUST SCORE UPDATE & CRYPTOGRAPHIC SEAL ---
     is_verified = False
     new_trust_score = 0
@@ -138,6 +135,7 @@ def toggle_like_reel(request, reel_id):
         'is_verified': is_verified
     })
 
+@login_required
 @csrf_exempt
 @require_POST
 def track_share(request, reel_id):
@@ -154,6 +152,7 @@ def track_share(request, reel_id):
         'total_shares': reel.share_count
     })
 
+@login_required
 @csrf_exempt
 @require_POST
 def track_download(request, reel_id):
@@ -169,93 +168,6 @@ def track_download(request, reel_id):
         'status': 'SUCCESS',
         'total_downloads': reel.download_count
     })
-
-@login_required
-@require_POST
-def add_comment(request, reel_id):
-    """
-    Adds a comment to a reel.
-    """
-    reel = get_object_or_404(BusinessReel, id=reel_id)
-    content = request.POST.get('content')
-    if content:
-        Comment.objects.create(reel=reel, author=request.user, content=content)
-    return JsonResponse({'status': 'success'})
-
-@login_required
-@require_POST
-def toggle_comment_like(request, comment_id):
-    """
-    Toggles like on a comment.
-    """
-    comment = get_object_or_404(Comment, id=comment_id)
-    if request.user in comment.likes.all():
-        comment.likes.remove(request.user)
-        liked = False
-    else:
-        comment.likes.add(request.user)
-        liked = True
-    return JsonResponse({'status': 'success', 'liked': liked, 'total_likes': comment.likes.count()})
-
-@login_required
-def translate_comment(request, comment_id):
-    """
-    Translates a comment.
-    """
-    comment = get_object_or_404(Comment, id=comment_id)
-    target_lang = request.GET.get('lang', 'en')
-    translated = translate_text(comment.content, target_language=target_lang)
-    return JsonResponse({'translated': translated})
-
-@login_required
-def translate_reel_caption(request, reel_id):
-    """
-    Translates a reel caption.
-    """
-    reel = get_object_or_404(BusinessReel, id=reel_id)
-    target_lang = request.GET.get('lang', 'en')
-    translated = translate_text(reel.caption, target_language=target_lang)
-    return JsonResponse({'translated': translated})
-
-@login_required
-@require_POST
-def toggle_follow(request, user_id):
-    """
-    Toggles follow on a user.
-    """
-    user = get_object_or_404(CustomUser, id=user_id)
-    if request.user in user.followers.all():
-        user.followers.remove(request.user)
-        followed = False
-    else:
-        user.followers.add(request.user)
-        followed = True
-    return JsonResponse({'status': 'success', 'followed': followed})
-
-@login_required
-@require_POST
-def create_story(request):
-    """
-    Creates a story.
-    """
-    # Assuming story creation logic
-    return JsonResponse({'status': 'success'})
-
-@login_required
-def stories_feed(request):
-    """
-    Stories feed.
-    """
-    stories = Story.objects.all()
-    return render(request, 'social/stories.html', {'stories': stories})
-
-@login_required
-def view_story(request, story_id):
-    """
-    View a story.
-    """
-    story = get_object_or_404(Story, id=story_id)
-    return render(request, 'social/story_detail.html', {'story': story})
 
 # --- SOVEREIGN MESSAGING PROTOCOLS ---
 
@@ -414,21 +326,3 @@ def ai_negotiate_price(request, reel_id):
             return JsonResponse({'status': 'ERROR', 'message': 'Data Handshake Error.'}, status=400)
             
     return JsonResponse({'status': 'ERROR', 'message': 'Protocol Violation.'}, status=405)
-
-@login_required
-def negotiation_page(request, reel_id):
-    """
-    Page for AI-powered price negotiation with a reel.
-    """
-    reel = get_object_or_404(BusinessReel, id=reel_id, is_active=True)
-    
-    if not reel.price:
-        messages.error(request, "This item is not for sale.")
-        return redirect('social:social_feed')
-    
-    context = {
-        'reel': reel,
-        'floor_price': getattr(reel, 'floor_price', reel.price * 0.8),
-        'currency': reel.currency,
-    }
-    return render(request, 'social/negotiation.html', context)

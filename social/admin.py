@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import SocialProfile, BusinessReel, VideoEndorsement, SecureMessage, Comment, Follow, Story
+from .models import SocialProfile, BusinessReel, VideoEndorsement, SecureMessage
 
 # --- CUSTOM WIDGETS/FORMS ---
 
@@ -177,44 +177,3 @@ class VideoEndorsementAdmin(admin.ModelAdmin):
             'fields': ('created_at',)
         }),
     )
-
-
-@admin.register(Comment)
-class CommentAdmin(admin.ModelAdmin):
-    """
-    Manage comments on reels.
-    """
-    list_display = ('reel', 'author', 'content_summary', 'created_at', 'likes_count')
-    list_filter = ('created_at', 'language')
-    search_fields = ('author__username', 'content')
-    readonly_fields = ('created_at',)
-    
-    def content_summary(self, obj):
-        return obj.content[:50] + "..." if len(obj.content) > 50 else obj.content
-    content_summary.short_description = 'Content'
-    
-    def likes_count(self, obj):
-        return obj.likes.count()
-    likes_count.short_description = 'Likes'
-
-
-@admin.register(Follow)
-class FollowAdmin(admin.ModelAdmin):
-    """
-    Manage follow relationships.
-    """
-    list_display = ('follower', 'followed', 'created_at')
-    list_filter = ('created_at',)
-    search_fields = ('follower__username', 'followed__username')
-    readonly_fields = ('created_at',)
-
-
-@admin.register(Story)
-class StoryAdmin(admin.ModelAdmin):
-    """
-    Manage user stories.
-    """
-    list_display = ('author', 'caption', 'created_at', 'expires_at', 'is_expired')
-    list_filter = ('created_at', 'expires_at')
-    search_fields = ('author__username', 'caption')
-    readonly_fields = ('created_at', 'expires_at')

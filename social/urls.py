@@ -21,24 +21,9 @@ urlpatterns = [
     path('reel/<int:reel_id>/track-share/', views.track_share, name='track_share'),
     path('reel/<int:reel_id>/track-download/', views.track_download, name='track_download'),
     
-    # Comments
-    path('reel/<int:reel_id>/comment/', views.add_comment, name='add_comment'),
-    path('comment/<int:comment_id>/like/', views.toggle_comment_like, name='toggle_comment_like'),
-    path('comment/<int:comment_id>/translate/', views.translate_comment, name='translate_comment'),
-    path('reel/<int:reel_id>/translate/', views.translate_reel_caption, name='translate_reel'),
-    
-    # Follow
-    path('user/<int:user_id>/follow/', views.toggle_follow, name='toggle_follow'),
-    
-    # Stories
-    path('story/create/', views.create_story, name='create_story'),
-    path('stories/', views.stories_feed, name='stories_feed'),
-    path('story/<int:story_id>/view/', views.view_story, name='view_story'),
-    
     # --- PILLAR 3: AGENTIC COMMERCE & NEGOTIATION ---
     # The 'Haggle' Protocol: Real-time AI price negotiation endpoint
     path('negotiate/<int:reel_id>/', views.ai_negotiate_price, name='ai_negotiate'),
-    path('negotiate-page/<int:reel_id>/', views.negotiation_page, name='negotiation_page'),
     
     # --- PILLAR 4: SOVEREIGN MESSAGING (WHATSAPP STYLE) ---
     # View all ongoing conversations (The Inbox)
