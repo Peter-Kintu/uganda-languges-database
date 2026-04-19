@@ -3,11 +3,12 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Count
+from django.core.files.storage import storages # Import storage routing
 from cloudinary.models import CloudinaryField
 import uuid
 import hashlib
 import hmac
-from .utils import translate_text, detect_language, generate_tags
+from decimal import Decimal
 
 # Link to your existing CustomUser
 User = settings.AUTH_USER_MODEL
@@ -59,7 +60,6 @@ class SocialProfile(models.Model):
 
     def generate_trust_signature(self):
         """Creates a cryptographic hash of the score using the server's secret key."""
-        # Data payload to be 'sealed'
         data = f"{self.user.id}-{self.trust_score}"
         return hmac.new(
             settings.SECRET_KEY.encode(),
@@ -72,21 +72,15 @@ class SocialProfile(models.Model):
         Logic to recalculate trust based on verified endorsements and engagement.
         UPDATED: Each like on any of the user's reels adds 5% to the score.
         """
-        # 1. Count total likes across all reels owned by this user
         total_likes = BusinessReel.objects.filter(author=self.user).aggregate(
             total=models.Count('likes')
         )['total'] or 0
 
-        # 2. Count verified endorsements
         endorsements = self.user.received_endorsements.filter(is_verified_transaction=True).count()
         
-        # 3. Calculate score: (Likes * 5) + (Deals * 2) + (Endorsements * 5)
         new_score = (total_likes * 5) + (self.verified_deals_count * 2) + (endorsements * 5)
         
-        # Cap at 100.0%
         self.trust_score = min(100.0, float(new_score))
-        
-        # 4. Generate the 'Digital Seal' before saving
         self.trust_signature = self.generate_trust_signature()
         self.save()
 
@@ -107,30 +101,22 @@ class BusinessReel(models.Model):
     """
     Shoppable Reel / Professional Portfolio: 
     High-speed video gateway with optional Agentic Pricing.
+    UPDATED: Now using Cloudflare R2 for heavy video storage.
     """
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reels')
     
-    video = CloudinaryField(
-        'video', 
-        resource_type='video',
-        folder='africana_reels/',
-        overwrite=True,
-        # Updated: Compression with original width and 5-minute duration limit
-        transformation=[
-            {'width': "iw", 'crop': "scale"},      # Original Width
-            {'quality': "auto", 'fetch_format': "auto"}, # AI Compression
-            {'duration': "300", 'crop': "limit"}   # Limit to 5 mins (300s)
-        ],
-        help_text="Compressed to original width, max 5 minutes duration."
+    # VIDEO STORAGE UPDATE: Routed to Cloudflare R2 via 'reels_video' backend
+    video = models.FileField(
+        upload_to='africana_reels/',
+        storage=storages['reels_video'],
+        help_text="Stored on Cloudflare R2 for zero-egress high-speed delivery."
     )
+    
+    # Thumbnails remain on Cloudinary for AI-driven transformation/caching
     thumbnail = CloudinaryField('image', folder='africana_thumbnails/', blank=True, null=True)
     caption = models.TextField(max_length=500)
-    language = models.CharField(max_length=10, default='en', help_text="ISO language code of the caption")
-    tags = models.JSONField(default=list, blank=True, help_text="AI-generated tags for search")
     
-    # --- AGENTIC PRICING (Optional for Professional Reels) ---
-    
-    # --- AGENTIC PRICING (Optional for Professional Reels) ---
+    # --- AGENTIC PRICING ---
     price = models.DecimalField(
         max_digits=12, 
         decimal_places=2, 
@@ -147,14 +133,12 @@ class BusinessReel(models.Model):
         help_text="Absolute minimum the AI Agent can accept. (Secret)"
     )
 
-    # --- ENGAGEMENT TRACKING (New for Like/Share/Download) ---
+    # --- ENGAGEMENT TRACKING ---
     likes = models.ManyToManyField(User, related_name='liked_reels', blank=True)
     share_count = models.PositiveIntegerField(default=0)
     download_count = models.PositiveIntegerField(default=0)
     
-    # Unique token for branded sharing links
     share_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    
     is_low_bandwidth_optimized = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -175,34 +159,10 @@ class BusinessReel(models.Model):
         
         try:
             margin = self.author.social_profile.minimum_margin_percent
-            # Updated logic for proper Decimal handling
-            from decimal import Decimal
             return self.price * (Decimal('1.0') - (Decimal(str(margin)) / Decimal('100.0')))
         except (SocialProfile.DoesNotExist, AttributeError):
-            from decimal import Decimal
             margin = Decimal('10.00')
             return self.price * (Decimal('1.00') - (margin / Decimal('100.00')))
-
-    def get_translated_caption(self, target_lang='en'):
-        """Get caption translated to target language using Gemini."""
-        if self.language == target_lang:
-            return self.caption
-        return translate_text(self.caption, target_lang, self.language)
-
-    def update_tags(self):
-        """Generate and update AI tags for the reel."""
-        if not self.tags:
-            self.tags = generate_tags(self.caption)
-            self.save(update_fields=['tags'])
-
-    def save(self, *args, **kwargs):
-        # Auto-detect language if not set
-        if not self.language or self.language == 'en':
-            self.language = detect_language(self.caption)
-        # Auto-generate tags if empty
-        if not self.tags:
-            self.tags = generate_tags(self.caption)
-        super().save(*args, **kwargs)
 
     def __str__(self):
         if self.price:
@@ -210,84 +170,11 @@ class BusinessReel(models.Model):
         return f"Professional Reel by {self.author.username}"
 
 
-class Comment(models.Model):
-    """
-    Comments on BusinessReels for enhanced social interaction.
-    """
-    reel = models.ForeignKey(BusinessReel, on_delete=models.CASCADE, related_name='comments')
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='social_comments')
-    content = models.TextField(max_length=500)
-    language = models.CharField(max_length=10, default='en')
-    translated_content = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    likes = models.ManyToManyField(User, related_name='liked_social_comments', blank=True)
-
-    class Meta:
-        ordering = ['created_at']
-
-    def get_translated_content(self, target_lang='en'):
-        if self.language == target_lang:
-            return self.content
-        if self.translated_content:
-            return self.translated_content
-        translated = translate_text(self.content, target_lang, self.language)
-        self.translated_content = translated
-        self.save(update_fields=['translated_content'])
-        return translated
-
-    def save(self, *args, **kwargs):
-        if not self.language or self.language == 'en':
-            self.language = detect_language(self.content)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"Comment by {self.author.username} on {self.reel}"
-
-
-class Follow(models.Model):
-    """
-    Follow relationships between users.
-    """
-    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='social_following')
-    followed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='social_followers')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('follower', 'followed')
-
-    def __str__(self):
-        return f"{self.follower.username} follows {self.followed.username}"
-
-
-class Story(models.Model):
-    """
-    Instagram-style stories for temporary content.
-    """
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stories')
-    media = CloudinaryField('image', folder='stories/', resource_type='auto')
-    caption = models.CharField(max_length=100, blank=True)
-    language = models.CharField(max_length=10, default='en')
-    expires_at = models.DateTimeField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    views = models.ManyToManyField(User, related_name='viewed_stories', blank=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def is_expired(self):
-        from django.utils import timezone
-        return timezone.now() > self.expires_at
-
-    def __str__(self):
-        return f"Story by {self.author.username}"
-
-
 # --- SOVEREIGN MESSAGING ---
 
 class SecureMessage(models.Model):
     """
     Internal 'Hire' protocol. 
-    Note: Front-end may redirect to WhatsApp based on creator settings.
     """
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
@@ -307,6 +194,7 @@ class SecureMessage(models.Model):
 class VideoEndorsement(models.Model):
     """
     Verified Proof of Work: 15-second client testimonials.
+    Uses Cloudinary for short-form video transformations.
     """
     professional = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_endorsements')
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_endorsements')
@@ -329,7 +217,6 @@ def handle_user_social_profile(sender, instance, created, **kwargs):
     """Ensures every user has a SocialProfile and handles sync."""
     if created:
         profile, _ = SocialProfile.objects.get_or_create(user=instance)
-        # Sign the initial 0.0 trust score
         profile.trust_signature = profile.generate_trust_signature()
         profile.save()
     else:

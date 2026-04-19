@@ -46,7 +46,7 @@
                         <span class="mr-1">💬</span> WhatsApp Number
                     </label>
                     {{ form.whatsapp_number }}
-                    <p class="text-[9px] text-gray-500 italic">Include country code (e.g., 256700000000)</p>
+                    <p class="text-[9px] text-gray-500 italic">Pre-filled from profile. Format: 256...</p>
                 </div>
 
                 <div id="professional-notice" class="text-[10px] text-gray-400 bg-white/5 p-3 rounded-xl border border-white/5 italic">
@@ -59,9 +59,14 @@
                         {{ form.price }}
                     </div>
                     <div class="space-y-1">
-                        <label class="block text-[10px] uppercase tracking-widest font-bold text-indigo-300">AI Floor (Secret)</label>
-                        {{ form.floor_price }}
+                        <label class="block text-[10px] uppercase opacity-50 tracking-widest font-bold">Currency</label>
+                        {{ form.currency }}
                     </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-[10px] uppercase tracking-widest font-bold text-indigo-300">AI Floor (Secret Minimum)</label>
+                    {{ form.floor_price }}
                 </div>
 
                 <div id="price-health" class="hidden text-[9px] font-medium p-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse">
@@ -73,7 +78,7 @@
                         <span class="text-[10px] uppercase opacity-50 tracking-widest font-bold">Data Saver</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             {{ form.is_low_bandwidth_optimized }}
-                        </label>
+                            </label>
                     </div>
                     <span class="text-[9px] text-gray-500 italic">Optimized for stability</span>
                 </div>
