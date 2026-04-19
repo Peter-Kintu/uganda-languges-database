@@ -13,7 +13,7 @@
             --brand-glow: rgba(59, 130, 246, 0.15);
             --bg-dark: #ffffff;
             --card-bg: #f8fafc;
-            --adzuna-blue: #3b82f6;
+            --brand-blue: #3b82f6;
         }
 
         body {
@@ -418,59 +418,49 @@
                 </div>
                 {% endif %}
 
-                {# 1. ADZUNA JOBS - HIGHEST PAYING, CLEAN TITLES #}
-                {% for job in adzuna_jobs %}
+                {# 1. JOOBLE EXTERNAL JOBS - HIGH-CONVERTING REVENUE PARTNER #}
+                {% if external_jobs %}
+                <div class="col-span-full">
+                    <div class="mb-6 p-6 rounded-2xl bg-gradient-to-r from-blue-50 to-white border border-blue-100 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Jooble Search</p>
+                                <h2 class="mt-2 text-2xl font-bold text-gray-900">High-paying external jobs</h2>
+                                <p class="mt-2 text-sm text-gray-600">Results from Jooble for "{{ search_query|default:'top jobs' }}" in {{ location_query|default:'Uganda' }}.</p>
+                            </div>
+                            <span class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white">API Partner</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% for job in external_jobs %}
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex justify-between items-start mb-4">
                         <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200">
-                            Jobs by Adzuna
+                            Jooble Listing
                         </span>
-                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
                     </div>
 
                     <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight line-clamp-2">
-                        {{ job.clean_title }}
+                        {{ job.title|default:job.position|default:'Job opportunity' }}
                     </h3>
-                    <p class="text-blue-600 font-medium text-sm mb-1">{{ job.company.display_name }}</p>
-                    <p class="text-gray-500 text-xs mb-2">{{ job.location.display_name }}</p>
-                    {% if job.display_salary %}
-                    <p class="text-green-600 font-semibold text-sm mb-4">{{ job.display_salary }}</p>
+                    <p class="text-blue-600 font-medium text-sm mb-1">{{ job.company|default:job.company_name|default:'Top employer' }}</p>
+                    <p class="text-gray-500 text-xs mb-2">{{ job.location|default:job.locations|default:'Uganda' }}</p>
+                    {% if job.salary %}
+                    <p class="text-green-600 font-semibold text-sm mb-4">{{ job.salary }}</p>
                     {% else %}
                     <p class="text-gray-400 text-sm mb-4">Salary not listed</p>
                     {% endif %}
 
-                    <a href="{{ job.redirect_url }}"
+                    <a href="{{ job.link|default:job.url|default:job.redirect_url|default:'#' }}"
                        target="_blank"
+                       rel="noopener noreferrer"
                        class="w-full block text-center py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
                         Apply Now
                     </a>
                 </div>
                 {% endfor %}
-
-                {# 2. CAREERJET SPONSORED ONLY - LOWER PAY BUT STILL MONEY #}
-                {% for job in careerjet_jobs %}
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-200">
-                            Sponsored Job
-                        </span>
-                    </div>
-
-                    <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight line-clamp-2">
-                        {{ job.title|safe|truncatechars:65 }}
-                    </h3>
-                    <p class="text-gray-600 font-medium text-sm mb-1">{{ job.company }}</p>
-                    <p class="text-gray-500 text-xs mb-4">{{ job.locations }}</p>
-
-                    <a href="{{ job.url }}"
-                       target="_blank"
-                       class="w-full block text-center py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors">
-                        Apply Now
-                    </a>
-                </div>
-                {% endfor %}
+                {% endif %}
 
                 {# 3. Your internal "Hire Me" jobs last #}
                 {% for job in job_posts %}

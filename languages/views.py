@@ -10,6 +10,7 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.conf import settings
 import requests
+import json
 import os
 import re
 
@@ -115,16 +116,8 @@ def post_job(request):
     return render(request, 'contribute.html', {'form': form})
 
 # API Credentials
-ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
-ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")
-CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
-# Ensure the publisher ID falls back to the API key if not specifically set
-CAREERJET_PUBLISHER_ID = os.getenv("CAREERJET_PUBLISHER_ID") or CAREERJET_API_KEY
+JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY") or "46f60849-92b7-4a9f-a381-709376fe6f92"
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
-
-# Cache so you don't burn API limits
-cache = {"adzuna": {"data": [], "expires": datetime.now()},
-         "careerjet": {"data": [], "expires": datetime.now()}}
 
 BAD_TITLE_KEYWORDS = [
     'we are hiring', 'hiring!', 'job opportunity', 'vacancy', 'apply now',
@@ -133,119 +126,24 @@ BAD_TITLE_KEYWORDS = [
 ]
 BAD_TITLES_EXACT = ['hiring', 'we are hiring', 'is for hiring', 'jobs', 'job', 'vacancies', 'careers', 'vacancy']
 
-def clean_adzuna_job(job):
-    """Returns job with clean_title or None if job is garbage"""
-    title = job.get('title', '').strip()
-    company = job.get('company', {}).get('display_name', '').strip()
-    location = job.get('location', {}).get('display_name', '')
-    description = job.get('description', '')
-    salary_min = job.get('salary_min')
-
-    # Rule 1: Drop garbage titles
-    if title.lower() in BAD_TITLES_EXACT:
-        return None
-    if any(bad in title.lower() for bad in BAD_TITLE_KEYWORDS):
-        # Try salvage from description first line
-        first_line = description.split('\n')[0][:80].strip()
-        if len(first_line) > 10 and not any(bad in first_line.lower() for bad in BAD_TITLE_KEYWORDS):
-            title = first_line
-        else:
-            return None
-
-    # Rule 2: Must have company + specific location. "Uganda" alone = spam
-    if not company or not location or location.lower() == 'uganda':
-        return None
-
-    # Rule 3: Clean the title
-    title = re.sub(r'\b(Hiring|Apply|Urgent|Now|!|Vacancy)\b', '', title, flags=re.I).strip()
-    title = re.sub(r'\s+', ' ', title)
-    # Title case but keep IT, CEO, HR, etc
-    title = ' '.join([w if w.isupper() and len(w) < 5 else w.capitalize() for w in title.split()])
-
-    # Add company if title too short
-    if len(title) < 18 and company:
-        title = f"{title} - {company}"
-
-    if len(title) > 65:
-        title = title[:62] + '...'
-
-    if len(title) < 8: # Still bad after cleaning
-        return None
-
-    job['clean_title'] = title
-    job['display_salary'] = f"UGX {int(salary_min):,}/mo" if salary_min else None
-    return job
-
-def get_adzuna_jobs(q="", where="Kampala"):
-    if cache["adzuna"]["data"] and cache["adzuna"]["expires"] > datetime.now():
-        return cache["adzuna"]["data"]
-
-    url = f"https://api.adzuna.com/v1/api/jobs/ug/search/1"
-    params = {
-        "app_id": ADZUNA_APP_ID, "app_key": ADZUNA_APP_KEY,
-        "results_per_page": 30, "what": q, "where": where,
-        "sort_by": "relevance"
+def fetch_jooble_data(keywords, location="Uganda"):
+    api_key = JOOBLE_API_KEY
+    url = f"https://jooble.org/api/{api_key}"
+    headers = {"Content-Type": "application/json"}
+    body = {
+        "keywords": keywords,
+        "location": location or "Uganda",
+        "radius": "25",
+        "page": "1",
     }
     try:
-        r = requests.get(url, params=params, timeout=10)
-        raw_jobs = r.json().get("results", [])
-        cleaned = []
-        seen = set()
-        for job in raw_jobs:
-            clean_job = clean_adzuna_job(job)  # USE THE FULL CLEANER
-            if clean_job:
-                key = f"{clean_job['clean_title']}-{clean_job['company']['display_name']}"
-                if key not in seen:
-                    seen.add(key)
-                    cleaned.append(clean_job)
-        cache["adzuna"]["data"] = cleaned
-        cache["adzuna"]["expires"] = datetime.now() + timedelta(minutes=15)
-        return cleaned
+        response = requests.post(url, data=json.dumps(body), headers=headers, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("jobs", [])
     except Exception as e:
-        print(f"Adzuna API error: {e}")
-        return []
-
-def is_careerjet_sponsored(job):
-    """Only show CareerJet jobs that pay you. Requires YOUR affid in URL."""
-    url = job.get('url', '')
-    company = job.get('company', '').strip()
-
-    if not CAREERJET_PUBLISHER_ID or len(company) < 2:
-        return False
-
-    # Must have YOUR affid to earn commission. Generic 'click' isn't enough.
-    has_your_affid = f'affid={CAREERJET_PUBLISHER_ID}' in url
-    has_paid_redirect = 'careerjet.com/click' in url and 'rc=' in url
-
-    return has_your_affid or has_paid_redirect
-
-def get_careerjet_jobs(q="", location="Kampala"):
-    if cache["careerjet"]["data"] and cache["careerjet"]["expires"] > datetime.now():
-        return cache["careerjet"]["data"]
-
-    if not CAREERJET_PUBLISHER_ID:
-        return [] # Don't call API if you won't get paid
-
-    url = "https://public.api.careerjet.net/search"
-    params = {
-        "affid": CAREERJET_PUBLISHER_ID,
-        "keywords": q,
-        "location": location,
-        "pagesize": 50,
-        "page": 1,
-        "sort": "relevance"
-    }
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        raw_jobs = r.json().get("jobs", [])
-        # ONLY KEEP SPONSORED THAT PAY YOU
-        sponsored = [job for job in raw_jobs if is_careerjet_sponsored(job)]
-        cache["careerjet"]["data"] = sponsored
-        cache["careerjet"]["expires"] = datetime.now() + timedelta(minutes=15)
-        return sponsored
-    except Exception as e:
-        print(f"CareerJet API error: {e}")
-        return []
+        print(f"Jooble API Connection Error: {e}")
+    return []
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
     if not EXCHANGE_RATE_API_KEY or from_curr == to_curr:
@@ -276,16 +174,15 @@ def browse_job_listings(request):
         except (ValueError, JobPost.DoesNotExist):
             pass 
 
-    adzuna_jobs = []
-    careerjet_jobs = []
+    external_jobs = []
 
     category_filter = request.GET.get('category')
-    search_query = request.GET.get('q') or "hiring" 
-    location_query = request.GET.get('where') or ""
+    search_query = request.GET.get('q') or ""
+    location_query = request.GET.get('where') or "Uganda"
     search_type = request.GET.get('search_type', 'api')
     page = request.GET.get('page', 1)
 
-    display_query = search_query if search_query != "hiring" else "Freelance"
+    display_query = search_query if search_query else "Freelance"
     solidgigs_data = {
         'name': f"Elite {display_query.title()} Roles",
         'url': f"https://solidgigs.com?via=kintu92",
@@ -337,27 +234,21 @@ def browse_job_listings(request):
         
         else:
             # --- STANDARD API & LOCAL SEARCH ---
-            job_posts_filtered = JobPost.objects.all().order_by('-timestamp')
-            job_posts_filtered = job_posts_filtered.filter(
-                Q(is_external=False) | Q(external_source__in=['adzuna', 'careerjet', 'jobspy'])
-            )
+            job_posts_filtered = JobPost.objects.filter(is_validated=True).order_by('-timestamp')
 
             if category_filter and category_filter != 'all':
                 job_posts_filtered = job_posts_filtered.filter(job_category=category_filter)
-            if search_query and search_query != "hiring":
+            if search_query:
                 job_posts_filtered = job_posts_filtered.filter(
                     Q(post_content__icontains=search_query) |
-                    Q(recruiter_name__icontains=search_query) |
-                    Q(recruiter_location__icontains=location_query)
+                    Q(required_skills__icontains=search_query) |
+                    Q(recruiter_name__icontains=search_query)
                 )
             final_job_list = list(job_posts_filtered)
 
-        loc_lower = location_query.lower()
-        
-        # Only fetch from APIs if NOT in crawl mode
-        if search_type != 'crawl':
-            adzuna_jobs = get_adzuna_jobs(q=search_query, where=location_query)
-            careerjet_jobs = get_careerjet_jobs(q=search_query, location=location_query)
+        # Only fetch Jooble results when a search or location is active
+        if search_type != 'crawl' and (search_query or location_query):
+            external_jobs = fetch_jooble_data(search_query or 'jobs', location_query)
 
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
@@ -369,17 +260,14 @@ def browse_job_listings(request):
     context = {
         'selected_job': selected_job,
         'job_posts': job_posts_context,
-        'adzuna_jobs': adzuna_jobs, 
-        'careerjet_jobs': careerjet_jobs,
+        'external_jobs': external_jobs,
         'solidgigs': solidgigs_data,
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
-        'search_query': search_query if search_query != "hiring" else '',
+        'search_query': search_query,
         'location_query': location_query,
         'search_type': search_type,
         'page_title': f"Jobs in {location_query}",
-        # Keep variable for template filter fallback
-        'CAREERJET_API_KEY': CAREERJET_PUBLISHER_ID,
     }
     return render(request, 'contributions_list.html', context)
 
