@@ -442,17 +442,17 @@
                     </div>
 
                     <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight line-clamp-2">
-                        {{ job.title|default:job.position|default:'Job opportunity' }}
+                        {{ job.title|default:'Job opportunity' }}
                     </h3>
-                    <p class="text-blue-600 font-medium text-sm mb-1">{{ job.company|default:job.company_name|default:'Top employer' }}</p>
-                    <p class="text-gray-500 text-xs mb-2">{{ job.location|default:job.locations|default:'Uganda' }}</p>
+                    <p class="text-blue-600 font-medium text-sm mb-1">{{ job.company|default:'Top employer' }}</p>
+                    <p class="text-gray-500 text-xs mb-2">{{ job.location|default:'Uganda' }}</p>
                     {% if job.salary %}
                     <p class="text-green-600 font-semibold text-sm mb-4">{{ job.salary }}</p>
                     {% else %}
                     <p class="text-gray-400 text-sm mb-4">Salary not listed</p>
                     {% endif %}
 
-                    <a href="{{ job.link|default:job.url|default:job.redirect_url|default:'#' }}"
+                    <a href="{{ job.link|default:'#' }}"
                        target="_blank"
                        rel="noopener noreferrer"
                        class="w-full block text-center py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
