@@ -421,9 +421,9 @@
                 {# EXTERNAL JOBS #}
                 {% if external_jobs %}
                 {% for job in external_jobs %}
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="bg-white border border-orange-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex justify-between items-start mb-4">
-                        <span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200">
+                        <span class="px-3 py-1 bg-orange-50 text-orange-700 text-xs font-semibold rounded-full border border-orange-200">
                             External Job
                         </span>
                     </div>
@@ -431,7 +431,7 @@
                     <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight line-clamp-2">
                         {{ job.title|default:'Job opportunity' }}
                     </h3>
-                    <p class="text-blue-600 font-medium text-sm mb-1">{{ job.company|default:'Top employer' }}</p>
+                    <p class="text-orange-600 font-medium text-sm mb-1">{{ job.company|default:'Top employer' }}</p>
                     <p class="text-gray-500 text-xs mb-2">{{ job.location|default:'Uganda' }}</p>
                     {% if job.salary %}
                     <p class="text-green-600 font-semibold text-sm mb-4">{{ job.salary }}</p>
@@ -442,7 +442,7 @@
                     <a href="{{ job.link|default:'#' }}"
                        target="_blank"
                        rel="noopener noreferrer"
-                       class="w-full block text-center py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
+                       class="w-full block text-center py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors">
                         Apply Now
                     </a>
                 </div>
