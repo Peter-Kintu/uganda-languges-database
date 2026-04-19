@@ -117,6 +117,8 @@ def post_job(request):
 
 # API Credentials
 JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY") or "46f60849-92b7-4a9f-a381-709376fe6f92"
+CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
+CAREERJET_PUBLISHER_ID = os.getenv("CAREERJET_PUBLISHER_ID") or CAREERJET_API_KEY
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
 BAD_TITLE_KEYWORDS = [
@@ -130,9 +132,12 @@ def fetch_jooble_data(keywords, location="Uganda"):
     api_key = JOOBLE_API_KEY
     url = f"https://jooble.org/api/{api_key}"
     headers = {"Content-Type": "application/json"}
+    api_location = ""
+    if location and location.strip() and location.strip().lower() != "uganda":
+        api_location = location
     body = {
         "keywords": keywords,
-        "location": location or "Uganda",
+        "location": api_location,
         "radius": "25",
         "page": "1",
     }
@@ -140,9 +145,59 @@ def fetch_jooble_data(keywords, location="Uganda"):
         response = requests.post(url, data=json.dumps(body), headers=headers, timeout=5)
         if response.status_code == 200:
             data = response.json()
-            return data.get("jobs", [])
+            jobs = data.get("jobs", [])
+            if not jobs and api_location:
+                # Fallback to a global search if Uganda-only results are unavailable.
+                body["location"] = ""
+                response = requests.post(url, data=json.dumps(body), headers=headers, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    jobs = data.get("jobs", [])
+            for job in jobs:
+                job["source"] = "Jooble"
+            return jobs
     except Exception as e:
         print(f"Jooble API Connection Error: {e}")
+    return []
+
+
+def fetch_careerjet_data(keywords, location="Uganda", user_ip="", user_agent="", referer=""):
+    """
+    Fetch jobs from CareerJet. The URLs returned by CareerJet
+    have built-in tracking, so clicks are automatically attributed.
+    """
+    if not CAREERJET_API_KEY:
+        return []
+
+    # Use the old proven endpoint that works on Koyeb
+    url = "https://public.api.careerjet.net/search"
+    params = {
+        "affid": CAREERJET_API_KEY,
+        "keywords": keywords or "jobs",
+        "location": location or "Uganda",
+        "pagesize": 40,
+        "page": 1,
+        "sort": "relevance"
+    }
+    
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            jobs = data.get("jobs", [])
+            normalized = []
+            for job in jobs:
+                normalized.append({
+                    "source": "CareerJet",
+                    "title": job.get("title") or job.get("position"),
+                    "company": job.get("company") or job.get("company_name"),
+                    "location": job.get("locations") or job.get("location"),
+                    "salary": job.get("salary") or job.get("salary_min") or job.get("salary_max"),
+                    "link": job.get("url") or job.get("redirect_url") or job.get("link"),  # CareerJet URLs have built-in tracking
+                })
+            return normalized
+    except Exception as e:
+        print(f"CareerJet API Connection Error: {e}")
     return []
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
@@ -246,9 +301,11 @@ def browse_job_listings(request):
                 )
             final_job_list = list(job_posts_filtered)
 
-        # Only fetch Jooble results when a search or location is active
+        # Only fetch external jobs when a search or location is active
         if search_type != 'crawl' and (search_query or location_query):
-            external_jobs = fetch_jooble_data(search_query or 'jobs', location_query)
+            jooble_jobs = fetch_jooble_data(search_query or 'jobs', location_query)
+            careerjet_jobs = fetch_careerjet_data(search_query or 'jobs', location_query)
+            external_jobs = jooble_jobs + careerjet_jobs
 
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
