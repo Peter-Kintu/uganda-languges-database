@@ -6,12 +6,13 @@
 {% block title %}Negotiate Price for {{ product.name }}{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8 md:py-12">
-    {# Main Negotiation Card #}
-    <div class="max-w-4xl mx-auto bg-gray-900 rounded-3xl shadow-2xl border border-indigo-500/30 overflow-hidden">
+<div class="min-h-screen bg-slate-950 py-10">
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        {# Main Negotiation Card #}
+        <div class="max-w-4xl mx-auto bg-slate-900/95 rounded-3xl shadow-2xl border border-indigo-500/30 overflow-hidden">
         
         {# Header Section #}
-        <header class="bg-indigo-900/40 p-6 border-b border-indigo-500/20 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <header class="bg-gradient-to-r from-blue-600/20 to-purple-700/20 p-6 border-b border-indigo-500/20 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
                     <span class="text-indigo-400">AI</span> Price Negotiator
@@ -125,9 +126,14 @@
 
 <style>
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(31, 41, 55, 0.5); }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.9); border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.95); }
+
+    #chat-window { background: rgba(15, 23, 42, 0.9); }
+    .chat-bubble-user { background: linear-gradient(135deg, #6366f1, #4338ca); }
+    .chat-bubble-bot { background: rgba(51, 65, 85, 0.9); }
+    .button-primary { transition: all 0.25s ease; }
 </style>
 
 <script>
@@ -147,7 +153,7 @@
         }
     }
 
-    window.onload = scrollToBottom;
+    window.addEventListener('load', scrollToBottom);
 
     const observer = new MutationObserver(scrollToBottom);
     if (chatWindow) {
