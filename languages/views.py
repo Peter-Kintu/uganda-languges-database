@@ -13,6 +13,7 @@ import requests
 import json
 import os
 import re
+import base64
 
 from .forms import JobPostForm
 from .models import JobPost, JOB_CATEGORIES, JOB_TYPES, Applicant 
@@ -117,8 +118,7 @@ def post_job(request):
 
 # API Credentials
 JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY") or "46f60849-92b7-4a9f-a381-709376fe6f92"
-CAREERJET_API_KEY = os.getenv("CAREERJET_API_KEY")
-CAREERJET_PUBLISHER_ID = os.getenv("CAREERJET_PUBLISHER_ID") or CAREERJET_API_KEY
+CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID", "a9927b4ab404ffaff0e637290f35b7a8")
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
 BAD_TITLE_KEYWORDS = [
@@ -161,43 +161,60 @@ def fetch_jooble_data(keywords, location="Uganda"):
     return []
 
 
-def fetch_careerjet_data(keywords, location="Uganda", user_ip="", user_agent="", referer=""):
+def fetch_careerjet_data(request, keywords, location="Uganda"):
     """
-    Fetch jobs from CareerJet. The URLs returned by CareerJet
-    have built-in tracking, so clicks are automatically attributed.
+    CareerJet v4 API - PAID VERSION
+    Must pass user_ip + user_agent + Referer or clicks won't count
     """
-    if not CAREERJET_API_KEY:
-        return []
-
-    # Use the old proven endpoint that works on Koyeb
-    url = "https://public.api.careerjet.net/search"
+    if not keywords:
+        keywords = "jobs"
+    
+    url = "https://search.api.careerjet.net/v4/query"
+    
+    # Required for tracking: real user data
+    user_ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    referer = request.build_absolute_uri()
+    
     params = {
-        "affid": CAREERJET_API_KEY,
-        "keywords": keywords or "jobs",
-        "location": location or "Uganda",
-        "pagesize": 40,
-        "page": 1,
-        "sort": "relevance"
+        'locale_code': 'en_UG',  # Use en_UG for Uganda, not en_US
+        'keywords': keywords,
+        'location': location or "Uganda",
+        'page_size': 20,
+        'user_ip': user_ip,        # MANDATORY or $0
+        'user_agent': user_agent,  # MANDATORY or $0
+    }
+    
+    # Basic auth: API key + empty password
+    credentials = base64.b64encode(f"{CAREERJET_API_KEY}:".encode()).decode()
+    headers = {
+        'Authorization': f'Basic {credentials}',
+        'Content-Type': 'application/json',
+        'Referer': referer,  # MANDATORY or $0
     }
     
     try:
-        response = requests.get(url, params=params, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
+        r = requests.get(url, params=params, headers=headers, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
             jobs = data.get("jobs", [])
             normalized = []
             for job in jobs:
                 normalized.append({
                     "source": "CareerJet",
-                    "title": job.get("title") or job.get("position"),
-                    "company": job.get("company") or job.get("company_name"),
-                    "location": job.get("locations") or job.get("location"),
-                    "salary": job.get("salary") or job.get("salary_min") or job.get("salary_max"),
-                    "link": job.get("url") or job.get("redirect_url") or job.get("link"),  # CareerJet URLs have built-in tracking
+                    "title": job.get("title"),
+                    "company": job.get("company"),
+                    "location": job.get("locations"),
+                    "salary": job.get("salary"),
+                    "link": job.get("url"),  # This URL has tracking built-in
                 })
             return normalized
+        elif r.status_code == 403:
+            print("CareerJet Error 403: Missing user_ip or user_agent")
+        else:
+            print(f"CareerJet Error {r.status_code}: {r.text}")
     except Exception as e:
-        print(f"CareerJet API Connection Error: {e}")
+        print(f"CareerJet API Error: {e}")
     return []
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
@@ -304,7 +321,7 @@ def browse_job_listings(request):
         # Only fetch external jobs when a search or location is active
         if search_type != 'crawl' and (search_query or location_query):
             jooble_jobs = fetch_jooble_data(search_query or 'jobs', location_query)
-            careerjet_jobs = fetch_careerjet_data(search_query or 'jobs', location_query)
+            careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', location_query)
             external_jobs = jooble_jobs + careerjet_jobs
 
         paginator = Paginator(final_job_list, 20)
