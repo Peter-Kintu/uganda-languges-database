@@ -35,6 +35,7 @@ urlpatterns = [
     # --- Auth & Data ---
     path('logout/', views.user_logout, name='user_logout'),    
     path('export/jobs-json/', views.export_contributions_json, name='export_contributions_json'),
+    path('go/', views.job_redirect, name='job_redirect'),
     # path("careerjet/", careerjet_jobs),
 
 ]
