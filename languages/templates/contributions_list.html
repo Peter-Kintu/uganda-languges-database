@@ -439,12 +439,19 @@
                     <p class="text-gray-400 text-sm mb-4">Salary not listed</p>
                     {% endif %}
 
-                    <a href="{{ job.link|default:'#' }}"
+                    {% if job.link %}
+                    <a href="{% url 'languages:job_redirect' %}?url={{ job.link|urlencode }}&source={{ job.source|default:'external'|urlencode }}"
                        target="_blank"
                        rel="noopener noreferrer"
                        class="w-full block text-center py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors">
                         Apply Now
                     </a>
+                    {% else %}
+                    <a href="#"
+                       class="w-full block text-center py-3 bg-gray-400 text-white font-semibold rounded-xl transition-colors cursor-not-allowed">
+                        Apply Now
+                    </a>
+                    {% endif %}
                 </div>
                 {% endfor %}
                 {% endif %}

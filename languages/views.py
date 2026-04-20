@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponse
 from django.db.models import F, Q, Count
 from django.urls import reverse
@@ -155,10 +155,21 @@ def fetch_jooble_data(keywords, location="Uganda"):
                     jobs = data.get("jobs", [])
             for job in jobs:
                 job["source"] = "Jooble"
+                job["link"] = job.get("link") or job.get("url")
             return jobs
     except Exception as e:
         print(f"Jooble API Connection Error: {e}")
     return []
+
+
+@require_GET
+def job_redirect(request):
+    job_url = request.GET.get('url')
+    source = request.GET.get('source', 'unknown')
+    print(f"External click: {source} -> {job_url}")
+    if job_url and job_url.startswith('http'):
+        return redirect(job_url)
+    return redirect('/')
 
 
 def fetch_careerjet_data(request, keywords, location="Uganda"):
