@@ -3,13 +3,14 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
 from django.db.models import Q
+from django.core.cache import cache
 from .models import Post, Comment, Like, Connection, Message, Share
 from .forms import PostForm
 from users.models import CustomUser
 from django.conf import settings
 import requests
 import json
-from google import genai
+import os
 
 @login_required
 def social_feed(request):
@@ -60,21 +61,30 @@ def social_feed(request):
     # Sort by creation date
     feed_items.sort(key=lambda x: x['created_at'], reverse=True)
     
-    # Translate feed items if requested
+    # Translate feed items if requested with batching for efficiency
     if translate_feed and target_lang != 'en':
+        # Collect unique texts to avoid duplicate API calls
+        texts_to_translate = {}
+        for item in feed_items:
+            if item['type'] == 'post' and item['item'].content:
+                content = item['item'].content
+                if content not in texts_to_translate:
+                    texts_to_translate[content] = None
+            elif item['type'] == 'share' and item['item'].caption:
+                caption = item['item'].caption
+                if caption not in texts_to_translate:
+                    texts_to_translate[caption] = None
+        
+        # Translate each unique text once
+        for text in texts_to_translate.keys():
+            texts_to_translate[text] = translate_via_gemini(text, target_lang)
+        
+        # Apply back to feed
         for item in feed_items:
             if item['type'] == 'post':
-                try:
-                    translated_content = translate_via_gemini(item['item'].content, target_lang)
-                    item['translated_content'] = translated_content
-                except:
-                    item['translated_content'] = item['item'].content
+                item['translated_content'] = texts_to_translate.get(item['item'].content, '')
             elif item['type'] == 'share':
-                try:
-                    translated_caption = translate_via_gemini(item['item'].caption or '', target_lang)
-                    item['translated_caption'] = translated_caption
-                except:
-                    item['translated_caption'] = item['item'].caption or ''
+                item['translated_caption'] = texts_to_translate.get(item['item'].caption or '', '')
     
     connections = Connection.objects.filter(
         Q(sender=request.user) | Q(receiver=request.user),
@@ -153,46 +163,97 @@ def translate_text(request):
 
 def translate_via_api(text, target_lang):
     """
-    Simple translation function using Gemini API.
+    Simple translation function using LibreTranslate.
     """
     return translate_via_gemini(text, target_lang)
 
+LIBRE_URL = "https://libretranslate.com/translate"
+LIBRE_API_KEY = os.environ.get("LIBRETRANSLATE_API_KEY", "")  # Optional: get from https://portal.libretranslate.com
+
 def translate_via_gemini(text, target_lang):
     """
-    Translate text using Google Gemini API with support for African languages.
+    Multi-service translation with fallbacks - completely free
+    Supports: sw, zu, xh, af, am, yo, ha, ar, fr, pt, es, de, it, ru, zh, ja, ko, hi
+    Falls back to browser translation for unsupported languages
     """
-    if not text or not text.strip():
+    if not text or not text.strip() or target_lang == 'en':
         return text
+
+    # Cache 7 days - social posts don't change
+    cache_key = f"translate_{hash(text)}_{target_lang}"
+    if cached := cache.get(cache_key):
+        return cached
+
+    # Supported languages across all services
+    supported = {
+        'sw', 'zu', 'xh', 'af', 'am', 'yo', 'ha', 'ar', 
+        'fr', 'pt', 'es', 'de', 'it', 'ru', 'zh', 'ja', 'ko', 'hi'
+    }
     
+    if target_lang not in supported:
+        return text # Let browser handle unsupported langs like Luganda
+
+    # Try LibreTranslate first (if API key available)
+    if LIBRE_API_KEY:
+        try:
+            request_data = {
+                "q": text[:500],
+                "source": "auto",
+                "target": target_lang,
+                "format": "text",
+                "api_key": LIBRE_API_KEY
+            }
+            res = requests.post(LIBRE_URL, json=request_data, timeout=3)
+            if res.status_code == 200:
+                translated = res.json()['translatedText']
+                cache.set(cache_key, translated, 604800)
+                return translated
+        except Exception as e:
+            print(f"LibreTranslate error: {e}")
+
+    # Fallback 1: MyMemory API (free, no key required)
     try:
-        # Initialize Gemini client
-        api_key = settings.GEMINI_API_KEY
-        if not api_key:
-            return text
+        res = requests.get('https://api.mymemory.translated.net/get', params={
+            'q': text[:500],
+            'langpair': f'en|{target_lang}'
+        }, timeout=5)
         
-        client = genai.Client(api_key=api_key)
-        
-        # Create translation prompt with African language support
-        prompt = f"""Translate the following text to {target_lang}. 
-This is a social media post, so maintain the casual, friendly tone.
-Support for African languages: Swahili (sw), Luganda (lg), Zulu (zu), Xhosa (xh), Afrikaans (af), Amharic (am), Yoruba (yo), Hausa (ha), Arabic (ar), French (fr), Portuguese (pt), etc.
-
-Return ONLY the translated text, nothing else:
-
-{text}"""
-        
-        # Call Gemini API
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt
-        )
-        
-        translated_text = response.text.strip() if response.text else text
-        return translated_text
-        
+        if res.status_code == 200:
+            data = res.json()
+            translated = data.get('responseData', {}).get('translatedText', '')
+            match_score = data.get('responseData', {}).get('match', 0)
+            
+            # Only use if translation quality is good enough (>0.5 match)
+            if translated and match_score > 0.5:
+                cache.set(cache_key, translated, 604800)
+                return translated
     except Exception as e:
-        print(f"Gemini translation error: {e}")
-        return text
+        print(f"MyMemory error: {e}")
+
+    # Fallback 2: Google Translate unofficial API (free, no key required)
+    try:
+        res = requests.get('https://translate.googleapis.com/translate_a/single', params={
+            'client': 'gtx',
+            'sl': 'en',
+            'tl': target_lang,
+            'dt': 't',
+            'q': text[:500]
+        }, timeout=5)
+        
+        if res.status_code == 200:
+            # Parse Google Translate response
+            data = res.json()
+            if data and len(data) > 0 and len(data[0]) > 0:
+                translated = data[0][0][0]  # Extract translated text
+                if translated and translated != text:
+                    cache.set(cache_key, translated, 604800)
+                    return translated
+    except Exception as e:
+        print(f"Google Translate error: {e}")
+
+    # Final fallback: return original text (browser will offer translation)
+    print(f"All translation services failed for {target_lang}, falling back to browser translation")
+    return text
 
 @login_required
 def send_message(request, user_id):
@@ -254,9 +315,11 @@ def get_recent_messages(request):
         })
     return JsonResponse({'messages': messages_data})
 
+from django.views.decorators.csrf import csrf_exempt
+
 @login_required
 def gemini_translate(request):
-    """Translate text using Google Gemini API"""
+    """Translate text using multi-service translation - completely free"""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
     
@@ -268,37 +331,113 @@ def gemini_translate(request):
         if not text:
             return JsonResponse({'error': 'Text required'}, status=400)
         
-        # Initialize Gemini client
-        api_key = settings.GEMINI_API_KEY
-        if not api_key:
-            return JsonResponse({'error': 'API key not configured'}, status=500)
+        # LibreTranslate supported codes
+        supported = {
+            'sw', 'zu', 'xh', 'af', 'am', 'yo', 'ha', 'ar', 
+            'fr', 'pt', 'es', 'de', 'it', 'ru', 'zh', 'ja', 'ko', 'hi'
+        }
         
-        client = genai.Client(api_key=api_key)
+        if target_language not in supported:
+            return JsonResponse({
+                'success': False,
+                'error': f'Language {target_language} not supported by LibreTranslate. Browser translation available.',
+                'fallback': 'browser'
+            })
         
-        # Create translation prompt
-        prompt = f"""Translate the following text to {target_language}. 
-Return ONLY the translated text, nothing else:
+        # Check cache first
+        cache_key = f"translate_{hash(text)}_{target_language}"
+        if cached := cache.get(cache_key):
+            return JsonResponse({
+                'success': True,
+                'translated': cached,
+                'source_text': text,
+                'target_language': target_language,
+                'cached': True
+            })
+        
+        # Try LibreTranslate first (if API key available)
+        if LIBRE_API_KEY:
+            try:
+                request_data = {
+                    "q": text[:500],
+                    "source": "auto",
+                    "target": target_language,
+                    "format": "text",
+                    "api_key": LIBRE_API_KEY
+                }
+                res = requests.post(LIBRE_URL, json=request_data, timeout=3)
+                if res.status_code == 200:
+                    translated = res.json()['translatedText']
+                    cache.set(cache_key, translated, 604800)
+                    return JsonResponse({
+                        'success': True,
+                        'translated': translated,
+                        'source_text': text,
+                        'target_language': target_language
+                    })
+            except Exception as e:
+                print(f"LibreTranslate error: {e}")
 
-{text}"""
-        
-        # Call Gemini API
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt
-        )
-        
-        translated_text = response.text.strip() if response.text else text
-        
+        # Fallback 1: MyMemory API
+        try:
+            res = requests.get('https://api.mymemory.translated.net/get', params={
+                'q': text[:500],
+                'langpair': f'en|{target_language}'
+            }, timeout=5)
+            
+            if res.status_code == 200:
+                data = res.json()
+                translated = data.get('responseData', {}).get('translatedText', '')
+                match_score = data.get('responseData', {}).get('match', 0)
+                
+                if translated and match_score > 0.5:
+                    cache.set(cache_key, translated, 604800)
+                    return JsonResponse({
+                        'success': True,
+                        'translated': translated,
+                        'source_text': text,
+                        'target_language': target_language
+                    })
+        except Exception as e:
+            print(f"MyMemory error: {e}")
+
+        # Fallback 2: Google Translate unofficial API
+        try:
+            res = requests.get('https://translate.googleapis.com/translate_a/single', params={
+                'client': 'gtx',
+                'sl': 'en',
+                'tl': target_language,
+                'dt': 't',
+                'q': text[:500]
+            }, timeout=5)
+            
+            if res.status_code == 200:
+                data = res.json()
+                if data and len(data) > 0 and len(data[0]) > 0:
+                    translated = data[0][0][0]
+                    if translated and translated != text:
+                        cache.set(cache_key, translated, 604800)
+                        return JsonResponse({
+                            'success': True,
+                            'translated': translated,
+                            'source_text': text,
+                            'target_language': target_language
+                        })
+        except Exception as e:
+            print(f"Google Translate error: {e}")
+
+        # All services failed - return original with browser fallback info
         return JsonResponse({
-            'success': True,
-            'translated': translated_text,
+            'success': False,
+            'error': 'All translation services temporarily unavailable. Browser translation available.',
+            'fallback': 'browser',
             'source_text': text,
             'target_language': target_language
         })
         
     except Exception as e:
-        print(f"Gemini translation error: {e}")
+        print(f"LibreTranslate error: {e}")
         return JsonResponse({
-            'error': str(e),
+            'error': 'Translation service temporarily unavailable',
             'success': False
         }, status=500)

@@ -5,6 +5,11 @@
 {% block title %}Social Feed | Africana Elite{% endblock %}
 
 {% block content %}
+    <!-- Tell browser what language the page is -->
+    <meta name="google" content="notranslate" class="notranslate">
+    
+    <!-- But allow translation of feed items only -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
     /* ═══════════════════════════════════════════════════════════════════ */
     /* WORLD-CLASS SOCIAL FEED - Premium Design v4.0                      */
@@ -1059,7 +1064,7 @@
                         </div>
 
                         <!-- Content -->
-                        <div class="post-content" data-post-id="{{ post.id }}">
+                        <div class="post-content" data-post-id="{{ post.id }}" lang="en">
                             {% if item.translated_content %}
                                 {{ item.translated_content }}
                                 <div style="font-size: 12px; color: var(--gray-500); margin-top: 4px;">
@@ -1925,6 +1930,42 @@
             window.location.href = `{% url 'hotel:social_feed' %}?translate=true&lang=${lang}`;
         }
     }
+
+    // Auto-detect user language and suggest translation
+    function initLanguageDetection() {
+        const userLang = navigator.language || navigator.userLanguage;
+        const langCode = userLang.split('-')[0]; // Get primary language code
+        
+        // Supported African languages + major languages
+        const supportedLangs = ['sw', 'zu', 'xh', 'af', 'am', 'yo', 'ha', 'ar', 'fr', 'pt', 'es', 'de', 'it', 'ru', 'zh', 'ja', 'ko', 'hi'];
+        
+        if (supportedLangs.includes(langCode) && langCode !== 'en' && !window.location.search.includes('translate=true')) {
+            // Show a subtle suggestion to translate
+            const suggestion = document.createElement('div');
+            suggestion.id = 'lang-suggestion';
+            suggestion.innerHTML = `
+                <div style="position: fixed; top: 20px; right: 20px; background: var(--primary); color: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; font-size: 14px; cursor: pointer; max-width: 300px;">
+                    🌍 Translate feed to your language?
+                    <button onclick="translateToUserLang('${langCode}')" style="margin-left: 8px; background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Translate</button>
+                    <button onclick="this.parentElement.remove()" style="margin-left: 4px; background: none; border: none; color: white; opacity: 0.7; cursor: pointer;">✕</button>
+                </div>
+            `;
+            document.body.appendChild(suggestion);
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                const el = document.getElementById('lang-suggestion');
+                if (el) el.remove();
+            }, 10000);
+        }
+    }
+
+    function translateToUserLang(lang) {
+        window.location.href = `{% url 'hotel:social_feed' %}?translate=true&lang=${lang}`;
+    }
+
+    // Initialize language detection when page loads
+    document.addEventListener('DOMContentLoaded', initLanguageDetection);
 </script>
 
 {% endblock %}
