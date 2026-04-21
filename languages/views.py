@@ -198,7 +198,7 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
     params = {
         'locale_code': 'en_GB', # en_UG doesn't exist, use en_GB
         'keywords': keywords,
-        'location': "", # Leave blank - "Uganda" triggers LOCATIONS error
+        'location': "Africa", # Target African countries including Uganda
         'page_size': 20,
         'user_ip': user_ip, # REQUIRED HERE
         'user_agent': user_agent, # REQUIRED HERE
@@ -221,6 +221,7 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
         print(f"CareerJet Status: {r.status_code}")
         if r.status_code == 200:
             data = r.json()
+            print(f"CareerJet Type: {data.get('type')}")
             if data.get('type') == 'JOBS':
                 jobs = data.get("jobs", [])
                 print(f"CareerJet Jobs Found: {len(jobs)}")
@@ -232,6 +233,44 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
                     "salary": j.get("salary"),
                     "link": j.get("url"),
                 } for j in jobs]
+            elif data.get('type') == 'LOCATIONS':
+                print(f"CareerJet Location Error: {data.get('message')}")
+                print(f"Options: {data.get('locations')}")
+                # Try Uganda specifically if Africa doesn't work
+                params['location'] = 'Uganda'
+                print("CareerJet retry: trying location='Uganda'")
+                r = requests.get(url, params=params, headers=headers, timeout=10)
+                print(f"CareerJet Retry Status: {r.status_code}")
+                if r.status_code == 200:
+                    data = r.json()
+                    if data.get('type') == 'JOBS':
+                        jobs = data.get("jobs", [])
+                        print(f"CareerJet Uganda Jobs Found: {len(jobs)}")
+                        return [{
+                            "source": "CareerJet",
+                            "title": j.get("title"),
+                            "company": j.get("company"),
+                            "location": j.get("locations"),
+                            "salary": j.get("salary"),
+                            "link": j.get("url"),
+                        } for j in jobs]
+                # If Uganda also fails, try empty location for global African jobs
+                params['location'] = ''
+                print("CareerJet final retry: trying location='' for global search")
+                r = requests.get(url, params=params, headers=headers, timeout=10)
+                if r.status_code == 200:
+                    data = r.json()
+                    if data.get('type') == 'JOBS':
+                        jobs = data.get("jobs", [])
+                        print(f"CareerJet Global Jobs Found: {len(jobs)}")
+                        return [{
+                            "source": "CareerJet",
+                            "title": j.get("title"),
+                            "company": j.get("company"),
+                            "location": j.get("locations"),
+                            "salary": j.get("salary"),
+                            "link": j.get("url"),
+                        } for j in jobs]
         else:
             print(f"CareerJet Error {r.status_code}: {r.text}")
     except Exception as e:
