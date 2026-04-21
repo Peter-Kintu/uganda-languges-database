@@ -181,98 +181,57 @@ def job_redirect(request):
 
 
 def fetch_careerjet_data(request, keywords, location="Uganda"):
-    """
-    CareerJet v4 API - PAID VERSION
-    Must pass user_ip + user_agent in headers or clicks won't count
-    """
     if not keywords:
         keywords = "jobs"
-    
-    # Keep only first keyword word - CareerJet rejects multi-word keywords
+
+    # CareerJet Uganda chokes on 2+ words
     keywords = keywords.split()[0] if keywords else "jobs"
-    
+
     url = "https://search.api.careerjet.net/v4/query"
-    
-    # Required for tracking: real user data
+
+    # Get REAL user data
     user_ip = get_client_ip(request) or ''
-    user_agent = request.META.get('HTTP_USER_AGENT') or request.META.get('User-Agent') or (
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-        '(KHTML, like Gecko) Chrome/115.0 Safari/537.36'
-    )
+    user_agent = request.META.get('HTTP_USER_AGENT', '') or 'Mozilla/5.0'
     referer = request.build_absolute_uri()
 
-    query_keywords = keywords.strip() or "jobs"
-    query_location = location.strip() if location else ""
-
+    # user_ip + user_agent MUST be query params, not headers
     params = {
-        'locale_code': 'en_GB',
-        'keywords': query_keywords,
-        'location': query_location,
+        'locale_code': 'en_GB', # en_UG doesn't exist, use en_GB
+        'keywords': keywords,
+        'location': "", # Leave blank - "Uganda" triggers LOCATIONS error
         'page_size': 20,
+        'user_ip': user_ip, # REQUIRED HERE
+        'user_agent': user_agent, # REQUIRED HERE
     }
-    
-    # Basic auth: API key + empty password
+
     credentials = base64.b64encode(f"{CAREERJET_API_KEY}:".encode()).decode()
-    # FIXED: Send user_ip and user_agent in headers, not params
+
+    # Headers: only Referer + User-Agent, no user_ip/user_agent
     headers = {
         'Authorization': f'Basic {credentials}',
         'Content-Type': 'application/json',
         'Referer': referer,
         'User-Agent': user_agent,
-        'user_ip': user_ip,
-        'user_agent': user_agent,
     }
 
-    print(f"CareerJet request user_ip={user_ip!r} user_agent={user_agent!r}")
     print(f"CareerJet params={params}")
-    print(f"CareerJet headers={headers}")
-
-    def normalize_jobs(data):
-        normalized = []
-        for job in data.get("jobs", []):
-            normalized.append({
-                "source": "CareerJet",
-                "title": job.get("title"),
-                "company": job.get("company"),
-                "location": job.get("locations"),
-                "salary": job.get("salary"),
-                "link": job.get("url"),
-            })
-        return normalized
 
     try:
         r = requests.get(url, params=params, headers=headers, timeout=10)
         print(f"CareerJet Status: {r.status_code}")
         if r.status_code == 200:
             data = r.json()
-            print(f"CareerJet Type: {data.get('type')}")
-            if data.get('type') == 'LOCATIONS':
-                print(f"CareerJet Location Error: {data.get('message')}")
-                print(f"Options: {data.get('locations')}")
-                if params['location']:
-                    params['location'] = ""
-                    if location and "uganda" not in params['keywords'].lower():
-                        params['keywords'] = f"{params['keywords']} {location}".strip()
-                    print("CareerJet retry: switching location='' and preserving keywords.")
-                    r = requests.get(url, params=params, headers=headers, timeout=10)
-                    print(f"CareerJet Retry Status: {r.status_code}")
-                    if r.status_code == 200:
-                        data = r.json()
-                    else:
-                        print(f"CareerJet Retry Error {r.status_code}: {r.text}")
-                        return []
-                else:
-                    return []
-
-            if data.get('type') == 'LOCATIONS':
-                print("CareerJet still returned LOCATIONS after retry.")
-                return []
-
-            jobs = data.get("jobs", [])
-            print(f"CareerJet Jobs Found: {len(jobs)}")
-            return normalize_jobs(data)
-        elif r.status_code == 403:
-            print("CareerJet Error 403: Missing user_ip or user_agent")
+            if data.get('type') == 'JOBS':
+                jobs = data.get("jobs", [])
+                print(f"CareerJet Jobs Found: {len(jobs)}")
+                return [{
+                    "source": "CareerJet",
+                    "title": j.get("title"),
+                    "company": j.get("company"),
+                    "location": j.get("locations"),
+                    "salary": j.get("salary"),
+                    "link": j.get("url"),
+                } for j in jobs]
         else:
             print(f"CareerJet Error {r.status_code}: {r.text}")
     except Exception as e:
@@ -300,7 +259,6 @@ def get_client_ip(request):
         return ip.strip()
     return request.META.get('REMOTE_ADDR', '').strip()
 
-@login_required
 def browse_job_listings(request):
     job_id = request.GET.get('job_id')
     selected_job = None
