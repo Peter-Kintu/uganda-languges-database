@@ -304,3 +304,11 @@ LOGGING = {
         },
     },
 }
+
+# --- CACHING CONFIGURATION ---
+# Required for LibreTranslate caching to avoid repeated API calls
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
