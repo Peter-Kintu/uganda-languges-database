@@ -183,8 +183,11 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
     url = "https://search.api.careerjet.net/v4/query"
     
     # Required for tracking: real user data
-    user_ip = get_client_ip(request)
-    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    user_ip = get_client_ip(request) or ''
+    user_agent = request.META.get('HTTP_USER_AGENT') or request.META.get('User-Agent') or (
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/115.0 Safari/537.36'
+    )
     referer = request.build_absolute_uri()
 
     query_keywords = keywords.strip() or "jobs"
@@ -212,7 +215,12 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
         'Authorization': f'Basic {credentials}',
         'Content-Type': 'application/json',
         'Referer': referer,
+        'User-Agent': user_agent,
     }
+
+    print(f"CareerJet request user_ip={user_ip!r} user_agent={user_agent!r}")
+    print(f"CareerJet params={params}")
+    print(f"CareerJet headers={{'Referer': referer, 'User-Agent': user_agent}}")
 
     def normalize_jobs(data):
         normalized = []
@@ -279,10 +287,13 @@ def get_exchange_rate(from_curr, to_curr="UGX"):
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
+        ip = x_forwarded_for.split(',')[0].strip()
+        if ip:
+            return ip
+    ip = request.META.get('HTTP_X_REAL_IP') or request.META.get('HTTP_CLIENT_IP')
+    if ip:
+        return ip.strip()
+    return request.META.get('REMOTE_ADDR', '').strip()
 
 @login_required
 def browse_job_listings(request):
