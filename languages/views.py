@@ -131,7 +131,15 @@ BAD_TITLES_EXACT = ['hiring', 'we are hiring', 'is for hiring', 'jobs', 'job', '
 def fetch_jooble_data(keywords, location="Uganda"):
     api_key = JOOBLE_API_KEY
     url = f"https://jooble.org/api/{api_key}"
-    headers = {"Content-Type": "application/json"}
+    # Cloudflare bypass headers
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
     api_location = ""
     if location and location.strip() and location.strip().lower() != "uganda":
         api_location = location
@@ -175,10 +183,13 @@ def job_redirect(request):
 def fetch_careerjet_data(request, keywords, location="Uganda"):
     """
     CareerJet v4 API - PAID VERSION
-    Must pass user_ip + user_agent + Referer or clicks won't count
+    Must pass user_ip + user_agent in headers or clicks won't count
     """
     if not keywords:
         keywords = "jobs"
+    
+    # Keep only first keyword word - CareerJet rejects multi-word keywords
+    keywords = keywords.split()[0] if keywords else "jobs"
     
     url = "https://search.api.careerjet.net/v4/query"
     
@@ -191,36 +202,30 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
     referer = request.build_absolute_uri()
 
     query_keywords = keywords.strip() or "jobs"
-    query_location = location.strip() if location else "Uganda"
-
-    # CareerJet often returns type=LOCATIONS for Uganda.
-    # Use the closest supported locale and prefer a global search for Uganda.
-    if query_location.lower() == "uganda":
-        query_location = ""
-        if "uganda" not in query_keywords.lower():
-            query_keywords = f"{query_keywords} Uganda".strip()
+    query_location = location.strip() if location else ""
 
     params = {
         'locale_code': 'en_GB',
         'keywords': query_keywords,
         'location': query_location,
         'page_size': 20,
-        'user_ip': user_ip,
-        'user_agent': user_agent,
     }
     
     # Basic auth: API key + empty password
     credentials = base64.b64encode(f"{CAREERJET_API_KEY}:".encode()).decode()
+    # FIXED: Send user_ip and user_agent in headers, not params
     headers = {
         'Authorization': f'Basic {credentials}',
         'Content-Type': 'application/json',
         'Referer': referer,
         'User-Agent': user_agent,
+        'user_ip': user_ip,
+        'user_agent': user_agent,
     }
 
     print(f"CareerJet request user_ip={user_ip!r} user_agent={user_agent!r}")
     print(f"CareerJet params={params}")
-    print(f"CareerJet headers={{'Referer': referer, 'User-Agent': user_agent}}")
+    print(f"CareerJet headers={headers}")
 
     def normalize_jobs(data):
         normalized = []

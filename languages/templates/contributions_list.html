@@ -422,18 +422,18 @@
                 {% if external_jobs %}
                 {% for job in external_jobs %}
                 {% if job.source == 'Jooble' %}
-                <!-- JOOBLE CARD - Vibrant Teal/Cyan for Debugging -->
-                <div class="bg-white border-2 border-cyan-300 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:shadow-cyan-200/50 transition-all bg-gradient-to-br from-cyan-50 to-white">
+                <!-- JOOBLE CARD - Deep Navy/Professional Blue for Debugging -->
+                <div class="bg-white border-2 border-blue-400 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:shadow-blue-200/50 transition-all bg-gradient-to-br from-blue-50 to-white">
                     <div class="flex justify-between items-start mb-4">
-                        <span class="px-3 py-1 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-xs font-bold rounded-full border border-cyan-400 shadow-md shadow-cyan-300/30">
-                            ⚡ Jooble
+                        <span class="px-3 py-1 bg-gradient-to-r from-blue-600 to-blue-800 text-white text-xs font-bold rounded-full border border-blue-500 shadow-md shadow-blue-300/30">
+                            🔧 Jooble
                         </span>
                     </div>
 
                     <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight line-clamp-2">
                         {{ job.title|default:'Job opportunity' }}
                     </h3>
-                    <p class="text-cyan-700 font-medium text-sm mb-1">{{ job.company|default:'Top employer' }}</p>
+                    <p class="text-blue-700 font-medium text-sm mb-1">{{ job.company|default:'Top employer' }}</p>
                     <p class="text-gray-500 text-xs mb-2">{{ job.location|default:'Uganda' }}</p>
                     {% if job.salary %}
                     <p class="text-green-600 font-semibold text-sm mb-4">{{ job.salary }}</p>
@@ -442,18 +442,18 @@
                     {% endif %}
 
                 {% elif job.source == 'CareerJet' %}
-                <!-- CAREERJET CARD - Deep Navy/Professional Blue for Debugging -->
-                <div class="bg-white border-2 border-blue-400 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:shadow-blue-200/50 transition-all bg-gradient-to-br from-blue-50 to-white">
+                <!-- CAREERJET CARD - Vibrant Teal/Cyan for Debugging -->
+                <div class="bg-white border-2 border-cyan-300 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:shadow-cyan-200/50 transition-all bg-gradient-to-br from-cyan-50 to-white">
                     <div class="flex justify-between items-start mb-4">
-                        <span class="px-3 py-1 bg-gradient-to-r from-blue-600 to-blue-800 text-white text-xs font-bold rounded-full border border-blue-500 shadow-md shadow-blue-300/30">
-                            🚀 CareerJet
+                        <span class="px-3 py-1 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-xs font-bold rounded-full border border-cyan-400 shadow-md shadow-cyan-300/30">
+                            ⚡ CareerJet
                         </span>
                     </div>
 
                     <h3 class="text-lg font-bold text-gray-900 mb-2 leading-tight line-clamp-2">
                         {{ job.title|default:'Job opportunity' }}
                     </h3>
-                    <p class="text-blue-700 font-medium text-sm mb-1">{{ job.company|default:'Top employer' }}</p>
+                    <p class="text-cyan-700 font-medium text-sm mb-1">{{ job.company|default:'Top employer' }}</p>
                     <p class="text-gray-500 text-xs mb-2">{{ job.location|default:'Uganda' }}</p>
                     {% if job.salary %}
                     <p class="text-green-600 font-semibold text-sm mb-4">{{ job.salary }}</p>
@@ -488,15 +488,15 @@
                     <a href="{% url 'languages:job_redirect' %}?url={{ job.link|urlencode }}&source={{ job.source|default:'external'|urlencode }}"
                        target="_blank"
                        rel="noopener noreferrer"
-                       class="w-full block text-center py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-cyan-300/30 hover:shadow-lg hover:shadow-cyan-400/40">
-                        ⚡ Apply on Jooble
+                       class="w-full block text-center py-3 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold rounded-xl transition-all shadow-md shadow-blue-400/30 hover:shadow-lg hover:shadow-blue-500/40">
+                        🔧 Apply on Jooble
                     </a>
                     {% elif job.source == 'CareerJet' %}
                     <a href="{% url 'languages:job_redirect' %}?url={{ job.link|urlencode }}&source={{ job.source|default:'external'|urlencode }}"
                        target="_blank"
                        rel="noopener noreferrer"
-                       class="w-full block text-center py-3 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold rounded-xl transition-all shadow-md shadow-blue-400/30 hover:shadow-lg hover:shadow-blue-500/40">
-                        🚀 Apply on CareerJet
+                       class="w-full block text-center py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-cyan-300/30 hover:shadow-lg hover:shadow-cyan-400/40">
+                        ⚡ Apply on CareerJet
                     </a>
                     {% else %}
                     <a href="{% url 'languages:job_redirect' %}?url={{ job.link|urlencode }}&source={{ job.source|default:'external'|urlencode }}"
