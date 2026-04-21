@@ -382,7 +382,7 @@ def browse_job_listings(request):
         if search_type != 'crawl' and (search_query or location_query):
             jooble_jobs = fetch_jooble_data(search_query or 'jobs', location_query)
             careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', location_query)
-            external_jobs = jooble_jobs + careerjet_jobs
+            external_jobs = careerjet_jobs + jooble_jobs
 
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
