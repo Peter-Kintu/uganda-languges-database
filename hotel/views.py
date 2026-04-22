@@ -17,6 +17,10 @@ def social_feed(request):
     # 1. Get the Filter Type from URL parameters (e.g., ?type=images)
     feed_type = request.GET.get('type', 'all')
     
+    # Translation parameters
+    translate_feed = request.GET.get('translate', 'false').lower() == 'true'
+    target_lang = request.GET.get('lang', getattr(request.user, 'language', 'en'))
+    
     # 2. Get standard posts (from connections)
     connected_users = Connection.objects.filter(
         Q(sender=request.user) | Q(receiver=request.user),
@@ -64,6 +68,13 @@ def social_feed(request):
                 final_feed.append(partner_posts[p_idx])
             p_idx += 1
 
+    # Translate posts if requested
+    if translate_feed and target_lang != 'en':
+        for post in final_feed:
+            if post.content:  # Only translate if there's text
+                post.translated_content = translate_smart(post.content, target_lang)
+                post.is_translated = True
+
     connections = Connection.objects.filter(
         Q(sender=request.user) | Q(receiver=request.user),
         status='accepted'
@@ -74,6 +85,8 @@ def social_feed(request):
         'connections': connections,
         'all_users': all_users,
         'current_filter': feed_type,
+        'translate_feed': translate_feed,
+        'current_lang': target_lang,
     }
     return render(request, 'hotel/social_feed.html', context)
 
@@ -131,118 +144,100 @@ def accept_connection(request, connection_id):
     messages.success(request, f'Connected with {connection.sender.username}!')
     return redirect('hotel:social_feed')
 
-@login_required
-def translate_text(request):
-    text = request.GET.get('text', '')
-    target_lang = request.user.language or 'en'
-    translated = translate_via_api(text, target_lang)
-    return JsonResponse({'translated': translated})
+# ═════════════════════════════════════════════════════════════════════════════
+# TRANSLATION CONFIGURATION - NLLB + LibreTranslate
+# ═════════════════════════════════════════════════════════════════════════════
 
-def translate_via_api(text, target_lang):
-    """
-    Simple translation function using LibreTranslate.
-    """
-    return translate_via_gemini(text, target_lang)
-
+NLLB_URL = os.getenv("NLLB_API_URL")  # https://sing-sjf2.onrender.com/translate
 LIBRE_URL = "https://libretranslate.com/translate"
-LIBRE_API_KEY = os.environ.get("LIBRETRANSLATE_API_KEY", "")  # Optional: get from https://portal.libretranslate.com
 
-def translate_via_gemini(text, target_lang):
+# NLLB handles these African languages - LibreTranslate doesn't support well
+NLLB_LANGS = {
+    # Uganda
+    'lg', 'nyn', 'ach', 'lgg', 'teo', 'xog', 'ttj', 'nyo', 'laj', 'alz',
+    # East Africa
+    'sw', 'zu', 'xh', 'yo', 'ha', 'am', 'luo', 'luy', 'kam', 'ki',
+    # East/Southern Africa  
+    'rw', 'rn', 'so', 'om', 'ti', 'st', 'nso', 'tn', 'ss', 've', 'nr',
+    # West/Central/South Africa
+    'ny', 'sn', 'tw', 'ak', 'ee', 'fon', 'ln', 'kg', 'mg'
+}
+
+def translate_smart(text, target_lang, source_lang='en'):
     """
-    Multi-service translation with fallbacks - completely free
-    Supports: sw, zu, xh, af, am, yo, ha, ar, fr, pt, es, de, it, ru, zh, ja, ko, hi
-    Falls back to browser translation for unsupported languages
+    Intelligent translation routing:
+    1. NLLB for African languages (Luganda, Swahili, Zulu, etc.)
+    2. LibreTranslate for EU/Asian languages (French, Spanish, etc.)
+    3. 7-day caching to save API calls
+    4. Graceful fallbacks on errors
     """
-    if not text or not text.strip() or target_lang == 'en':
+    # Early returns for no-ops
+    if not text or not text.strip() or target_lang == source_lang or target_lang == 'en':
         return text
 
-    # Cache 7 days - social posts don't change
-    cache_key = f"translate_{hash(text)}_{target_lang}"
+    # Cache hit = instant return, saves API calls
+    cache_key = f"trans_{hash(text)}_{source_lang}_{target_lang}"
     if cached := cache.get(cache_key):
         return cached
 
-    # Supported languages across all services - Expanded to include ALL African languages
-    supported = {
-        # East Africa
-        'sw', 'lg', 'ki', 'luo', 'kam', 'dav', 'ebu', 'mer', 'so', 'am', 'om', 'ti', 'aa',
-        # West Africa  
-        'yo', 'ha', 'ig', 'bin', 'efi', 'ibb', 'tiv', 'nup', 'kr', 'ff', 'wo', 'mnk', 'bm', 'son', 'tw', 'ee', 'gaa', 'dag', 'mos',
-        # Central Africa
-        'ln', 'kg', 'lua', 'sg',
-        # Southern Africa
-        'zu', 'xh', 'af', 'st', 'tn', 'nso', 'ts', 've', 'ss', 'nr', 'hz', 'naq', 'ktz',
-        # North Africa
-        'ar', 'kab', 'tzm', 'cop',
-        # Other African
-        'mas', 'tuv', 'saq', 'rel', 'gax', 'orc',
-        # Major world languages (keeping for completeness)
-        'fr', 'pt', 'es', 'de', 'it', 'ru', 'zh', 'ja', 'ko', 'hi'
-    }
-    
-    if target_lang not in supported:
-        return text # Let browser handle unsupported langs like Luganda
+    translated = text
 
-    # Try LibreTranslate first (if API key available)
-    if LIBRE_API_KEY:
+    # ═══════════════════════════════════════════════════════════════════════════
+    # ROUTE 1: African languages → Your NLLB on Render
+    # ═══════════════════════════════════════════════════════════════════════════
+    if target_lang in NLLB_LANGS and NLLB_URL:
         try:
-            request_data = {
-                "q": text[:500],
-                "source": "auto",
+            r = requests.post(NLLB_URL, json={
+                "text": text[:500],
                 "target": target_lang,
-                "format": "text",
-                "api_key": LIBRE_API_KEY
-            }
-            res = requests.post(LIBRE_URL, json=request_data, timeout=3)
-            if res.status_code == 200:
-                translated = res.json()['translatedText']
-                cache.set(cache_key, translated, 604800)
+                "source": source_lang
+            }, timeout=12)
+            if r.status_code == 200:
+                translated = r.json().get('translated', text)
+                cache.set(cache_key, translated, 604800)  # 7 days
                 return translated
+            else:
+                print(f"NLLB error {r.status_code}: {r.text[:100]}")
         except Exception as e:
-            print(f"LibreTranslate error: {e}")
+            print(f"NLLB failed: {e}, falling back to LibreTranslate")
+            # Fall through to LibreTranslate for retry
 
-    # Fallback 1: MyMemory API (free, no key required)
+    # ═══════════════════════════════════════════════════════════════════════════
+    # ROUTE 2: Everything else → LibreTranslate (free, no key required)
+    # ═══════════════════════════════════════════════════════════════════════════
     try:
-        res = requests.get('https://api.mymemory.translated.net/get', params={
-            'q': text[:500],
-            'langpair': f'en|{target_lang}'
-        }, timeout=5)
-        
+        res = requests.post(LIBRE_URL, json={
+            "q": text[:500],
+            "source": source_lang,
+            "target": target_lang,
+            "format": "text"
+        }, timeout=4)
         if res.status_code == 200:
-            data = res.json()
-            translated = data.get('responseData', {}).get('translatedText', '')
-            match_score = data.get('responseData', {}).get('match', 0)
-            
-            # Only use if translation quality is good enough (>0.5 match)
-            if translated and match_score > 0.5:
-                cache.set(cache_key, translated, 604800)
-                return translated
+            translated = res.json().get('translatedText', text)
+            cache.set(cache_key, translated, 604800)  # 7 days
+            return translated
+        else:
+            print(f"LibreTranslate error {res.status_code}")
     except Exception as e:
-        print(f"MyMemory error: {e}")
+        print(f"LibreTranslate failed: {e}")
 
-    # Fallback 2: Google Translate unofficial API (free, no key required)
-    try:
-        res = requests.get('https://translate.googleapis.com/translate_a/single', params={
-            'client': 'gtx',
-            'sl': 'en',
-            'tl': target_lang,
-            'dt': 't',
-            'q': text[:500]
-        }, timeout=5)
-        
-        if res.status_code == 200:
-            # Parse Google Translate response
-            data = res.json()
-            if data and len(data) > 0 and len(data[0]) > 0:
-                translated = data[0][0][0]  # Extract translated text
-                if translated and translated != text:
-                    cache.set(cache_key, translated, 604800)
-                    return translated
-    except Exception as e:
-        print(f"Google Translate error: {e}")
-
-    # Final fallback: return original text (browser will offer translation)
-    print(f"All translation services failed for {target_lang}, falling back to browser translation")
+    # Final fallback: return original text
+    # Browser will offer Chrome/Safari automatic translation as backup
+    print(f"Translation failed for {target_lang}, returning original")
     return text
+
+@login_required
+def translate_text(request):
+    """API endpoint for translating text"""
+    text = request.GET.get('text', '')
+    target_lang = request.GET.get('target_lang', request.user.language or 'en')
+    source_lang = request.GET.get('source_lang', 'en')
+    
+    if not text:
+        return JsonResponse({'error': 'Text required'}, status=400)
+    
+    translated = translate_smart(text, target_lang, source_lang)
+    return JsonResponse({'translated': translated})
 
 @login_required
 def send_message(request, user_id):
@@ -304,11 +299,9 @@ def get_recent_messages(request):
         })
     return JsonResponse({'messages': messages_data})
 
-from django.views.decorators.csrf import csrf_exempt
-
 @login_required
 def gemini_translate(request):
-    """Translate text using multi-service translation - completely free"""
+    """Translate text using dual-service translation (NLLB + LibreTranslate)"""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
     
@@ -316,25 +309,13 @@ def gemini_translate(request):
         data = json.loads(request.body)
         text = data.get('text', '')
         target_language = data.get('target_language', 'en')
+        source_language = data.get('source_language', 'en')
         
         if not text:
             return JsonResponse({'error': 'Text required'}, status=400)
         
-        # LibreTranslate supported codes
-        supported = {
-            'sw', 'zu', 'xh', 'af', 'am', 'yo', 'ha', 'ar', 
-            'fr', 'pt', 'es', 'de', 'it', 'ru', 'zh', 'ja', 'ko', 'hi'
-        }
-        
-        if target_language not in supported:
-            return JsonResponse({
-                'success': False,
-                'error': f'Language {target_language} not supported by LibreTranslate. Browser translation available.',
-                'fallback': 'browser'
-            })
-        
         # Check cache first
-        cache_key = f"translate_{hash(text)}_{target_language}"
+        cache_key = f"trans_{hash(text)}_{source_language}_{target_language}"
         if cached := cache.get(cache_key):
             return JsonResponse({
                 'success': True,
@@ -344,89 +325,29 @@ def gemini_translate(request):
                 'cached': True
             })
         
-        # Try LibreTranslate first (if API key available)
-        if LIBRE_API_KEY:
-            try:
-                request_data = {
-                    "q": text[:500],
-                    "source": "auto",
-                    "target": target_language,
-                    "format": "text",
-                    "api_key": LIBRE_API_KEY
-                }
-                res = requests.post(LIBRE_URL, json=request_data, timeout=3)
-                if res.status_code == 200:
-                    translated = res.json()['translatedText']
-                    cache.set(cache_key, translated, 604800)
-                    return JsonResponse({
-                        'success': True,
-                        'translated': translated,
-                        'source_text': text,
-                        'target_language': target_language
-                    })
-            except Exception as e:
-                print(f"LibreTranslate error: {e}")
-
-        # Fallback 1: MyMemory API
-        try:
-            res = requests.get('https://api.mymemory.translated.net/get', params={
-                'q': text[:500],
-                'langpair': f'en|{target_language}'
-            }, timeout=5)
-            
-            if res.status_code == 200:
-                data = res.json()
-                translated = data.get('responseData', {}).get('translatedText', '')
-                match_score = data.get('responseData', {}).get('match', 0)
-                
-                if translated and match_score > 0.5:
-                    cache.set(cache_key, translated, 604800)
-                    return JsonResponse({
-                        'success': True,
-                        'translated': translated,
-                        'source_text': text,
-                        'target_language': target_language
-                    })
-        except Exception as e:
-            print(f"MyMemory error: {e}")
-
-        # Fallback 2: Google Translate unofficial API
-        try:
-            res = requests.get('https://translate.googleapis.com/translate_a/single', params={
-                'client': 'gtx',
-                'sl': 'en',
-                'tl': target_language,
-                'dt': 't',
-                'q': text[:500]
-            }, timeout=5)
-            
-            if res.status_code == 200:
-                data = res.json()
-                if data and len(data) > 0 and len(data[0]) > 0:
-                    translated = data[0][0][0]
-                    if translated and translated != text:
-                        cache.set(cache_key, translated, 604800)
-                        return JsonResponse({
-                            'success': True,
-                            'translated': translated,
-                            'source_text': text,
-                            'target_language': target_language
-                        })
-        except Exception as e:
-            print(f"Google Translate error: {e}")
-
-        # All services failed - return original with browser fallback info
-        return JsonResponse({
-            'success': False,
-            'error': 'All translation services temporarily unavailable. Browser translation available.',
-            'fallback': 'browser',
-            'source_text': text,
-            'target_language': target_language
-        })
+        # Use new smart translator
+        translated = translate_smart(text, target_language, source_language)
         
-    except Exception as e:
-        print(f"LibreTranslate error: {e}")
+        if translated == text and target_language != 'en':
+            # Translation failed or returned original
+            return JsonResponse({
+                'success': False,
+                'error': f'Translation to {target_language} failed. Browser translation available.',
+                'fallback': 'browser',
+                'original_text': text
+            })
+        
         return JsonResponse({
-            'error': 'Translation service temporarily unavailable',
-            'success': False
-        }, status=500)
+            'success': True,
+            'translated': translated,
+            'source_text': text,
+            'target_language': target_language,
+            'source_language': source_language,
+            'cached': False
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        print(f"Translation error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

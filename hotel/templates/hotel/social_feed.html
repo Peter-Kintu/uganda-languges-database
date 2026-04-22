@@ -1087,19 +1087,14 @@
 
                         <!-- Content -->
                         <div class="post-content" data-post-id="{{ post.id }}" lang="en">
-                            {% if post.content %}
-                                {{ post.content }}
+                            {% if post.is_translated and post.translated_content %}
+                                {{ post.translated_content }}
                                 <div style="font-size: 12px; color: var(--gray-500); margin-top: 4px;">
-                                    <em>Translated from English</em>
+                                    <em>Translated from English to {{ current_lang }}</em>
                                 </div>
                             {% else %}
-                            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')">
-                                <span>✉️</span>
-                                <span>Message</span>
-                            </button>
                                 {{ post.content }}
                             {% endif %}
-            
                         </div>
 
                         <!-- Image -->
