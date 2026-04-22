@@ -14,89 +14,66 @@ import os
 
 @login_required
 def social_feed(request):
-    # Check if user wants to translate the entire feed
-    translate_feed = request.GET.get('translate', 'false').lower() == 'true'
-    target_lang = request.GET.get('lang', request.user.language or 'en')
+    # 1. Get the Filter Type from URL parameters (e.g., ?type=images)
+    feed_type = request.GET.get('type', 'all')
     
-    # Get user's connections
+    # 2. Get standard posts (from connections)
     connected_users = Connection.objects.filter(
         Q(sender=request.user) | Q(receiver=request.user),
         status='accepted'
     ).values_list('sender', 'receiver')
     
-    # Flatten the list and remove duplicates, excluding current user
-    connected_user_ids = set()
-    for sender, receiver in connected_users:
-        if sender != request.user.id:
-            connected_user_ids.add(sender)
-        if receiver != request.user.id:
-            connected_user_ids.add(receiver)
-    
-    # Include the current user
+    connected_user_ids = {u for sub in connected_users for u in sub}
     connected_user_ids.add(request.user.id)
     
-    # Get posts from user and connections - OR show all posts for public feed
-    posts = Post.objects.all().order_by('-created_at')[:50]  # Show recent posts from everyone
-    
-    # Get shares from user and connections
-    shares = Share.objects.all().order_by('-created_at')[:20]
-    
-    # Combine posts and shares into a single feed
-    feed_items = []
-    
-    for post in posts:
-        feed_items.append({
-            'type': 'post',
-            'item': post,
-            'created_at': post.created_at
-        })
-    
-    for share in shares:
-        feed_items.append({
-            'type': 'share',
-            'item': share,
-            'created_at': share.created_at
-        })
-    
-    # Sort by creation date
-    feed_items.sort(key=lambda x: x['created_at'], reverse=True)
-    
-    # Translate feed items if requested with batching for efficiency
-    if translate_feed and target_lang != 'en':
-        # Collect unique texts to avoid duplicate API calls
-        texts_to_translate = {}
-        for item in feed_items:
-            if item['type'] == 'post' and item['item'].content:
-                content = item['item'].content
-                if content not in texts_to_translate:
-                    texts_to_translate[content] = None
-            elif item['type'] == 'share' and item['item'].caption:
-                caption = item['item'].caption
-                if caption not in texts_to_translate:
-                    texts_to_translate[caption] = None
+    # Base querysets
+    regular_posts_query = Post.objects.filter(author_id__in=connected_user_ids).order_by('-created_at')
+    partner_posts_query = Post.objects.filter(author__user_type='investor', author__is_approved=True).order_by('-created_at')
+
+    # 3. Apply Filtering Logic to BOTH querysets
+    if feed_type == 'text':
+        # Posts with no images and no location
+        filter_q = Q(image__isnull=True) & (Q(location__isnull=True) | Q(location=''))
+        regular_posts_query = regular_posts_query.filter(filter_q)
+        partner_posts_query = partner_posts_query.filter(filter_q)
         
-        # Translate each unique text once
-        for text in texts_to_translate.keys():
-            texts_to_translate[text] = translate_via_gemini(text, target_lang)
+    elif feed_type == 'images':
+        # Posts that HAVE images
+        regular_posts_query = regular_posts_query.exclude(image__isnull=True)
+        partner_posts_query = partner_posts_query.exclude(image__isnull=True)
         
-        # Apply back to feed
-        for item in feed_items:
-            if item['type'] == 'post':
-                item['translated_content'] = texts_to_translate.get(item['item'].content, '')
-            elif item['type'] == 'share':
-                item['translated_caption'] = texts_to_translate.get(item['item'].caption or '', '')
+    elif feed_type == 'location':
+        # Posts that HAVE location data
+        regular_posts_query = regular_posts_query.exclude(location__isnull=True).exclude(location='')
+        partner_posts_query = partner_posts_query.exclude(location__isnull=True).exclude(location='')
+
+    # 4. Interleave Logic (Invisible to user)
+    regular_posts = list(regular_posts_query)
+    partner_posts = list(partner_posts_query)
     
+    final_feed = []
+    p_idx = 0  # Counter for partner posts
+    
+    for i, post in enumerate(regular_posts):
+        final_feed.append(post)
+        # Every 3 posts, inject 1 partner post if available
+        if (i + 1) % 3 == 0 and p_idx < len(partner_posts):
+            # Check to ensure we don't duplicate the same post if the partner 
+            # is also a connection of the user
+            if partner_posts[p_idx] not in final_feed:
+                final_feed.append(partner_posts[p_idx])
+            p_idx += 1
+
     connections = Connection.objects.filter(
         Q(sender=request.user) | Q(receiver=request.user),
         status='accepted'
     )
     all_users = CustomUser.objects.exclude(id=request.user.id)
     context = {
-        'feed_items': feed_items,
+        'posts': final_feed,
         'connections': connections,
         'all_users': all_users,
-        'translate_feed': translate_feed,
-        'current_lang': target_lang,
+        'current_filter': feed_type,
     }
     return render(request, 'hotel/social_feed.html', context)
 
@@ -184,9 +161,21 @@ def translate_via_gemini(text, target_lang):
     if cached := cache.get(cache_key):
         return cached
 
-    # Supported languages across all services
+    # Supported languages across all services - Expanded to include ALL African languages
     supported = {
-        'sw', 'zu', 'xh', 'af', 'am', 'yo', 'ha', 'ar', 
+        # East Africa
+        'sw', 'lg', 'ki', 'luo', 'kam', 'dav', 'ebu', 'mer', 'so', 'am', 'om', 'ti', 'aa',
+        # West Africa  
+        'yo', 'ha', 'ig', 'bin', 'efi', 'ibb', 'tiv', 'nup', 'kr', 'ff', 'wo', 'mnk', 'bm', 'son', 'tw', 'ee', 'gaa', 'dag', 'mos',
+        # Central Africa
+        'ln', 'kg', 'lua', 'sg',
+        # Southern Africa
+        'zu', 'xh', 'af', 'st', 'tn', 'nso', 'ts', 've', 'ss', 'nr', 'hz', 'naq', 'ktz',
+        # North Africa
+        'ar', 'kab', 'tzm', 'cop',
+        # Other African
+        'mas', 'tuv', 'saq', 'rel', 'gax', 'orc',
+        # Major world languages (keeping for completeness)
         'fr', 'pt', 'es', 'de', 'it', 'ru', 'zh', 'ja', 'ko', 'hi'
     }
     
