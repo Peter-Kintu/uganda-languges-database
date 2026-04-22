@@ -1013,12 +1013,34 @@
             {% endif %}
             <button class="btn-header" onclick="openLanguageModal()">🗣️ Languages</button>
             <a href="{% url 'hotel:create_post' %}" class="btn-header">✍️ Create Post</a>
+
+            {% if user.user_type == 'investor' and user.is_approved %}
+                <a href="{% url 'hotel:create_post' %}" class="btn-header" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;">
+                    💎 Partner Post
+                </a>
+            {% endif %}
         </div>
     </div>
     <div class="header-search">
         <input id="people-search" type="search" placeholder="Search people by name or username..." oninput="filterRecipientOptions()" />
         <button class="btn-header" onclick="openMessageModal()">✉️ Direct Message</button>
     </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar border-b border-gray-100">
+    <a href="?type=all" class="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all {% if current_filter == 'all' or not current_filter %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200{% endif %}">
+        🌐 All
+    </a>
+    <a href="?type=text" class="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all {% if current_filter == 'text' %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200{% endif %}">
+        ✍️ Text
+    </a>
+    <a href="?type=images" class="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all {% if current_filter == 'images' %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200{% endif %}">
+        📸 Images
+    </a>
+    <a href="?type=location" class="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all {% if current_filter == 'location' %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200{% endif %}">
+        📍 Location
+    </a>
 </div>
 
 <!-- Main Container -->
@@ -1046,10 +1068,10 @@
         </div>
 
         <!-- Posts Feed -->
-        {% if feed_items %}
-            {% for item in feed_items %}
-                {% if item.type == 'post' %}
-                    {% with post=item.item %}
+        {% if posts %}
+            {% for post in posts %}
+
+
                     <div class="post-card">
                         <!-- Header -->
                         <div class="post-header">
@@ -1065,8 +1087,8 @@
 
                         <!-- Content -->
                         <div class="post-content" data-post-id="{{ post.id }}" lang="en">
-                            {% if item.translated_content %}
-                                {{ item.translated_content }}
+                            {% if post.content %}
+                                {{ post.content }}
                                 <div style="font-size: 12px; color: var(--gray-500); margin-top: 4px;">
                                     <em>Translated from English</em>
                                 </div>
@@ -1077,6 +1099,7 @@
                             </button>
                                 {{ post.content }}
                             {% endif %}
+            
                         </div>
 
                         <!-- Image -->
@@ -1132,8 +1155,8 @@
                             </form>
                         </div>
                     </div>
-                    {% endwith %}
-                {% endif %}
+
+
 
                 <!-- Ad — shown every 10 feed items, looks exactly like a post -->
                 {% if forloop.counter|divisibleby:10 %}
@@ -1158,17 +1181,11 @@
 
                     <!-- Ad Embed (mirrors post image area) -->
                     <div style="border-radius: 12px; overflow: hidden; margin-bottom: 12px; min-height: 150px; background: var(--gray-100);">
-                        {% if forloop.counter == 10 %}
-                            <script async src="https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js"></script>
-                            <div id="container-2c34356cc6efc4c07773cf2861e26899"></div>
-                        {% else %}
-                            <div style="width:100%;min-height:150px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;text-align:center;">
-                                <div style="font-size:36px;">🛒</div>
-                                <div style="font-weight:700;color:#5b21b6;font-size:15px;">Exclusive Deal Just for You</div>
-                                <div style="color:#6d28d9;font-size:13px;">Limited time offer — check it out now!</div>
-                            </div>
-                        {% endif %}
-                    </div>
+                        <div style="width:100%;min-height:150px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;text-align:center;">
+                            <div style="font-size:36px;">🛒</div>
+                            <div style="font-weight:700;color:#5b21b6;font-size:15px;">Exclusive Deal Just for You</div>
+                            <div style="color:#6d28d9;font-size:13px;">Limited time offer — check it out now!</div>
+                        </div>
 
                     <!-- Post Footer (identical to real post action bar) -->
                     <div class="post-footer">
@@ -1186,7 +1203,8 @@
                         </button>
                     </div>
                 </div>
-                {% endif %}
+
+            {% endif %}
             {% endfor %}
         {% else %}
             <div class="post-card" style="text-align: center; padding: 40px;">

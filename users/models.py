@@ -24,6 +24,14 @@ class CustomUser(AbstractUser):
     profile_image = CloudinaryField('profile_image', blank=True, null=True, 
                                     help_text=_("Upload a professional profile picture."))
 
+    user_type = models.CharField(_("User Type"), max_length=20, choices=[
+        ('regular', 'Regular User'),
+        ('investor', 'Investor'),
+    ], default='regular', help_text=_("Type of user account."))
+
+    is_approved = models.BooleanField(_("Is Approved"), default=False, 
+                                      help_text=_("Whether this investor account is approved to post partner content."))
+
     # --- REFERRAL LOGIC PROPERTY ---
     @property
     def total_referral_earnings(self):
