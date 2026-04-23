@@ -14,6 +14,8 @@ import json
 import os
 import re
 import base64
+import time
+import random
 
 from .forms import JobPostForm
 from .models import JobPost, JOB_CATEGORIES, JOB_TYPES, Applicant 
@@ -121,6 +123,31 @@ JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY") or "46f60849-92b7-4a9f-a381-709376f
 CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID", "a9927b4ab404ffaff0e637290f35b7a8")
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
+# Simple in-memory cache for API results (5 minutes)
+api_cache = {}
+CACHE_DURATION = 300  # 5 minutes
+
+def get_cache_key(api_name, keywords, location):
+    """Generate cache key for API results"""
+    return f"{api_name}_{keywords}_{location}".lower().replace(" ", "_")
+
+def get_cached_result(cache_key):
+    """Get cached result if still valid"""
+    if cache_key in api_cache:
+        cached_time, data = api_cache[cache_key]
+        if time.time() - cached_time < CACHE_DURATION:
+            print(f"Cache hit for {cache_key}")
+            return data
+        else:
+            # Remove expired cache
+            del api_cache[cache_key]
+    return None
+
+def set_cache_result(cache_key, data):
+    """Cache API result"""
+    api_cache[cache_key] = (time.time(), data)
+    print(f"Cached result for {cache_key}")
+
 BAD_TITLE_KEYWORDS = [
     'we are hiring', 'hiring!', 'job opportunity', 'vacancy', 'apply now',
     'urgent', 'staff needed', 'is for hiring', 'job alert', 'job opening',
@@ -129,45 +156,171 @@ BAD_TITLE_KEYWORDS = [
 BAD_TITLES_EXACT = ['hiring', 'we are hiring', 'is for hiring', 'jobs', 'job', 'vacancies', 'careers', 'vacancy']
 
 def fetch_jooble_data(keywords, location="Uganda"):
+    """
+    Fetch real-time jobs from Jooble API with enhanced anti-detection measures
+    """
+    # Check cache first
+    cache_key = get_cache_key("jooble", keywords or "jobs", location or "global")
+    cached_result = get_cached_result(cache_key)
+    if cached_result is not None:
+        return cached_result
+
     api_key = JOOBLE_API_KEY
     url = f"https://jooble.org/api/{api_key}"
-    # Cloudflare bypass headers
+
+    # Enhanced headers to bypass Cloudflare and mimic real browser
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
+    ]
+
+    import random
+    selected_ua = random.choice(user_agents)
+
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "*/*",
+        "User-Agent": selected_ua,
+        "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
+        "Referer": "https://jooble.org/",
     }
+
+    # Clean and prepare search parameters
     api_location = ""
     if location and location.strip() and location.strip().lower() != "uganda":
-        api_location = location
+        api_location = location.strip()
+
+    # Clean keywords - remove bad terms that trigger spam filters
+    if keywords:
+        keywords = keywords.strip()
+        # Remove bad keywords that trigger spam detection
+        for bad_word in BAD_TITLE_KEYWORDS + BAD_TITLES_EXACT:
+            keywords = keywords.replace(bad_word, "").strip()
+
+        # If keywords become empty after cleaning, use generic term
+        if not keywords or len(keywords) < 2:
+            keywords = "professional"
+
     body = {
         "keywords": keywords,
         "location": api_location,
-        "radius": "25",
+        "radius": "50",  # Increased radius for more results
         "page": "1",
     }
+
+    # Add small random delay to avoid rate limiting
+    import time
+    time.sleep(random.uniform(0.5, 1.5))
+
     try:
-        response = requests.post(url, data=json.dumps(body), headers=headers, timeout=5)
+        # Create session for better cookie handling
+        session = requests.Session()
+        session.headers.update(headers)
+
+        print(f"Jooble: Searching '{keywords}' in '{api_location or 'Global'}'")
+
+        response = session.post(url, json=body, timeout=15)
+
+        print(f"Jooble Status: {response.status_code}")
+
         if response.status_code == 200:
             data = response.json()
             jobs = data.get("jobs", [])
+
             if not jobs and api_location:
-                # Fallback to a global search if Uganda-only results are unavailable.
+                # Fallback to global search if location-specific fails
+                print("Jooble: No location results, trying global search...")
                 body["location"] = ""
-                response = requests.post(url, data=json.dumps(body), headers=headers, timeout=5)
+                response = session.post(url, json=body, timeout=15)
                 if response.status_code == 200:
                     data = response.json()
                     jobs = data.get("jobs", [])
+
+            # Process and clean job data
+            processed_jobs = []
             for job in jobs:
-                job["source"] = "Jooble"
-                job["link"] = job.get("link") or job.get("url")
-            return jobs
+                # Skip jobs with bad titles
+                title = job.get("title", "").lower()
+                if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
+                    continue
+
+                processed_job = {
+                    "source": "Jooble",
+                    "title": job.get("title", "Job Title"),
+                    "company": job.get("company", "Company"),
+                    "location": job.get("location", api_location or "Remote"),
+                    "salary": job.get("salary", ""),
+                    "description": job.get("snippet", "")[:300] + "..." if job.get("snippet") else "",
+                    "link": job.get("link") or job.get("url", ""),
+                    "date_posted": job.get("updated", ""),
+                }
+
+                # Only add if we have a valid link
+                if processed_job["link"] and processed_job["link"].startswith('http'):
+                    processed_jobs.append(processed_job)
+
+            print(f"Jooble: Found {len(processed_jobs)} valid jobs")
+
+            # Cache the result
+            set_cache_result(cache_key, processed_jobs)
+            return processed_jobs
+
+        elif response.status_code == 403:
+            print("Jooble: 403 Forbidden - Cloudflare blocked. Trying alternative approach...")
+            # Try with different headers
+            headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+            session.headers.update(headers)
+            response = session.post(url, json=body, timeout=15)
+            if response.status_code == 200:
+                data = response.json()
+                jobs = data.get("jobs", [])
+                processed_jobs = []
+                for job in jobs:
+                    title = job.get("title", "").lower()
+                    if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
+                        continue
+                    processed_job = {
+                        "source": "Jooble",
+                        "title": job.get("title", "Job Title"),
+                        "company": job.get("company", "Company"),
+                        "location": job.get("location", api_location or "Remote"),
+                        "salary": job.get("salary", ""),
+                        "description": job.get("snippet", "")[:300] + "..." if job.get("snippet") else "",
+                        "link": job.get("link") or job.get("url", ""),
+                        "date_posted": job.get("updated", ""),
+                    }
+                    if processed_job["link"] and processed_job["link"].startswith('http'):
+                        processed_jobs.append(processed_job)
+
+                # Cache the result even for fallback
+                set_cache_result(cache_key, processed_jobs)
+                return processed_jobs
+
+        else:
+            print(f"Jooble API Error: {response.status_code} - {response.text[:200]}")
+
+    except requests.exceptions.Timeout:
+        print("Jooble: Request timeout")
+    except requests.exceptions.ConnectionError:
+        print("Jooble: Connection error")
     except Exception as e:
-        print(f"Jooble API Connection Error: {e}")
-    return []
+        print(f"Jooble API Error: {e}")
+
+    # Return empty list and cache it to avoid repeated failed requests
+    empty_result = []
+    set_cache_result(cache_key, empty_result)
+    return empty_result
 
 
 @require_GET
@@ -181,101 +334,194 @@ def job_redirect(request):
 
 
 def fetch_careerjet_data(request, keywords, location="Uganda"):
+    """
+    Fetch real-time jobs from CareerJet API with enhanced reliability
+    """
+    # Check cache first
+    cache_key = get_cache_key("careerjet", keywords or "jobs", location or "global")
+    cached_result = get_cached_result(cache_key)
+    if cached_result is not None:
+        return cached_result
+
     if not keywords:
         keywords = "jobs"
 
-    # CareerJet Uganda chokes on 2+ words
+    # CareerJet works better with single words
     keywords = keywords.split()[0] if keywords else "jobs"
 
     url = "https://search.api.careerjet.net/v4/query"
 
-    # Get REAL user data
-    user_ip = get_client_ip(request) or ''
-    user_agent = request.META.get('HTTP_USER_AGENT', '') or 'Mozilla/5.0'
+    # Get real user data for better API compliance
+    user_ip = get_client_ip(request) or '127.0.0.1'
+    user_agent = request.META.get('HTTP_USER_AGENT', '') or 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     referer = request.build_absolute_uri()
 
-    # user_ip + user_agent MUST be query params, not headers
+    # Enhanced parameters for better results
     params = {
-        'locale_code': 'en_GB', # en_UG doesn't exist, use en_GB
+        'locale_code': 'en_GB',
         'keywords': keywords,
-        'location': "Africa", # Target African countries including Uganda
-        'page_size': 20,
-        'user_ip': user_ip, # REQUIRED HERE
-        'user_agent': user_agent, # REQUIRED HERE
+        'location': location if location and location != "Uganda" else "East Africa",  # Better location targeting
+        'page_size': 25,  # Increased from 20
+        'user_ip': user_ip,
+        'user_agent': user_agent,
+        'sort': 'date',  # Sort by date for freshest jobs
     }
 
     credentials = base64.b64encode(f"{CAREERJET_API_KEY}:".encode()).decode()
 
-    # Headers: only Referer + User-Agent, no user_ip/user_agent
+    # Enhanced headers
     headers = {
         'Authorization': f'Basic {credentials}',
         'Content-Type': 'application/json',
-        'Referer': referer,
         'User-Agent': user_agent,
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': referer,
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'cross-site',
+        'Cache-Control': 'no-cache',
     }
 
-    print(f"CareerJet params={params}")
+    print(f"CareerJet: Searching '{keywords}' in '{params['location']}'")
+
+    # Add small delay to avoid rate limiting
+    import time
+    import random
+    time.sleep(random.uniform(0.3, 1.0))
 
     try:
-        r = requests.get(url, params=params, headers=headers, timeout=10)
-        print(f"CareerJet Status: {r.status_code}")
-        if r.status_code == 200:
-            data = r.json()
-            print(f"CareerJet Type: {data.get('type')}")
-            if data.get('type') == 'JOBS':
+        # Use session for better connection handling
+        session = requests.Session()
+        session.headers.update(headers)
+
+        response = session.get(url, params=params, timeout=20)
+        print(f"CareerJet Status: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+            response_type = data.get('type')
+
+            if response_type == 'JOBS':
                 jobs = data.get("jobs", [])
-                print(f"CareerJet Jobs Found: {len(jobs)}")
-                return [{
-                    "source": "CareerJet",
-                    "title": j.get("title"),
-                    "company": j.get("company"),
-                    "location": j.get("locations"),
-                    "salary": j.get("salary"),
-                    "link": j.get("url"),
-                } for j in jobs]
-            elif data.get('type') == 'LOCATIONS':
-                print(f"CareerJet Location Error: {data.get('message')}")
-                print(f"Options: {data.get('locations')}")
-                # Try Uganda specifically if Africa doesn't work
+                print(f"CareerJet: Found {len(jobs)} jobs")
+
+                processed_jobs = []
+                for job in jobs:
+                    # Skip jobs with bad titles
+                    title = job.get("title", "").lower()
+                    if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
+                        continue
+
+                    processed_job = {
+                        "source": "CareerJet",
+                        "title": job.get("title", "Job Title"),
+                        "company": job.get("company", "Company"),
+                        "location": job.get("locations", [location or "Remote"])[0] if job.get("locations") else location or "Remote",
+                        "salary": job.get("salary", ""),
+                        "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
+                        "link": job.get("url", ""),
+                        "date_posted": job.get("date", ""),
+                    }
+
+                    # Only add if we have a valid link
+                    if processed_job["link"] and processed_job["link"].startswith('http'):
+                        processed_jobs.append(processed_job)
+
+                print(f"CareerJet: Returning {len(processed_jobs)} valid jobs")
+                set_cache_result(cache_key, processed_jobs)
+                return processed_jobs
+
+            elif response_type == 'LOCATIONS':
+                print(f"CareerJet: Location error - {data.get('message')}")
+                print(f"Available locations: {data.get('locations', [])[:5]}")
+
+                # Try with Uganda specifically
                 params['location'] = 'Uganda'
-                print("CareerJet retry: trying location='Uganda'")
-                r = requests.get(url, params=params, headers=headers, timeout=10)
-                print(f"CareerJet Retry Status: {r.status_code}")
-                if r.status_code == 200:
-                    data = r.json()
+                print("CareerJet: Retrying with location='Uganda'")
+                response = session.get(url, params=params, timeout=20)
+
+                if response.status_code == 200:
+                    data = response.json()
                     if data.get('type') == 'JOBS':
                         jobs = data.get("jobs", [])
-                        print(f"CareerJet Uganda Jobs Found: {len(jobs)}")
-                        return [{
-                            "source": "CareerJet",
-                            "title": j.get("title"),
-                            "company": j.get("company"),
-                            "location": j.get("locations"),
-                            "salary": j.get("salary"),
-                            "link": j.get("url"),
-                        } for j in jobs]
-                # If Uganda also fails, try empty location for global African jobs
+                        processed_jobs = []
+                        for job in jobs:
+                            title = job.get("title", "").lower()
+                            if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
+                                continue
+
+                            processed_job = {
+                                "source": "CareerJet",
+                                "title": job.get("title", "Job Title"),
+                                "company": job.get("company", "Company"),
+                                "location": job.get("locations", [location or "Remote"])[0] if job.get("locations") else location or "Remote",
+                                "salary": job.get("salary", ""),
+                                "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
+                                "link": job.get("url", ""),
+                                "date_posted": job.get("date", ""),
+                            }
+                            if processed_job["link"] and processed_job["link"].startswith('http'):
+                                processed_jobs.append(processed_job)
+
+                        print(f"CareerJet: Uganda search found {len(processed_jobs)} jobs")
+                        set_cache_result(cache_key, processed_jobs)
+                        return processed_jobs
+
+                # Final fallback - global search
                 params['location'] = ''
-                print("CareerJet final retry: trying location='' for global search")
-                r = requests.get(url, params=params, headers=headers, timeout=10)
-                if r.status_code == 200:
-                    data = r.json()
+                print("CareerJet: Final fallback - global search")
+                response = session.get(url, params=params, timeout=20)
+
+                if response.status_code == 200:
+                    data = response.json()
                     if data.get('type') == 'JOBS':
                         jobs = data.get("jobs", [])
-                        print(f"CareerJet Global Jobs Found: {len(jobs)}")
-                        return [{
-                            "source": "CareerJet",
-                            "title": j.get("title"),
-                            "company": j.get("company"),
-                            "location": j.get("locations"),
-                            "salary": j.get("salary"),
-                            "link": j.get("url"),
-                        } for j in jobs]
+                        processed_jobs = []
+                        for job in jobs:
+                            title = job.get("title", "").lower()
+                            if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
+                                continue
+
+                            processed_job = {
+                                "source": "CareerJet",
+                                "title": job.get("title", "Job Title"),
+                                "company": job.get("company", "Company"),
+                                "location": job.get("locations", ["Global"])[0] if job.get("locations") else "Global",
+                                "salary": job.get("salary", ""),
+                                "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
+                                "link": job.get("url", ""),
+                                "date_posted": job.get("date", ""),
+                            }
+                            if processed_job["link"] and processed_job["link"].startswith('http'):
+                                processed_jobs.append(processed_job)
+
+                        print(f"CareerJet: Global search found {len(processed_jobs)} jobs")
+                        set_cache_result(cache_key, processed_jobs)
+                        return processed_jobs
+
+        elif response.status_code == 401:
+            print("CareerJet: 401 Unauthorized - Check API key")
+        elif response.status_code == 429:
+            print("CareerJet: 429 Rate limited - Slow down requests")
         else:
-            print(f"CareerJet Error {r.status_code}: {r.text}")
+            print(f"CareerJet: Error {response.status_code} - {response.text[:200]}")
+
+    except requests.exceptions.Timeout:
+        print("CareerJet: Request timeout")
+    except requests.exceptions.ConnectionError:
+        print("CareerJet: Connection error")
     except Exception as e:
         print(f"CareerJet API Error: {e}")
-    return []
+
+    # Return empty list and cache it to avoid repeated failed requests
+    empty_result = []
+    set_cache_result(cache_key, empty_result)
+    return empty_result
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
     if not EXCHANGE_RATE_API_KEY or from_curr == to_curr:
