@@ -11,16 +11,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='businessreel',
-            name='language',
-            field=models.CharField(default='en', help_text="Content language code (e.g., 'en', 'sw', 'lg')", max_length=10),
-        ),
-        migrations.AddField(
-            model_name='businessreel',
-            name='tags',
-            field=models.TextField(blank=True, help_text='Comma-separated tags for content discovery'),
-        ),
+        # language and tags already exist in the production schema,
+        # so only alter the video field in the database.
         migrations.AlterField(
             model_name='businessreel',
             name='video',
