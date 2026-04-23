@@ -132,13 +132,25 @@
             autoplay
             muted
             loop
-            preload="auto"
+            preload="metadata"
             crossorigin="anonymous"
             type="video/mp4"
-            onerror="console.error('Video failed to load:', this.src)"
-            oncanplay="this.play()"
-            onclick="this.paused ? this.play() : this.pause()">
+            poster="{% if reel.thumbnail %}{{ reel.thumbnail.url }}{% endif %}"
+            onerror="handleVideoError(this)"
+            onloadstart="handleVideoLoadStart(this)"
+            oncanplay="handleVideoCanPlay(this)"
+            onplay="handleVideoPlay(this)"
+            onpause="handleVideoPause(this)"
+            onclick="toggleVideoPlay(this)">
         </video>
+
+        <!-- Loading indicator -->
+        <div class="video-loading absolute inset-0 flex items-center justify-center bg-black/50 text-white text-sm font-bold opacity-0 transition-opacity duration-300" id="loading-{{ reel.id }}">
+            <div class="flex items-center space-x-2">
+                <div class="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                <span>Loading...</span>
+            </div>
+        </div>
 
         <div class="absolute right-4 bottom-64 md:bottom-32 flex flex-col space-y-6 items-center z-50">
             <button onclick="toggleLike(this, '{{ reel.id }}')" class="flex flex-col items-center">
@@ -237,17 +249,128 @@
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
+            const reelId = entry.target.dataset.reelId;
+            const loadingDiv = document.getElementById(`loading-${reelId}`);
+            
             if (entry.isIntersecting) {
-                video.play().catch(e => {});
+                // Show loading indicator
+                if (loadingDiv) loadingDiv.style.opacity = '1';
+                
+                // Ensure video is loaded and ready to play
+                if (video.readyState >= 2) {
+                    video.play().catch(e => {
+                        console.log('Autoplay failed, video will play on user interaction:', e);
+                        // Hide loading if autoplay fails
+                        if (loadingDiv) loadingDiv.style.opacity = '0';
+                    });
+                } else {
+                    // Wait for video to load
+                    video.onloadeddata = () => {
+                        video.play().catch(e => {
+                            console.log('Play failed after load:', e);
+                            if (loadingDiv) loadingDiv.style.opacity = '0';
+                        });
+                    };
+                    video.load(); // Force load
+                }
+                
                 video.onended = () => {
                     const next = entry.target.nextElementSibling;
                     if (next) next.scrollIntoView({ behavior: 'smooth' });
                 };
             } else {
                 video.pause();
-                video.currentTime = 0; 
+                video.currentTime = 0;
+                // Hide loading when not visible
+                if (loadingDiv) loadingDiv.style.opacity = '0';
             }
         });
+    }, observerOptions);
+
+    document.querySelectorAll('section').forEach(s => observer.observe(s));
+
+    // Additional video loading and error handling
+    document.addEventListener('DOMContentLoaded', function() {
+        const videos = document.querySelectorAll('video');
+        videos.forEach(video => {
+            video.addEventListener('error', function(e) {
+                handleVideoError(e.target);
+            });
+            
+            video.addEventListener('loadstart', function(e) {
+                handleVideoLoadStart(e.target);
+            });
+            
+            video.addEventListener('canplay', function(e) {
+                handleVideoCanPlay(e.target);
+            });
+            
+            video.addEventListener('play', function(e) {
+                handleVideoPlay(e.target);
+            });
+            
+            video.addEventListener('pause', function(e) {
+                handleVideoPause(e.target);
+            });
+        });
+    });
+
+    function handleVideoError(video) {
+        console.error('Video error:', video.src, video.error);
+        const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
+        if (loadingDiv) {
+            loadingDiv.innerHTML = '<div class="text-red-400">Failed to load video</div>';
+            loadingDiv.style.opacity = '1';
+        }
+        // Try to reload after a delay
+        setTimeout(() => {
+            video.load();
+        }, 2000);
+    }
+
+    function handleVideoLoadStart(video) {
+        console.log('Video loading started:', video.src);
+        const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
+        if (loadingDiv) {
+            loadingDiv.style.opacity = '1';
+        }
+    }
+
+    function handleVideoCanPlay(video) {
+        console.log('Video can play:', video.src);
+        const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
+        if (loadingDiv) {
+            loadingDiv.style.opacity = '0';
+        }
+        // Force play if intersection observer didn't trigger
+        if (video.offsetParent !== null) { // Check if visible
+            video.play().catch(e => {
+                console.log('Force play failed, will retry on interaction:', e);
+            });
+        }
+    }
+
+    function handleVideoPlay(video) {
+        console.log('Video started playing:', video.src);
+        const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
+        if (loadingDiv) {
+            loadingDiv.style.opacity = '0';
+        }
+    }
+
+    function handleVideoPause(video) {
+        console.log('Video paused:', video.src);
+    }
+
+    function toggleVideoPlay(video) {
+        if (video.paused) {
+            video.play().catch(e => console.log('Play failed:', e));
+        } else {
+            video.pause();
+        }
+    }
+
+    async function toggleLike(btn, reelId) {
     }, observerOptions);
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
