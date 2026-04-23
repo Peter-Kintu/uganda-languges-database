@@ -371,11 +371,6 @@
     }
 
     async function toggleLike(btn, reelId) {
-    }, observerOptions);
-
-    document.querySelectorAll('section').forEach(s => observer.observe(s));
-
-    async function toggleLike(btn, reelId) {
         try {
             const response = await fetch(`/social/reel/${reelId}/like/`, {
                 method: 'POST',

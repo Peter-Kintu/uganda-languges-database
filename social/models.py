@@ -116,6 +116,10 @@ class BusinessReel(models.Model):
     thumbnail = CloudinaryField('image', folder='africana_thumbnails/', blank=True, null=True)
     caption = models.TextField(max_length=500)
     
+    # Language and tags for content categorization
+    language = models.CharField(max_length=10, default='en', help_text="Content language code (e.g., 'en', 'sw', 'lg')")
+    tags = models.TextField(blank=True, help_text="Comma-separated tags for content discovery")
+    
     # --- AGENTIC PRICING ---
     price = models.DecimalField(
         max_digits=12, 
