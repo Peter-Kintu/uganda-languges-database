@@ -141,7 +141,7 @@
             oncanplay="handleVideoCanPlay(this)"
             onplay="handleVideoPlay(this)"
             onpause="handleVideoPause(this)"
-            onclick="toggleVideoPlay(this)">
+            onclick="handleVideoClick(this)">
         </video>
 
         <!-- Loading indicator -->
@@ -292,13 +292,19 @@
     // Additional video loading and error handling
     document.addEventListener('DOMContentLoaded', function() {
         const videos = document.querySelectorAll('video');
-        videos.forEach(video => {
+        videos.forEach((video, index) => {
+            console.log(`Video ${index} loaded:`, video.src);
+            
             video.addEventListener('error', function(e) {
                 handleVideoError(e.target);
             });
             
             video.addEventListener('loadstart', function(e) {
                 handleVideoLoadStart(e.target);
+            });
+            
+            video.addEventListener('loadedmetadata', function(e) {
+                hideLoadingIndicator(e.target);
             });
             
             video.addEventListener('canplay', function(e) {
@@ -323,11 +329,13 @@
             src: video.src,
             error: video.error,
             code: video.error?.code,
-            networkState: video.networkState
+            networkState: video.networkState,
+            readyState: video.readyState
         });
         
         if (loadingDiv) {
             loadingDiv.innerHTML = `<div class="text-center"><div class="text-red-400 text-sm">Video unavailable</div><div class="text-gray-400 text-xs">Check console for URL</div></div>`;
+            loadingDiv.style.display = 'flex';
             loadingDiv.style.opacity = '1';
         }
         
@@ -338,18 +346,25 @@
         console.log('Video loading started:', video.src);
         const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
         if (loadingDiv) {
+            loadingDiv.style.display = 'flex';
             loadingDiv.style.opacity = '1';
+        }
+    }
+
+    function hideLoadingIndicator(video) {
+        const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
+        if (loadingDiv) {
+            loadingDiv.style.opacity = '0';
+            setTimeout(() => {
+                loadingDiv.style.display = 'none';
+            }, 300);
         }
     }
 
     function handleVideoCanPlay(video) {
         console.log('Video can play:', video.src);
-        const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
-        if (loadingDiv) {
-            loadingDiv.style.opacity = '0';
-        }
-        // Force play if intersection observer didn't trigger
-        if (video.offsetParent !== null) { // Check if visible
+        hideLoadingIndicator(video);
+        if (video.offsetParent !== null) {
             video.play().catch(e => {
                 console.log('Force play failed, will retry on interaction:', e);
             });
@@ -358,17 +373,18 @@
 
     function handleVideoPlay(video) {
         console.log('Video started playing:', video.src);
-        const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
-        if (loadingDiv) {
-            loadingDiv.style.opacity = '0';
-        }
+        hideLoadingIndicator(video);
     }
 
     function handleVideoPause(video) {
         console.log('Video paused:', video.src);
     }
 
-    function toggleVideoPlay(video) {
+    function handleVideoClick(video) {
+        if (video.muted) {
+            video.muted = false;
+            console.log('Unmuting video on user interaction.');
+        }
         if (video.paused) {
             video.play().catch(e => console.log('Play failed:', e));
         } else {
