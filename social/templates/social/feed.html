@@ -129,9 +129,14 @@
             class="w-full h-full object-cover" 
             src="{{ reel.video.url }}" 
             playsinline 
-            preload="auto"
-            loop
+            autoplay
             muted
+            loop
+            preload="auto"
+            crossorigin="anonymous"
+            type="video/mp4"
+            onerror="console.error('Video failed to load:', this.src)"
+            oncanplay="this.play()"
             onclick="this.paused ? this.play() : this.pause()">
         </video>
 
