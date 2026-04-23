@@ -316,16 +316,22 @@
     });
 
     function handleVideoError(video) {
-        console.error('Video error:', video.src, video.error);
-        const loadingDiv = document.getElementById(`loading-${video.closest('section').dataset.reelId}`);
+        const reelId = video.closest('section').dataset.reelId;
+        const loadingDiv = document.getElementById(`loading-${reelId}`);
+        
+        console.error('Video error details:', {
+            src: video.src,
+            error: video.error,
+            code: video.error?.code,
+            networkState: video.networkState
+        });
+        
         if (loadingDiv) {
-            loadingDiv.innerHTML = '<div class="text-red-400">Failed to load video</div>';
+            loadingDiv.innerHTML = `<div class="text-center"><div class="text-red-400 text-sm">Video unavailable</div><div class="text-gray-400 text-xs">Check console for URL</div></div>`;
             loadingDiv.style.opacity = '1';
         }
-        // Try to reload after a delay
-        setTimeout(() => {
-            video.load();
-        }, 2000);
+        
+        console.log('⚠️ Video failed - URL:', video.src);
     }
 
     function handleVideoLoadStart(video) {
