@@ -105,11 +105,11 @@ class BusinessReel(models.Model):
     """
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reels')
     
-    # VIDEO STORAGE UPDATE: Routed to Cloudflare R2 via 'reels_video' backend
-    video = models.FileField(
-        upload_to='africana_reels/',
-        storage=storages['reels_video'],
-        help_text="Stored on Cloudflare R2 for zero-egress high-speed delivery."
+    # VIDEO STORAGE: Stored on Cloudinary with high-performance delivery
+    video = CloudinaryField(
+        'video',
+        folder='africana_reels/',
+        help_text="Optimized for low-bandwidth delivery across Africa."
     )
     
     # Thumbnails remain on Cloudinary for AI-driven transformation/caching
