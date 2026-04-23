@@ -246,6 +246,19 @@
 
 <script>
     const observerOptions = { threshold: 0.8 };
+    let activeReelVideo = null;
+
+    function pauseAllVideos(exceptVideo = null) {
+        document.querySelectorAll('video').forEach(v => {
+            if (v !== exceptVideo) {
+                if (!v.paused) {
+                    v.pause();
+                }
+                v.muted = true;
+            }
+        });
+    }
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
@@ -253,6 +266,8 @@
             const loadingDiv = document.getElementById(`loading-${reelId}`);
             
             if (entry.isIntersecting) {
+                pauseAllVideos(video);
+                activeReelVideo = video;
                 // Show loading indicator
                 if (loadingDiv) loadingDiv.style.opacity = '1';
                 
@@ -260,18 +275,16 @@
                 if (video.readyState >= 2) {
                     video.play().catch(e => {
                         console.log('Autoplay failed, video will play on user interaction:', e);
-                        // Hide loading if autoplay fails
                         if (loadingDiv) loadingDiv.style.opacity = '0';
                     });
                 } else {
-                    // Wait for video to load
                     video.onloadeddata = () => {
                         video.play().catch(e => {
                             console.log('Play failed after load:', e);
                             if (loadingDiv) loadingDiv.style.opacity = '0';
                         });
                     };
-                    video.load(); // Force load
+                    video.load();
                 }
                 
                 video.onended = () => {
@@ -279,9 +292,12 @@
                     if (next) next.scrollIntoView({ behavior: 'smooth' });
                 };
             } else {
+                if (activeReelVideo === video) {
+                    activeReelVideo = null;
+                }
                 video.pause();
+                video.muted = true;
                 video.currentTime = 0;
-                // Hide loading when not visible
                 if (loadingDiv) loadingDiv.style.opacity = '0';
             }
         });
@@ -372,15 +388,21 @@
     }
 
     function handleVideoPlay(video) {
+        activeReelVideo = video;
+        pauseAllVideos(video);
         console.log('Video started playing:', video.src);
         hideLoadingIndicator(video);
     }
 
     function handleVideoPause(video) {
+        if (activeReelVideo === video) {
+            activeReelVideo = null;
+        }
         console.log('Video paused:', video.src);
     }
 
     function handleVideoClick(video) {
+        pauseAllVideos(video);
         if (video.muted) {
             video.muted = false;
             console.log('Unmuting video on user interaction.');
