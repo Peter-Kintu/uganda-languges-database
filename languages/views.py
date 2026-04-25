@@ -10,6 +10,8 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.conf import settings
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import json
 import os
 import re
@@ -148,6 +150,19 @@ def set_cache_result(cache_key, data):
     api_cache[cache_key] = (time.time(), data)
     print(f"Cached result for {cache_key}")
 
+
+def normalize_search_location(location):
+    if not location or not str(location).strip():
+        return ""
+    normalized = str(location).strip().lower()
+    if normalized in ["world", "global", "all", "remote", "anywhere"]:
+        return ""
+    if normalized in ["africa", "east africa"]:
+        return "Africa"
+    if "uganda" in normalized:
+        return "Uganda"
+    return str(location).strip()
+
 BAD_TITLE_KEYWORDS = [
     'we are hiring', 'hiring!', 'job opportunity', 'vacancy', 'apply now',
     'urgent', 'staff needed', 'is for hiring', 'job alert', 'job opening',
@@ -194,12 +209,15 @@ def fetch_jooble_data(keywords, location="Uganda"):
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
         "Referer": "https://jooble.org/",
+        "Origin": "https://jooble.org",
+        "Sec-CH-UA": '"Chromium";v="120", "Not)A;Brand";v="8", "Google Chrome";v="120"',
+        "Sec-CH-UA-Mobile": '?0',
+        "Sec-CH-UA-Platform": '"Windows"',
     }
 
     # Clean and prepare search parameters
-    api_location = ""
-    if location and location.strip() and location.strip().lower() != "uganda":
-        api_location = location.strip()
+    normalized_location = normalize_search_location(location)
+    api_location = normalized_location
 
     # Clean keywords - remove bad terms that trigger spam filters
     if keywords:
@@ -208,9 +226,11 @@ def fetch_jooble_data(keywords, location="Uganda"):
         for bad_word in BAD_TITLE_KEYWORDS + BAD_TITLES_EXACT:
             keywords = keywords.replace(bad_word, "").strip()
 
-        # If keywords become empty after cleaning, use generic term
+        # If keywords become empty after cleaning, use a generic term
         if not keywords or len(keywords) < 2:
-            keywords = "professional"
+            keywords = "jobs"
+    else:
+        keywords = "jobs"
 
     body = {
         "keywords": keywords,
@@ -220,12 +240,15 @@ def fetch_jooble_data(keywords, location="Uganda"):
     }
 
     # Add small random delay to avoid rate limiting
-    import time
     time.sleep(random.uniform(0.5, 1.5))
 
     try:
-        # Create session for better cookie handling
+        # Create session for better cookie handling and retry
         session = requests.Session()
+        retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[403, 429, 500, 502, 503, 504], allowed_methods=["POST", "GET"])
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
         session.headers.update(headers)
 
         print(f"Jooble: Searching '{keywords}' in '{api_location or 'Global'}'")
@@ -276,11 +299,11 @@ def fetch_jooble_data(keywords, location="Uganda"):
             set_cache_result(cache_key, processed_jobs)
             return processed_jobs
 
-        elif response.status_code == 403:
-            print("Jooble: 403 Forbidden - Cloudflare blocked. Trying alternative approach...")
-            # Try with different headers
+        elif response.status_code in (403, 429):
+            print(f"Jooble: {response.status_code} blocked. Retrying with alternative headers...")
             headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
             session.headers.update(headers)
+            time.sleep(1.0)
             response = session.post(url, json=body, timeout=15)
             if response.status_code == 200:
                 data = response.json()
@@ -303,7 +326,6 @@ def fetch_jooble_data(keywords, location="Uganda"):
                     if processed_job["link"] and processed_job["link"].startswith('http'):
                         processed_jobs.append(processed_job)
 
-                # Cache the result even for fallback
                 set_cache_result(cache_key, processed_jobs)
                 return processed_jobs
 
@@ -356,11 +378,14 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
     user_agent = request.META.get('HTTP_USER_AGENT', '') or 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     referer = request.build_absolute_uri()
 
+    normalized_location = normalize_search_location(location)
+    careerjet_location = normalized_location if normalized_location else ""
+
     # Enhanced parameters for better results
     params = {
         'locale_code': 'en_GB',
         'keywords': keywords,
-        'location': location if location and location != "Uganda" else "East Africa",  # Better location targeting
+        'location': careerjet_location,
         'page_size': 25,  # Increased from 20
         'user_ip': user_ip,
         'user_agent': user_agent,
@@ -377,7 +402,8 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
         'Accept': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
-        'Referer': referer,
+        'Referer': 'https://www.careerjet.net/',
+        'Origin': 'https://www.careerjet.net',
         'DNT': '1',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
@@ -385,18 +411,23 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
         'Sec-Fetch-Mode': 'cors',
         'Sec-Fetch-Site': 'cross-site',
         'Cache-Control': 'no-cache',
+        'Sec-CH-UA': '"Chromium";v="120", "Not)A;Brand";v="8", "Google Chrome";v="120"',
+        'Sec-CH-UA-Mobile': '?0',
+        'Sec-CH-UA-Platform': '"Windows"',
     }
 
-    print(f"CareerJet: Searching '{keywords}' in '{params['location']}'")
+    print(f"CareerJet: Searching '{keywords}' in '{params['location'] or 'Global'}'")
 
     # Add small delay to avoid rate limiting
-    import time
-    import random
     time.sleep(random.uniform(0.3, 1.0))
 
     try:
-        # Use session for better connection handling
+        # Use session for better connection handling and retry
         session = requests.Session()
+        retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[403, 429, 500, 502, 503, 504], allowed_methods=["POST", "GET"])
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
         session.headers.update(headers)
 
         response = session.get(url, params=params, timeout=20)
@@ -475,6 +506,7 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
                 # Final fallback - global search
                 params['location'] = ''
                 print("CareerJet: Final fallback - global search")
+                time.sleep(0.8)
                 response = session.get(url, params=params, timeout=20)
 
                 if response.status_code == 200:
@@ -504,10 +536,39 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
                         set_cache_result(cache_key, processed_jobs)
                         return processed_jobs
 
+        elif response.status_code in (403, 429):
+            print(f"CareerJet: {response.status_code} blocked. Retrying with alternate headers...")
+            headers['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+            headers['Referer'] = 'https://www.careerjet.net/'
+            headers['Origin'] = 'https://www.careerjet.net'
+            session.headers.update(headers)
+            time.sleep(1.0)
+            response = session.get(url, params=params, timeout=20)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('type') == 'JOBS':
+                    jobs = data.get('jobs', [])
+                    processed_jobs = []
+                    for job in jobs:
+                        title = job.get('title', "").lower()
+                        if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
+                            continue
+                        processed_job = {
+                            "source": "CareerJet",
+                            "title": job.get("title", "Job Title"),
+                            "company": job.get("company", "Company"),
+                            "location": job.get("locations", [location or "Remote"])[0] if job.get("locations") else location or "Remote",
+                            "salary": job.get("salary", ""),
+                            "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
+                            "link": job.get("url", ""),
+                            "date_posted": job.get("date", ""),
+                        }
+                        if processed_job["link"] and processed_job["link"].startswith('http'):
+                            processed_jobs.append(processed_job)
+                    set_cache_result(cache_key, processed_jobs)
+                    return processed_jobs
         elif response.status_code == 401:
             print("CareerJet: 401 Unauthorized - Check API key")
-        elif response.status_code == 429:
-            print("CareerJet: 429 Rate limited - Slow down requests")
         else:
             print(f"CareerJet: Error {response.status_code} - {response.text[:200]}")
 
@@ -574,42 +635,52 @@ def browse_job_listings(request):
         
         # --- GLOBAL WEB CRAWL MODE ---
         if search_type == 'crawl' and search_query and search_query != "hiring":
+            crawl_results = []
             try:
                 from jobspy import scrape_jobs
                 print(f"Starting jobspy crawl for '{search_query}' in '{location_query}'...")
                 
                 scraped_df = scrape_jobs(
-                    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor"],
+                    site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor", "monster", "careerbuilder"],
                     search_term=search_query,
                     location=location_query or "Uganda",
-                    results_wanted=15,
-                    hours_old=72,
+                    results_wanted=40,
+                    hours_old=168,
                 )
                 
-                # Convert scraped data to display format
                 for _, row in scraped_df.iterrows():
                     job_url = row.get('job_url') or row.get('url')
-                    if job_url:
-                        final_job_list.append({
-                            'post_content': row.get('title', search_query),
-                            'required_skills': (row.get('description', '')[:200] if row.get('description') else "Click to view full job details"),
-                            'recruiter_name': row.get('company', 'Global Employer'),
-                            'recruiter_location': row.get('location', location_query or 'Remote'),
-                            'application_url': job_url,
-                            'is_external': True,
-                            'external_source': 'jobspy',
-                            'timestamp': row.get('date_posted'),
-                            'upvotes': 0,
-                        })
-                
-                print(f"Crawl complete: found {len(final_job_list)} jobs")
-                
+                    if not job_url:
+                        continue
+                    crawl_results.append({
+                        'source': row.get('source', 'Web Search'),
+                        'title': row.get('title', search_query),
+                        'company': row.get('company', 'Global Employer'),
+                        'location': row.get('location', location_query or 'Remote'),
+                        'salary': row.get('salary', ''),
+                        'description': row.get('description', '')[:320] + '...' if row.get('description') else 'Click to view full job details',
+                        'link': job_url,
+                        'date_posted': row.get('date_posted', ''),
+                    })
+
+                print(f"Crawl complete: found {len(crawl_results)} jobs")
+                external_jobs = crawl_results
+
+                if len(external_jobs) < 15:
+                    print("Crawl results are low; adding API-sourced fallback jobs for better coverage.")
+                    external_jobs += fetch_careerjet_data(request, search_query, location_query)
+                    external_jobs += fetch_jooble_data(search_query, location_query)
+
+                final_job_list = []
             except ImportError:
-                messages.error(request, 'python-jobspy is not installed. Install with: pip install python-jobspy')
+                messages.error(request, 'Deep search requires python-jobspy. Falling back to external API jobs. Install with: pip install python-jobspy')
+                print("Jobspy not installed: falling back to API-based deep search")
+                external_jobs = fetch_careerjet_data(request, search_query, location_query) + fetch_jooble_data(search_query, location_query)
                 final_job_list = []
             except Exception as e:
                 print(f"Crawl error: {e}")
-                messages.error(request, f"Global crawl failed: {str(e)}. Showing cached results instead.")
+                messages.error(request, f"Deep search failed: {str(e)}. Showing cached results instead.")
+                external_jobs = fetch_careerjet_data(request, search_query, location_query) + fetch_jooble_data(search_query, location_query)
                 final_job_list = []
         
         else:

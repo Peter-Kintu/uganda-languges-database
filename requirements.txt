@@ -28,6 +28,7 @@ python-aliexpress-api
 google-genai
 phonenumbers
 requests
+python-jobspy
 
 # Required Core (The fix for your Pydantic error)
 pydantic

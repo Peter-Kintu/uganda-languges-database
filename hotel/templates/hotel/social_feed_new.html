@@ -72,6 +72,7 @@
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
+        justify-content: flex-end;
     }
 
     .btn-header {
@@ -85,6 +86,32 @@
         cursor: pointer;
         transition: all 0.3s ease;
         backdrop-filter: blur(10px);
+        flex: 0 1 auto;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 640px) {
+        .header-content {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .header-actions {
+            width: 100%;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-header {
+            min-width: 120px;
+            font-size: 13px;
+            padding: 8px 12px;
+        }
+
+        .header-title {
+            width: 100%;
+            margin-bottom: 10px;
+        }
     }
 
     .btn-header:hover {
@@ -570,6 +597,7 @@
         <div class="header-actions">
             <button class="btn-header" onclick="openTranslateModal()">🌐 Translate</button>
             <button class="btn-header" onclick="openLanguageModal()">🗣️ Languages</button>
+            <a href="{% url 'hotel:inbox' %}" class="btn-header">📥 Inbox</a>
             <a href="{% url 'hotel:create_post' %}" class="btn-header">✍️ Create Post</a>
         </div>
     </div>
@@ -624,7 +652,16 @@
                         </div>
 
                         <!-- Content -->
-                        <div class="post-content" data-post-id="{{ post.id }}">{{ post.content }}</div>
+                        <div class="post-content" data-post-id="{{ post.id }}" lang="{{ current_lang|default:'en' }}">
+                            {% if post.is_translated and post.translated_content %}
+                                {{ post.translated_content }}
+                                <div style="font-size: 12px; color: var(--gray-500); margin-top: 6px;">
+                                    <em>Translated from English to {{ current_lang }}</em>
+                                </div>
+                            {% else %}
+                                {{ post.content }}
+                            {% endif %}
+                        </div>
 
                         <!-- Image -->
                         {% if post.image %}
@@ -645,14 +682,10 @@
                                 <span>🔄</span>
                                 <span>{{ post.shares.count|default:'0' }}</span>
                             </button>
-                            <button class="post-action" onclick="translatePost({{ post.id }}, this)">
-                                <span>🌐</span>
-                                <span>Translate</span>
-                            </button>
-                        </div>
-
-                        <!-- Comments Section (Hidden by default) -->
-                        <div id="comments-{{ post.id }}" class="comments-section" style="display: none;">
+                        <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')">
+                            <span>✉️</span>
+                            <span>Message</span>
+                        </button>
                             {% for comment in post.comments.all %}
                             <div class="comment">
                                 <div class="avatar" style="width: 32px; height: 32px; font-size: 12px;">{{ comment.author.first_name|slice:':1'|upper }}</div>
@@ -788,6 +821,31 @@
     </div>
 </div>
 
+<!-- Message Modal -->
+<div id="message-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Send Message</h2>
+            <button class="modal-close" onclick="closeMessageModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">To</label>
+                <div id="recipient-selected" style="padding: 14px; border: 1px solid #d1d5db; border-radius: 12px; color: var(--gray-700); background: var(--gray-100);">Recipient will appear here.</div>
+                <input type="hidden" id="recipient-id" />
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label for="message-content" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--gray-900);">Message</label>
+                <textarea id="message-content" rows="4" placeholder="Type your message..." style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 14px;" required></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" onclick="closeMessageModal()" class="btn-header" style="background: #f3f4f6; color: #111827;">Cancel</button>
+                <button type="button" class="btn-primary" onclick="submitMessageForm()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- JavaScript -->
 <script>
     const csrfToken = '{{ csrf_token }}';
@@ -908,6 +966,74 @@
     // Translate Post (direct button)
     function translatePost(postId, btn) {
         openTranslateModal(postId);
+    }
+
+    // Message Modal
+    function openMessageModal(recipientId, recipientName) {
+        currentPostId = null;
+        const modal = document.getElementById('message-modal');
+        const recipientSelected = document.getElementById('recipient-selected');
+        const recipientIdInput = document.getElementById('recipient-id');
+        const messageContent = document.getElementById('message-content');
+
+        if (!modal || !recipientSelected || !recipientIdInput || !messageContent) {
+            alert('Message UI not ready.');
+            return;
+        }
+
+        recipientIdInput.value = recipientId || '';
+        recipientSelected.textContent = recipientName ? `To: ${recipientName}` : 'No recipient selected.';
+        messageContent.value = '';
+        modal.classList.add('active');
+        setTimeout(() => messageContent.focus(), 100);
+    }
+
+    function closeMessageModal() {
+        document.getElementById('message-modal').classList.remove('active');
+    }
+
+    function submitMessageForm() {
+        const recipientIdInput = document.getElementById('recipient-id');
+        const messageContent = document.getElementById('message-content');
+
+        if (!recipientIdInput || !messageContent) {
+            alert('Unable to send message.');
+            return;
+        }
+
+        const recipientId = recipientIdInput.value;
+        const content = messageContent.value.trim();
+
+        if (!recipientId) {
+            alert('Please select a recipient.');
+            return;
+        }
+        if (!content) {
+            alert('Please type a message before sending.');
+            return;
+        }
+
+        fetch(`/hotel/send_message/${recipientId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ content })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                closeMessageModal();
+                alert(data.message || 'Message sent successfully!');
+            } else {
+                alert(data.message || 'Unable to send message.');
+            }
+        })
+        .catch(e => {
+            console.error('Send message failed:', e);
+            alert('Unable to send message.');
+        });
     }
 
     // Language Modal
