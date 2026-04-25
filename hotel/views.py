@@ -23,12 +23,21 @@ def social_feed(request):
     if isinstance(target_lang, str):
         target_lang = target_lang.lower()
     
-    # 2. Get ALL ACTIVE POSTS (visible to all logged-in users)
-    # Show posts from all users (not just connections) so everyone can see the feed
-    regular_posts_query = Post.objects.all().order_by('-created_at')
-    partner_posts_query = Post.objects.filter(author__user_type='investor', author__is_approved=True).order_by('-created_at')
+    # 2. Get Global Posts from approved investors that should appear for every user
+    global_posts_query = Post.objects.filter(
+        author__user_type='investor',
+        author__is_approved=True
+    ).order_by('-created_at')[:10]
+    global_posts = list(global_posts_query)
+    global_post_ids = [post.id for post in global_posts]
 
-    # 3. Apply Filtering Logic to BOTH querysets
+    # 3. Get ALL ACTIVE POSTS (visible to all logged-in users)
+    # Show posts from all users (not just connections) so everyone can see the feed
+    regular_posts_query = Post.objects.exclude(id__in=global_post_ids).order_by('-created_at')
+    partner_posts_query = Post.objects.filter(author__user_type='investor', author__is_approved=True)\
+        .exclude(id__in=global_post_ids).order_by('-created_at')
+
+    # 4. Apply Filtering Logic to BOTH querysets
     if feed_type == 'text':
         # Posts with no images and no location
         filter_q = Q(image__isnull=True) & (Q(location__isnull=True) | Q(location=''))
@@ -62,9 +71,12 @@ def social_feed(request):
                 final_feed.append(partner_posts[p_idx])
             p_idx += 1
 
+    # 5. Put global/pattern posts at the top for every user
+    posts = list(global_posts) + final_feed
+
     # Translate posts if requested
     if translate_feed and target_lang != 'en':
-        for post in final_feed:
+        for post in posts:
             if post.content:  # Only translate if there's text
                 translated = translate_smart(post.content, target_lang)
                 if translated and translated != post.content:
@@ -77,7 +89,7 @@ def social_feed(request):
     )
     all_users = CustomUser.objects.exclude(id=request.user.id)
     context = {
-        'posts': final_feed,
+        'posts': posts,
         'connections': connections,
         'all_users': all_users,
         'current_filter': feed_type,
