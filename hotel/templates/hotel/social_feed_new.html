@@ -250,11 +250,12 @@
     /* Post Card */
     .post-card {
         background: white;
-        border-radius: 16px;
+        border-radius: 20px;
         padding: 20px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        border: 1px solid var(--gray-200);
-        transition: all 0.3s ease;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--gray-100);
+        transition: all 0.2s ease;
         animation: slideIn 0.3s ease;
     }
 
@@ -271,7 +272,7 @@
 
     .post-card:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        border-color: var(--gray-300);
+        transform: translateY(-2px);
     }
 
     .post-header {
@@ -327,32 +328,44 @@
 
     .post-image {
         width: 100%;
-        border-radius: 12px;
-        margin-bottom: 12px;
-        max-height: 500px;
+        border-radius: 16px;
+        margin: 16px 0;
+        max-height: 600px;
         object-fit: cover;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        aspect-ratio: 16/9;
+    }
+
+    .post-image:hover {
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        transform: scale(1.02);
     }
 
     .post-footer {
         display: flex;
         justify-content: space-around;
-        padding-top: 12px;
+        padding-top: 16px;
         border-top: 1px solid var(--gray-200);
-        margin-top: 12px;
+        margin-top: 16px;
+        gap: 8px;
+        flex-wrap: wrap;
     }
 
     .post-action {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         flex: 1;
+        min-width: 80px;
         justify-content: center;
-        padding: 8px;
-        border-radius: 8px;
+        padding: 10px 8px;
+        border-radius: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
         color: var(--gray-600);
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 600;
         border: none;
         background: none;
@@ -370,55 +383,165 @@
 
     /* Comments Section */
     .comments-section {
-        margin-top: 12px;
-        padding-top: 12px;
+        margin-top: 16px;
+        padding-top: 16px;
         border-top: 1px solid var(--gray-200);
     }
 
     .comment {
         display: flex;
         gap: 12px;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
+        padding: 12px;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+    }
+
+    .comment:hover {
+        background: var(--gray-50);
+    }
+
+    .comment-avatar-wrapper {
+        flex-shrink: 0;
+    }
+
+    .comment-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
     }
 
     .comment-author {
-        font-weight: 600;
+        font-weight: 700;
         color: var(--gray-900);
-        font-size: 13px;
+        font-size: 14px;
+        line-height: 1.2;
     }
 
-    .comment-text {
+    .comment-handle {
+        color: var(--gray-600);
         font-size: 13px;
-        color: var(--gray-900);
-        margin-bottom: 4px;
+        font-weight: 500;
     }
 
     .comment-meta {
+        color: var(--gray-600);
+        font-size: 12px;
+        margin-left: auto;
+    }
+
+    .comment-text {
+        font-size: 14px;
+        color: var(--gray-900);
+        line-height: 1.5;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        margin-bottom: 8px;
+    }
+
+    .comment-actions {
+        display: flex;
+        gap: 16px;
+        margin-top: 8px;
+    }
+
+    .comment-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         font-size: 12px;
         color: var(--gray-600);
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+
+    .comment-action-btn:hover {
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.08);
+    }
+
+    .comment-action-btn.liked {
+        color: var(--danger);
     }
 
     .comment-input-wrapper {
         display: flex;
         gap: 8px;
-        margin-top: 12px;
+        margin-top: 16px;
+        align-items: flex-start;
     }
 
     .comment-input {
         flex: 1;
         background: var(--gray-100);
-        border: 1px solid var(--gray-200);
+        border: 1px solid transparent;
         border-radius: 20px;
-        padding: 8px 12px;
-        font-size: 13px;
+        padding: 10px 16px;
+        font-size: 14px;
         font-family: inherit;
         transition: all 0.2s ease;
+        min-width: 0;
+        resize: none;
+        max-height: 100px;
     }
 
     .comment-input:focus {
         outline: none;
         background: white;
         border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    }
+
+    .comment-input::placeholder {
+        color: var(--gray-400);
+    }
+
+    @media (max-width: 640px) {
+        .comment {
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .comment-author {
+            font-size: 12px;
+        }
+
+        .comment-text {
+            font-size: 12px;
+        }
+
+        .comment-meta {
+            font-size: 11px;
+        }
+
+        .comment-input-wrapper {
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .comment-input {
+            min-height: 36px;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .comment-input-wrapper .btn-primary {
+            min-width: auto;
+            padding: 6px 12px !important;
+            font-size: 12px;
+            white-space: nowrap;
+        }
     }
 
     /* ═════════════════════════════════════════════════════════════════ */
@@ -531,6 +654,64 @@
         padding: 20px;
     }
 
+    /* Image Lightbox Modal */
+    .image-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 1001;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .image-modal.active {
+        display: flex;
+    }
+
+    .image-modal-content {
+        position: relative;
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .image-modal-img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 12px;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .image-modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid white;
+        color: white;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .image-modal-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+    }
+
     /* ═════════════════════════════════════════════════════════════════ */
     /* LOADING STATE                                                     */
     /* ═════════════════════════════════════════════════════════════════ */
@@ -559,20 +740,122 @@
             align-items: flex-start;
         }
 
+        .header-actions {
+            width: 100%;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-header {
+            min-width: auto;
+            font-size: 12px;
+            padding: 6px 10px;
+            flex: 0 1 calc(50% - 5px);
+        }
+
         .header-title {
-            font-size: 20px;
+            font-size: 18px;
+            width: 100%;
         }
 
         .post-card {
             padding: 16px;
+            border-radius: 16px;
         }
 
         .post-footer {
+            gap: 4px;
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        .post-action {
             font-size: 12px;
+            padding: 8px 6px;
+            min-width: 60px;
+            gap: 4px;
+        }
+
+        .post-image {
+            border-radius: 12px;
+            margin: 12px 0;
+            max-height: 400px;
         }
 
         .create-post-card {
-            padding: 16px;
+            padding: 14px;
+        }
+
+        .comment {
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .comment-header {
+            flex-wrap: nowrap;
+        }
+
+        .comment-author {
+            font-size: 13px;
+        }
+
+        .comment-handle {
+            font-size: 12px;
+        }
+
+        .comment-text {
+            font-size: 13px;
+        }
+
+        .comment-meta {
+            font-size: 11px;
+            margin-left: auto;
+        }
+
+        .comment-input-wrapper {
+            gap: 6px;
+        }
+
+        .comment-input {
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: 16px;
+        }
+
+        .comment-input-wrapper .btn-primary {
+            min-width: auto;
+            padding: 8px 14px !important;
+            font-size: 12px;
+            white-space: nowrap;
+            flex: 0 0 auto;
+            border-radius: 16px;
+        }
+
+        .modal-content {
+            max-width: 95vw;
+            border-radius: 20px;
+        }
+
+        .post-author-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .author-name {
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .author-meta {
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     }
 
@@ -585,8 +868,23 @@
         to { opacity: 1; }
     }
 
+    @keyframes zoomIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
     .fade-in {
         animation: fadeIn 0.3s ease;
+    }
+
+    .zoom-in {
+        animation: zoomIn 0.3s ease;
     }
 </style>
 
@@ -665,34 +963,51 @@
 
                         <!-- Image -->
                         {% if post.image %}
-                        <img src="{{ post.image.url }}" alt="Post image" class="post-image">
+                        <img src="{{ post.image.url }}" alt="Post image" class="post-image" onclick="openImageModal('{{ post.image.url }}')">
                         {% endif %}
 
                         <!-- Footer Actions -->
                         <div class="post-footer">
-                            <button class="post-action" onclick="likePost({{ post.id }}, this)">
-                                <span>❤️</span>
+                            <button class="post-action" onclick="likePost({{ post.id }}, this)" title="Like this post">
+                                <span id="like-icon-{{ post.id }}">🤍</span>
                                 <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
                             </button>
-                            <button class="post-action" onclick="toggleComments({{ post.id }}, this)">
+                            <button class="post-action" onclick="toggleComments({{ post.id }}, this)" title="View comments">
                                 <span>💬</span>
-                                <span>{{ post.comments.count }}</span>
+                                <span id="comment-count-{{ post.id }}">{{ post.comments.count }}</span>
                             </button>
-                            <button class="post-action" onclick="sharePost({{ post.id }})">
+                            <button class="post-action" onclick="sharePost({{ post.id }})" title="Share this post">
                                 <span>🔄</span>
                                 <span>{{ post.shares.count|default:'0' }}</span>
                             </button>
-                        <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')">
-                            <span>✉️</span>
-                            <span>Message</span>
-                        </button>
+                            <button class="post-action" onclick="openTranslateModal({{ post.id }})" title="Translate post">
+                                <span>🌐</span>
+                                <span>Translate</span>
+                            </button>
+                            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')" title="Send message">
+                                <span>✉️</span>
+                                <span>Message</span>
+                            </button>
+                        </div>
+
+                        <!-- Comments Section -->
+                        <div id="comments-{{ post.id }}" class="comments-section" style="display: none;">
                             {% for comment in post.comments.all %}
                             <div class="comment">
-                                <div class="avatar" style="width: 32px; height: 32px; font-size: 12px;">{{ comment.author.first_name|slice:':1'|upper }}</div>
-                                <div style="flex: 1;">
-                                    <div class="comment-author">{{ comment.author.get_full_name }}</div>
+                                <div class="comment-avatar-wrapper">
+                                    <div class="avatar" style="width: 36px; height: 36px; font-size: 14px; min-width: 36px; border: 2px solid var(--primary); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center;">{{ comment.author.first_name|slice:':1'|upper }}</div>
+                                </div>
+                                <div class="comment-content">
+                                    <div class="comment-header">
+                                        <span class="comment-author">{{ comment.author.get_full_name }}</span>
+                                        <span class="comment-handle">@{{ comment.author.username }}</span>
+                                        <span class="comment-meta">{{ comment.created_at|timesince }} ago</span>
+                                    </div>
                                     <div class="comment-text">{{ comment.content }}</div>
-                                    <div class="comment-meta">{{ comment.created_at|date:"M j, g:i a" }}</div>
+                                    <div class="comment-actions">
+                                        <button class="comment-action-btn" onclick="likeComment(this)" title="Like comment"><span>♡</span> Like</button>
+                                        <button class="comment-action-btn" onclick="replyToComment(this)" title="Reply to comment"><span>↩️</span> Reply</button>
+                                    </div>
                                 </div>
                             </div>
                             {% endfor %}
@@ -700,8 +1015,8 @@
                             <!-- Comment Input -->
                             <form onsubmit="addComment({{ post.id }}, this); return false;" class="comment-input-wrapper">
                                 {% csrf_token %}
-                                <input type="text" class="comment-input" name="content" placeholder="Write a comment..." maxlength="500">
-                                <button type="submit" class="btn-primary" style="padding: 8px 16px;">Reply</button>
+                                <input type="text" class="comment-input" name="content" placeholder="Write a comment..." maxlength="500" required>
+                                <button type="submit" class="btn-primary" style="padding: 10px 20px; border-radius: 20px; font-weight: 600;">Reply</button>
                             </form>
                         </div>
                     </div>
@@ -846,6 +1161,14 @@
     </div>
 </div>
 
+<!-- Image Lightbox Modal -->
+<div id="image-modal" class="image-modal">
+    <div class="image-modal-content">
+        <img id="image-modal-img" src="" alt="Full size image" class="image-modal-img">
+        <button class="image-modal-close" onclick="closeImageModal()">✕</button>
+    </div>
+</div>
+
 <!-- JavaScript -->
 <script>
     const csrfToken = '{{ csrf_token }}';
@@ -860,10 +1183,21 @@
         })
         .then(r => r.json())
         .then(data => {
-            document.getElementById(`like-count-${postId}`).textContent = data.likes_count;
-            btn.classList.toggle('liked');
+            const likeIcon = document.getElementById(`like-icon-${postId}`);
+            const likeCount = document.getElementById(`like-count-${postId}`);
+            if (likeIcon.textContent === '🤍') {
+                likeIcon.textContent = '❤️';
+                btn.classList.add('liked');
+            } else {
+                likeIcon.textContent = '🤍';
+                btn.classList.remove('liked');
+            }
+            likeCount.textContent = data.likes_count;
         })
-        .catch(e => console.error('Like failed:', e));
+        .catch(e => {
+            console.error('Like failed:', e);
+            alert('Failed to like post. Please try again.');
+        });
     }
 
     // Toggle Comments
@@ -871,13 +1205,21 @@
         const commentsDiv = document.getElementById(`comments-${postId}`);
         if (commentsDiv.style.display === 'none') {
             commentsDiv.style.display = 'block';
+            btn.classList.add('active');
         } else {
             commentsDiv.style.display = 'none';
+            btn.classList.remove('active');
         }
     }
 
     // Add Comment
     function addComment(postId, form) {
+        const content = form.querySelector('input[name="content"]').value.trim();
+        if (!content) {
+            alert('Please write a comment');
+            return;
+        }
+
         const formData = new FormData(form);
         fetch(`/hotel/add-comment/${postId}/`, {
             method: 'POST',
@@ -888,20 +1230,60 @@
         .then(data => {
             if (data.success) {
                 form.reset();
+                alert('Comment posted successfully!');
                 location.reload();
+            } else {
+                alert(data.message || 'Failed to post comment');
             }
         })
-        .catch(e => console.error('Comment failed:', e));
+        .catch(e => {
+            console.error('Comment failed:', e);
+            alert('Failed to post comment. Please try again.');
+        });
+    }
+
+    // Like Comment
+    function likeComment(btn) {
+        if (btn.classList.contains('liked')) {
+            btn.classList.remove('liked');
+            btn.innerHTML = '<span>♡</span> Like';
+        } else {
+            btn.classList.add('liked');
+            btn.innerHTML = '<span>❤️</span> Liked';
+        }
+    }
+
+    // Reply to Comment
+    function replyToComment(btn) {
+        const comment = btn.closest('.comment');
+        const author = comment.querySelector('.comment-author').textContent;
+        const inputField = document.querySelector(`.comment-input`);
+        if (inputField) {
+            inputField.focus();
+            inputField.value = `@${author} `;
+        }
     }
 
     // Share Post
     function sharePost(postId) {
-        fetch(`/hotel/share-post/${postId}/`, {
-            method: 'GET'
-        })
-        .then(r => r.text())
-        .then(() => alert('Post shared!'))
-        .catch(e => console.error('Share failed:', e));
+        if (navigator.share) {
+            navigator.share({
+                title: 'Africana Social',
+                text: 'Check out this post!',
+                url: window.location.href
+            }).catch(err => console.log('Share cancelled'));
+        } else {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?highlight=${postId}`;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('✅ Post link copied to clipboard!');
+                }).catch(() => {
+                    alert('Share: ' + shareUrl);
+                });
+            } else {
+                alert('Share: ' + shareUrl);
+            }
+        }
     }
 
     // Translate Modal
@@ -1049,8 +1431,44 @@
         localStorage.setItem('preferredLanguage', lang);
         currentLanguage = lang;
         closeLanguageModal();
-        alert(`Language set to: ${lang}`);
+        // Reload the page with the new language
+        const url = new URL(window.location);
+        url.searchParams.set('translate', 'true');
+        url.searchParams.set('lang', lang);
+        window.location.href = url.toString();
     }
+
+    // Image Lightbox
+    function openImageModal(src) {
+        const modal = document.getElementById('image-modal');
+        const img = document.getElementById('image-modal-img');
+        img.src = src;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeImageModal() {
+        const modal = document.getElementById('image-modal');
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close image modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeImageModal();
+            closeTranslateModal();
+            closeLanguageModal();
+            closeMessageModal();
+        }
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('image-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeImageModal();
+        }
+    });
 </script>
 
 {% endblock %}
