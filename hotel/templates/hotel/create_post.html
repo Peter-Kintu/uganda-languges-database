@@ -44,6 +44,15 @@
                     </div>
                 </div>
 
+                {% if request.user.user_type == 'investor' and request.user.is_approved %}
+                <div class="flex gap-2">
+                    <button type="submit" name="post_type" value="pattern"
+                            class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all">
+                        ✨ Post as Pattern
+                    </button>
+                </div>
+                {% endif %}
+
                 <div class="flex justify-end space-x-4">
                     <a href="{% url 'hotel:social_feed' %}" class="px-6 py-2 text-gray-600 hover:text-gray-800">Cancel</a>
                     <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
