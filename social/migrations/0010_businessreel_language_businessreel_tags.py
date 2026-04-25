@@ -10,14 +10,28 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='businessreel',
-            name='language',
-            field=models.CharField(default='en', help_text="Content language code (e.g., 'en', 'sw', 'lg')", max_length=10),
-        ),
-        migrations.AddField(
-            model_name='businessreel',
-            name='tags',
-            field=models.TextField(blank=True, help_text='Comma-separated tags for content discovery'),
+        migrations.RunSQL(
+            sql="""
+                ALTER TABLE social_businessreel
+                ADD COLUMN IF NOT EXISTS language varchar(10) NOT NULL DEFAULT 'en';
+                ALTER TABLE social_businessreel
+                ADD COLUMN IF NOT EXISTS tags text DEFAULT '';
+            """,
+            reverse_sql="""
+                ALTER TABLE social_businessreel DROP COLUMN IF EXISTS language;
+                ALTER TABLE social_businessreel DROP COLUMN IF EXISTS tags;
+            """,
+            state_operations=[
+                migrations.AddField(
+                    model_name='businessreel',
+                    name='language',
+                    field=models.CharField(default='en', help_text="Content language code (e.g., 'en', 'sw', 'lg')", max_length=10),
+                ),
+                migrations.AddField(
+                    model_name='businessreel',
+                    name='tags',
+                    field=models.TextField(blank=True, help_text='Comma-separated tags for content discovery'),
+                ),
+            ],
         ),
     ]
