@@ -55,6 +55,7 @@ if not DEBUG:
 CSRF_TRUSTED_ORIGINS = [
     'https://initial-danette-africana-60541726.koyeb.app',
     'https://uganda-languges-database.onrender.com',
+    'https://www.africanaai.info',
 ]
 
 if DEBUG:
