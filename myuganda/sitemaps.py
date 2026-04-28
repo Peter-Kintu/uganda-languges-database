@@ -39,11 +39,17 @@ class ProductSitemap(Sitemap):
     
     def items(self):
         # Returns all Product objects to generate URLs for each detail page
-        return Product.objects.all()
+        try:
+            return Product.objects.all()
+        except Exception:
+            return []
 
     def location(self, obj):
-        # Uses the slug to reverse the URL 'eshop:product_detail'
-        return reverse('eshop:product_detail', kwargs={'slug': obj.slug})
+        try:
+            # Uses the slug to reverse the URL 'eshop:product_detail'
+            return reverse('eshop:product_detail', kwargs={'slug': obj.slug})
+        except Exception:
+            return '/eshop/products/'
 
 # 3. Dynamic Sitemap for Job Post detail pages (Languages app)
 class JobPostSitemap(Sitemap):
@@ -52,12 +58,21 @@ class JobPostSitemap(Sitemap):
     
     def items(self):
         # Returns all validated JobPost objects
-        return JobPost.objects.filter(is_validated=True).order_by('-timestamp')
+        try:
+            return JobPost.objects.filter(is_validated=True).order_by('-timestamp')
+        except Exception:
+            return []
 
     def location(self, obj):
-        # Uses the primary key (pk) to reverse the URL 'languages:job_post_detail'
-        return reverse('languages:job_post_detail', kwargs={'pk': obj.pk})
+        try:
+            # Uses the primary key (pk) to reverse the URL 'languages:job_post_detail'
+            return reverse('languages:job_post_detail', kwargs={'pk': obj.pk})
+        except Exception:
+            return '/jobs/'
 
     def lastmod(self, obj):
-        # Use the timestamp field to indicate the last modification date
-        return obj.timestamp
+        try:
+            # Use the timestamp field to indicate the last modification date
+            return obj.timestamp
+        except Exception:
+            return None
