@@ -1,5 +1,9 @@
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
+from django.conf import settings
+from django.http import HttpResponse
+from django.contrib.sitemaps.views import sitemap as sitemap_view
+from django.template.response import TemplateResponse
 # FIX: Import all required models for dynamic sitemaps
 from eshop.models import Product 
 from languages.models import JobPost # Assuming JobPost is the model for the languages app
@@ -76,3 +80,31 @@ class JobPostSitemap(Sitemap):
             return obj.timestamp
         except Exception:
             return None
+
+
+# 4. Custom Sitemap View - Replaces request domain with DEFAULT_DOMAIN setting
+def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.xml', content_type='application/xml'):
+    """
+    Custom sitemap view that replaces the request domain with the DEFAULT_DOMAIN setting.
+    This ensures sitemaps always show www.africanaai.info instead of the Koyeb deployment URL.
+    """
+    # Get the standard sitemap response
+    response = sitemap_view(request, sitemaps, section, template_name, content_type)
+    
+    # Replace the Koyeb domain with the correct domain from settings
+    if hasattr(response, 'content'):
+        content = response.content.decode('utf-8')
+        
+        # Get the request domain (e.g., https://initial-danette-africana-60541726.koyeb.app)
+        request_domain = f"https://{request.get_host()}"
+        
+        # Get the correct domain from settings (e.g., https://www.africanaai.info)
+        correct_domain = f"https://{settings.DEFAULT_DOMAIN}"
+        
+        # Replace all occurrences of the request domain with the correct domain
+        if request_domain != correct_domain:
+            content = content.replace(request_domain, correct_domain)
+        
+        response.content = content.encode('utf-8')
+    
+    return response

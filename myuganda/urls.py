@@ -2,11 +2,10 @@ from django.contrib import admin
 from django.urls import path, include, reverse_lazy
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.sitemaps.views import sitemap
 from django.views.generic.base import RedirectView
 from django.views.generic import TemplateView
 
-from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap
+from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap, custom_sitemap_view
 
 import requests
 from django.http import HttpResponse
@@ -58,9 +57,9 @@ urlpatterns = [
     
 
     # 7. SEO - Sitemap Index
-    path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict}, name="sitemap"),
+    path("sitemap.xml", custom_sitemap_view, {"sitemaps": sitemaps_dict}, name="sitemap"),
     # Individual Sitemaps
-    path("sitemap-<section>.xml", sitemap, {"sitemaps": sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap"),
+    path("sitemap-<section>.xml", custom_sitemap_view, {"sitemaps": sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap"),
 
     path("show-ip/", show_ip),
 
