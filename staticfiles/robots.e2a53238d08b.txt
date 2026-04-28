@@ -1,4 +1,4 @@
 User-agent: *
 allow:
 
-Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml
+Sitemap: https://www.africanaai.info/sitemap.xml
