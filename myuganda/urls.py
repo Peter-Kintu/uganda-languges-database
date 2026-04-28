@@ -57,8 +57,10 @@ urlpatterns = [
 
     
 
-    # 7. SEO
-    path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict, "protocol": "https", "domain": settings.DEFAULT_DOMAIN}, name="sitemap"),
+    # 7. SEO - Sitemap Index
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict}, name="sitemap"),
+    # Individual Sitemaps
+    path("sitemap-<section>.xml", sitemap, {"sitemaps": sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap"),
 
     path("show-ip/", show_ip),
 
