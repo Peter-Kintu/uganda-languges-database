@@ -139,7 +139,7 @@ def robots_txt(request):
     lines = [
         "User-agent: *",
         "allow:",
-        "Sitemap: https://initial-danette-africana-60541726.koyeb.app/sitemap.xml"
+        f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
 @login_required

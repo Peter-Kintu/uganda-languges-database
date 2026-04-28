@@ -26,9 +26,14 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 # --- ALLOWED HOSTS ---
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
+# Custom canonical domain used for sitemap URLs and metadata
+DEFAULT_DOMAIN = os.environ.get('DEFAULT_DOMAIN', 'www.africanaai.info')
+
 # --- PRODUCTION SECURITY & CSRF FIXES ---
 # Essential for apps behind proxies (Koyeb, Render, Heroku)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 if not DEBUG:
     # 1. Force Redirect to HTTPS

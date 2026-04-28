@@ -58,7 +58,7 @@ urlpatterns = [
     
 
     # 7. SEO
-    path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict}, name="sitemap"),
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps_dict, "protocol": "https", "domain": settings.DEFAULT_DOMAIN}, name="sitemap"),
 
     path("show-ip/", show_ip),
 
