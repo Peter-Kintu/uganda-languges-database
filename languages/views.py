@@ -123,6 +123,8 @@ def post_job(request):
 # API Credentials
 JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY") or "46f60849-92b7-4a9f-a381-709376fe6f92"
 CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID", "a9927b4ab404ffaff0e637290f35b7a8")
+CAREERJET_API_ENABLED = os.getenv("CAREERJET_ENABLED", "1").lower() in ("1", "true", "yes")
+CAREERJET_TEMP_DISABLED = False
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
 # Simple in-memory cache for API results (5 minutes)
@@ -358,7 +360,25 @@ def job_redirect(request):
 def fetch_careerjet_data(request, keywords, location="Uganda"):
     """
     Fetch real-time jobs from CareerJet API with enhanced reliability
+
+    NOTE: CareerJet API is currently returning 403 Forbidden errors.
+    This may be due to:
+    - Invalid/expired API key
+    - CareerJet discontinuing their free API service
+    - Changes in authentication requirements
+
+    The function now handles 403 errors gracefully by returning empty results
+    instead of failing repeatedly.
     """
+    global CAREERJET_TEMP_DISABLED
+
+    if not CAREERJET_API_ENABLED or CAREERJET_TEMP_DISABLED:
+        if not CAREERJET_API_ENABLED:
+            print("CareerJet: Disabled via environment variable CAREERJET_ENABLED")
+        else:
+            print("CareerJet: Temporarily disabled due to earlier 403/429 errors")
+        return []
+
     # Check cache first
     cache_key = get_cache_key("careerjet", keywords or "jobs", location or "global")
     cached_result = get_cached_result(cache_key)
@@ -432,6 +452,12 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
 
         response = session.get(url, params=params, timeout=20)
         print(f"CareerJet Status: {response.status_code}")
+
+        # Handle specific 403 errors (API key issues or service discontinued)
+        if response.status_code == 403:
+            print("CareerJet: 403 Forbidden - API access blocked. CareerJet API may require a valid key or has discontinued free access.")
+            print("CareerJet: Skipping CareerJet integration to prevent repeated failures.")
+            return []
 
         if response.status_code == 200:
             data = response.json()
@@ -537,52 +563,35 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
                         return processed_jobs
 
         elif response.status_code in (403, 429):
-            print(f"CareerJet: {response.status_code} blocked. Retrying with alternate headers...")
-            headers['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-            headers['Referer'] = 'https://www.careerjet.net/'
-            headers['Origin'] = 'https://www.careerjet.net'
-            session.headers.update(headers)
-            time.sleep(1.0)
-            response = session.get(url, params=params, timeout=20)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('type') == 'JOBS':
-                    jobs = data.get('jobs', [])
-                    processed_jobs = []
-                    for job in jobs:
-                        title = job.get('title', "").lower()
-                        if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
-                            continue
-                        processed_job = {
-                            "source": "CareerJet",
-                            "title": job.get("title", "Job Title"),
-                            "company": job.get("company", "Company"),
-                            "location": job.get("locations", [location or "Remote"])[0] if job.get("locations") else location or "Remote",
-                            "salary": job.get("salary", ""),
-                            "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
-                            "link": job.get("url", ""),
-                            "date_posted": job.get("date", ""),
-                        }
-                        if processed_job["link"] and processed_job["link"].startswith('http'):
-                            processed_jobs.append(processed_job)
-                    set_cache_result(cache_key, processed_jobs)
-                    return processed_jobs
+            print(f"CareerJet: {response.status_code} blocked. API key may be invalid or service discontinued.")
+            print("CareerJet: Temporarily disabling CareerJet API calls to prevent further errors")
+            CAREERJET_TEMP_DISABLED = True
+            return []
         elif response.status_code == 401:
-            print("CareerJet: 401 Unauthorized - Check API key")
+            print("CareerJet: 401 Unauthorized - API key is invalid or expired")
+            CAREERJET_TEMP_DISABLED = True
+            return []
         else:
             print(f"CareerJet: Error {response.status_code} - {response.text[:200]}")
+            return []
 
     except requests.exceptions.Timeout:
         print("CareerJet: Request timeout")
+        return []
     except requests.exceptions.ConnectionError:
         print("CareerJet: Connection error")
+        return []
+    except requests.exceptions.RetryError as e:
+        if "403" in str(e) or "429" in str(e):
+            print("CareerJet: Too many blocked responses - API access blocked")
+            print("CareerJet: Disabling CareerJet integration temporarily")
+            CAREERJET_TEMP_DISABLED = True
+        else:
+            print(f"CareerJet: Retry error - {e}")
+        return []
     except Exception as e:
         print(f"CareerJet API Error: {e}")
-
-    # Return empty list and cache it to avoid repeated failed requests
-    empty_result = []
-    set_cache_result(cache_key, empty_result)
-    return empty_result
+        return []
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
     if not EXCHANGE_RATE_API_KEY or from_curr == to_curr:
@@ -701,7 +710,9 @@ def browse_job_listings(request):
         # Fetch external jobs by default for the effective location (Uganda when none is specified)
         if search_type != 'crawl':
             jooble_jobs = fetch_jooble_data(search_query or 'jobs', effective_location)
-            careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', effective_location)
+            careerjet_jobs = []
+            if CAREERJET_API_ENABLED and not CAREERJET_TEMP_DISABLED:
+                careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', effective_location)
             external_jobs = careerjet_jobs + jooble_jobs
 
         paginator = Paginator(final_job_list, 20)
