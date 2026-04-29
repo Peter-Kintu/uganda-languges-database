@@ -619,7 +619,8 @@ def browse_job_listings(request):
 
     category_filter = request.GET.get('category')
     search_query = request.GET.get('q') or ""
-    location_query = request.GET.get('where') or "Uganda"
+    location_query = request.GET.get('where', '').strip()
+    effective_location = location_query or "Uganda"
     search_type = request.GET.get('search_type', 'api')
     page = request.GET.get('page', 1)
 
@@ -697,10 +698,10 @@ def browse_job_listings(request):
                 )
             final_job_list = list(job_posts_filtered)
 
-        # Only fetch external jobs when a search or location is active
+        # Only fetch external jobs when the user explicitly searches or specifies a location
         if search_type != 'crawl' and (search_query or location_query):
-            jooble_jobs = fetch_jooble_data(search_query or 'jobs', location_query)
-            careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', location_query)
+            jooble_jobs = fetch_jooble_data(search_query or 'jobs', effective_location)
+            careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', effective_location)
             external_jobs = careerjet_jobs + jooble_jobs
 
         paginator = Paginator(final_job_list, 20)
@@ -718,9 +719,9 @@ def browse_job_listings(request):
         'job_categories': JOB_CATEGORIES, 
         'selected_category': category_filter if category_filter in [c[0] for c in JOB_CATEGORIES] else 'all',
         'search_query': search_query,
-        'location_query': location_query,
+        'location_query': effective_location,
         'search_type': search_type,
-        'page_title': f"Jobs in {location_query}",
+        'page_title': f"Africana AI Jobs in {effective_location}",
     }
     return render(request, 'contributions_list.html', context)
 
