@@ -698,8 +698,8 @@ def browse_job_listings(request):
                 )
             final_job_list = list(job_posts_filtered)
 
-        # Only fetch external jobs when the user explicitly searches or specifies a location
-        if search_type != 'crawl' and (search_query or location_query):
+        # Fetch external jobs by default for the effective location (Uganda when none is specified)
+        if search_type != 'crawl':
             jooble_jobs = fetch_jooble_data(search_query or 'jobs', effective_location)
             careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', effective_location)
             external_jobs = careerjet_jobs + jooble_jobs

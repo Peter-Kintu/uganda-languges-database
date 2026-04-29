@@ -2,8 +2,11 @@ from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.conf import settings
 from django.http import HttpResponse
+from django.contrib.sites.models import Site
 from django.contrib.sitemaps.views import sitemap as sitemap_view
 from django.template.response import TemplateResponse
+from django.views.decorators.cache import cache_page
+
 # FIX: Import all required models for dynamic sitemaps
 from eshop.models import Product 
 from languages.models import JobPost # Assuming JobPost is the model for the languages app
@@ -83,11 +86,16 @@ class JobPostSitemap(Sitemap):
 
 
 # 4. Custom Sitemap View - Replaces request domain with DEFAULT_DOMAIN setting
+@cache_page(60 * 60)
 def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.xml', content_type='application/xml'):
     """
     Custom sitemap view that replaces the request domain with the DEFAULT_DOMAIN setting.
     This ensures sitemaps always show www.africanaai.info instead of the Koyeb deployment URL.
     """
+    # Attach a site object so Django's sitemap view does not try to look up a missing Site row.
+    if not hasattr(request, 'site'):
+        request.site = Site(domain=settings.DEFAULT_DOMAIN, name=settings.DEFAULT_DOMAIN)
+
     # Get the standard sitemap response
     response = sitemap_view(request, sitemaps, section, template_name, content_type)
 
@@ -95,19 +103,16 @@ def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.
     if hasattr(response, 'render') and not getattr(response, 'is_rendered', False):
         response = response.render()
 
-    # Replace the Koyeb domain with the correct domain from settings
+    # Replace the current request host with the canonical domain
     if hasattr(response, 'content'):
         content = response.content.decode('utf-8')
-
-        # Get the request domain (e.g., https://initial-danette-africana-60541726.koyeb.app)
-        request_domain = f"https://{request.get_host()}"
-
-        # Get the correct domain from settings (e.g., https://www.africanaai.info)
+        request_host = request.get_host()
+        request_domains = [f"https://{request_host}", f"http://{request_host}"]
         correct_domain = f"https://{settings.DEFAULT_DOMAIN}"
 
-        # Replace all occurrences of the request domain with the correct domain
-        if request_domain != correct_domain:
-            content = content.replace(request_domain, correct_domain)
+        for request_domain in request_domains:
+            if request_domain != correct_domain:
+                content = content.replace(request_domain, correct_domain)
 
         response.content = content.encode('utf-8')
 
