@@ -21,6 +21,9 @@ from google import genai
 from google.genai import types
 from google.genai.types import Content, GenerateContentConfig, Part
 
+# Cerebras SDK imports
+from cerebras.cloud.sdk import Cerebras
+
 # Custom Forms and Models
 from .models import CustomUser, Experience, Education, Skill, SocialConnection 
 from .forms import CustomUserCreationForm, ProfileEditForm
@@ -308,5 +311,74 @@ def profile_ai(request):
         return render(request, 'users/profile_ai.html', {'user': request.user})
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
+
+@csrf_exempt
+@login_required
+def cerebras_proxy(request):
+    """Proxies requests to Cerebras AI for Africana AI Career Companion."""
+    if request.method != 'POST':
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    api_key = os.environ.get("CEREBRAS_API_KEY", "").strip().replace('"', '').replace("'", "")
+    if not api_key:
+        return JsonResponse({"error": "Cerebras API key is missing. Please configure CEREBRAS_API_KEY in your environment."}, status=500)
+
+    try:
+        client = Cerebras(api_key=api_key)
+        data = json.loads(request.body)
+        raw_contents = data.get('contents', [])
+
+        # Pull profile data for personalization
+        profile = _get_user_profile_data(request.user)
+
+        # SYSTEM INSTRUCTION: Branding and Personalized context
+        system_instruction = (
+            f"You are Africana AI, the premier Career & Business Companion developed by Mwene Groups of Companies Limited. "
+            f"You are speaking with {profile['full_name']}, a {profile['headline']}. "
+            f"User Expertise: {', '.join(profile['skills'][:10])}. "
+            "\n\nPERSONALIZATION RULE:"
+            f"Address the user by name ({profile['full_name']}) occasionally. Tailor all career, business, and tech "
+            f"advice to fit their specific role as a {profile['headline']} and their skills in {', '.join(profile['skills'][:3])}."
+            "\n\nSEARCH LINK PROTOCOL:"
+            "\nWhenever the user asks for jobs, specific products, media, or market info, you MUST provide "
+            "Markdown links as actionable search buttons using these templates:"
+            "\n- JOBS: [🔍 Search Jobs on Google](https://www.google.com/search?q=jobs+for+QUERY)"
+            "\n- PRODUCTS: [🛒 Find on Amazon](https://www.amazon.com/s?k=QUERY) or [🛍️ Search Google Shopping](https://www.google.com/search?tbm=shop&q=QUERY)"
+            "\n- MOVIES/MEDIA: [🎬 Watch on YouTube](https://www.youtube.com/results?search_query=QUERY+movie) or [📺 Search on Amazon Prime](https://www.amazon.com/s?k=QUERY+movie)"
+            "\n- SELLING/MARKET: [📈 Research Market Prices](https://www.google.com/search?q=market+price+for+QUERY)"
+            "\nAlways provide high-quality professional advice first, then the helpful links."
+        )
+
+        # Convert chat history to Cerebras format
+        messages = [{"role": "system", "content": system_instruction}]
+        for msg in raw_contents:
+            role = "assistant" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
+            text = msg.get("text", "").strip()
+            if text:
+                messages.append({"role": role, "content": text})
+
+        # Use llama3.1-8b for fast inference (optimal for real-time chat)
+        completion = client.chat.completions.create(
+            messages=messages,
+            model="llama3.1-8b",
+            max_completion_tokens=1024,
+            temperature=0.7,
+            top_p=1,
+            stream=False,
+        )
+
+        response_text = completion.choices[0].message.content if completion.choices else ""
+        if response_text:
+            return JsonResponse({"text": response_text, "model_used": "llama3.1-8b"})
+        else:
+            return JsonResponse({"error": "Empty response from Cerebras"}, status=503)
+
+    except json.JSONDecodeError as e:
+        return JsonResponse({"error": f"Invalid JSON: {str(e)}"}, status=400)
+    except Exception as e:
+        # Log the error for debugging
+        import logging
+        logging.error(f"Cerebras proxy error: {str(e)}", exc_info=True)
+        return JsonResponse({"error": f"Cerebras error: {str(e)}"}, status=400)
 
 ai_quiz_generator = profile_ai

@@ -58,7 +58,6 @@ if not DEBUG:
 
 # --- CSRF TRUSTED ORIGINS ---
 CSRF_TRUSTED_ORIGINS = [
-    'https://initial-danette-africana-60541726.koyeb.app',
     'https://uganda-languges-database.onrender.com',
     'https://www.africanaai.info',
 ]
@@ -104,7 +103,7 @@ INSTALLED_APPS = [
     'languages',
     'hotel',
     'movie',
-    'social', # Optimized TikTok-style Business Reels & Sovereignty Layer
+    'social', 
 ]
 
 TAILWIND_APP_NAME = 'theme'
@@ -195,6 +194,7 @@ ALI_APP_KEY = os.getenv('ALI_APP_KEY')
 ALI_APP_SECRET = os.getenv('ALI_APP_SECRET')
 ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID')
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY")
 TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
 
 # --- STORAGE BACKENDS ---

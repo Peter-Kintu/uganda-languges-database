@@ -23,6 +23,7 @@ urlpatterns = [
 
     # --- AI Services & Career Tools ---
     path("api/v1/gemini_proxy/", views.gemini_proxy, name="gemini_proxy"),
+    path("api/v1/cerebras_proxy/", views.cerebras_proxy, name="cerebras_proxy"),
     path('profile/ai-companion/', views.profile_ai, name='profile_ai'),
     path('api/v1/tts/', views.tts_proxy, name='tts_proxy'),
 ]
