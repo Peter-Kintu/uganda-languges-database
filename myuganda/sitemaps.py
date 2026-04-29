@@ -90,21 +90,25 @@ def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.
     """
     # Get the standard sitemap response
     response = sitemap_view(request, sitemaps, section, template_name, content_type)
-    
+
+    # Ensure the sitemap response is rendered before reading content
+    if hasattr(response, 'render') and not getattr(response, 'is_rendered', False):
+        response = response.render()
+
     # Replace the Koyeb domain with the correct domain from settings
     if hasattr(response, 'content'):
         content = response.content.decode('utf-8')
-        
+
         # Get the request domain (e.g., https://initial-danette-africana-60541726.koyeb.app)
         request_domain = f"https://{request.get_host()}"
-        
+
         # Get the correct domain from settings (e.g., https://www.africanaai.info)
         correct_domain = f"https://{settings.DEFAULT_DOMAIN}"
-        
+
         # Replace all occurrences of the request domain with the correct domain
         if request_domain != correct_domain:
             content = content.replace(request_domain, correct_domain)
-        
+
         response.content = content.encode('utf-8')
-    
+
     return response
