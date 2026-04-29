@@ -94,7 +94,14 @@ def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.
     """
     # Attach a site object so Django's sitemap view does not try to look up a missing Site row.
     if not hasattr(request, 'site'):
-        request.site = Site(domain=settings.DEFAULT_DOMAIN, name=settings.DEFAULT_DOMAIN)
+        default_site_id = getattr(settings, 'SITE_ID', 1) or 1
+        request.site, _ = Site.objects.get_or_create(
+            pk=default_site_id,
+            defaults={
+                'domain': settings.DEFAULT_DOMAIN,
+                'name': settings.DEFAULT_DOMAIN,
+            }
+        )
 
     # Get the standard sitemap response
     response = sitemap_view(request, sitemaps, section, template_name, content_type)
