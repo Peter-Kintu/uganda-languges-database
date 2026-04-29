@@ -5,162 +5,208 @@
 {% block title %}{{ user.get_full_name|default:user.username }}'s Profile | Africana AI{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8 sm:py-12">
-    <div class="max-w-4xl mx-auto bg-gray-800 rounded-3xl shadow-4xl border border-indigo-500/50 p-6 sm:p-10">
-
-        <header class="pb-6 border-b border-gray-700 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div class="flex items-center space-x-6">
-                {% if user.profile_image %}
-                    <img src="{{ user.profile_image.url }}" alt="{{ user.username }}" class="w-24 h-24 rounded-full object-cover border-4 border-indigo-500 shadow-lg">
-                {% else %}
-                    <div class="w-24 h-24 rounded-full bg-indigo-600 flex items-center justify-center text-4xl text-white font-bold border-4 border-indigo-500 shadow-lg">
-                        {{ user.username|slice:":1"|upper }}
-                    </div>
-                {% endif %}
-
-                <div>
-                    <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                        {{ user.get_full_name|default:user.username }}
-                    </h1>
-                    {% if user.headline %}
-                        <p class="text-xl text-indigo-400 mt-1 font-medium">{{ user.headline }}</p>
-                    {% endif %}
-                    {% if user.location %}
-                        <p class="text-gray-400 mt-1 flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ user.location }}</span>
-                        </p>
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto">
+        <!-- Profile Header Card -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 h-32 relative">
+                <div class="absolute inset-0 bg-black/10"></div>
+                <div class="absolute -bottom-16 left-8">
+                    {% if user.profile_image %}
+                        <img src="{{ user.profile_image.url }}" alt="{{ user.username }}" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl">
+                    {% else %}
+                        <div class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-4xl text-white font-bold border-4 border-white shadow-xl">
+                            {{ user.username|slice:":1"|upper }}
+                        </div>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="flex flex-wrap gap-3 w-full md:w-auto">
-                {% if user != request.user %}
-                <a href="{% url 'hotel:send_message' user.id %}" class="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-xl shadow-sm text-white bg-green-600 hover:bg-green-700 transition duration-150">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                    </svg>
-                    Message
-                </a>
-                {% endif %}
-                
-                <a href="{% url 'users:profile_edit' %}" class="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition duration-150">
-                    Edit Profile
-                </a>
-                
-                <a href="{% url 'languages:recruiters_page' %}" class="inline-flex items-center justify-center px-5 py-2.5 border border-indigo-500/50 text-sm font-semibold rounded-xl shadow-sm text-white bg-indigo-500/20 hover:bg-indigo-500/40 transition duration-150">
-                    <svg class="w-4 h-4 mr-2 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    View Recruiters
-                </a>
+            <div class="pt-20 pb-8 px-8">
+                <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                    <div class="flex-1">
+                        <h1 class="text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
+                            {{ user.get_full_name|default:user.username }}
+                        </h1>
+                        {% if user.headline %}
+                            <p class="text-xl text-indigo-600 font-medium mb-2">{{ user.headline }}</p>
+                        {% endif %}
+                        {% if user.location %}
+                            <div class="flex items-center text-slate-600 mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                </svg>
+                                <span>{{ user.location }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
 
-                <a href="{% url 'users:profile_ai' %}" class="inline-flex items-center justify-center px-5 py-2.5 border border-indigo-500/50 text-sm font-semibold rounded-xl shadow-sm text-indigo-300 bg-indigo-900/40 hover:bg-indigo-900/60 transition duration-150">
-                    🤖 AI Companion
-                </a>
+                    <div class="flex flex-wrap gap-3">
+                        {% if user != request.user %}
+                        <a href="{% url 'hotel:send_message' user.id %}" class="inline-flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                            Message
+                        </a>
+                        {% endif %}
+
+                        <a href="{% url 'users:profile_edit' %}" class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            Edit Profile
+                        </a>
+
+                        <a href="{% url 'languages:recruiters_page' %}" class="inline-flex items-center justify-center px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 border border-slate-200">
+                            <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            View Recruiters
+                        </a>
+
+                        <a href="{% url 'users:profile_ai' %}" class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
+                            <span class="mr-2">🤖</span>
+                            AI Companion
+                        </a>
+                    </div>
+                </div>
             </div>
-        </header>
+        </div>
 
-        <section class="mb-10 bg-indigo-900/20 rounded-2xl border border-indigo-500/20 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-white flex items-center">
-                    <span class="mr-2">🌍</span> Ambassador Status
+        <!-- Ambassador Status Card -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-slate-900 flex items-center">
+                    <span class="mr-3">🌍</span> Ambassador Status
                 </h2>
-                <span class="bg-green-500/20 text-green-400 text-xs font-bold px-3 py-1 rounded-full border border-green-500/30 uppercase tracking-wider">
+                <span class="bg-emerald-100 text-emerald-800 text-sm font-bold px-4 py-2 rounded-full border border-emerald-200">
                     Active Earner
                 </span>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700">
-                    <p class="text-gray-400 text-sm uppercase font-bold tracking-widest mb-2">Referral Link</p>
-                    <div class="flex items-center space-x-2">
-                        <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}?ref={{ user.username }}" id="refLink" class="bg-gray-800 border-none text-indigo-300 text-xs rounded-lg block w-full p-2.5 focus:ring-0">
-                        <button onclick="copyRefLink()" id="copyBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-lg transition-all active:scale-95">
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-slate-600 text-sm font-semibold uppercase tracking-wide">Referral Link</p>
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}?ref={{ user.username }}" id="refLink" class="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <button onclick="copyRefLink()" id="copyBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-lg transition-all duration-200 active:scale-95 shadow-lg">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                             </svg>
                         </button>
                     </div>
-                    <p class="text-[10px] text-gray-500 mt-2 italic">Earn commissions on vendor sales via your link.</p>
+                    <p class="text-xs text-slate-500 mt-3 italic">Earn commissions on vendor sales via your link.</p>
                 </div>
 
-                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700 flex flex-col justify-center">
-                    <p class="text-gray-400 text-sm uppercase font-bold tracking-widest mb-1">Total Earnings</p>
-                    <h3 class="text-3xl font-black text-green-400">
+                <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl border border-emerald-200 flex flex-col justify-center">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-slate-600 text-sm font-semibold uppercase tracking-wide">Total Earnings</p>
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-3xl font-bold text-emerald-700 mb-1">
                         UGX {{ user.total_referral_earnings|default:"0"|floatformat:0 }}
                     </h3>
-                    <p class="text-[10px] text-gray-500 italic">Confirmed upon successful delivery.</p>
+                    <p class="text-xs text-slate-500 italic">Confirmed upon successful delivery.</p>
                 </div>
             </div>
-        </section>
+        </div>
 
         {% if user.profile_notifications.exists %}
-        <section class="mb-10 bg-gray-900/30 rounded-2xl border border-gray-700 p-6">
-            <h2 class="text-xl font-bold text-indigo-400 mb-4 flex items-center">
-                <span class="mr-2">🔔</span> Recent Activity
+        <!-- Recent Activity Card -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8 mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                <span class="mr-3">🔔</span> Recent Activity
             </h2>
-            <div class="space-y-3">
+            <div class="space-y-4">
                 {% for alert in user.profile_notifications.all|slice:":3" %}
-                <div class="p-4 rounded-xl bg-gray-800/40 border {% if not alert.is_read %}border-indigo-500/40 bg-indigo-500/5 shadow-md{% else %}border-gray-700{% endif %} flex justify-between items-center">
-                    <div class="pr-4">
-                        <p class="text-white font-bold text-sm">{{ alert.title }}</p>
-                        <p class="text-gray-400 text-xs mt-0.5">{{ alert.message }}</p>
+                <div class="p-5 rounded-xl bg-gradient-to-r {% if not alert.is_read %}from-blue-50 to-indigo-50 border-blue-200 shadow-md{% else %}from-slate-50 to-slate-100 border-slate-200{% endif %} border flex justify-between items-center hover:shadow-lg transition-shadow duration-200">
+                    <div class="flex-1 pr-4">
+                        <p class="text-slate-900 font-semibold text-base mb-1">{{ alert.title }}</p>
+                        <p class="text-slate-600 text-sm">{{ alert.message }}</p>
                     </div>
-                    <span class="text-[10px] text-gray-600 font-medium whitespace-nowrap">{{ alert.created_at|timesince }} ago</span>
+                    <div class="flex flex-col items-end">
+                        <span class="text-xs text-slate-500 font-medium whitespace-nowrap">{{ alert.created_at|timesince }} ago</span>
+                        {% if not alert.is_read %}
+                        <span class="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
-        </section>
+        </div>
         {% endif %}
 
-        <section class="mb-10">
-            <h2 class="text-2xl font-bold text-indigo-400 mb-3 border-b border-gray-700/50 pb-2">About</h2>
-            <div class="prose prose-invert max-w-none">
-                <p class="text-gray-300 leading-relaxed">{{ user.about|default:"Professional journey details not yet shared." }}</p>
+        <!-- About Section -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8 mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">About</h2>
+            <div class="prose prose-slate max-w-none">
+                <p class="text-slate-700 leading-relaxed text-lg">{{ user.about|default:"Professional journey details not yet shared." }}</p>
             </div>
-        </section>
+        </div>
 
-        <section class="mb-10">
-            <h2 class="text-2xl font-bold text-indigo-400 mb-4 border-b border-gray-700/50 pb-2">Work Experience</h2>
-            <div class="space-y-6">
+        <!-- Work Experience Section -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8 mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">Work Experience</h2>
+            <div class="space-y-8">
                 {% if user.experiences.all %}
                     {% for exp in user.experiences.all %}
-                        <div class="pl-5 border-l-2 border-indigo-600 relative">
-                            <div class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-600"></div>
-                            <h3 class="text-xl font-semibold text-white">{{ exp.title }}</h3>
-                            <p class="text-indigo-300 font-medium">{{ exp.company_name }}</p>
-                            <p class="text-xs text-gray-500 mb-2 uppercase tracking-wide">
-                                {{ exp.start_date|date:"M Y" }} — {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
-                            </p>
-                            <p class="text-gray-400 text-sm leading-relaxed">{{ exp.description }}</p>
+                        <div class="relative pl-8 border-l-4 border-indigo-500">
+                            <div class="absolute -left-3 top-2 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-xl border border-slate-200">
+                                <h3 class="text-xl font-bold text-slate-900 mb-1">{{ exp.title }}</h3>
+                                <p class="text-indigo-600 font-semibold text-lg mb-2">{{ exp.company_name }}</p>
+                                <p class="text-sm text-slate-500 mb-4 uppercase tracking-wide font-medium">
+                                    {{ exp.start_date|date:"M Y" }} — {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
+                                </p>
+                                <p class="text-slate-700 leading-relaxed">{{ exp.description }}</p>
+                            </div>
                         </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-500 italic text-sm">No work experience entries listed.</p>
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-16 w-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        <p class="text-slate-500 text-lg">No work experience entries listed.</p>
+                        <p class="text-slate-400 text-sm mt-2">Add your professional experience to showcase your career journey.</p>
+                    </div>
                 {% endif %}
             </div>
-        </section>
+        </div>
 
-        <section>
-            <h2 class="text-2xl font-bold text-indigo-400 mb-4 border-b border-gray-700/50 pb-2">Technical Skills</h2>
-            <div class="flex flex-wrap gap-2">
+        <!-- Technical Skills Section -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">Technical Skills</h2>
+            <div class="flex flex-wrap gap-3">
                 {% if user.skills.all %}
                     {% for skill in user.skills.all %}
-                        <span class="px-4 py-1.5 bg-indigo-600/20 text-indigo-300 text-xs font-bold rounded-lg border border-indigo-500/30 hover:bg-indigo-600 hover:text-white transition-all cursor-default">
+                        <span class="px-4 py-2 bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 text-sm font-semibold rounded-full border border-indigo-200 hover:from-indigo-200 hover:to-blue-200 hover:shadow-md transition-all duration-200 cursor-default">
                             {{ skill.name|upper }}
                         </span>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-500 italic text-sm">Add skills to showcase your expertise.</p>
+                    <div class="text-center py-12 w-full">
+                        <svg class="mx-auto h-16 w-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                        <p class="text-slate-500 text-lg">No skills listed yet.</p>
+                        <p class="text-slate-400 text-sm mt-2">Add your technical skills to highlight your expertise.</p>
+                    </div>
                 {% endif %}
             </div>
-        </section>
-
-    </div>
-</div>
+        </div>
 
 <script>
     function copyRefLink() {
@@ -179,4 +225,4 @@
         }, 2000);
     }
 </script>
-{% endblock content %}
+{% endblock %}
