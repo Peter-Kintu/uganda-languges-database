@@ -6,12 +6,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
     :root {
-        --bg-main: #020617;
-        --bg-sidebar: #0f172a;
-        --accent-blue: #3b82f6;
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --glass-border: rgba(255, 255, 255, 0.1);
+        --bg-main: #ffffff;
+        --bg-sidebar: #f5f7fb;
+        --accent-green: #16a34a;
+        --accent-green-dark: #15803d;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --glass-border: rgba(15, 23, 42, 0.08);
+        --user-bg: #d1fae5;
+        --ai-bg: #e2e8f0;
     }
 
     /* Prevent base.html from creating a double scrollbar */
@@ -20,7 +23,7 @@
         margin: 0;
         overflow: hidden;
         background-color: var(--bg-main);
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
         color: var(--text-primary);
     }
 
@@ -56,7 +59,7 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        background: radial-gradient(circle at top right, #0f172a, #020617);
+        background: var(--bg-main);
         height: 100%;
         min-height: 0;
         position: relative;
@@ -65,7 +68,7 @@
     .chat-header {
         flex-shrink: 0;
         padding: 0.75rem 1rem;
-        background: rgba(2, 6, 23, 0.8);
+        background: var(--bg-sidebar);
         backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--glass-border);
         z-index: 10;
@@ -80,11 +83,15 @@
         flex-direction: column;
         gap: 1.5rem;
         scroll-behavior: smooth;
-        min-height: 0; 
+        min-height: 0;
+        background: #ffffff;
+        border-radius: 1.5rem;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
     }
 
     #chatLog::-webkit-scrollbar { width: 6px; }
-    #chatLog::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+    #chatLog::-webkit-scrollbar-track { background: transparent; }
+    #chatLog::-webkit-scrollbar-thumb { background: var(--accent-green); border-radius: 3px; opacity: 0.5; }
 
     .chat-message {
         max-width: 85%;
@@ -101,15 +108,16 @@
 
     .chat-message.user {
         align-self: flex-end;
-        background: var(--accent-blue);
-        color: white;
+        background: var(--user-bg);
+        color: var(--text-primary);
         border-bottom-right-radius: 4px;
     }
 
     .chat-message.ai {
         align-self: flex-start;
-        background: #1e293b;
-        border: 1px solid var(--glass-border);
+        background: var(--ai-bg);
+        color: var(--text-primary);
+        border: 1px solid rgba(15, 23, 42, 0.08);
         border-bottom-left-radius: 4px;
     }
 
@@ -123,7 +131,7 @@
     .input-glass-wrapper {
         display: flex;
         align-items: flex-end;
-        background: rgba(30, 41, 59, 0.5);
+        background: rgba(30, 42, 47, 0.8);
         border: 1px solid var(--glass-border);
         border-radius: 1.25rem;
         padding: 0.5rem 0.75rem;
@@ -145,7 +153,7 @@
     }
 
     .btn-send {
-        background: var(--accent-blue);
+        background: var(--accent-green);
         color: white;
         border: none;
         width: 38px;
@@ -155,9 +163,18 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: transform 0.1s;
+        transition: all 0.2s;
         margin-bottom: 2px;
         flex-shrink: 0;
+    }
+
+    .btn-send:hover {
+        background: var(--accent-green-dark);
+        transform: scale(1.05);
+    }
+
+    .btn-send:active {
+        transform: scale(0.95);
     }
 
     @media (max-width: 768px) {
@@ -182,11 +199,16 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        transition: all 0.2s;
+    }
+
+    .history-item:hover {
+        background: rgba(37, 211, 102, 0.1);
     }
 
     .history-item.active {
-        background: rgba(59, 130, 246, 0.15);
-        color: white;
+        background: rgba(37, 211, 102, 0.2);
+        color: var(--accent-green);
         font-weight: 600;
     }
 
@@ -194,7 +216,7 @@
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0,0,0,0.7);
         z-index: 90;
         backdrop-filter: blur(2px);
     }
@@ -226,11 +248,11 @@
                 <button id="sidebarToggle" class="p-1 text-slate-400">
                     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <span class="font-bold text-sm tracking-tight">Africana AI <span class="text-blue-500">Companion</span></span>
+                <span class="font-bold text-sm tracking-tight">Africana AI <span style="color: var(--accent-green);">Companion</span></span>
             </div>
-            <div class="flex items-center gap-2 px-2 py-1 bg-emerald-500/10 rounded border border-emerald-500/20">
-                <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span class="text-[8px] font-black text-emerald-500 uppercase">Live</span>
+            <div class="flex items-center gap-2 px-2 py-1 rounded border" style="background: rgba(37, 211, 102, 0.1); border-color: var(--accent-green);">
+                <div class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--accent-green);"></div>
+                <span class="text-[8px] font-black uppercase" style="color: var(--accent-green);">Live</span>
             </div>
         </header>
 
@@ -253,6 +275,15 @@
     const chatLog = document.getElementById('chatLog');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
+    const WELCOME_MESSAGE = "Hello! How can I assist with your career goals today?";
+    const CSRF_TOKEN = getCookie('csrftoken');
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
 
     document.getElementById('sidebarToggle').onclick = () => {
         sidebar.classList.add('active');
@@ -284,11 +315,11 @@
         scrollToBottom();
 
         try {
-            const response = await fetch("{% url 'users:gemini_proxy' %}", {
+            const response = await fetch("{% url 'users:cerebras_proxy' %}", {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': CSRF_TOKEN
                 },
                 body: JSON.stringify({ 
                     contents: [...getSessionHistory(currentSessionId), { role: 'user', text: text }] 
@@ -296,13 +327,29 @@
             });
 
             const data = await response.json();
+            if (!response.ok) {
+                const errorMessage = data.error || `Server error (${response.status})`;
+                appendMessage('ai', errorMessage);
+                saveMessage(currentSessionId, 'user', text);
+                saveMessage(currentSessionId, 'ai', errorMessage);
+                updateHistorySidebar();
+                return;
+            }
+
             if (data.text) {
                 appendMessage('ai', data.text);
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
+            } else {
+                const errorMessage = data.error || "No response from Africana AI.";
+                appendMessage('ai', errorMessage);
+                saveMessage(currentSessionId, 'user', text);
+                saveMessage(currentSessionId, 'ai', errorMessage);
+                updateHistorySidebar();
             }
         } catch (e) {
+            console.error(e);
             appendMessage('ai', "System Error: Connection failed.");
         }
     }
@@ -311,7 +358,8 @@
         const div = document.createElement('div');
         div.className = `chat-message ${role}`;
         let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
-        div.innerHTML = `<div class="text-[10px] font-bold opacity-30 mb-1 uppercase">${role === 'user' ? 'You' : 'Africana'}</div>${formattedText}`;
+        const labelColor = role === 'user' ? '#e9edef' : 'var(--accent-green)';
+        div.innerHTML = `<div class="text-[10px] font-bold opacity-50 mb-1 uppercase" style="color: ${labelColor};">${role === 'user' ? 'You' : 'Africana'}</div>${formattedText}`;
         chatLog.appendChild(div);
         
         requestAnimationFrame(() => {
@@ -324,18 +372,32 @@
     }
 
     function getSessionHistory(id) {
-        return JSON.parse(localStorage.getItem('chat_sessions') || '{}')[id] || [];
+        try {
+            return JSON.parse(localStorage.getItem('chat_sessions') || '{}')[id] || [];
+        } catch (err) {
+            return [];
+        }
     }
 
     function saveMessage(id, role, text) {
-        const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
+        let sessions = {};
+        try {
+            sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
+        } catch (err) {
+            sessions = {};
+        }
         if (!sessions[id]) sessions[id] = [];
         sessions[id].push({ role, text });
         localStorage.setItem('chat_sessions', JSON.stringify(sessions));
     }
 
     function updateHistorySidebar() {
-        const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
+        let sessions = {};
+        try {
+            sessions = JSON.parse(localStorage.getItem('chat_sessions') || '{}');
+        } catch (err) {
+            sessions = {};
+        }
         const container = document.getElementById('historyList');
         container.innerHTML = '';
         Object.keys(sessions).reverse().forEach(id => {
@@ -356,7 +418,8 @@
         chatLog.innerHTML = '';
         const history = getSessionHistory(id);
         if (history.length === 0) {
-            appendMessage('ai', "Hello! How can I assist with your career goals today?");
+            appendMessage('ai', WELCOME_MESSAGE);
+            saveMessage(id, 'ai', WELCOME_MESSAGE);
         } else {
             history.forEach(m => appendMessage(m.role, m.text));
         }
@@ -365,12 +428,14 @@
     }
 
     function createNewChat() {
-        switchSession('sess_' + Date.now());
+        const newSessionId = 'sess_' + Date.now();
+        switchSession(newSessionId);
     }
 
     function clearChat() {
         if(confirm("Erase all history?")) {
-            localStorage.clear();
+            localStorage.removeItem('chat_sessions');
+            localStorage.removeItem('lastSessionId');
             location.reload();
         }
     }

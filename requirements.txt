@@ -26,6 +26,7 @@ django-widget-tweaks
 # Integrations & APIs
 python-aliexpress-api
 google-genai
+cerebras-cloud-sdk
 phonenumbers
 requests
 python-jobspy
@@ -33,3 +34,7 @@ python-jobspy
 # Required Core (The fix for your Pydantic error)
 pydantic
 pydantic-core
+
+# NumPy (pre-built wheel for Windows compatibility)
+numpy>=1.26.4
+
