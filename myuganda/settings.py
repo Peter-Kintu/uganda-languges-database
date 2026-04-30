@@ -150,9 +150,16 @@ if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL, 
-            conn_max_age=600, 
+            conn_max_age=60,  # Reduced to 1 minute for faster recycling
             ssl_require=True 
         )
+    }
+    # Add keepalive options to prevent SSL connection drops
+    DATABASES['default']['OPTIONS'] = {
+        'keepalives': 1,
+        'keepalives_idle': 30,
+        'keepalives_interval': 10,
+        'keepalives_count': 5,
     }
 else:
     DATABASES = {

@@ -1568,50 +1568,6 @@
 
 
 
-                <!-- Adsterra Native Ad - Every 3 feed items -->
-                {% if forloop.counter|divisibleby:3 %}
-                <div class="post-card">
-                    <!-- Post Header (identical structure to real posts) -->
-                    <div class="post-header">
-                        <div class="post-author">
-                            <div class="avatar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); font-size: 18px; width: 40px; height: 40px;">🎯</div>
-                            <div class="post-author-info">
-                                <div class="author-name">
-                                    Africana Promotions
-                                    <span style="background: var(--primary); color: white; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: middle;">Sponsored</span>
-                                </div>
-                                <div class="author-meta">@africana_promo · Promoted for you</div>
-                            </div>
-                        </div>
-                        <button class="post-menu" title="Why am I seeing this?" onclick="alert('This is a sponsored post tailored for your interests.')">⋯</button>
-                    </div>
-
-                    <!-- Adsterra Ad Content Container -->
-                    <div class="post-content" style="position: relative; z-index: 5;">
-                        <script async="async" data-cfasync="false" src="https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js"></script>
-                        <div id="container-2c34356cc6efc4c07773cf2861e26899-{{ forloop.counter }}"></div>
-                    </div>
-
-                    <!-- Post Footer (minimal actions for sponsored content) -->
-                    <div class="post-footer">
-                        <button class="post-action" onclick="event.stopPropagation(); this.classList.toggle('liked')">
-                            <span>❤️</span>
-                            <span>Like</span>
-                        </button>
-                        <button class="post-action">
-                            <span>💬</span>
-                            <span>Comment</span>
-                        </button>
-                        <button class="post-action" onclick="event.stopPropagation(); openShareModal(null, 'Check out this deal on Africana Social!')">
-                            <span>🔄</span>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                </div>
-                {% endif %}
-                {% if forloop.counter|divisibleby:6 %}
-                <script src="https://pl29254075.profitablecpmratenetwork.com/27/e5/0b/27e50b8c47400f5039fbe54e75bc8ca9.js"></script>
-                {% endif %}
             {% endfor %}
         {% else %}
             <div class="post-card" style="text-align: center; padding: 40px;">
