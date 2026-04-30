@@ -662,7 +662,7 @@
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         margin-top: var(--spacing-md);
         position: relative;
-        z-index: 1;
+        z-index: 10;
     }
 
     .post-action {
@@ -1587,14 +1587,14 @@
                     </div>
 
                     <!-- Adsterra Ad Content Container -->
-                    <div class="post-content">
+                    <div class="post-content" style="position: relative; z-index: 5;">
                         <script async="async" data-cfasync="false" src="https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js"></script>
                         <div id="container-2c34356cc6efc4c07773cf2861e26899-{{ forloop.counter }}"></div>
                     </div>
 
                     <!-- Post Footer (minimal actions for sponsored content) -->
                     <div class="post-footer">
-                        <button class="post-action" onclick="this.classList.toggle('liked')">
+                        <button class="post-action" onclick="event.stopPropagation(); this.classList.toggle('liked')">
                             <span>❤️</span>
                             <span>Like</span>
                         </button>
@@ -1602,7 +1602,7 @@
                             <span>💬</span>
                             <span>Comment</span>
                         </button>
-                        <button class="post-action" onclick="openShareModal(null, 'Check out this deal on Africana Social!')">
+                        <button class="post-action" onclick="event.stopPropagation(); openShareModal(null, 'Check out this deal on Africana Social!')">
                             <span>🔄</span>
                             <span>Share</span>
                         </button>
