@@ -122,9 +122,17 @@ def post_job(request):
 
 # API Credentials
 JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY") or "46f60849-92b7-4a9f-a381-709376fe6f92"
-CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID", "a9927b4ab404ffaff0e637290f35b7a8")
+# Try both CAREERJET_PUBLISHER_ID and CAREERJET_API_KEY for compatibility
+CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID") or os.getenv("CAREERJET_API_KEY") or "a9927b4ab404ffaff0e637290f35b7a8"
 CAREERJET_API_ENABLED = os.getenv("CAREERJET_ENABLED", "1").lower() in ("1", "true", "yes")
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
+
+# Log API key status for debugging (first 6 chars only for security)
+if CAREERJET_API_KEY:
+    key_preview = CAREERJET_API_KEY[:6] + "..." if len(CAREERJET_API_KEY) > 6 else "****"
+    print(f"[CareerJet] API Key loaded: {key_preview}")
+else:
+    print("[CareerJet] WARNING: No API key found!")
 
 # Simple in-memory cache for API results (5 minutes)
 api_cache = {}
@@ -443,6 +451,12 @@ def fetch_careerjet_data(request, keywords, location=""):
         session.mount("http://", adapter)
         session.headers.update(headers)
 
+        print(f"[CareerJet] Request details:")
+        print(f"  URL: {url}")
+        print(f"  Location param: '{params.get('location', 'empty')}'")
+        print(f"  Keywords: '{params.get('keywords', 'empty')}'")
+        print(f"  Auth header: {headers.get('Authorization', 'MISSING')[:20]}...")
+
         response = session.get(url, params=params, timeout=20)
         print(f"CareerJet Status: {response.status_code}")
 
@@ -520,29 +534,38 @@ def fetch_careerjet_data(request, keywords, location=""):
                         set_cache_result(cache_key, processed_jobs)
                         return processed_jobs
         
-        # For 403/429 errors, just return empty list - don't disable the entire API
+        # For 403/429 errors, provide detailed diagnostics
         elif response.status_code in (403, 429):
-            print(f"CareerJet: {response.status_code} - Returning empty results for this request")
+            print(f"\n[CareerJet ERROR] {response.status_code} - Access Denied")
+            print(f"Response headers: {dict(response.headers)}")
+            print(f"Response body (first 200 chars): {response.text[:200]}")
+            print("\n[TROUBLESHOOTING]")
+            print("1. API Key: Verify CAREERJET_API_KEY or CAREERJET_PUBLISHER_ID is correct in .env")
+            print("2. IP Whitelisting: Check if your production IP needs to be whitelisted in CareerJet dashboard")
+            print("3. Affiliate Account: Ensure your CareerJet account is 'activated' for API access")
+            print("4. Rate Limiting: You may have exceeded rate limits - try again later\n")
             return []
         elif response.status_code == 401:
-            print("CareerJet: 401 Unauthorized - Check API key")
+            print("[CareerJet] 401 Unauthorized - API key is invalid or expired")
+            print(f"Response: {response.text[:200]}")
+            print("ACTION: Update CAREERJET_API_KEY or CAREERJET_PUBLISHER_ID in your .env file\n")
             return []
         else:
-            print(f"CareerJet: Error {response.status_code}")
+            print(f"CareerJet: Error {response.status_code} - {response.text[:100]}")
             return []
 
     except requests.exceptions.Timeout:
-        print("CareerJet: Request timeout")
+        print("[CareerJet] Request timeout - server not responding")
         return []
-    except requests.exceptions.ConnectionError:
-        print("CareerJet: Connection error")
+    except requests.exceptions.ConnectionError as e:
+        print(f"[CareerJet] Connection error: {str(e)[:100]}")
         return []
     except Exception as e:
-        print(f"CareerJet Error: {str(e)[:100]}")
-    except:
-        return 1.0
+        print(f"[CareerJet] Unexpected error: {str(e)[:100]}")
+        return []
 
-def get_client_ip(request):
+
+def get_exchange_rate(from_curr, to_curr="UGX"):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0].strip()
