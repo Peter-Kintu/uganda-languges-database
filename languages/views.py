@@ -177,6 +177,55 @@ BAD_TITLE_KEYWORDS = [
 ]
 BAD_TITLES_EXACT = ['hiring', 'we are hiring', 'is for hiring', 'jobs', 'job', 'vacancies', 'careers', 'vacancy']
 
+MAX_JOB_AGE_DAYS = 10
+
+def parse_job_date(raw_date):
+    if not raw_date:
+        return None
+    if isinstance(raw_date, datetime):
+        return raw_date
+    if isinstance(raw_date, date):
+        return datetime(raw_date.year, raw_date.month, raw_date.day)
+    value = str(raw_date).strip()
+    if not value:
+        return None
+
+    try:
+        from dateutil import parser
+        return parser.parse(value)
+    except Exception:
+        pass
+
+    clean_value = value.replace('T', ' ').replace('Z', '').split('+')[0].split('Z')[0].strip()
+    formats = [
+        '%Y-%m-%d %H:%M:%S',
+        '%Y-%m-%d %H:%M',
+        '%Y-%m-%d',
+        '%d %b %Y',
+        '%d %B %Y',
+        '%b %d, %Y',
+        '%B %d, %Y',
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(clean_value, fmt)
+        except Exception:
+            continue
+    return None
+
+
+def is_recent_job(raw_date, max_age_days=MAX_JOB_AGE_DAYS):
+    parsed = parse_job_date(raw_date)
+    if not parsed:
+        return True
+    now = datetime.utcnow()
+    try:
+        age = now - parsed
+    except TypeError:
+        return True
+    return age <= timedelta(days=max_age_days)
+
+
 def fetch_jooble_data(keywords, location=""):
     """
     Fetch real-time jobs from Jooble API with global coverage.
@@ -286,6 +335,10 @@ def fetch_jooble_data(keywords, location=""):
                 if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
                     continue
 
+                date_posted = job.get("updated", "") or job.get("date", "")
+                if not is_recent_job(date_posted):
+                    continue
+
                 processed_job = {
                     "source": "Jooble",
                     "title": job.get("title", "Job Title"),
@@ -294,7 +347,7 @@ def fetch_jooble_data(keywords, location=""):
                     "salary": job.get("salary", ""),
                     "description": job.get("snippet", "")[:300] + "..." if job.get("snippet") else "",
                     "link": job.get("link") or job.get("url", ""),
-                    "date_posted": job.get("updated", ""),
+                    "date_posted": date_posted,
                 }
 
                 # Only add if we have a valid link
@@ -331,6 +384,10 @@ def fetch_jooble_data(keywords, location=""):
                         "link": job.get("link") or job.get("url", ""),
                         "date_posted": job.get("updated", ""),
                     }
+                    date_posted = job.get("updated", "") or job.get("date", "")
+                    if not is_recent_job(date_posted):
+                        continue
+
                     if processed_job["link"] and processed_job["link"].startswith('http'):
                         processed_jobs.append(processed_job)
 
@@ -478,6 +535,10 @@ def fetch_careerjet_data(request, keywords, location=""):
                     job_location = job.get("locations", [display_location or "Remote"])
                     job_location = job_location[0] if job_location and isinstance(job_location, list) else job_location or "Remote"
 
+                    date_posted = job.get("date", "") or job.get("updated", "")
+                    if not is_recent_job(date_posted):
+                        continue
+
                     processed_job = {
                         "source": "CareerJet",
                         "title": job.get("title", "Job Title"),
@@ -486,7 +547,7 @@ def fetch_careerjet_data(request, keywords, location=""):
                         "salary": job.get("salary", ""),
                         "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
                         "link": job.get("url", ""),
-                        "date_posted": job.get("date", ""),
+                        "date_posted": date_posted,
                     }
 
                     # Only add if we have a valid link
@@ -517,6 +578,10 @@ def fetch_careerjet_data(request, keywords, location=""):
                             job_location = job.get("locations", ["Worldwide"])
                             job_location = job_location[0] if job_location and isinstance(job_location, list) else job_location or "Worldwide"
 
+                            date_posted = job.get("date", "") or job.get("updated", "")
+                            if not is_recent_job(date_posted):
+                                continue
+
                             processed_job = {
                                 "source": "CareerJet",
                                 "title": job.get("title", "Job Title"),
@@ -525,7 +590,7 @@ def fetch_careerjet_data(request, keywords, location=""):
                                 "salary": job.get("salary", ""),
                                 "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
                                 "link": job.get("url", ""),
-                                "date_posted": job.get("date", ""),
+                                "date_posted": date_posted,
                             }
                             if processed_job["link"] and processed_job["link"].startswith('http'):
                                 processed_jobs.append(processed_job)
