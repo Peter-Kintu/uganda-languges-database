@@ -124,7 +124,6 @@ def post_job(request):
 JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY") or "46f60849-92b7-4a9f-a381-709376fe6f92"
 CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID", "a9927b4ab404ffaff0e637290f35b7a8")
 CAREERJET_API_ENABLED = os.getenv("CAREERJET_ENABLED", "1").lower() in ("1", "true", "yes")
-CAREERJET_TEMP_DISABLED = False
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
 # Simple in-memory cache for API results (5 minutes)
@@ -154,15 +153,13 @@ def set_cache_result(cache_key, data):
 
 
 def normalize_search_location(location):
+    """Normalize location input - accepts any location or empty for global"""
     if not location or not str(location).strip():
-        return ""
+        return ""  # Empty means global search
     normalized = str(location).strip().lower()
     if normalized in ["world", "global", "all", "remote", "anywhere"]:
-        return ""
-    if normalized in ["africa", "east africa"]:
-        return "Africa"
-    if "uganda" in normalized:
-        return "Uganda"
+        return ""  # Treat as global
+    # Return the original location as-is to support all countries and regions
     return str(location).strip()
 
 BAD_TITLE_KEYWORDS = [
@@ -172,9 +169,10 @@ BAD_TITLE_KEYWORDS = [
 ]
 BAD_TITLES_EXACT = ['hiring', 'we are hiring', 'is for hiring', 'jobs', 'job', 'vacancies', 'careers', 'vacancy']
 
-def fetch_jooble_data(keywords, location="Uganda"):
+def fetch_jooble_data(keywords, location=""):
     """
-    Fetch real-time jobs from Jooble API with enhanced anti-detection measures
+    Fetch real-time jobs from Jooble API with global coverage.
+    Supports jobs from all African countries and the rest of the world.
     """
     # Check cache first
     cache_key = get_cache_key("jooble", keywords or "jobs", location or "global")
@@ -357,26 +355,13 @@ def job_redirect(request):
     return redirect('/')
 
 
-def fetch_careerjet_data(request, keywords, location="Uganda"):
+def fetch_careerjet_data(request, keywords, location=""):
     """
-    Fetch real-time jobs from CareerJet API with enhanced reliability
-
-    NOTE: CareerJet API is currently returning 403 Forbidden errors.
-    This may be due to:
-    - Invalid/expired API key
-    - CareerJet discontinuing their free API service
-    - Changes in authentication requirements
-
-    The function now handles 403 errors gracefully by returning empty results
-    instead of failing repeatedly.
+    Fetch real-time jobs from CareerJet API with global coverage.
+    Supports jobs from all African countries and the rest of the world.
     """
-    global CAREERJET_TEMP_DISABLED
-
-    if not CAREERJET_API_ENABLED or CAREERJET_TEMP_DISABLED:
-        if not CAREERJET_API_ENABLED:
-            print("CareerJet: Disabled via environment variable CAREERJET_ENABLED")
-        else:
-            print("CareerJet: Temporarily disabled due to earlier 403/429 errors")
+    if not CAREERJET_API_ENABLED:
+        print("CareerJet: Disabled via environment variable CAREERJET_ENABLED")
         return []
 
     # Check cache first
@@ -388,37 +373,44 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
     if not keywords:
         keywords = "jobs"
 
-    # CareerJet works better with single words
-    keywords = keywords.split()[0] if keywords else "jobs"
+    # Use full keywords for better results
+    search_keywords = keywords
 
     url = "https://search.api.careerjet.net/v4/query"
 
     # Get real user data for better API compliance
     user_ip = get_client_ip(request) or '127.0.0.1'
     user_agent = request.META.get('HTTP_USER_AGENT', '') or 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    referer = request.build_absolute_uri()
 
     normalized_location = normalize_search_location(location)
-    careerjet_location = normalized_location if normalized_location else ""
 
-    # Enhanced parameters for better results
+    # Simplified parameters for global coverage
     params = {
         'locale_code': 'en_GB',
-        'keywords': keywords,
-        'location': careerjet_location,
-        'page_size': 25,  # Increased from 20
+        'keywords': search_keywords,
+        'location': normalized_location,  # Can be empty for global search
+        'page_size': 30,
         'user_ip': user_ip,
         'user_agent': user_agent,
-        'sort': 'date',  # Sort by date for freshest jobs
+        'sort': 'date',
     }
 
     credentials = base64.b64encode(f"{CAREERJET_API_KEY}:".encode()).decode()
 
-    # Enhanced headers
+    # Rotate user agents for better Cloudflare bypass
+    user_agents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+    ]
+    selected_ua = random.choice(user_agents)
+
+    # Enhanced headers to bypass Cloudflare
     headers = {
         'Authorization': f'Basic {credentials}',
         'Content-Type': 'application/json',
-        'User-Agent': user_agent,
+        'User-Agent': selected_ua,
         'Accept': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
@@ -436,15 +428,16 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
         'Sec-CH-UA-Platform': '"Windows"',
     }
 
-    print(f"CareerJet: Searching '{keywords}' in '{params['location'] or 'Global'}'")
+    display_location = normalized_location if normalized_location else 'Worldwide'
+    print(f"CareerJet: Searching '{search_keywords}' in '{display_location}'")
 
     # Add small delay to avoid rate limiting
     time.sleep(random.uniform(0.3, 1.0))
 
     try:
-        # Use session for better connection handling and retry
+        # Use session for better connection handling
         session = requests.Session()
-        retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[403, 429, 500, 502, 503, 504], allowed_methods=["POST", "GET"])
+        retry = Retry(total=2, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504], allowed_methods=["POST", "GET"])
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("https://", adapter)
         session.mount("http://", adapter)
@@ -452,12 +445,6 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
 
         response = session.get(url, params=params, timeout=20)
         print(f"CareerJet Status: {response.status_code}")
-
-        # Handle specific 403 errors (API key issues or service discontinued)
-        if response.status_code == 403:
-            print("CareerJet: 403 Forbidden - API access blocked. CareerJet API may require a valid key or has discontinued free access.")
-            print("CareerJet: Skipping CareerJet integration to prevent repeated failures.")
-            return []
 
         if response.status_code == 200:
             data = response.json()
@@ -474,11 +461,14 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
                     if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
                         continue
 
+                    job_location = job.get("locations", [display_location or "Remote"])
+                    job_location = job_location[0] if job_location and isinstance(job_location, list) else job_location or "Remote"
+
                     processed_job = {
                         "source": "CareerJet",
                         "title": job.get("title", "Job Title"),
                         "company": job.get("company", "Company"),
-                        "location": job.get("locations", [location or "Remote"])[0] if job.get("locations") else location or "Remote",
+                        "location": job_location,
                         "salary": job.get("salary", ""),
                         "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
                         "link": job.get("url", ""),
@@ -494,45 +484,10 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
                 return processed_jobs
 
             elif response_type == 'LOCATIONS':
-                print(f"CareerJet: Location error - {data.get('message')}")
-                print(f"Available locations: {data.get('locations', [])[:5]}")
-
-                # Try with Uganda specifically
-                params['location'] = 'Uganda'
-                print("CareerJet: Retrying with location='Uganda'")
-                response = session.get(url, params=params, timeout=20)
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get('type') == 'JOBS':
-                        jobs = data.get("jobs", [])
-                        processed_jobs = []
-                        for job in jobs:
-                            title = job.get("title", "").lower()
-                            if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
-                                continue
-
-                            processed_job = {
-                                "source": "CareerJet",
-                                "title": job.get("title", "Job Title"),
-                                "company": job.get("company", "Company"),
-                                "location": job.get("locations", [location or "Remote"])[0] if job.get("locations") else location or "Remote",
-                                "salary": job.get("salary", ""),
-                                "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
-                                "link": job.get("url", ""),
-                                "date_posted": job.get("date", ""),
-                            }
-                            if processed_job["link"] and processed_job["link"].startswith('http'):
-                                processed_jobs.append(processed_job)
-
-                        print(f"CareerJet: Uganda search found {len(processed_jobs)} jobs")
-                        set_cache_result(cache_key, processed_jobs)
-                        return processed_jobs
-
-                # Final fallback - global search
+                # Location not found - try global search
+                print(f"CareerJet: Location '{normalized_location}' not found - trying global search")
                 params['location'] = ''
-                print("CareerJet: Final fallback - global search")
-                time.sleep(0.8)
+                time.sleep(0.5)
                 response = session.get(url, params=params, timeout=20)
 
                 if response.status_code == 200:
@@ -545,11 +500,14 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
                             if any(bad in title for bad in BAD_TITLE_KEYWORDS) or title in BAD_TITLES_EXACT:
                                 continue
 
+                            job_location = job.get("locations", ["Worldwide"])
+                            job_location = job_location[0] if job_location and isinstance(job_location, list) else job_location or "Worldwide"
+
                             processed_job = {
                                 "source": "CareerJet",
                                 "title": job.get("title", "Job Title"),
                                 "company": job.get("company", "Company"),
-                                "location": job.get("locations", ["Global"])[0] if job.get("locations") else "Global",
+                                "location": job_location,
                                 "salary": job.get("salary", ""),
                                 "description": job.get("description", "")[:300] + "..." if job.get("description") else "",
                                 "link": job.get("url", ""),
@@ -561,18 +519,16 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
                         print(f"CareerJet: Global search found {len(processed_jobs)} jobs")
                         set_cache_result(cache_key, processed_jobs)
                         return processed_jobs
-
+        
+        # For 403/429 errors, just return empty list - don't disable the entire API
         elif response.status_code in (403, 429):
-            print(f"CareerJet: {response.status_code} blocked. API key may be invalid or service discontinued.")
-            print("CareerJet: Temporarily disabling CareerJet API calls to prevent further errors")
-            CAREERJET_TEMP_DISABLED = True
+            print(f"CareerJet: {response.status_code} - Returning empty results for this request")
             return []
         elif response.status_code == 401:
-            print("CareerJet: 401 Unauthorized - API key is invalid or expired")
-            CAREERJET_TEMP_DISABLED = True
+            print("CareerJet: 401 Unauthorized - Check API key")
             return []
         else:
-            print(f"CareerJet: Error {response.status_code} - {response.text[:200]}")
+            print(f"CareerJet: Error {response.status_code}")
             return []
 
     except requests.exceptions.Timeout:
@@ -581,25 +537,8 @@ def fetch_careerjet_data(request, keywords, location="Uganda"):
     except requests.exceptions.ConnectionError:
         print("CareerJet: Connection error")
         return []
-    except requests.exceptions.RetryError as e:
-        if "403" in str(e) or "429" in str(e):
-            print("CareerJet: Too many blocked responses - API access blocked")
-            print("CareerJet: Disabling CareerJet integration temporarily")
-            CAREERJET_TEMP_DISABLED = True
-        else:
-            print(f"CareerJet: Retry error - {e}")
-        return []
     except Exception as e:
-        print(f"CareerJet API Error: {e}")
-        return []
-
-def get_exchange_rate(from_curr, to_curr="UGX"):
-    if not EXCHANGE_RATE_API_KEY or from_curr == to_curr:
-        return 1.0
-    try:
-        url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/pair/{from_curr}/{to_curr}"
-        res = requests.get(url, timeout=2)
-        return res.json().get('conversion_rate', 1.0) if res.status_code == 200 else 1.0
+        print(f"CareerJet Error: {str(e)[:100]}")
     except:
         return 1.0
 
@@ -613,6 +552,25 @@ def get_client_ip(request):
     if ip:
         return ip.strip()
     return request.META.get('REMOTE_ADDR', '').strip()
+
+def deduplicate_jobs(jobs_list):
+    """
+    Remove duplicate jobs based on title and company.
+    Keeps the first occurrence of each unique job.
+    """
+    seen = set()
+    unique_jobs = []
+    
+    for job in jobs_list:
+        # Create a unique key from title and company (case-insensitive)
+        key = (job.get('title', '').lower().strip(), job.get('company', '').lower().strip())
+        
+        if key not in seen and key != ('', ''):
+            seen.add(key)
+            unique_jobs.append(job)
+    
+    return unique_jobs
+
 
 def browse_job_listings(request):
     job_id = request.GET.get('job_id')
@@ -629,7 +587,8 @@ def browse_job_listings(request):
     category_filter = request.GET.get('category')
     search_query = request.GET.get('q') or ""
     location_query = request.GET.get('where', '').strip()
-    effective_location = location_query or "Uganda"
+    # Allow any location, default to empty for global search
+    effective_location = location_query if location_query else ""
     search_type = request.GET.get('search_type', 'api')
     page = request.GET.get('page', 1)
 
@@ -648,12 +607,13 @@ def browse_job_listings(request):
             crawl_results = []
             try:
                 from jobspy import scrape_jobs
-                print(f"Starting jobspy crawl for '{search_query}' in '{location_query}'...")
+                crawl_location = location_query or "Uganda"
+                print(f"Starting jobspy crawl for '{search_query}' in '{crawl_location}'...")
                 
                 scraped_df = scrape_jobs(
                     site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor", "monster", "careerbuilder"],
                     search_term=search_query,
-                    location=location_query or "Uganda",
+                    location=crawl_location,
                     results_wanted=40,
                     hours_old=168,
                 )
@@ -666,7 +626,7 @@ def browse_job_listings(request):
                         'source': row.get('source', 'Web Search'),
                         'title': row.get('title', search_query),
                         'company': row.get('company', 'Global Employer'),
-                        'location': row.get('location', location_query or 'Remote'),
+                        'location': row.get('location', crawl_location or 'Remote'),
                         'salary': row.get('salary', ''),
                         'description': row.get('description', '')[:320] + '...' if row.get('description') else 'Click to view full job details',
                         'link': job_url,
@@ -678,19 +638,19 @@ def browse_job_listings(request):
 
                 if len(external_jobs) < 15:
                     print("Crawl results are low; adding API-sourced fallback jobs for better coverage.")
-                    external_jobs += fetch_careerjet_data(request, search_query, location_query)
-                    external_jobs += fetch_jooble_data(search_query, location_query)
+                    api_jobs = fetch_careerjet_data(request, search_query, effective_location) + fetch_jooble_data(search_query, effective_location)
+                    external_jobs += api_jobs
 
                 final_job_list = []
             except ImportError:
                 messages.error(request, 'Deep search requires python-jobspy. Falling back to external API jobs. Install with: pip install python-jobspy')
                 print("Jobspy not installed: falling back to API-based deep search")
-                external_jobs = fetch_careerjet_data(request, search_query, location_query) + fetch_jooble_data(search_query, location_query)
+                external_jobs = fetch_careerjet_data(request, search_query, effective_location) + fetch_jooble_data(search_query, effective_location)
                 final_job_list = []
             except Exception as e:
                 print(f"Crawl error: {e}")
                 messages.error(request, f"Deep search failed: {str(e)}. Showing cached results instead.")
-                external_jobs = fetch_careerjet_data(request, search_query, location_query) + fetch_jooble_data(search_query, location_query)
+                external_jobs = fetch_careerjet_data(request, search_query, effective_location) + fetch_jooble_data(search_query, effective_location)
                 final_job_list = []
         
         else:
@@ -707,13 +667,15 @@ def browse_job_listings(request):
                 )
             final_job_list = list(job_posts_filtered)
 
-        # Fetch external jobs by default for the effective location (Uganda when none is specified)
+        # Fetch external jobs from both APIs for global coverage
         if search_type != 'crawl':
+            # Fetch from both APIs to give user global options
+            careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', effective_location)
             jooble_jobs = fetch_jooble_data(search_query or 'jobs', effective_location)
-            careerjet_jobs = []
-            if CAREERJET_API_ENABLED and not CAREERJET_TEMP_DISABLED:
-                careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', effective_location)
-            external_jobs = careerjet_jobs + jooble_jobs
+            
+            # Combine and deduplicate
+            combined_jobs = careerjet_jobs + jooble_jobs
+            external_jobs = deduplicate_jobs(combined_jobs)
 
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
@@ -722,6 +684,9 @@ def browse_job_listings(request):
     else:
         job_posts_context = []
 
+    # Display location in page title (show "Worldwide" if empty)
+    display_location = effective_location if effective_location else "Worldwide"
+    
     context = {
         'selected_job': selected_job,
         'job_posts': job_posts_context,
@@ -732,7 +697,7 @@ def browse_job_listings(request):
         'search_query': search_query,
         'location_query': effective_location,
         'search_type': search_type,
-        'page_title': f"Africana AI Jobs in {effective_location}",
+        'page_title': f"Africana AI Jobs in {display_location}",
     }
     return render(request, 'contributions_list.html', context)
 
