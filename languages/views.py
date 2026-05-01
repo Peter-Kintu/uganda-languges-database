@@ -566,6 +566,17 @@ def fetch_careerjet_data(request, keywords, location=""):
 
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
+    if not EXCHANGE_RATE_API_KEY or from_curr == to_curr:
+        return 1.0
+    try:
+        url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/pair/{from_curr}/{to_curr}"
+        res = requests.get(url, timeout=2)
+        return res.json().get('conversion_rate', 1.0) if res.status_code == 200 else 1.0
+    except:
+        return 1.0
+
+
+def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0].strip()
@@ -575,6 +586,7 @@ def get_exchange_rate(from_curr, to_curr="UGX"):
     if ip:
         return ip.strip()
     return request.META.get('REMOTE_ADDR', '').strip()
+
 
 def deduplicate_jobs(jobs_list):
     """
