@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block meta_description %}Explore the Africana AI Social Feed. Connect with entrepreneurs, share business reels, and build your network in the African innovation community.{% endblock %}
+
+{% block title %}Social Feed | Africana AI{% endblock %}
+
 {% block content %}
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
@@ -510,4 +514,18 @@
         window.open(waUrl, '_blank');
     }
 </script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "WebPage",
+  "name": "Africana AI Social Feed",
+  "description": "Connect with entrepreneurs, share business reels, and build your network in the African innovation community.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Africana AI"
+  }
+}
+</script>
+
 {% endblock %}

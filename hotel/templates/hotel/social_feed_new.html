@@ -2,7 +2,9 @@
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}Social Feed | Africana Elite{% endblock %}
+{% block title %}Africana AI Social Feed | Africana Elite{% endblock %}
+
+{% block meta_description %}Explore Africana AI social feed posts from hotel users, entrepreneurs, and community creators. Search by user name, content, product references, or Africana AI topics for maximum visibility.{% endblock %}
 
 {% block content %}
 <style>
@@ -90,27 +92,61 @@
         white-space: nowrap;
     }
 
-    @media (max-width: 640px) {
+    /* WORLD-CLASS MOBILE RESPONSIVE DESIGN */
+    @media (max-width: 768px) {
+        .header {
+            padding: 12px 16px;
+        }
+
         .header-content {
-            justify-content: center;
-            text-align: center;
-        }
-
-        .header-actions {
-            width: 100%;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-header {
-            min-width: 120px;
-            font-size: 13px;
-            padding: 8px 12px;
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
         }
 
         .header-title {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 0;
+        }
+
+        .header-actions {
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-header {
+            min-width: 100px;
+            font-size: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            flex: 1 1 auto;
+            text-align: center;
+            min-height: 44px; /* Touch-friendly */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .header-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
             width: 100%;
-            margin-bottom: 10px;
+        }
+
+        .btn-header {
+            min-width: unset;
+            font-size: 11px;
+            padding: 12px 8px;
+            border-radius: 8px;
+        }
+
+        .header-title {
+            font-size: 18px;
         }
     }
 
@@ -731,112 +767,38 @@
     }
 
     /* ═════════════════════════════════════════════════════════════════ */
-    /* RESPONSIVE DESIGN                                                 */
+    /* WORLD-CLASS RESPONSIVE DESIGN                                     */
     /* ═════════════════════════════════════════════════════════════════ */
 
-    @media (max-width: 640px) {
-        .header-content {
-            flex-direction: column;
-            align-items: flex-start;
+    @media (max-width: 768px) {
+        .container {
+            padding: 16px 12px;
+            gap: 16px;
         }
 
-        .header-actions {
-            width: 100%;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn-header {
-            min-width: auto;
-            font-size: 12px;
-            padding: 6px 10px;
-            flex: 0 1 calc(50% - 5px);
-        }
-
-        .header-title {
-            font-size: 18px;
-            width: 100%;
+        .feed {
+            gap: 12px;
         }
 
         .post-card {
             padding: 16px;
             border-radius: 16px;
-        }
-
-        .post-footer {
-            gap: 4px;
-            padding-top: 12px;
-            margin-top: 12px;
-        }
-
-        .post-action {
-            font-size: 12px;
-            padding: 8px 6px;
-            min-width: 60px;
-            gap: 4px;
-        }
-
-        .post-image {
-            border-radius: 12px;
-            margin: 12px 0;
-            max-height: 400px;
-        }
-
-        .create-post-card {
-            padding: 14px;
-        }
-
-        .comment {
-            gap: 10px;
             margin-bottom: 12px;
-            padding: 10px;
-            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        .comment-header {
-            flex-wrap: nowrap;
+        .post-header {
+            margin-bottom: 10px;
         }
 
-        .comment-author {
-            font-size: 13px;
+        .post-author {
+            gap: 10px;
         }
 
-        .comment-handle {
-            font-size: 12px;
-        }
-
-        .comment-text {
-            font-size: 13px;
-        }
-
-        .comment-meta {
-            font-size: 11px;
-            margin-left: auto;
-        }
-
-        .comment-input-wrapper {
-            gap: 6px;
-        }
-
-        .comment-input {
-            padding: 8px 12px;
-            font-size: 13px;
-            border-radius: 16px;
-        }
-
-        .comment-input-wrapper .btn-primary {
-            min-width: auto;
-            padding: 8px 14px !important;
-            font-size: 12px;
-            white-space: nowrap;
-            flex: 0 0 auto;
-            border-radius: 16px;
-        }
-
-        .modal-content {
-            max-width: 95vw;
-            border-radius: 20px;
+        .avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
         }
 
         .post-author-info {
@@ -856,6 +818,154 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .post-content {
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .post-image {
+            border-radius: 12px;
+            margin: 12px 0;
+            max-height: 300px;
+            object-fit: cover;
+        }
+
+        .post-footer {
+            gap: 6px;
+            padding-top: 12px;
+            margin-top: 12px;
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .post-action {
+            font-size: 12px;
+            padding: 8px 6px;
+            min-width: 50px;
+            gap: 4px;
+            border-radius: 8px;
+        }
+
+        .create-post-card {
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .create-post-header {
+            margin-bottom: 12px;
+        }
+
+        .create-post-input input {
+            padding: 10px 14px;
+            font-size: 14px;
+            border-radius: 20px;
+        }
+
+        .create-post-footer {
+            padding-top: 10px;
+        }
+
+        .btn-primary {
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        .comment {
+            gap: 8px;
+            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 12px;
+        }
+
+        .comment-header {
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .comment-author {
+            font-size: 13px;
+        }
+
+        .comment-handle {
+            font-size: 12px;
+        }
+
+        .comment-text {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .comment-meta {
+            font-size: 11px;
+        }
+
+        .comment-input-wrapper {
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .comment-input {
+            padding: 10px 14px;
+            font-size: 13px;
+            border-radius: 18px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .comment-input-wrapper .btn-primary {
+            padding: 10px 16px !important;
+            font-size: 12px;
+            border-radius: 18px;
+            white-space: nowrap;
+        }
+
+        .modal-content {
+            max-width: 95vw;
+            max-height: 90vh;
+            border-radius: 20px;
+            margin: 20px auto;
+        }
+
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .container {
+            padding: 12px 8px;
+        }
+
+        .post-card {
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .post-content {
+            font-size: 13px;
+        }
+
+        .post-action {
+            font-size: 11px;
+            padding: 6px 4px;
+            min-width: 40px;
+        }
+
+        .create-post-card {
+            padding: 12px;
+        }
+
+        .comment-input {
+            min-width: 150px;
+        }
+
+        .comment-input-wrapper .btn-primary {
+            padding: 8px 12px !important;
+            font-size: 11px;
         }
     }
 
@@ -887,6 +997,40 @@
         animation: zoomIn 0.3s ease;
     }
 </style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Africana AI Social Feed",
+  "description": "Browse Africana AI social feed posts from hotel app users. Search by username, product names, Africana AI topics, hotel updates, and community stories.",
+  "url": "{{ request.build_absolute_uri }}",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Africana AI",
+    "url": "https://www.africanaai.info/"
+  },
+  "mainEntity": [
+    {% for post in posts %}
+    {
+      "@type": "SocialMediaPosting",
+      "headline": "{{ post.author.get_full_name|default:post.author.username|escapejs }}",
+      "articleBody": "{{ post.content|striptags|truncatechars:300|escapejs }}",
+      "datePublished": "{{ post.created_at|date:'c' }}",
+      "author": {
+        "@type": "Person",
+        "name": "{{ post.author.get_full_name|default:post.author.username|escapejs }}",
+        "url": "{{ request.build_absolute_uri }}#post-{{ post.id }}"
+      },
+      {% if post.image %}
+      "image": "{{ post.image.url }}",
+      {% endif %}
+      "isFamilyFriendly": true
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
 
 <!-- Header -->
 <div class="header">

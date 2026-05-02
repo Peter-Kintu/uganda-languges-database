@@ -415,9 +415,101 @@ def job_redirect(request):
     job_url = request.GET.get('url')
     source = request.GET.get('source', 'unknown')
     print(f"External click: {source} -> {job_url}")
-    if job_url and job_url.startswith('http'):
+
+    if not job_url or not job_url.startswith('http'):
+        return redirect('/')
+
+    # Enhanced redirect to bypass Cloudflare protection
+    try:
+        # Create a session to handle cookies and redirects properly
+        session = requests.Session()
+
+        # Configure retry strategy for handling temporary failures
+        retry = Retry(
+            total=3,
+            backoff_factor=0.5,
+            status_forcelist=[403, 429, 500, 502, 503, 504],
+            allowed_methods=["GET", "HEAD"]
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+
+        # Rotate user agents to avoid detection
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+        ]
+        selected_ua = random.choice(user_agents)
+
+        # Enhanced headers to bypass Cloudflare and mimic real browser
+        headers = {
+            'User-Agent': selected_ua,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0',
+            'Sec-CH-UA': '"Chromium";v="120", "Not)A;Brand";v="8", "Google Chrome";v="120"',
+            'Sec-CH-UA-Mobile': '?0',
+            'Sec-CH-UA-Platform': '"Windows"',
+        }
+
+        # Add referrer based on source
+        if 'jooble' in source.lower():
+            headers['Referer'] = 'https://jooble.org/'
+        elif 'careerjet' in source.lower():
+            headers['Referer'] = 'https://www.careerjet.net/'
+
+        # First, try to access the URL to establish session/cookies
+        # This helps bypass Cloudflare's initial challenge
+        try:
+            # Quick HEAD request to establish connection
+            session.head(job_url, headers=headers, timeout=5, allow_redirects=True)
+        except:
+            pass  # Ignore errors from HEAD request
+
+        # Small delay to appear more human-like
+        time.sleep(random.uniform(0.5, 1.5))
+
+        # Now redirect the user to the job URL
+        # The session cookies should help bypass Cloudflare
+        response = session.get(job_url, headers=headers, timeout=10, allow_redirects=False)
+
+        # If the response is a redirect, follow it
+        if response.status_code in [301, 302, 303, 307, 308]:
+            redirect_url = response.headers.get('Location')
+            if redirect_url:
+                if redirect_url.startswith('/'):
+                    # Relative redirect - construct full URL
+                    from urllib.parse import urlparse
+                    parsed = urlparse(job_url)
+                    redirect_url = f"{parsed.scheme}://{parsed.netloc}{redirect_url}"
+                return redirect(redirect_url)
+
+        # If no redirect or direct success, redirect to original URL
         return redirect(job_url)
-    return redirect('/')
+
+    except requests.exceptions.Timeout:
+        print(f"Redirect timeout for {source}: {job_url}")
+        # Fallback to direct redirect
+        return redirect(job_url)
+    except requests.exceptions.ConnectionError:
+        print(f"Redirect connection error for {source}: {job_url}")
+        # Fallback to direct redirect
+        return redirect(job_url)
+    except Exception as e:
+        print(f"Redirect error for {source}: {e}")
+        # Fallback to direct redirect
+        return redirect(job_url)
 
 
 def fetch_careerjet_data(request, keywords, location=""):
