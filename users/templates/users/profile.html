@@ -2,6 +2,8 @@
 {% load static %}
 {% load cloudinary %}
 
+{% block meta_description %}{{ user.get_full_name|default:user.username }} - {{ user.headline|default:"Professional profile" }} on Africana AI. Connect with talent, explore opportunities, and join the African innovation community.{% endblock %}
+
 {% block title %}{{ user.get_full_name|default:user.username }}'s Profile | Africana AI{% endblock %}
 
 {% block content %}
@@ -225,4 +227,26 @@
         }, 2000);
     }
 </script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Person",
+  "name": "{{ user.get_full_name|default:user.username }}",
+  "description": "{{ user.headline|default:'Professional on Africana AI' }}",
+  "image": "{% if user.profile_image %}{{ user.profile_image.url }}{% else %}{% endif %}",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "{{ user.location }}"
+  },
+  "sameAs": [
+    "{{ request.build_absolute_uri }}"
+  ],
+  "worksFor": {
+    "@type": "Organization",
+    "name": "Africana AI"
+  }
+}
+</script>
+
 {% endblock %}

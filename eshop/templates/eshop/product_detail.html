@@ -3,6 +3,8 @@
 {% load cloudinary %}
 {% load humanize %}
 
+{% block meta_description %}Buy {{ product.name }} - Authentic African {{ product.category|default:"product" }} from Africana AI Marketplace. Worldwide shipping available. Price: ${{ product.price }}. Discover unique cultural items and crafts.{% endblock %}
+
 {% block title %}{{ product.name }} - Africana AI Market{% endblock %}
 
 {% block content %}
@@ -135,6 +137,36 @@
         </div>
     </div>
 </div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ product.name }}",
+  "description": "{{ product.description }}",
+  "image": [
+    {% if product.image and product.image.public_id %}
+      "{% cloudinary_url product.image.public_id width=800 height=800 crop='fit' as image_url %}{{ image_url }}"
+    {% endif %}
+  ],
+  "offers": {
+    "@type": "Offer",
+    "price": "{{ product.price }}",
+    "priceCurrency": "{{ product.get_currency_code }}",
+    "availability": "https://schema.org/InStock",
+    "seller": {
+      "@type": "Organization",
+      "name": "{{ product.vendor_name }}"
+    }
+  },
+  "brand": {
+    "@type": "Brand",
+    "name": "Africana AI"
+  },
+  "category": "{{ product.category|default:'African Crafts' }}",
+  "countryOfOrigin": "{{ product.country }}"
+}
+</script>
 
 <script>
     function copyReferralLink() {

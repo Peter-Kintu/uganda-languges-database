@@ -2,6 +2,8 @@
 
 {% load job_filters %}
 
+{% block meta_description %}Browse {{ contributions|length }} job listings on Africana AI. Find worldwide opportunities, remote jobs, and career growth. AI-powered job matching for African talent.{% endblock %}
+
 {% block title %}{{ page_title|default:"Job Listings | Global Job Board" }}{% endblock %}
 
 {% block extra_head %}
@@ -652,4 +654,24 @@
         });
     }
 </script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "JobPosting",
+  "title": "Various Job Opportunities",
+  "description": "Browse {{ contributions|length }} job listings on Africana AI. Find worldwide opportunities, remote jobs, and career growth with AI-powered job matching.",
+  "hiringOrganization": {
+    "@type": "Organization",
+    "name": "Africana AI"
+  },
+  "jobLocation": {
+    "@type": "Place",
+    "addressCountry": "Worldwide"
+  },
+  "employmentType": "FULL_TIME",
+  "datePosted": "{% if job_posts %}{{ job_posts.0.timestamp|date:'Y-m-d' }}{% else %}2024-01-01{% endif %}"
+}
+</script>
+
 {% endblock %}
