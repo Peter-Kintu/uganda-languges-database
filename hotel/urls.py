@@ -6,6 +6,7 @@ app_name = 'hotel'
 urlpatterns = [
     path('', views.social_feed, name='social_feed'),
     path('create_post/', views.create_post, name='create_post'),
+    path('post/', views.public_create_post, name='post'),
     path('like-post/<int:post_id>/', views.like_post, name='like_post'),
     path('add-comment/<int:post_id>/', views.add_comment, name='add_comment'),
     path('translate/', views.translate_text, name='translate_text'),

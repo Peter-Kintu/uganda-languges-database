@@ -138,6 +138,21 @@ def create_post(request):
     })
 
 @login_required
+def public_create_post(request):
+    form = PostForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        messages.success(request, 'Post created successfully!')
+        return redirect('hotel:social_feed')
+
+    return render(request, 'hotel/post.html', {
+        'form': form,
+        'support_contact': 'support@africanaai.info',
+    })
+
+@login_required
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     like, created = Like.objects.get_or_create(post=post, user=request.user)

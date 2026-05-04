@@ -145,7 +145,7 @@
     .feed {
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 18px;
     }
 
     .create-post-card {
@@ -273,8 +273,8 @@
     }
 
     .post-content {
-        margin-top: 18px;
-        line-height: 1.8;
+        margin-top: 16px;
+        line-height: 1.5;
         color: #374151;
         font-size: 1rem;
         white-space: pre-wrap;
@@ -300,7 +300,7 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
         gap: 12px;
-        margin-top: 22px;
+        margin-top: 18px;
     }
 
     .post-action {
@@ -372,7 +372,7 @@
 
     .comment-text {
         color: #374151;
-        line-height: 1.75;
+        line-height: 1.45;
     }
 
     .comment-action-btn {
@@ -734,7 +734,7 @@
         background: white;
         border-radius: 20px;
         padding: 20px;
-        margin-bottom: 20px;
+        margin-bottom: 16px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.04);
         border: 1px solid var(--gray-100);
         transition: all 0.2s ease;
@@ -801,15 +801,15 @@
     }
 
     .post-content {
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         font-size: 15px;
-        line-height: 1.6;
+        line-height: 1.45;
         color: var(--gray-900);
         word-break: break-word;
     }
 
     .post-content p {
-        margin: 0 0 0.1rem;
+        margin: 0 0 0.25rem;
     }
 
     .post-content a {
@@ -1357,8 +1357,8 @@
 
         .post-content {
             font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 12px;
+            line-height: 1.45;
+            margin-bottom: 10px;
         }
 
         .post-image {
@@ -1430,7 +1430,7 @@
 
         .comment-text {
             font-size: 13px;
-            line-height: 1.4;
+            line-height: 1.35;
         }
 
         .comment-meta {
@@ -1576,7 +1576,7 @@
             <button type="button" class="btn-header job-button" data-url="{% url 'languages:browse_job_listings' %}" data-post-count="{{ request.user.posts.count }}" onclick="handleJobButtonClick(event)">Jobs</button>
             <a href="{% url 'movie:movie_list' %}" class="btn-header" data-icon="🎬">Movies</a>
             <a href="{% url 'hotel:inbox' %}" class="btn-header" data-icon="📥">Inbox</a>
-            <a href="{% url 'hotel:create_post' %}" class="btn-header" data-icon="✍️">Create</a>
+            <a href="{% url 'hotel:create_post' %}" class="btn-header" data-icon="✍️" title="Investor-only Create access">Create</a>
         </div>
     </div>
 </div>
@@ -1600,7 +1600,7 @@
             <div class="create-post-header">
                 <div class="avatar">{{ request.user.first_name|slice:':1'|upper }}</div>
                 <div class="create-post-input">
-                    <a href="{% url 'hotel:create_post' %}" style="text-decoration: none; width: 100%;">
+                    <a href="{% url 'hotel:post' %}" style="text-decoration: none; width: 100%;">
                         <input type="text" placeholder="What's on your mind, {{ request.user.first_name }}?" readonly style="cursor: pointer;">
                     </a>
                 </div>
@@ -1611,7 +1611,7 @@
                     <button class="action-btn" title="Add Link">🔗</button>
                     <button class="action-btn" title="Add Emoji">😊</button>
                 </div>
-                <a href="{% url 'hotel:create_post' %}" class="btn-primary">Post</a>
+                <a href="{% url 'hotel:post' %}" class="btn-primary">Post</a>
             </div>
         </div>
 
