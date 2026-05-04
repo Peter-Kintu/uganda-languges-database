@@ -1647,7 +1647,7 @@
         <!-- Posts Feed -->
         {% if posts %}
             {% for post in posts %}
-                    <div class="post-card">
+                    <div class="post-card" id="post-{{ post.id }}">
                         <!-- Header -->
                         <div class="post-header">
                             <div class="post-author">
@@ -1941,8 +1941,34 @@
         .then(data => {
             if (data.success) {
                 form.reset();
-                alert('Comment posted successfully!');
-                location.reload();
+                // Append new comment instantly
+                const commentsDiv = document.getElementById(`comments-${postId}`);
+                const commentInputWrapper = form.closest('.comment-input-wrapper');
+                const newCommentHTML = `
+                    <div class="comment">
+                        <div class="comment-avatar-wrapper">
+                            <div class="avatar" style="width: 36px; height: 36px; font-size: 14px; min-width: 36px; border: 2px solid var(--primary); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center;">${data.comment.author_initial}</div>
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">${data.comment.author_name}</span>
+                                <span class="comment-handle">@${data.comment.author_username}</span>
+                                <span class="comment-meta">just now</span>
+                            </div>
+                            <div class="comment-text">${data.comment.content}</div>
+                            <div class="comment-actions">
+                                <button class="comment-action-btn" onclick="likeComment(this)" title="Like comment"><span>♡</span> Like</button>
+                                <button class="comment-action-btn" onclick="replyToComment(this)" title="Reply to comment"><span>↩️</span> Reply</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                commentInputWrapper.insertAdjacentHTML('beforebegin', newCommentHTML);
+                // Update comment count
+                const commentCountSpan = document.getElementById(`comment-count-${postId}`);
+                if (commentCountSpan) {
+                    commentCountSpan.textContent = parseInt(commentCountSpan.textContent) + 1;
+                }
             } else {
                 alert(data.message || 'Failed to post comment');
             }
@@ -1977,22 +2003,60 @@
 
     // Share Post
     function sharePost(postId) {
+        // Get post content and author
+        const postContentDiv = document.querySelector(`.post-content[data-post-id="${postId}"]`);
+        const authorNameDiv = document.querySelector(`#post-${postId} .author-name`); // Assuming post has id="post-{{ post.id }}"
+        let postText = 'Check out this post!';
+        let authorName = 'Africana Social';
+
+        if (postContentDiv) {
+            const fullText = postContentDiv.textContent.trim();
+            postText = fullText.length > 100 ? fullText.substring(0, 100) + '...' : fullText;
+        }
+        if (authorNameDiv) {
+            authorName = authorNameDiv.textContent.trim();
+        }
+
+        const shareText = `${authorName}: ${postText}`;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?highlight=${postId}`;
+
+        // First, increment share count via AJAX
+        fetch(`/hotel/share-post/${postId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Update share count
+                const shareBtn = document.querySelector(`button[onclick="sharePost(${postId})"]`);
+                if (shareBtn) {
+                    const shareSpan = shareBtn.querySelector('span:last-child');
+                    if (shareSpan) {
+                        shareSpan.textContent = data.shares_count;
+                    }
+                }
+            }
+        })
+        .catch(e => console.error('Share count update failed:', e));
+
+        // Then, perform the share action
         if (navigator.share) {
             navigator.share({
                 title: 'Africana Social',
-                text: 'Check out this post!',
-                url: window.location.href
+                text: shareText,
+                url: shareUrl
             }).catch(err => console.log('Share cancelled'));
         } else {
-            const shareUrl = `${window.location.origin}${window.location.pathname}?highlight=${postId}`;
+            const fullShareText = `${shareText}\n\n${shareUrl}`;
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert('✅ Post link copied to clipboard!');
+                navigator.clipboard.writeText(fullShareText).then(() => {
+                    alert('✅ Post shared to clipboard!');
                 }).catch(() => {
-                    alert('Share: ' + shareUrl);
+                    alert('Share: ' + fullShareText);
                 });
             } else {
-                alert('Share: ' + shareUrl);
+                alert('Share: ' + fullShareText);
             }
         }
     }

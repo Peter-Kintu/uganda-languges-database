@@ -149,7 +149,7 @@ def public_create_post(request):
 
     return render(request, 'hotel/post.html', {
         'form': form,
-        'support_contact': 'support@africanaai.info',
+        'support_contact': 's@africanaai.info',
     })
 
 @login_required
@@ -172,8 +172,17 @@ def add_comment(request, post_id):
             except json.JSONDecodeError:
                 content = ''
         if content:
-            Comment.objects.create(post=post, author=request.user, content=content)
-            return JsonResponse({'success': True})
+            comment = Comment.objects.create(post=post, author=request.user, content=content)
+            return JsonResponse({
+                'success': True,
+                'comment': {
+                    'author_initial': comment.author.first_name[:1].upper() if comment.author.first_name else comment.author.username[:1].upper(),
+                    'author_name': comment.author.get_full_name() or comment.author.username,
+                    'author_username': comment.author.username,
+                    'content': comment.content,
+                    'created_at': comment.created_at.isoformat(),
+                }
+            })
     return JsonResponse({'success': False}, status=400)
 
 @login_required
