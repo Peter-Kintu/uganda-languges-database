@@ -1467,18 +1467,18 @@
             <div class="create-post-header">
                 <div class="avatar">{{ request.user.first_name|slice:':1'|upper }}</div>
                 <div class="create-post-input">
-                    <a href="{% url 'hotel:create_post' %}" style="text-decoration: none; width: 100%;">
+                    <a href="{% url 'hotel:post' %}" style="text-decoration: none; width: 100%;">
                         <input type="text" placeholder="What's on your mind, {{ request.user.first_name }}?" readonly style="cursor: pointer;">
                     </a>
                 </div>
             </div>
             <div class="create-post-footer">
                 <div class="post-actions">
-                    <a href="{% url 'hotel:create_post' %}?type=image" class="action-btn" title="Add Photo">🖼️</a>
-                    <a href="{% url 'hotel:create_post' %}?type=link" class="action-btn" title="Add Link">🔗</a>
-                    <a href="{% url 'hotel:create_post' %}?type=emoji" class="action-btn" title="Add Emoji / Feeling">😊</a>
+                    <a href="{% url 'hotel:post' %}" class="action-btn" title="Add Photo">🖼️</a>
+                    <a href="{% url 'hotel:post' %}" class="action-btn" title="Add Link">🔗</a>
+                    <a href="{% url 'hotel:post' %}" class="action-btn" title="Add Emoji / Feeling">😊</a>
                 </div>
-                <a href="{% url 'hotel:create_post' %}" class="btn-primary">Post</a>
+                <a href="{% url 'hotel:post' %}" class="btn-primary">Post</a>
             </div>
         </div>
 
