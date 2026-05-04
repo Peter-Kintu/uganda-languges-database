@@ -111,9 +111,19 @@ class BusinessReel(models.Model):
         folder='africana_reels/',
         help_text="Optimized for low-bandwidth delivery across Africa."
     )
+    external_video_url = models.URLField(
+        blank=True,
+        null=True,
+        help_text="External video source URL for synced YouTube reels."
+    )
     
     # Thumbnails remain on Cloudinary for AI-driven transformation/caching
     thumbnail = CloudinaryField('image', folder='africana_thumbnails/', blank=True, null=True)
+    external_thumbnail_url = models.URLField(
+        blank=True,
+        null=True,
+        help_text="External thumbnail URL for synced YouTube reels."
+    )
     caption = models.TextField(max_length=500)
     
     # Language and tags for content categorization
@@ -168,6 +178,54 @@ class BusinessReel(models.Model):
             margin = Decimal('10.00')
             return self.price * (Decimal('1.00') - (margin / Decimal('100.00')))
 
+    @property
+    def source_video_url(self):
+        """Return the active video source URL for this reel."""
+        if self.external_video_url:
+            return self.external_video_url
+        if self.video and hasattr(self.video, 'url'):
+            return self.video.url
+        return ''
+
+    @property
+    def source_thumbnail_url(self):
+        """Return the active thumbnail URL for this reel."""
+        if self.external_thumbnail_url:
+            return self.external_thumbnail_url
+        if self.thumbnail and hasattr(self.thumbnail, 'url'):
+            return self.thumbnail.url
+        return ''
+
+    @property
+    def is_external_video(self):
+        """Return whether this reel is sourced from an external video URL."""
+        return bool(self.external_video_url)
+
+    @property
+    def video_embed_url(self):
+        """Return an embed URL for supported external sources."""
+        if not self.external_video_url:
+            return ''
+        if 'youtube.com/watch' in self.external_video_url or 'youtu.be/' in self.external_video_url:
+            video_id = self.extract_youtube_id(self.external_video_url)
+            if video_id:
+                return f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=1&controls=0&rel=0&playsinline=1"
+        return self.external_video_url
+
+    def extract_youtube_id(self, url):
+        """Extract YouTube video ID from a URL."""
+        import re
+        patterns = [
+            r'youtube\.com/watch\?v=([^&]+)',
+            r'youtu\.be/([^?&#]+)',
+            r'youtube\.com/embed/([^?&#]+)',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+        return None
+
     def __str__(self):
         if self.price:
             return f"Business Reel by {self.author.username} - {self.currency} {self.price}"
@@ -212,6 +270,119 @@ class VideoEndorsement(models.Model):
 
     def __str__(self):
         return f"Endorsement for {self.professional.username}"
+
+
+# --- PILLAR 5: YOUTUBE PARTNERSHIP & CONTENT SYNDICATION ---
+
+class YouTubePartnership(models.Model):
+    """
+    Manages user partnerships for pulling YouTube content.
+    Allows authorized users to sync videos from specific channels.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('suspended', 'Suspended'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='youtube_partnership')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    is_active = models.BooleanField(default=False)
+    
+    # API quota tracking
+    daily_quota_used = models.PositiveIntegerField(default=0)
+    last_quota_reset = models.DateTimeField(auto_now_add=True)
+    
+    # Branding
+    partnership_description = models.TextField(
+        blank=True,
+        help_text="Why do you want to partner with us?"
+    )
+    
+    applied_at = models.DateTimeField(auto_now_add=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-applied_at']
+    
+    def __str__(self):
+        return f"YouTube Partnership: {self.user.username} ({self.status})"
+
+
+class YouTubeChannel(models.Model):
+    """
+    Stores YouTube channels that a partner wants to sync from.
+    Each partner can manage multiple channels.
+    """
+    partnership = models.ForeignKey(YouTubePartnership, on_delete=models.CASCADE, related_name='channels')
+    
+    # YouTube identifiers
+    channel_id = models.CharField(max_length=100, unique=True, help_text="YouTube Channel ID (e.g., UCxxxxxx)")
+    channel_name = models.CharField(max_length=255)
+    channel_url = models.URLField(blank=True)
+    channel_thumbnail = models.URLField(blank=True, help_text="Channel avatar URL from YouTube")
+    
+    # Sync settings
+    is_syncing = models.BooleanField(default=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+    sync_frequency_hours = models.PositiveIntegerField(
+        default=24,
+        help_text="How often to check for new videos (in hours)"
+    )
+    
+    # Metadata
+    total_videos_synced = models.PositiveIntegerField(default=0)
+    added_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-added_at']
+        unique_together = ('partnership', 'channel_id')
+    
+    def __str__(self):
+        return f"{self.channel_name} ({self.partnership.user.username})"
+
+
+class YouTubeVideo(models.Model):
+    """
+    Stores YouTube videos pulled via API.
+    Linked to BusinessReel for seamless integration.
+    Maintains the video as a bridge between YouTube and the social feed.
+    """
+    # YouTube identifiers
+    youtube_id = models.CharField(max_length=100, unique=True, help_text="YouTube Video ID")
+    channel = models.ForeignKey(YouTubeChannel, on_delete=models.CASCADE, related_name='videos')
+    
+    # Video metadata
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    thumbnail_url = models.URLField()
+    youtube_url = models.URLField()
+    duration_seconds = models.PositiveIntegerField(default=0)
+    
+    # YouTube stats
+    youtube_views = models.PositiveIntegerField(default=0)
+    youtube_likes = models.PositiveIntegerField(default=0)
+    published_at = models.DateTimeField()
+    
+    # Link to BusinessReel (automatic conversion)
+    business_reel = models.ForeignKey(
+        BusinessReel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='source_youtube'
+    )
+    
+    # Sync tracking
+    is_active = models.BooleanField(default=True)
+    synced_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-published_at']
+    
+    def __str__(self):
+        return f"{self.title} (Channel: {self.channel.channel_name})"
 
 
 # --- AUTOMATION SIGNALS ---

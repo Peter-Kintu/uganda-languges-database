@@ -39,4 +39,20 @@ urlpatterns = [
     # --- PILLAR 4: TRUST & IDENTITY ---
     # Bento-style Profile: Modern 'Proof of Work' layout using username slugs
     path('profile/<str:username>/', views.BentoProfileView.as_view(), name='bento_profile'),
+    
+    # --- PILLAR 5: YOUTUBE PARTNERSHIP & CONTENT SYNDICATION ---
+    # Partnership application
+    path('youtube/apply/', views.apply_youtube_partnership, name='youtube_apply'),
+    
+    # Partnership dashboard
+    path('youtube/dashboard/', views.youtube_partnership_dashboard, name='youtube_partnership_dashboard'),
+    
+    # Add YouTube channel
+    path('youtube/add-channel/', views.add_youtube_channel, name='add_youtube_channel'),
+    
+    # Remove YouTube channel
+    path('youtube/remove-channel/<int:channel_id>/', views.remove_youtube_channel, name='remove_youtube_channel'),
+    
+    # Manual sync trigger
+    path('youtube/sync/<int:channel_id>/', views.sync_youtube_channel_now, name='sync_youtube_channel'),
 ]

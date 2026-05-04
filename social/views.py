@@ -3,6 +3,7 @@ import json
 import random
 import uuid
 import urllib.parse
+import logging
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
@@ -15,10 +16,19 @@ from django.db.models import F, Q
 from django.urls import reverse
 
 # Internal App Models and Forms
-from .models import BusinessReel, SocialProfile, SecureMessage
-from .forms import BusinessReelUploadForm, SecureMessageForm
+from .models import (
+    BusinessReel, SocialProfile, SecureMessage, 
+    YouTubePartnership, YouTubeChannel, YouTubeVideo
+)
+from .forms import (
+    BusinessReelUploadForm, SecureMessageForm,
+    YouTubePartnershipForm, YouTubeChannelForm
+)
 # External User Model from users app
 from users.models import CustomUser
+
+logger = logging.getLogger(__name__)
+
 
 class FeedView(ListView):
     """
@@ -326,3 +336,182 @@ def ai_negotiate_price(request, reel_id):
             return JsonResponse({'status': 'ERROR', 'message': 'Data Handshake Error.'}, status=400)
             
     return JsonResponse({'status': 'ERROR', 'message': 'Protocol Violation.'}, status=405)
+
+
+# --- PILLAR 5: YOUTUBE PARTNERSHIP MANAGEMENT ---
+
+@login_required
+def apply_youtube_partnership(request):
+    """
+    Partnership Application: Users submit their intent to sync YouTube content.
+    """
+    partnership, created = YouTubePartnership.objects.get_or_create(user=request.user)
+    
+    if request.method == 'POST':
+        form = YouTubePartnershipForm(request.POST, instance=partnership)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request, 
+                "✅ Application submitted! Our team will review it within 24 hours."
+            )
+            return redirect('social:youtube_partnership_dashboard')
+    else:
+        form = YouTubePartnershipForm(instance=partnership)
+    
+    return render(request, 'social/youtube_partnership_apply.html', {
+        'form': form,
+        'partnership': partnership
+    })
+
+
+@login_required
+def youtube_partnership_dashboard(request):
+    """
+    Dashboard: Users can manage their approved channels and sync status.
+    """
+    partnership = get_object_or_404(YouTubePartnership, user=request.user)
+    
+    if partnership.status != 'approved':
+        messages.info(
+            request,
+            f"Your partnership status: {partnership.get_status_display()}. "
+            "You'll be able to add channels once approved."
+        )
+    
+    channels = partnership.channels.all()
+    total_videos = sum(channel.videos.count() for channel in channels)
+    context = {
+        'partnership': partnership,
+        'channels': channels,
+        'can_add_channels': partnership.is_active and partnership.status == 'approved',
+        'total_videos': total_videos,
+    }
+    
+    return render(request, 'social/youtube_partnership_dashboard.html', context)
+
+
+@login_required
+def add_youtube_channel(request):
+    """
+    Add a new YouTube channel to sync from.
+    Only available for approved partners.
+    """
+    partnership = get_object_or_404(YouTubePartnership, user=request.user)
+    
+    if not partnership.is_active or partnership.status != 'approved':
+        messages.error(request, "You don't have permission to add channels.")
+        return redirect('social:youtube_partnership_dashboard')
+    
+    if request.method == 'POST':
+        form = YouTubeChannelForm(request.POST)
+        if form.is_valid():
+            try:
+                from .youtube_service import YouTubeService
+                
+                youtube_service = YouTubeService()
+                channel_id = form.cleaned_data['channel_id']
+                
+                # Validate channel exists and fetch info
+                channel_info = youtube_service.get_channel_info(channel_id)
+                if not channel_info:
+                    messages.error(request, "Channel not found. Please check the Channel ID.")
+                    return render(request, 'social/add_youtube_channel.html', {'form': form})
+                
+                # Create or update channel
+                youtube_channel, created = YouTubeChannel.objects.get_or_create(
+                    partnership=partnership,
+                    channel_id=channel_id,
+                    defaults={
+                        'channel_name': channel_info['channel_name'],
+                        'channel_url': channel_info['channel_url'],
+                        'channel_thumbnail': channel_info['channel_thumbnail'],
+                        'sync_frequency_hours': form.cleaned_data['sync_frequency_hours'],
+                    }
+                )
+                
+                if created:
+                    messages.success(
+                        request,
+                        f"✅ Channel '{channel_info['channel_name']}' added successfully! "
+                        "We'll start syncing videos shortly."
+                    )
+                    
+                    # Trigger initial sync
+                    from .youtube_service import YouTubeSyncService
+                    sync_service = YouTubeSyncService()
+                    result = sync_service.sync_channel_videos(youtube_channel)
+                    
+                    if result['synced'] > 0:
+                        messages.info(
+                            request,
+                            f"🎬 Synced {result['synced']} videos from this channel!"
+                        )
+                else:
+                    messages.warning(request, "This channel is already linked to your account.")
+                
+                return redirect('social:youtube_partnership_dashboard')
+            
+            except Exception as e:
+                logger.error(f"Error adding YouTube channel: {str(e)}")
+                messages.error(
+                    request,
+                    "⚠️ Error connecting to YouTube. Please check your Channel ID and try again."
+                )
+    else:
+        form = YouTubeChannelForm()
+    
+    return render(request, 'social/add_youtube_channel.html', {'form': form})
+
+
+@login_required
+def remove_youtube_channel(request, channel_id):
+    """
+    Remove a YouTube channel from syncing.
+    """
+    partnership = get_object_or_404(YouTubePartnership, user=request.user)
+    youtube_channel = get_object_or_404(
+        YouTubeChannel,
+        id=channel_id,
+        partnership=partnership
+    )
+    
+    if request.method == 'POST':
+        channel_name = youtube_channel.channel_name
+        youtube_channel.delete()
+        messages.success(request, f"Removed channel: {channel_name}")
+        return redirect('social:youtube_partnership_dashboard')
+    
+    return render(request, 'social/confirm_remove_youtube_channel.html', {
+        'channel': youtube_channel
+    })
+
+
+@login_required
+@require_POST
+def sync_youtube_channel_now(request, channel_id):
+    """
+    Manually trigger a sync for a specific channel (admin/partner only).
+    """
+    partnership = get_object_or_404(YouTubePartnership, user=request.user)
+    youtube_channel = get_object_or_404(
+        YouTubeChannel,
+        id=channel_id,
+        partnership=partnership
+    )
+    
+    try:
+        from .youtube_service import YouTubeSyncService
+        sync_service = YouTubeSyncService()
+        result = sync_service.sync_channel_videos(youtube_channel)
+        
+        message = f"✅ Synced {result['synced']} videos"
+        if result['skipped'] > 0:
+            message += f" ({result['skipped']} already existed)"
+        
+        messages.success(request, message)
+    except Exception as e:
+        logger.error(f"Error syncing channel: {str(e)}")
+        messages.error(request, "Error syncing channel. Please try again later.")
+    
+    return redirect('social:youtube_partnership_dashboard')
