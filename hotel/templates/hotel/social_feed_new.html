@@ -38,6 +38,9 @@
         background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #f9fafb 100%);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
         color: var(--gray-900);
+        font-size: 16px;
+        line-height: 1.7;
+        -webkit-text-size-adjust: 100%;
     }
 
     /* ═════════════════════════════════════════════════════════════════ */
@@ -72,27 +75,48 @@
     }
 
     .btn-header {
-        background: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.2);
         color: white;
-        padding: 10px 18px;
+        padding: 12px 20px;
         border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.24);
-        font-size: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        font-size: 15px;
+        letter-spacing: 0.01em;
         font-weight: 700;
         cursor: pointer;
-        transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
-        backdrop-filter: blur(12px);
+        transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        backdrop-filter: blur(14px);
         flex: 0 1 auto;
         white-space: nowrap;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        min-height: 44px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    }
+
+    .btn-header::before {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 8px;
     }
 
     .btn-header:hover {
-        transform: translateY(-1px);
-        background: rgba(255, 255, 255, 0.28);
-        box-shadow: 0 18px 35px rgba(15, 23, 42, 0.12);
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.32);
+        box-shadow: 0 22px 40px rgba(15, 23, 42, 0.18);
+        border-color: rgba(255, 255, 255, 0.45);
+    }
+
+    .btn-header:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
+    }
+
+    .btn-header.job-button {
+        background: rgba(255, 255, 255, 0.24);
+        border-color: rgba(255, 255, 255, 0.3);
     }
 
     .filter-tabs {
@@ -539,21 +563,23 @@
 
         .btn-header {
             min-width: unset;
-            font-size: 10px;
-            padding: 6px 8px;
-            border-radius: 6px;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 10px;
             flex: 0 0 auto;
             white-space: nowrap;
             max-width: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            min-height: 42px;
         }
 
         .btn-header::before {
             content: attr(data-icon);
-            margin-right: 4px;
-            font-size: 12px;
+            margin-right: 6px;
+            font-size: 18px;
+            line-height: 1;
         }
 
         .filter-tabs {
@@ -588,7 +614,7 @@
 
         .btn-header::before {
             margin-right: 0;
-            font-size: 16px;
+            font-size: 18px;
         }
 
         .header-actions {
@@ -1376,11 +1402,11 @@
         }
 
         .post-action {
-            font-size: 12px;
-            padding: 8px 6px;
-            min-width: 50px;
-            gap: 4px;
-            border-radius: 8px;
+            font-size: 13px;
+            padding: 8px 8px;
+            min-width: 58px;
+            gap: 6px;
+            border-radius: 10px;
         }
 
         .create-post-card {
@@ -1403,8 +1429,8 @@
         }
 
         .btn-primary {
-            font-size: 13px;
-            padding: 8px 16px;
+            font-size: 14px;
+            padding: 9px 18px;
             border-radius: 20px;
         }
 
@@ -1421,20 +1447,20 @@
         }
 
         .comment-author {
-            font-size: 13px;
+            font-size: 14px;
         }
 
         .comment-handle {
-            font-size: 12px;
+            font-size: 13px;
         }
 
         .comment-text {
-            font-size: 13px;
-            line-height: 1.35;
+            font-size: 14px;
+            line-height: 1.55;
         }
 
         .comment-meta {
-            font-size: 11px;
+            font-size: 12px;
         }
 
         .comment-input-wrapper {
@@ -1443,8 +1469,8 @@
         }
 
         .comment-input {
-            padding: 10px 14px;
-            font-size: 13px;
+            padding: 11px 16px;
+            font-size: 14px;
             border-radius: 18px;
             flex: 1;
             min-width: 200px;
@@ -1481,13 +1507,14 @@
         }
 
         .post-content {
-            font-size: 13px;
+            font-size: 15px;
+            line-height: 1.6;
         }
 
         .post-action {
-            font-size: 11px;
-            padding: 6px 4px;
-            min-width: 40px;
+            font-size: 12px;
+            padding: 7px 8px;
+            min-width: 48px;
         }
 
         .create-post-card {
@@ -1496,11 +1523,13 @@
 
         .comment-input {
             min-width: 150px;
+            font-size: 14px;
+            padding: 10px 14px;
         }
 
         .comment-input-wrapper .btn-primary {
-            padding: 8px 12px !important;
-            font-size: 11px;
+            padding: 9px 14px !important;
+            font-size: 13px;
         }
     }
 
@@ -1573,7 +1602,7 @@
         <div class="header-actions">
             <button class="btn-header" data-icon="🌐" onclick="openTranslateModal()">Translate</button>
             <button class="btn-header" data-icon="🗣️" onclick="openLanguageModal()">Languages</button>
-            <button type="button" class="btn-header job-button" data-url="{% url 'languages:browse_job_listings' %}" data-post-count="{{ request.user.posts.count }}" onclick="handleJobButtonClick(event)">Jobs</button>
+            <button type="button" class="btn-header job-button" data-icon="💼" data-url="{% url 'languages:browse_job_listings' %}" data-post-count="{{ request.user.posts.count }}" onclick="handleJobButtonClick(event)">Jobs</button>
             <a href="{% url 'movie:movie_list' %}" class="btn-header" data-icon="🎬">Movies</a>
             <a href="{% url 'hotel:inbox' %}" class="btn-header" data-icon="📥">Inbox</a>
             <a href="{% url 'hotel:create_post' %}" class="btn-header" data-icon="✍️" title="Investor-only Create access">Create</a>
