@@ -76,7 +76,7 @@ def user_login(request):
     if ref:
         request.session['referrer'] = ref
     if request.user.is_authenticated:
-        return redirect('languages:browse_job_listings')
+        return redirect('hotel:social_feed')
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -84,7 +84,7 @@ def user_login(request):
             login(request, user)
             messages.success(request, f"Welcome back, {user.username}!")
             next_url = request.POST.get('next') or request.GET.get('next')
-            return redirect(next_url or reverse('languages:browse_job_listings')) 
+            return redirect(next_url or reverse('hotel:social_feed')) 
         else:
             messages.error(request, "Invalid username or password.")
     else:
@@ -100,7 +100,7 @@ def user_register(request):
     if ref:
         request.session['referrer'] = ref
     if request.user.is_authenticated:
-        return redirect('languages:browse_job_listings')
+        return redirect('hotel:social_feed')
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
@@ -125,7 +125,7 @@ def user_register(request):
                 if 'referrer' in request.session:
                     del request.session['referrer']
                 messages.success(request, "Registration successful. Welcome!")
-                return redirect('languages:browse_job_listings')
+                return redirect('hotel:social_feed')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
