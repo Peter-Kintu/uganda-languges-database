@@ -869,31 +869,50 @@
 
     .post-footer {
         display: flex;
-        justify-content: space-around;
+        justify-content: flex-start;
+        align-items: center;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+        gap: 10px;
         padding-top: 16px;
         border-top: 1px solid var(--gray-200);
         margin-top: 16px;
-        gap: 8px;
-        flex-wrap: wrap;
+        padding-bottom: 6px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .post-footer::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .post-footer::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .post-footer::-webkit-scrollbar-thumb {
+        background: rgba(107, 114, 128, 0.35);
+        border-radius: 999px;
     }
 
     .post-action {
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 6px;
-        flex: 1;
-        min-width: 80px;
         justify-content: center;
-        padding: 10px 8px;
-        border-radius: 12px;
+        gap: 6px;
+        flex: 0 0 auto;
+        min-width: 96px;
+        padding: 8px 10px;
+        border-radius: 18px;
         cursor: pointer;
         transition: all 0.2s ease;
         color: var(--gray-600);
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         border: none;
         background: none;
         text-decoration: none;
+        white-space: nowrap;
     }
 
     .post-action:hover {
@@ -1076,15 +1095,19 @@
         }
 
         .post-footer {
-            flex-direction: column;
-            align-items: stretch;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            justify-content: flex-start;
+            align-items: center;
             gap: 10px;
+            scroll-snap-type: x proximity;
         }
 
         .post-action {
-            min-width: auto;
-            padding: 12px 14px;
-            font-size: 13px;
+            flex: 0 0 auto;
+            min-width: 88px;
+            padding: 8px 10px;
+            font-size: 12px;
         }
     }
 
