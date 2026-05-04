@@ -26,6 +26,7 @@ django-widget-tweaks
 # Integrations & APIs
 python-aliexpress-api
 google-genai
+google-api-python-client
 cerebras-cloud-sdk
 phonenumbers
 requests

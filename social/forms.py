@@ -1,5 +1,90 @@
 from django import forms
-from .models import BusinessReel, SecureMessage
+from .models import BusinessReel, SecureMessage, YouTubePartnership, YouTubeChannel
+
+
+class YouTubePartnershipForm(forms.ModelForm):
+    """
+    Form for users to apply for YouTube partnership.
+    Allows them to state their intent and get approved access.
+    """
+    class Meta:
+        model = YouTubePartnership
+        fields = ['partnership_description']
+        widgets = {
+            'partnership_description': forms.Textarea(attrs={
+                'placeholder': 'Tell us why you want to partner with Africana AI. What content will you bring?',
+                'rows': 5,
+                'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-600'
+            }),
+        }
+        labels = {
+            'partnership_description': 'Partnership Application'
+        }
+
+
+class YouTubeChannelForm(forms.ModelForm):
+    """
+    Form for adding YouTube channels to sync.
+    User specifies the channel ID to pull content from.
+    """
+    class Meta:
+        model = YouTubeChannel
+        fields = ['channel_id', 'sync_frequency_hours']
+        widgets = {
+            'channel_id': forms.TextInput(attrs={
+                'placeholder': 'YouTube Channel ID (e.g., UCxxxxxx or channel URL)',
+                'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all',
+                'autocomplete': 'off'
+            }),
+            'sync_frequency_hours': forms.NumberInput(attrs={
+                'placeholder': 'How often to check for new videos (hours)',
+                'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all',
+                'min': '1',
+                'max': '168'  # 1 week
+            }),
+        }
+        labels = {
+            'channel_id': 'YouTube Channel ID',
+            'sync_frequency_hours': 'Sync Frequency (hours)'
+        }
+    
+    def clean_channel_id(self):
+        """Extract channel ID from various formats."""
+        channel_id = self.cleaned_data.get('channel_id', '').strip()
+        
+        # If it's a URL, extract the channel ID
+        if 'youtube.com' in channel_id or 'youtu.be' in channel_id:
+            if 'channel/' in channel_id:
+                channel_id = channel_id.split('channel/')[-1].split('?')[0]
+            elif '@' in channel_id:
+                # Handle @username format
+                raise forms.ValidationError(
+                    "Please use the Channel ID (UC...) format, not @username. "
+                    "You can find it on the channel's About page."
+                )
+        
+        # Validate format
+        if not channel_id.startswith('UC'):
+            raise forms.ValidationError(
+                "Invalid Channel ID. It should start with 'UC' (e.g., UCxxxxxx)"
+            )
+        
+        if len(channel_id) < 24:
+            raise forms.ValidationError(
+                "Channel ID should be at least 24 characters long."
+            )
+        
+        return channel_id
+    
+    def clean_sync_frequency_hours(self):
+        """Validate sync frequency."""
+        frequency = self.cleaned_data.get('sync_frequency_hours', 24)
+        if frequency < 1 or frequency > 168:
+            raise forms.ValidationError(
+                "Sync frequency must be between 1 hour and 7 days (168 hours)."
+            )
+        return frequency
+
 
 class BusinessReelUploadForm(forms.ModelForm):
     """
