@@ -745,6 +745,43 @@ def get_client_ip(request):
     return request.META.get('REMOTE_ADDR', '').strip()
 
 
+AFRICA_PRIORITY_KEYWORDS = [
+    'uganda', 'kampala', 'nairobi', 'accra', 'cairo', 'lagos', 'dar es salaam',
+    'africa-remote', 'africa remote', 'remote africa', 'remote (africa)',
+    'east africa', 'west africa', 'south africa', 'central africa'
+]
+
+
+def is_uganda_visitor(request):
+    country_headers = [
+        request.META.get('HTTP_CF_IPCOUNTRY', ''),
+        request.META.get('HTTP_X_COUNTRY_CODE', ''),
+        request.META.get('HTTP_GEOIP_COUNTRY_CODE', ''),
+        request.META.get('HTTP_X_COUNTRY', ''),
+    ]
+    for header in country_headers:
+        if header and header.strip().upper() in ('UG', 'UGA', 'UGANDA'):
+            return True
+
+    accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+    if 'ug' in accept_language.lower().split(',')[0]:
+        return True
+
+    return False
+
+
+def is_africa_priority_location(value):
+    if not value:
+        return False
+    value = value.lower()
+    return any(keyword in value for keyword in AFRICA_PRIORITY_KEYWORDS)
+
+
+def is_external_africa_remote(job):
+    location = (job.get('location') or '')
+    return is_africa_priority_location(location)
+
+
 def deduplicate_jobs(jobs_list):
     """
     Remove duplicate jobs based on title and company.
@@ -775,6 +812,7 @@ def browse_job_listings(request):
             pass 
 
     external_jobs = []
+    priority_jobs = []
 
     category_filter = request.GET.get('category')
     search_query = request.GET.get('q') or ""
@@ -859,6 +897,16 @@ def browse_job_listings(request):
                 )
             final_job_list = list(job_posts_filtered)
 
+        uganda_visitor = is_uganda_visitor(request)
+        priority_jobs = []
+        if uganda_visitor and not effective_location:
+            priority_candidates = [
+                job for job in final_job_list
+                if is_africa_priority_location(job.recruiter_location)
+            ]
+            priority_jobs = priority_candidates[:5]
+            final_job_list = [job for job in final_job_list if job not in priority_jobs]
+
         # Fetch external jobs from both APIs for global coverage
         if search_type != 'crawl':
             # Fetch from both APIs to give user global options
@@ -869,9 +917,14 @@ def browse_job_listings(request):
             combined_jobs = careerjet_jobs + jooble_jobs
             external_jobs = deduplicate_jobs(combined_jobs)
 
+            if uganda_visitor and not effective_location:
+                priority_external_jobs = [job for job in external_jobs if is_external_africa_remote(job)]
+                external_jobs = priority_external_jobs + [job for job in external_jobs if job not in priority_external_jobs]
+
         paginator = Paginator(final_job_list, 20)
         posts_on_page = paginator.get_page(page)
         job_posts_context = posts_on_page
+        context_priority_jobs = priority_jobs
     
     else:
         job_posts_context = []
@@ -882,6 +935,7 @@ def browse_job_listings(request):
     context = {
         'selected_job': selected_job,
         'job_posts': job_posts_context,
+        'priority_jobs': priority_jobs,
         'external_jobs': external_jobs,
         'solidgigs': solidgigs_data,
         'job_categories': JOB_CATEGORIES, 
