@@ -255,17 +255,19 @@
             flex-direction: column;
             gap: 4px;
             cursor: pointer;
+            width: 24px;
+            height: 18px;
         }
 
         .hamburger span {
-            width: 24px;
+            width: 100%;
             height: 2px;
-            background-color: currentColor;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 1px;
         }
 
         .hamburger.active span:nth-child(1) {
-            transform: rotate(45deg) translate(8px, 8px);
+            transform: rotate(45deg) translate(6px, 6px);
         }
 
         .hamburger.active span:nth-child(2) {
@@ -273,7 +275,36 @@
         }
 
         .hamburger.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -7px);
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+
+        /* World-class mobile navigation */
+        .mobile-nav-item {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mobile-nav-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            padding: 2px;
+            background: linear-gradient(135deg, transparent, transparent);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            transition: background 0.3s ease;
+        }
+
+        .mobile-nav-item:hover::before {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+        }
+
+        /* Safe area support for modern devices */
+        @supports (padding: max(0px)) {
+            .h-safe-area-inset-bottom {
+                height: max(0px, env(safe-area-inset-bottom));
+            }
         }
     </style>
     {% block extra_head %}{% endblock %}
@@ -290,88 +321,81 @@
                 </div>
                 
                 <!-- Mobile Menu Toggle Button -->
-                <button id="mobile-nav-toggle" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition" aria-label="Toggle menu" aria-expanded="false">
+                <button id="mobile-nav-toggle" class="md:hidden p-3 rounded-xl hover:bg-gray-100 transition-all duration-300 ease-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" aria-label="Toggle menu" aria-expanded="false">
                     <div class="hamburger" id="hamburger-menu">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+                        <span class="bg-gray-600"></span>
+                        <span class="bg-gray-600"></span>
+                        <span class="bg-gray-600"></span>
                     </div>
                 </button>
                  
-                <div class="hidden md:flex md:space-x-8 lg:space-x-12 items-center">
-                    <a href="{% url 'social:social_feed' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
-                        <span class="nav-icon-container">
-                            <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                <div class="hidden md:flex md:space-x-2 lg:space-x-4 items-center">
+                    <!-- Connect -->
+                    <a href="{% url 'social:social_feed' %}" class="nav-item group relative px-4 py-2 rounded-xl transition-all duration-300 ease-out hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:shadow-lg hover:shadow-blue-500/10 transform hover:scale-105">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 stroke-current text-gray-600 group-hover:text-blue-600 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V15a3 3 0 0 0-3-3h-3a3 3 0 0 0-3 3v3.72c0 .247.202.45.45.45h4.8a.45.45 0 0 0 .45-.45ZM6.75 20.25h3.75a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Zm0-12h3.75a.75.75 0 0 0 .75-.75V5.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Z" />
                             </svg>
-                            <span class="nav-icon-tooltip" role="tooltip">connect</span>
-                        </span>
+                            <span class="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors duration-300">Connect</span>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5 rounded-xl transition-all duration-300"></div>
                     </a>
 
-                    <a href="{% url 'eshop:product_list' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
-                        <span class="nav-icon-container">
-                            <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                    <!-- Market -->
+                    <a href="{% url 'eshop:product_list' %}" class="nav-item group relative px-4 py-2 rounded-xl transition-all duration-300 ease-out hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 hover:shadow-lg hover:shadow-emerald-500/10 transform hover:scale-105">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 stroke-current text-gray-600 group-hover:text-emerald-600 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.5.856 8.528a2.25 2.25 0 0 1-.676 1.76l-.44.437c-.322.32-.744.498-1.18.498H5.986c-.436 0-.858-.178-1.18-.498l-.44-.438a2.25 2.25 0 0 1-.676-1.757l.856-8.527M12 8.25h.008v.008H12V8.25Z" />
                             </svg>
-                            <span class="nav-icon-tooltip" role="tooltip">Market</span>
-                        </span>
+                            <span class="text-sm font-semibold text-gray-700 group-hover:text-emerald-600 transition-colors duration-300">Market</span>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/0 to-teal-500/0 group-hover:from-emerald-500/5 group-hover:to-teal-500/5 rounded-xl transition-all duration-300"></div>
                     </a>
 
-                    <a href="{% url 'hotel:social_feed' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
-                        <span class="nav-icon-container">
-                            <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                    <!-- Social -->
+                    <a href="{% url 'hotel:social_feed' %}" class="nav-item group relative px-4 py-2 rounded-xl transition-all duration-300 ease-out hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:shadow-lg hover:shadow-purple-500/10 transform hover:scale-105">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 stroke-current text-gray-600 group-hover:text-purple-600 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 11.25l1.5 1.5.75-.75V8.758l2.276-.61a.48.48 0 00.349-.464V4.41c0-.26-.14-.5-.367-.632A4.49 4.49 0 0015 3.125a4.49 4.49 0 00-2.258.653c-.227.132-.367.372-.367.632v3.274c0 .19.113.361.289.437l1.711.737v2.398zm-1.5 8.25V18a3 3 0 00-6 0v1.5m10.5-3v-1.312c0-.361-.137-.71-.384-.977L14.5 14.25m-9 0l-3.116 3.213c-.247.267-.384.616-.384.977V19.5m13.5-3H3.75" />
                             </svg>
-                            <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Social</span>
-                        </span>
+                            <span class="text-sm font-semibold text-gray-700 group-hover:text-purple-600 transition-colors duration-300">Social</span>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-r from-purple-500/0 to-pink-500/0 group-hover:from-purple-500/5 group-hover:to-pink-500/5 rounded-xl transition-all duration-300"></div>
                     </a>
 
-                    <a href="{% url 'languages:home' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
-                        <span class="nav-icon-container">
-                            <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 .414-.336.75-.75.75H4.5a.75.75 0 0 1-.75-.75v-4.25m16.5 0a3 3 0 0 0-3-3H6.75a3 3 0 0 0-3 3m16.5 0V10.5A3.75 3.75 0 0 0 16.5 6.75h-9A3.75 3.75 0 0 0 3.75 10.5v3.65" />
-                            </svg>
-                            <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Jobs</span>
-                        </span>
-                    </a>
-
-                    <a href="{% url 'movie:movie_list' %}" class="nav-link text-gray-700 hover:text-blue-600 py-2 text-base font-medium">
-                        <span class="nav-icon-container">
-                            <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653Z" />
-                            </svg>
-                            <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Movies</span>
-                        </span>
-                    </a>
-
-                    <a href="{% url 'users:profile' %}" class="nav-link group relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600/10 to-purple-600/10 hover:from-indigo-600/20 hover:to-purple-600/20 border border-indigo-500/20 hover:border-indigo-400/40 transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/25">
-                        <span class="nav-icon-container relative z-10 flex items-center justify-center p-3">
-                            <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/0 to-purple-500/0 group-hover:from-indigo-500/10 group-hover:to-purple-500/10 transition-all duration-300 rounded-xl"></div>
-                            <svg class="w-6 h-6 stroke-current text-indigo-300 group-hover:text-indigo-200 transition-colors duration-300 relative z-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                    <!-- Profile -->
+                    <a href="{% url 'users:profile' %}" class="nav-item group relative px-4 py-2 rounded-xl transition-all duration-300 ease-out hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 hover:shadow-lg hover:shadow-indigo-500/10 transform hover:scale-105">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 stroke-current text-gray-600 group-hover:text-indigo-600 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                             </svg>
-                            <span class="nav-icon-tooltip text-[9px] uppercase tracking-widest font-black text-indigo-300 group-hover:text-indigo-200 transition-colors duration-300 relative z-10 ml-1" role="tooltip">Profile</span>
-                        </span>
-                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
+                            <span class="text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">Profile</span>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/0 to-blue-500/0 group-hover:from-indigo-500/5 group-hover:to-blue-500/5 rounded-xl transition-all duration-300"></div>
                     </a>
 
-                    <div class="border-l border-gray-700 h-8"></div> 
+                    <!-- Divider -->
+                    <div class="h-8 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent mx-2"></div>
 
+                    <!-- Auth Buttons -->
                     {% if user.is_authenticated %}
-                    <a href="{% url 'languages:user_profile' %}" class="nav-link flex items-center text-green-600 hover:text-green-700 py-2 text-base font-medium group">
-                        <span class="nav-icon-container">
-                            <svg class="w-6 h-6 text-green-600 group-hover:text-green-700 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                    <a href="{% url 'languages:user_profile' %}" class="nav-item group relative px-4 py-2 rounded-xl transition-all duration-300 ease-out hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:shadow-lg hover:shadow-green-500/10 transform hover:scale-105">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 stroke-current text-gray-600 group-hover:text-green-600 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
                             </svg>
-                            <span class="nav-icon-tooltip text-[10px] uppercase tracking-widest font-black" role="tooltip">Dashboard</span>
-                        </span>
+                            <span class="text-sm font-semibold text-gray-700 group-hover:text-green-600 transition-colors duration-300">Dashboard</span>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-r from-green-500/0 to-emerald-500/0 group-hover:from-green-500/5 group-hover:to-emerald-500/5 rounded-xl transition-all duration-300"></div>
                     </a>
-                    <a href="{% url 'languages:user_logout' %}" class="ml-2 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out transform hover:scale-105">
-                        Logout
+                    <a href="{% url 'languages:user_logout' %}" class="group relative inline-flex items-center justify-center px-6 py-2.5 rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl hover:shadow-red-500/25">
+                        <span class="relative z-10">Logout</span>
+                        <div class="absolute inset-0 bg-gradient-to-r from-red-400/0 to-red-500/0 group-hover:from-red-400/20 group-hover:to-red-500/20 rounded-xl transition-all duration-300"></div>
                     </a>
                     {% else %}
-                    <a href="{% url 'users:user_register' %}" class="ml-4 inline-flex items-center justify-center px-5 py-2 border border-transparent rounded-full shadow-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out transform hover:scale-105">
-                        Sign Up
+                    <a href="{% url 'users:user_register' %}" class="group relative inline-flex items-center justify-center px-6 py-2.5 rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl hover:shadow-green-500/25">
+                        <span class="relative z-10">Sign Up</span>
+                        <div class="absolute inset-0 bg-gradient-to-r from-green-400/0 to-emerald-500/0 group-hover:from-green-400/20 group-hover:to-emerald-500/20 rounded-xl transition-all duration-300"></div>
                     </a>
                     {% endif %}
                 </div>
@@ -392,49 +416,63 @@
         {% block content %}{% endblock %}
     </main>
 
-    <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 md:hidden" 
-        style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 244, 248, 0.98) 100%); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transform: translateY(100%); transition: transform 0.3s ease-in-out;">
-        
-        <div id="drawer-menu-links" class="max-w-7xl mx-auto px-2 sm:px-4 py-2">
-            <a href="{% url 'social:social_feed' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
-                <span class="flex items-center flex-col text-center">
-                   <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V15a3 3 0 0 0-3-3h-3a3 3 0 0 0-3 3v3.72c0 .247.202.45.45.45h4.8a.45.45 0 0 0 .45-.45ZM6.75 20.25h3.75a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Zm0-12h3.75a.75.75 0 0 0 .75-.75V5.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Z" /></svg>
-                   <span class="text-xs mt-0.5">Connect</span>
-                </span>
-            </a>
+    <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+        style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(59, 130, 246, 0.1); box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08); transform: translateY(100%); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
 
-            <a href="{% url 'hotel:social_feed' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
-                <span class="flex items-center flex-col text-center">
-                   <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 11.25l1.5 1.5.75-.75V8.758l2.276-.61a.48.48 0 00.349-.464V4.41c0-.26-.14-.5-.367-.632A4.49 4.49 0 0015 3.125a4.49 4.49 0 00-2.258.653c-.227.132-.367.372-.367.632v3.274c0 .19.113.361.289.437l1.711.737v2.398zm-1.5 8.25V18a3 3 0 00-6 0v1.5m10.5-3v-1.312c0-.361-.137-.71-.384-.977L14.5 14.25m-9 0l-3.116 3.213c-.247.267-.384.616-.384.977V19.5m13.5-3H3.75" /></svg>
-                   <span class="text-xs mt-0.5">Social</span>
-                </span>
-            </a>
-              
-            <a href="{% url 'eshop:product_list' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
-                <span class="flex items-center flex-col text-center">
-                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.5.856 8.528a2.25 2.25 0 0 1-.676 1.76l-.44.437c-.322.32-.744.498-1.18.498H5.986c-.436 0-.858-.178-1.18-.498l-.44-.438a2.25 2.25 0 0 1-.676-1.757l.856-8.527M12 8.25h.008v.008H12V8.25Z" /></svg> 
-                    <span class="text-xs mt-0.5">Market</span>
-                </span>
-            </a>
+        <div class="max-w-7xl mx-auto px-2 py-3">
+            <div class="flex items-center justify-around">
+                <!-- Connect -->
+                <a href="{% url 'social:social_feed' %}" class="mobile-nav-item group relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ease-out active:scale-95">
+                    <div class="relative mb-1">
+                        <svg class="w-6 h-6 stroke-current text-gray-600 group-hover:text-blue-600 transition-all duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.098 9.098 0 0 0 3.75-.472V15a3 3 0 0 0-3-3h-3a3 3 0 0 0-3 3v3.72c0 .247.202.45.45.45h4.8a.45.45 0 0 0 .45-.45ZM6.75 20.25h3.75a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Zm0-12h3.75a.75.75 0 0 0 .75-.75V5.25a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v2.25c0 .414.336.75.75.75Z" />
+                        </svg>
+                        <div class="absolute inset-0 bg-blue-500/10 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300"></div>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-600 group-hover:text-blue-600 transition-colors duration-300">Connect</span>
+                    <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 group-hover:w-8 transition-all duration-300 rounded-full"></div>
+                </a>
 
-            <a href="{% url 'languages:home' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
-                <span class="flex items-center flex-col text-center">
-                   <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 .414-.336.75-.75.75H4.5a.75.75 0 0 1-.75-.75v-4.25m16.5 0a3 3 0 0 0-3-3H6.75a3 3 0 0 0-3 3m16.5 0V10.5A3.75 3.75 0 0 0 16.5 6.75h-9A3.75 3.75 0 0 0 3.75 10.5v3.65" /></svg>
-                   <span class="text-xs mt-0.5">Jobs</span>
-                </span>
-            </a>
+                <!-- Social -->
+                <a href="{% url 'hotel:social_feed' %}" class="mobile-nav-item group relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ease-out active:scale-95">
+                    <div class="relative mb-1">
+                        <svg class="w-6 h-6 stroke-current text-gray-600 group-hover:text-purple-600 transition-all duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11.25l1.5 1.5.75-.75V8.758l2.276-.61a.48.48 0 00.349-.464V4.41c0-.26-.14-.5-.367-.632A4.49 4.49 0 0015 3.125a4.49 4.49 0 00-2.258.653c-.227.132-.367.372-.367.632v3.274c0 .19.113.361.289.437l1.711.737v2.398zm-1.5 8.25V18a3 3 0 00-6 0v1.5m10.5-3v-1.312c0-.361-.137-.71-.384-.977L14.5 14.25m-9 0l-3.116 3.213c-.247.267-.384.616-.384.977V19.5m13.5-3H3.75" />
+                        </svg>
+                        <div class="absolute inset-0 bg-purple-500/10 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300"></div>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-600 group-hover:text-purple-600 transition-colors duration-300">Social</span>
+                    <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 group-hover:w-8 transition-all duration-300 rounded-full"></div>
+                </a>
 
-            <a href="{% url 'movie:movie_list' %}" class="nav-link-mobile block text-gray-700 hover:text-blue-600">
-                <span class="flex items-center flex-col text-center">
-                    <svg class="w-5 h-5 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653Z" />
-                    </svg> 
-                    <span class="text-xs mt-0.5">Movies</span>
-                </span>
-            </a>
+                <!-- Market -->
+                <a href="{% url 'eshop:product_list' %}" class="mobile-nav-item group relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ease-out active:scale-95">
+                    <div class="relative mb-1">
+                        <svg class="w-6 h-6 stroke-current text-gray-600 group-hover:text-emerald-600 transition-all duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.5.856 8.528a2.25 2.25 0 0 1-.676 1.76l-.44.437c-.322.32-.744.498-1.18.498H5.986c-.436 0-.858-.178-1.18-.498l-.44-.438a2.25 2.25 0 0 1-.676-1.757l.856-8.527M12 8.25h.008v.008H12V8.25Z" />
+                        </svg>
+                        <div class="absolute inset-0 bg-emerald-500/10 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300"></div>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-600 group-hover:text-emerald-600 transition-colors duration-300">Market</span>
+                    <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 group-hover:w-8 transition-all duration-300 rounded-full"></div>
+                </a>
 
-           
+                <!-- Profile -->
+                <a href="{% url 'users:profile' %}" class="mobile-nav-item group relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ease-out active:scale-95">
+                    <div class="relative mb-1">
+                        <svg class="w-6 h-6 stroke-current text-gray-600 group-hover:text-indigo-600 transition-all duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                        <div class="absolute inset-0 bg-indigo-500/10 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300"></div>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-600 group-hover:text-indigo-600 transition-colors duration-300">Profile</span>
+                    <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-blue-500 group-hover:w-8 transition-all duration-300 rounded-full"></div>
+                </a>
+            </div>
         </div>
+
+        <!-- Safe area for iPhone -->
+        <div class="h-safe-area-inset-bottom"></div>
     </nav>
 
     <footer class="bg-gray-100 text-gray-600 py-10 border-t border-green-200">
@@ -465,7 +503,7 @@
 
             toggleBtn.addEventListener('click', function() {
                 isOpen = !isOpen;
-                
+
                 if (isOpen) {
                     mobileNav.classList.add('active');
                     mobileNav.style.transform = 'translateY(0)';
@@ -491,6 +529,19 @@
                     hamburger.classList.remove('active');
                     body.classList.remove('nav-open');
                     toggleBtn.setAttribute('aria-expanded', 'false');
+                });
+            });
+
+            // Add touch feedback for mobile nav items
+            const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+            mobileNavItems.forEach(item => {
+                item.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.95)';
+                });
+                item.addEventListener('touchend', function() {
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
                 });
             });
         });
