@@ -87,6 +87,51 @@
             color: #3b82f6;
         }
 
+        .crawl-summary-text {
+            margin: 0;
+            padding: 0;
+            text-align: left;
+            max-width: 100%;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            font-size: 0.95rem;
+            line-height: 1.75;
+            color: #4338ca;
+        }
+
+        .crawl-summary-text .crawl-summary-copy {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            -webkit-line-clamp: 2;
+        }
+
+        .crawl-summary-text.expanded .crawl-summary-copy {
+            -webkit-line-clamp: unset;
+        }
+
+        .crawl-summary-toggle {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 0.25rem;
+            color: #2563eb;
+            font-weight: 700;
+            background: transparent;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 640px) {
+            .crawl-summary-text {
+                font-size: 1rem;
+            }
+            .crawl-summary-toggle {
+                font-size: 0.98rem;
+            }
+        }
+
         /* NEU-JOB CARDS */
         .job-card {
             background: var(--card-bg);
@@ -250,7 +295,12 @@
                                 </svg>
                                 <div>
                                     <p class="font-semibold mb-1">Global web crawling active</p>
-                                    <p>Searching Indeed, LinkedIn, ZipRecruiter & Glassdoor for "{{ search_query|default:'jobs' }}" in {{ location_query|default:'Uganda' }}...</p>
+                                    <p class="crawl-summary-text">
+                                        <span class="crawl-summary-copy">
+                                            Searching Indeed, LinkedIn, ZipRecruiter & Glassdoor for "{{ search_query|default:'jobs' }}" in {{ location_query|default:'Uganda' }}...
+                                        </span>
+                                        <button type="button" class="crawl-summary-toggle" onclick="toggleCrawlSummary(this)">more</button>
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -688,6 +738,28 @@
         // Update on window resize
         window.addEventListener('resize', updateSearchInputs);
     }
+
+    function updateCrawlSummaryToggle() {
+        const summary = document.querySelector('.crawl-summary-text');
+        const toggle = document.querySelector('.crawl-summary-toggle');
+        if (!summary || !toggle) return;
+        const copy = summary.querySelector('.crawl-summary-copy');
+        if (!copy) return;
+
+        // If the paragraph is clamped, show the toggle; otherwise hide it.
+        toggle.style.display = copy.scrollHeight > copy.clientHeight + 1 ? 'inline-flex' : 'none';
+    }
+
+    function toggleCrawlSummary(button) {
+        const summary = button.closest('.crawl-summary-text');
+        if (!summary) return;
+        summary.classList.toggle('expanded');
+        button.textContent = summary.classList.contains('expanded') ? 'less' : 'more';
+    }
+
+    window.addEventListener('resize', updateCrawlSummaryToggle);
+    document.addEventListener('DOMContentLoaded', updateCrawlSummaryToggle);
+    updateCrawlSummaryToggle();
 
     const searchTypeInput = document.getElementById('search_type_input');
     const apiSearchBtn = document.getElementById('search-api-btn');

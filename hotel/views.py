@@ -12,6 +12,8 @@ import requests
 import json
 import os
 
+INVESTOR_CREATE_PASSCODE = getattr(settings, 'INVESTOR_CREATE_PASSCODE', '23882')
+
 @login_required
 def social_feed(request):
     # 1. Get the Filter Type from URL parameters (e.g., ?type=images)
@@ -100,17 +102,40 @@ def social_feed(request):
 
 @login_required
 def create_post(request):
-    if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES)
+    can_create_direct = request.user.user_type == 'investor' and request.user.is_approved
+    passcode_valid = request.session.get('investor_post_access', False)
+    allow_create = can_create_direct or passcode_valid
+    passcode_error = None
+
+    if request.method == 'GET' and not allow_create:
+        query_passcode = request.GET.get('passcode', '').strip()
+        if query_passcode and query_passcode == INVESTOR_CREATE_PASSCODE:
+            request.session['investor_post_access'] = True
+            return redirect('hotel:create_post')
+
+    if request.method == 'POST' and not allow_create:
+        submitted_passcode = request.POST.get('passcode', '').strip()
+        if submitted_passcode == INVESTOR_CREATE_PASSCODE:
+            request.session['investor_post_access'] = True
+            return redirect('hotel:create_post')
+        passcode_error = 'Invalid 5-digit investor passcode. Contact support@africanaai.info for access.'
+
+    form = PostForm(request.POST or None, request.FILES or None) if allow_create else None
+
+    if request.method == 'POST' and allow_create:
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
             post.save()
             messages.success(request, 'Post created successfully!')
             return redirect('hotel:social_feed')
-    else:
-        form = PostForm()
-    return render(request, 'hotel/create_post.html', {'form': form})
+
+    return render(request, 'hotel/create_post.html', {
+        'form': form,
+        'allow_create': allow_create,
+        'passcode_error': passcode_error,
+        'support_contact': 'support@africanaai.info',
+    })
 
 @login_required
 def like_post(request, post_id):

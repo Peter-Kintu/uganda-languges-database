@@ -8,58 +8,80 @@
 <div class="bg-gray-50 min-h-screen py-16 px-4">
     <div class="max-w-2xl mx-auto">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h1 class="text-2xl font-bold text-gray-900 mb-6">Create a New Post</h1>
+            {% if allow_create %}
+                <h1 class="text-2xl font-bold text-gray-900 mb-6">Create a New Post</h1>
 
-            <form method="POST" enctype="multipart/form-data" id="create-post-form" class="space-y-6">
-                {% csrf_token %}
+                <form method="POST" enctype="multipart/form-data" id="create-post-form" class="space-y-6">
+                    {% csrf_token %}
 
-                <div>
-                    <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">What's on your mind?</label>
-                    {{ form.content|add_class:"w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" }}
-                    {% if form.content.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.content.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                <div>
-                    <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Add an image (optional)</label>
-                    <div class="flex items-center space-x-4">
-                        <input type="file" id="{{ form.image.id_for_label }}" name="image" class="w-full" accept="image/*" onchange="handleImageCompression(event)">
-                        <span id="image-size" class="text-xs text-gray-500 whitespace-nowrap"></span>
+                    <div>
+                        <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">What's on your mind?</label>
+                        {{ form.content|add_class:"w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" }}
+                        {% if form.content.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.content.errors.0 }}</p>
+                        {% endif %}
                     </div>
-                    <p class="mt-2 text-xs text-gray-500">💡 Images are automatically compressed to 1200px wide for faster uploads</p>
-                    {% if form.image.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.image.errors.0 }}</p>
-                    {% endif %}
-                </div>
 
-                <!-- Image Preview -->
-                <div id="image-preview-container" class="hidden">
-                    <div class="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-indigo-300">
-                        <img id="image-preview" src="" alt="Preview" class="w-full max-h-64 object-cover rounded-lg">
-                        <div class="mt-3 flex items-center justify-between text-xs text-gray-600">
-                            <span>Original: <span id="original-size">0</span> KB → Compressed: <span id="compressed-size">0</span> KB</span>
-                            <button type="button" onclick="clearImage()" class="text-red-600 hover:text-red-700 font-medium">Remove</button>
+                    <div>
+                        <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Add an image (optional)</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="file" id="{{ form.image.id_for_label }}" name="image" class="w-full" accept="image/*" onchange="handleImageCompression(event)">
+                            <span id="image-size" class="text-xs text-gray-500 whitespace-nowrap"></span>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">💡 Images are automatically compressed to 1200px wide for faster uploads</p>
+                        {% if form.image.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.image.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div id="image-preview-container" class="hidden">
+                        <div class="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-indigo-300">
+                            <img id="image-preview" src="" alt="Preview" class="w-full max-h-64 object-cover rounded-lg">
+                            <div class="mt-3 flex items-center justify-between text-xs text-gray-600">
+                                <span>Original: <span id="original-size">0</span> KB → Compressed: <span id="compressed-size">0</span> KB</span>
+                                <button type="button" onclick="clearImage()" class="text-red-600 hover:text-red-700 font-medium">Remove</button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {% if request.user.user_type == 'investor' and request.user.is_approved %}
-                <div class="flex gap-2">
-                    <button type="submit" name="post_type" value="pattern"
-                            class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all">
-                        ✨ Post as Pattern
-                    </button>
-                </div>
-                {% endif %}
+                    {% if request.user.user_type == 'investor' and request.user.is_approved %}
+                    <div class="flex gap-2">
+                        <button type="submit" name="post_type" value="pattern"
+                                class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all">
+                            ✨ Post as Pattern
+                        </button>
+                    </div>
+                    {% endif %}
 
-                <div class="flex justify-end space-x-4">
-                    <a href="{% url 'hotel:social_feed' %}" class="px-6 py-2 text-gray-600 hover:text-gray-800">Cancel</a>
-                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        Create Post
-                    </button>
-                </div>
-            </form>
+                    <div class="flex justify-end space-x-4">
+                        <a href="{% url 'hotel:social_feed' %}" class="px-6 py-2 text-gray-600 hover:text-gray-800">Cancel</a>
+                        <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            Create Post
+                        </button>
+                    </div>
+                </form>
+            {% else %}
+                <h1 class="text-2xl font-bold text-gray-900 mb-4">Investor-only Post Access</h1>
+                <p class="text-gray-600 mb-6">Creating a post from the header Create button is limited to verified investor accounts. Enter your 5-digit investor passcode below, or contact support to request access.</p>
+
+                <form method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    <div>
+                        <label for="passcode" class="block text-sm font-medium text-gray-700 mb-2">Investor Access Passcode</label>
+                        <input id="passcode" name="passcode" type="text" maxlength="5" autocomplete="one-time-code"
+                               class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                               placeholder="Enter 5-digit code">
+                        {% if passcode_error %}
+                            <p class="mt-2 text-sm text-red-600">{{ passcode_error }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <p class="text-sm text-gray-500">Need help? Contact <a href="mailto:{{ support_contact }}" class="text-blue-600 hover:underline">{{ support_contact }}</a>.</p>
+                        <button type="submit" class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all">Verify Code</button>
+                    </div>
+                </form>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -69,10 +91,6 @@
 // IMAGE COMPRESSION - Canvas API for fast uploads on slow networks
 // ============================================================================
 
-/**
- * Compress image before upload using Canvas API
- * Reduces file size by 70-90% while maintaining visual quality
- */
 async function handleImageCompression(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -81,16 +99,12 @@ async function handleImageCompression(event) {
     document.getElementById('original-size').textContent = originalSizeKB;
 
     try {
-        // Read the image file
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
             img.onload = async () => {
-                // Compress the image
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d', { alpha: true });
-
-                // Calculate new dimensions (max width 1200px, maintain aspect ratio)
                 const maxWidth = 1200;
                 let width = img.width;
                 let height = img.height;
@@ -102,35 +116,25 @@ async function handleImageCompression(event) {
 
                 canvas.width = width;
                 canvas.height = height;
-
-                // Draw the image with quality optimization
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Convert canvas to blob with optimized quality
                 canvas.toBlob(
                     (blob) => {
-                        // Create a new File object from the compressed blob
                         const compressedFile = new File([blob], file.name, {
                             type: 'image/jpeg',
                             lastModified: file.lastModified,
                         });
 
-                        // Create a DataTransfer to update the file input
                         const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(compressedFile);
-                        document.getElementById('{{ form.image.id_for_label }}').files = dataTransfer.files;
+                        document.getElementById('{{ form.image.id_for_label|default:'' }}').files = dataTransfer.files;
 
-                        // Show preview and compression stats
                         displayImagePreview(e.target.result);
                         const compressedSizeKB = (blob.size / 1024).toFixed(2);
                         document.getElementById('compressed-size').textContent = compressedSizeKB;
-
-                        // Calculate compression percentage
-                        const compressionPercent = (((originalSizeKB - compressedSizeKB) / originalSizeKB) * 100).toFixed(0);
-                        console.log(`📦 Image compressed: ${originalSizeKB}KB → ${compressedSizeKB}KB (${compressionPercent}% smaller)`);
                     },
                     'image/jpeg',
-                    0.8 // 80% quality (good balance between size and visual quality)
+                    0.8
                 );
             };
             img.src = e.target.result;
@@ -138,33 +142,23 @@ async function handleImageCompression(event) {
         reader.readAsDataURL(file);
     } catch (error) {
         console.error('Image compression failed:', error);
-        // If compression fails, use original image
     }
 }
 
-/**
- * Display image preview after compression
- */
 function displayImagePreview(imageSrc) {
     document.getElementById('image-preview').src = imageSrc;
     document.getElementById('image-preview-container').classList.remove('hidden');
 }
 
-/**
- * Clear image selection
- */
 function clearImage() {
-    document.getElementById('{{ form.image.id_for_label }}').value = '';
+    document.getElementById('{{ form.image.id_for_label|default:'' }}').value = '';
     document.getElementById('image-preview-container').classList.add('hidden');
     document.getElementById('original-size').textContent = '0';
     document.getElementById('compressed-size').textContent = '0';
 }
 
-/**
- * Show file size on input change
- */
 document.addEventListener('change', function(e) {
-    if (e.target.id === '{{ form.image.id_for_label }}') {
+    if (e.target.id === '{{ form.image.id_for_label|default:'' }}') {
         const file = e.target.files[0];
         if (file) {
             const sizeKB = (file.size / 1024).toFixed(2);
