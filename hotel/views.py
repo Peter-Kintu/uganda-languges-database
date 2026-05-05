@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.db.models import Q
 from django.core.cache import cache
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Post, Comment, Like, Connection, Message, Share
 from .forms import PostForm
 from users.models import CustomUser
@@ -76,6 +77,15 @@ def social_feed(request):
     # 5. Put global/pattern posts at the top for every user
     posts = list(global_posts) + final_feed
 
+    # Paginate feed so we do not load every post at once
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(posts, 6)
+    try:
+        page_obj = paginator.page(page_number)
+    except (PageNotAnInteger, EmptyPage):
+        page_obj = paginator.page(1)
+    posts = list(page_obj.object_list)
+
     # Translate posts if requested
     if translate_feed and target_lang != 'en':
         for post in posts:
@@ -92,6 +102,7 @@ def social_feed(request):
     all_users = CustomUser.objects.exclude(id=request.user.id)
     context = {
         'posts': posts,
+        'page_obj': page_obj,
         'connections': connections,
         'all_users': all_users,
         'current_filter': feed_type,
