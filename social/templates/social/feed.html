@@ -59,11 +59,17 @@
 
     .video-overlay * { pointer-events: auto; }
 
-    .publish-fab {
+    .fab-group {
         position: fixed;
         top: 85px;
         left: 20px;
+        display: flex;
+        gap: 12px;
         z-index: 100;
+    }
+
+    .publish-fab {
+        display: inline-flex;
     }
 
     .plus-btn {
@@ -79,6 +85,10 @@
         color: white;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .plus-btn.youtube {
+        background: rgba(255, 69, 58, 0.88);
     }
 
     .agent-pulse {
@@ -118,12 +128,17 @@
     }
 </style>
 
-<div class="publish-fab">
+<div class="fab-group">
     <a href="{% url 'social:upload_reel' %}" class="plus-btn" title="Publish New Reel">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
         </svg>
     </a>
+    {% if user.is_authenticated %}
+    <a href="{% url 'social:youtube_apply' %}" class="plus-btn youtube" title="YouTube Partnership">
+        <span class="text-lg">📺</span>
+    </a>
+    {% endif %}
 </div>
 
 <div id="reel-container" class="no-scrollbar">

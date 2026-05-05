@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load static %}
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="{% static 'images/africana-ai-logo.png' %}">
     
     <link rel="canonical" href="https://www.africanaai.info/">
     
@@ -545,6 +551,18 @@
                 });
             });
         });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('{% static "sw.js" %}')
+                    .then(function(reg) {
+                        console.log('Service worker registered:', reg.scope);
+                    })
+                    .catch(function(err) {
+                        console.warn('Service worker registration failed:', err);
+                    });
+            });
+        }
     </script>
 </body>
 </html>
