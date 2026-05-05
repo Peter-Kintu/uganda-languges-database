@@ -32,6 +32,11 @@
         --gray-400: #9ca3af;
         --gray-600: #4b5563;
         --gray-900: #111827;
+        --pull-translate: 0px;
+    }
+
+    html {
+        scroll-behavior: smooth;
     }
 
     body {
@@ -39,7 +44,9 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
         color: var(--gray-900);
         font-size: 16px;
-        line-height: 1.7;
+        line-height: 1.0;
+        touch-action: pan-y;
+        overscroll-behavior-y: contain;
         -webkit-text-size-adjust: 100%;
     }
 
@@ -164,6 +171,9 @@
         display: grid;
         grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
         gap: 24px;
+        transform: translateY(var(--pull-translate, 0));
+        transition: transform 0.2s ease-out;
+        will-change: transform;
     }
 
     .feed {
@@ -297,22 +307,28 @@
     }
 
     .post-content {
-        margin-top: 16px;
-        line-height: 1.5;
-        color: #374151;
-        font-size: 1rem;
+        margin-top: 12px;
+        line-height: 1.37;
+        color: #373f51;
+        font-size: 0.98rem;
         white-space: pre-wrap;
+        letter-spacing: 0.01em;
+        word-break: break-word;
+    }
+
+    .post-content p {
+        margin: 0 0 0.85rem 0;
     }
 
     .post-image {
-        width: 100%;
+        width: calc(100% + 40px);
+        margin: 18px -20px 0;
         height: auto;
-        border-radius: 28px;
-        margin-top: 18px;
+        border-radius: 0 0 20px 20px;
         object-fit: cover;
         cursor: pointer;
         transition: transform 0.3s ease, filter 0.3s ease;
-        max-width: 100%;
+        max-width: none;
     }
 
     .post-image:hover {
@@ -396,7 +412,7 @@
 
     .comment-text {
         color: #374151;
-        line-height: 1.45;
+        line-height: 1.0;
     }
 
     .comment-action-btn {
@@ -531,7 +547,7 @@
         }
 
         .container {
-            padding: 16px 12px;
+            padding: 16px 12px 100px;
         }
 
         .post-card {
@@ -627,6 +643,7 @@
         border-color: rgba(255, 255, 255, 0.4);
     }
 
+
     /* ═════════════════════════════════════════════════════════════════ */
     /* MAIN CONTAINER                                                    */
     /* ═════════════════════════════════════════════════════════════════ */
@@ -653,9 +670,12 @@
     /* ═════════════════════════════════════════════════════════════════ */
 
     .feed {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr;
         gap: 16px;
+        max-width: 680px;
+        width: 100%;
+        margin: 0 auto;
     }
 
     /* Create Post Card */
@@ -728,13 +748,17 @@
         color: var(--gray-600);
         cursor: pointer;
         font-size: 18px;
-        transition: all 0.2s ease;
+        transition: transform 150ms ease, color 150ms ease;
         padding: 8px;
     }
 
     .action-btn:hover {
         color: var(--primary);
         transform: scale(1.1);
+    }
+
+    .action-btn:active {
+        transform: scale(0.98);
     }
 
     .btn-primary {
@@ -746,7 +770,7 @@
         font-weight: 600;
         font-size: 14px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
     }
 
     .btn-primary:hover {
@@ -755,16 +779,21 @@
         box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
     }
 
+    .btn-primary:active {
+        transform: scale(0.98);
+    }
+
     /* Post Card */
     .post-card {
-        background: white;
-        border-radius: 20px;
-        padding: 20px;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 18px;
         margin-bottom: 16px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.04);
-        border: 1px solid var(--gray-100);
-        transition: all 0.2s ease;
-        animation: slideIn 0.3s ease;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        animation: slideIn 0.28s ease;
+        overflow: hidden;
     }
 
     @keyframes slideIn {
@@ -779,20 +808,26 @@
     }
 
     .post-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
         transform: translateY(-2px);
+    }
+
+    .post-card:active {
+        transform: translateY(0);
     }
 
     .post-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
+        gap: 12px;
         margin-bottom: 12px;
     }
 
     .post-author {
         display: flex;
         gap: 12px;
+        align-items: center;
         flex: 1;
     }
 
@@ -801,16 +836,18 @@
     }
 
     .author-name {
-        font-weight: 700;
-        color: var(--gray-900);
+        font-weight: 600;
+        color: #111827;
         font-size: 15px;
-        line-height: 1;
-        margin-bottom: 4px;
+        line-height: 1.0;
+        margin-bottom: 2px;
     }
 
     .author-meta {
-        font-size: 13px;
-        color: var(--gray-600);
+        font-size: 0.85rem;
+        color: #6b7280;
+        font-weight: 500;
+        line-height: 1.35;
     }
 
     .post-menu {
@@ -819,7 +856,7 @@
         color: var(--gray-600);
         cursor: pointer;
         font-size: 18px;
-        transition: all 0.2s ease;
+        transition: transform 150ms ease, color 150ms ease;
     }
 
     .post-menu:hover {
@@ -827,31 +864,123 @@
     }
 
     .post-content {
-        margin-bottom: 10px;
+        margin-top: 8px;
+        margin-bottom: 12px;
         font-size: 15px;
-        line-height: 1.45;
-        color: var(--gray-900);
+        line-height: 1.0;
+        color: #2f343d;
+        font-weight: 400;
         word-break: break-word;
+        letter-spacing: 0.01em;
     }
 
     .post-content p {
-        margin: 0 0 0.25rem;
+        margin: 0 0 0.9rem;
     }
 
     .post-content a {
         color: var(--primary);
-        font-weight: 700;
+        font-weight: 600;
         text-decoration: none;
-        background: rgba(99, 102, 241, 0.08);
-        padding: 2px 4px;
-        border-radius: 6px;
         transition: all 0.2s ease;
         word-break: break-word;
     }
 
     .post-content a:hover {
         text-decoration: underline;
-        background: rgba(99, 102, 241, 0.15);
+    }
+
+    .post-image {
+        width: calc(100% + 36px);
+        margin: 16px -18px 0;
+        height: auto;
+        border-radius: 0 0 16px 16px;
+        object-fit: cover;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: none;
+        max-width: none;
+        aspect-ratio: 16 / 9;
+    }
+
+    .post-image:hover {
+        transform: scale(1.01);
+        filter: brightness(1.02);
+    }
+
+    .post-footer {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-top: 16px;
+        border-top: 1px solid var(--gray-200);
+        margin-top: 16px;
+        padding-bottom: 6px;
+        overflow: visible;
+    }
+
+    .post-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        flex: 0 0 auto;
+        min-width: auto;
+        padding: 9px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: transform 150ms ease, background 150ms ease, color 150ms ease;
+        color: #4b5563;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        background: #f3f4f6;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .post-action:hover {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .post-action.liked {
+        color: var(--danger);
+    }
+
+    .comments-section {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .comment {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding: 12px;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        background: #fafbfc;
+    }
+
+    .comment:hover {
+        background: #f3f4f6;
+    }
+
+    .comment-author {
+        font-weight: 600;
+        color: #111827;
+        font-size: 14px;
+        line-height: 1.0;
+    }
+
+    .comment-handle {
+        color: #6b7280;
+        font-size: 13px;
+        font-weight: 500;
     }
 
     .toast {
@@ -871,7 +1000,7 @@
         max-width: min(92%, 420px);
         text-align: center;
         font-size: 0.95rem;
-        line-height: 1.4;
+        line-height: 1.0;
     }
 
     .toast.active {
@@ -881,72 +1010,62 @@
     }
 
     .post-image {
-        width: 100%;
-        border-radius: 16px;
-        margin: 16px 0;
-        max-height: 600px;
+        width: calc(100% + 36px);
+        margin: 16px -18px 0;
+        height: auto;
+        border-radius: 0 0 16px 16px;
         object-fit: cover;
         cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: transform 0.25s ease, filter 0.25s ease;
+        box-shadow: none;
+        max-width: none;
         aspect-ratio: 16/9;
     }
 
     .post-image:hover {
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-        transform: scale(1.02);
+        transform: scale(1.01);
+        filter: brightness(1.02);
     }
 
     .post-footer {
         display: flex;
         justify-content: flex-start;
         align-items: center;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scroll-snap-type: x proximity;
+        flex-wrap: wrap;
         gap: 10px;
         padding-top: 16px;
         border-top: 1px solid var(--gray-200);
         margin-top: 16px;
         padding-bottom: 6px;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .post-footer::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .post-footer::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .post-footer::-webkit-scrollbar-thumb {
-        background: rgba(107, 114, 128, 0.35);
-        border-radius: 999px;
+        overflow: visible;
     }
 
     .post-action {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        gap: 8px;
         flex: 0 0 auto;
-        min-width: 96px;
-        padding: 8px 10px;
-        border-radius: 18px;
+        min-width: auto;
+        padding: 9px 12px;
+        border-radius: 999px;
         cursor: pointer;
-        transition: all 0.2s ease;
-        color: var(--gray-600);
+        transition: transform 150ms ease, background 150ms ease, color 150ms ease;
+        color: #4b5563;
         font-size: 13px;
         font-weight: 600;
         border: none;
-        background: none;
+        background: #f3f4f6;
         text-decoration: none;
         white-space: nowrap;
     }
 
+    .post-action:active {
+        transform: scale(0.97);
+    }
+
     .post-action:hover {
-        background: var(--gray-100);
+        background: rgba(99, 102, 241, 0.1);
         color: var(--primary);
     }
 
@@ -995,7 +1114,7 @@
         font-weight: 700;
         color: var(--gray-900);
         font-size: 14px;
-        line-height: 1.2;
+        line-height: 1.0;
     }
 
     .comment-handle {
@@ -1309,6 +1428,84 @@
         transform: scale(1.1);
     }
 
+    .page-loading .real-feed,
+    .page-loading .sidebar {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    #skeleton-feed {
+        display: grid;
+        gap: 16px;
+        opacity: 1;
+        transition: opacity 0.25s ease;
+    }
+
+    .skeleton-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 0.5px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+        padding: 20px;
+    }
+
+    .skeleton-avatar,
+    .skeleton-line,
+    .skeleton-media,
+    .skeleton-button {
+        background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+        background-size: 220% 100%;
+        animation: shimmer 1.4s infinite ease-in-out;
+    }
+
+    .skeleton-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        flex-shrink: 0;
+    }
+
+    .skeleton-line {
+        height: 12px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+    }
+
+    .skeleton-short {
+        width: 130px;
+    }
+
+    .skeleton-tiny {
+        width: 90px;
+    }
+
+    .skeleton-medium {
+        width: 220px;
+    }
+
+    .skeleton-full {
+        width: 100%;
+        min-height: 70px;
+    }
+
+    .skeleton-media {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 18px;
+        margin: 16px 0;
+    }
+
+    .skeleton-button {
+        min-height: 38px;
+        width: 100%;
+        border-radius: 999px;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: -220px 0; }
+        100% { background-position: 220px 0; }
+    }
+
     /* ═════════════════════════════════════════════════════════════════ */
     /* LOADING STATE                                                     */
     /* ═════════════════════════════════════════════════════════════════ */
@@ -1382,31 +1579,32 @@
         }
 
         .post-content {
-            font-size: 14px;
-            line-height: 1.45;
+            font-size: 15px;
+            line-height: 1.0;
             margin-bottom: 10px;
         }
 
         .post-image {
-            border-radius: 12px;
-            margin: 12px 0;
-            max-height: 300px;
+            width: calc(100% + 36px);
+            margin: 14px -18px 0;
+            border-radius: 0 0 16px 16px;
+            max-height: none;
             object-fit: cover;
         }
 
         .post-footer {
-            gap: 6px;
-            padding-top: 12px;
-            margin-top: 12px;
+            gap: 10px;
+            padding-top: 14px;
+            margin-top: 14px;
             border-top: 1px solid var(--gray-100);
         }
 
         .post-action {
             font-size: 13px;
-            padding: 8px 8px;
-            min-width: 58px;
-            gap: 6px;
-            border-radius: 10px;
+            padding: 9px 12px;
+            min-width: auto;
+            gap: 8px;
+            border-radius: 999px;
         }
 
         .create-post-card {
@@ -1508,7 +1706,7 @@
 
         .post-content {
             font-size: 15px;
-            line-height: 1.6;
+            line-height: 1.0;
         }
 
         .post-action {
@@ -1555,6 +1753,91 @@
 
     .fade-in {
         animation: fadeIn 0.3s ease;
+    }
+
+    .post-card {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        transition: transform 180ms ease, box-shadow 180ms ease;
+        overflow: hidden;
+    }
+
+    .post-card:hover {
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+        transform: translateY(-1px);
+    }
+
+    .post-header {
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+
+    .author-name {
+        font-weight: 600;
+        font-size: 14px;
+        line-height: 1.2;
+        margin-bottom: 1px;
+        color: #000000;
+    }
+
+    .author-meta {
+        font-size: 12px;
+        color: #666666;
+        font-weight: 400;
+        line-height: 1.3;
+    }
+
+    .post-content {
+        margin: 2px 0 6px;
+        font-size: 14px;
+        line-height: 1.4;
+        color: #000000;
+        letter-spacing: 0.01em;
+        font-weight: 400;
+    }
+
+    .post-content p {
+        margin: 0 0 0.4rem;
+    }
+
+    .post-image {
+        width: calc(100% + 32px);
+        margin: 10px -16px 0;
+        border-radius: 0 0 8px 8px;
+        object-fit: cover;
+        cursor: pointer;
+        transition: transform 0.25s ease, filter 0.25s ease;
+        box-shadow: none;
+        max-width: none;
+        aspect-ratio: 16 / 9;
+    }
+
+    .post-image:hover {
+        transform: scale(1.01);
+        filter: brightness(1.02);
+    }
+
+    .post-footer {
+        flex-wrap: wrap;
+        overflow: visible;
+    }
+
+    .post-action {
+        min-width: auto;
+        padding: 9px 12px;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+
+    .post-action:hover {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
     }
 
     .zoom-in {
@@ -1623,7 +1906,7 @@
 <!-- Main Container -->
 <div class="container">
     <!-- Feed -->
-    <div class="feed">
+    <div class="feed real-feed">
         <!-- Create Post Card -->
         <div class="create-post-card">
             <div class="create-post-header">
@@ -1644,10 +1927,70 @@
             </div>
         </div>
 
+        <div id="skeleton-feed" class="skeleton-feed" aria-hidden="true">
+            <div class="post-card skeleton-card">
+                <div class="post-header">
+                    <div class="post-author">
+                        <div class="avatar skeleton-avatar"></div>
+                        <div class="post-author-info">
+                            <div class="skeleton-line skeleton-short"></div>
+                            <div class="skeleton-line skeleton-tiny"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="skeleton-line skeleton-medium"></div>
+                <div class="skeleton-line skeleton-full"></div>
+                <div class="skeleton-media"></div>
+                <div class="post-footer">
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                </div>
+            </div>
+            <div class="post-card skeleton-card">
+                <div class="post-header">
+                    <div class="post-author">
+                        <div class="avatar skeleton-avatar"></div>
+                        <div class="post-author-info">
+                            <div class="skeleton-line skeleton-short"></div>
+                            <div class="skeleton-line skeleton-tiny"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="skeleton-line skeleton-medium"></div>
+                <div class="skeleton-line skeleton-full"></div>
+                <div class="skeleton-media"></div>
+                <div class="post-footer">
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                </div>
+            </div>
+            <div class="post-card skeleton-card">
+                <div class="post-header">
+                    <div class="post-author">
+                        <div class="avatar skeleton-avatar"></div>
+                        <div class="post-author-info">
+                            <div class="skeleton-line skeleton-short"></div>
+                            <div class="skeleton-line skeleton-tiny"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="skeleton-line skeleton-medium"></div>
+                <div class="skeleton-line skeleton-full"></div>
+                <div class="skeleton-media"></div>
+                <div class="post-footer">
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Posts Feed -->
         {% if posts %}
             {% for post in posts %}
-                    <div class="post-card" id="post-{{ post.id }}">
+                    <div class="post-card" id="post-{{ post.id }}" data-post-id="{{ post.id }}">
                         <!-- Header -->
                         <div class="post-header">
                             <div class="post-author">
@@ -1674,7 +2017,7 @@
 
                         <!-- Image -->
                         {% if post.image %}
-                        <img src="{{ post.image.url }}" alt="Post image" class="post-image" onclick="openImageModal('{{ post.image.url }}')">
+                        <img src="{{ post.image.url }}" alt="Post image" class="post-image" loading="lazy" decoding="async" onclick="openImageModal('{{ post.image.url }}')">
                         {% endif %}
 
                         <!-- Footer Actions -->
@@ -1882,6 +2225,7 @@
 
 <!-- JavaScript -->
 <script>
+    document.documentElement.classList.add('page-loading');
     const csrfToken = '{{ csrf_token }}';
     let currentPostId = null;
     let currentLanguage = localStorage.getItem('preferredLanguage') || 'en';
@@ -2253,6 +2597,52 @@
         showJobAccessToast('Tell us what excited you today — create your first post to access Jobs.');
     }
 
+    function initPostVisibilityObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const card = entry.target;
+                const postId = card.dataset.postId;
+
+                if (entry.intersectionRatio >= 0.6) {
+                    card.classList.add('in-view');
+                    if (postId && !card.dataset.readMarked) {
+                        card.dataset.readMarked = 'true';
+                        markPostRead(postId);
+                    }
+                    const video = card.querySelector('video');
+                    if (video) {
+                        video.muted = true;
+                        video.play().catch(() => {});
+                    }
+                } else {
+                    card.classList.remove('in-view');
+                    const video = card.querySelector('video');
+                    if (video) {
+                        video.pause();
+                    }
+                }
+            });
+        }, { threshold: [0.6] });
+
+        document.querySelectorAll('.post-card[data-post-id]').forEach(card => observer.observe(card));
+    }
+
+    function markPostRead(postId) {
+        console.debug(`Post ${postId} is 60% visible and has been marked as read.`);
+        // Optional: send analytics or mark read state when backend endpoint is available.
+    }
+
+    function removeSkeletonScreen() {
+        document.documentElement.classList.remove('page-loading');
+        const skeleton = document.getElementById('skeleton-feed');
+        if (skeleton) {
+            skeleton.style.opacity = '0';
+            window.setTimeout(() => {
+                skeleton.remove();
+            }, 320);
+        }
+    }
+
     // Close image modal on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -2269,5 +2659,86 @@
             closeImageModal();
         }
     });
+
+    function prefetchInternalLink(url) {
+        if (!url || !url.startsWith(location.origin)) return;
+        window.__prefetchCache = window.__prefetchCache || new Set();
+        if (window.__prefetchCache.has(url)) return;
+        window.__prefetchCache.add(url);
+
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = url;
+        link.as = 'document';
+        document.head.appendChild(link);
+    }
+
+    function setupPrefetchHints() {
+        const anchorList = Array.from(document.querySelectorAll('a[href^="/"]:not([target="_blank"]):not([download])'));
+        anchorList.forEach(anchor => {
+            const href = anchor.href;
+            anchor.addEventListener('pointerenter', () => prefetchInternalLink(href));
+            anchor.addEventListener('focus', () => prefetchInternalLink(href));
+        });
+    }
+
+    function attachElasticRefresh() {
+        let startY = 0;
+        let currentY = 0;
+        let isPulling = false;
+        const threshold = 80;
+
+        document.addEventListener('touchstart', function(event) {
+            if (window.scrollY === 0) {
+                startY = event.touches[0].clientY;
+                isPulling = true;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function(event) {
+            if (!isPulling) return;
+            currentY = event.touches[0].clientY;
+            const distance = Math.max(0, currentY - startY);
+            const translate = Math.min(distance / 2, threshold);
+            document.documentElement.style.setProperty('--pull-translate', `${translate}px`);
+        }, { passive: true });
+
+        document.addEventListener('touchend', function() {
+            if (!isPulling) return;
+            const distance = currentY - startY;
+            isPulling = false;
+            document.documentElement.style.setProperty('--pull-translate', '0px');
+            if (distance > threshold) {
+                window.location.reload();
+            }
+        });
+    }
+
+    function applyAdaptiveTheme() {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.style.setProperty('--primary', '#818cf8');
+            document.documentElement.style.setProperty('--secondary', '#a78bfa');
+            document.documentElement.style.setProperty('--gray-50', '#111827');
+            document.documentElement.style.setProperty('--gray-100', '#1f2937');
+            document.documentElement.style.setProperty('--gray-900', '#f9fafb');
+            document.body.style.background = 'linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%)';
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            removeSkeletonScreen();
+            initPostVisibilityObserver();
+            setupPrefetchHints();
+            attachElasticRefresh();
+            applyAdaptiveTheme();
+        });
+    } else {
+        removeSkeletonScreen();
+        initPostVisibilityObserver();
+        setupPrefetchHints();
+        attachElasticRefresh();
+        applyAdaptiveTheme();
+    }
 </script>
 {% endblock %}
