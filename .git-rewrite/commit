@@ -1,6 +1,0 @@
-tree af94182a6a628dbda3c30f8c0879a5559613db86
-parent 0f9b0e22ce23cff869ab86560dd23cdb677a3424
-author Kintu Peter <kintupeter721@gmail.com> 1756260689 +0300
-committer Kintu Peter <kintupeter721@gmail.com> 1756260689 +0300
-
-Applied migrations on Neon and preparing to deploy to Render
