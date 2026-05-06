@@ -27,7 +27,10 @@ django-widget-tweaks
 python-aliexpress-api
 google-genai
 google-api-python-client
+<<<<<<< HEAD
 google-auth
+=======
+>>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
 cerebras-cloud-sdk
 phonenumbers
 requests

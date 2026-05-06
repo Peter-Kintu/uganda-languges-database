@@ -16,10 +16,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.template import TemplateDoesNotExist
 from datetime import datetime
 
+<<<<<<< HEAD
 # Google auth token verification
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
+=======
+>>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
 # Official Google GenAI SDK imports (2025 Standard)
 from google import genai
 from google.genai import types
@@ -93,6 +96,7 @@ def user_login(request):
             messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
+<<<<<<< HEAD
 
     google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
     google_auth_receiver_url = request.build_absolute_uri(reverse('users:google_auth_receiver'))
@@ -102,11 +106,15 @@ def user_login(request):
         'google_client_id': google_client_id,
         'google_auth_receiver_url': google_auth_receiver_url,
     }
+=======
+    context = {'form': form, 'next': request.GET.get('next', '')}
+>>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
     try:
         return render(request, 'users/login.html', context)
     except TemplateDoesNotExist:
         return render(request, 'login.html', context)
 
+<<<<<<< HEAD
 @csrf_exempt
 def google_auth_receiver(request):
     if request.method != 'POST':
@@ -152,6 +160,8 @@ def google_auth_receiver(request):
         return HttpResponse(str(e), status=400)
 
 
+=======
+>>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
 def user_register(request):
     ref = request.GET.get('ref')
     if ref:

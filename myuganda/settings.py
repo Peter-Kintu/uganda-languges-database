@@ -203,8 +203,11 @@ ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID')
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY")
 TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
+<<<<<<< HEAD
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+=======
+>>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
 
 # --- STORAGE BACKENDS ---
 # Check if Cloudinary is properly configured
