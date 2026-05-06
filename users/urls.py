@@ -12,10 +12,9 @@ urlpatterns = [
     # --- Authentication ---
     path('', views.user_login, name='root_login'),
     path('login/', views.user_login, name='user_login'),
-<<<<<<< HEAD
+
     path('google-auth-receiver/', views.google_auth_receiver, name='google_auth_receiver'),
-=======
->>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
+
     path('register/', views.user_register, name='user_register'),
     path('logout/', views.user_logout, name='user_logout'),
     

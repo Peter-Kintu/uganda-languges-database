@@ -126,8 +126,7 @@
         border-color: rgba(255, 255, 255, 0.3);
     }
 
-<<<<<<< HEAD
-=======
+
     .filter-tabs {
         max-width: 1400px;
         margin: 0 auto;
@@ -166,7 +165,7 @@
         box-shadow: 0 18px 35px rgba(99, 102, 241, 0.18);
     }
 
->>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
+
     .container {
         max-width: 1400px;
         margin: 0 auto;
@@ -607,13 +606,12 @@
         .header-content {
             max-width: 1600px;
         }
-<<<<<<< HEAD
-=======
+
 
         .filter-tabs {
             max-width: 1600px;
         }
->>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
+
     }
 
     @media (max-width: 768px) {
@@ -697,8 +695,8 @@
             line-height: 1;
         }
 
-<<<<<<< HEAD
-=======
+
+
         .filter-tabs {
             padding: 12px 12px 0;
             gap: 6px;
@@ -709,7 +707,7 @@
             font-size: 0.9rem;
         }
 
->>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
+
         .post-footer {
             display: flex;
             flex-wrap: nowrap;
@@ -1993,11 +1991,10 @@
 <div class="header">
     <div class="header-content">
         <div class="header-actions">
-<<<<<<< HEAD
-=======
+
             <button class="btn-header" data-icon="🌐" onclick="openTranslateModal()">Translate</button>
             <button class="btn-header" data-icon="🗣️" onclick="openLanguageModal()">Languages</button>
->>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
+
             <button type="button" class="btn-header job-button" data-icon="💼" data-url="{% url 'languages:browse_job_listings' %}" data-post-count="{{ request.user.posts.count }}" onclick="handleJobButtonClick(event)">Jobs</button>
             <a href="{% url 'movie:movie_list' %}" class="btn-header" data-icon="🎬">Movies</a>
             <a href="{% url 'hotel:inbox' %}" class="btn-header" data-icon="📥">Inbox</a>
@@ -2008,8 +2005,7 @@
 
 <div id="job-access-toast" class="toast" role="status" aria-live="polite"></div>
 
-<<<<<<< HEAD
-=======
+
 <!-- Filter Tabs -->
 <div class="filter-tabs">
     <a href="?type=all" class="chip {% if current_filter == 'all' or current_filter == '' %}active{% endif %}">🌐 All</a>
@@ -2018,7 +2014,7 @@
     <a href="?type=location" class="chip {% if current_filter == 'location' %}active{% endif %}">📍 Location</a>
 </div>
 
->>>>>>> 9eee28acdb1e11b3d827824d887976b8a2126ca4
+
 <!-- Main Container -->
 <div class="container">
     <!-- Feed -->
