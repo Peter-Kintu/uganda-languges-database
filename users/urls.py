@@ -12,6 +12,7 @@ urlpatterns = [
     # --- Authentication ---
     path('', views.user_login, name='root_login'),
     path('login/', views.user_login, name='user_login'),
+    path('google-auth-receiver/', views.google_auth_receiver, name='google_auth_receiver'),
     path('register/', views.user_register, name='user_register'),
     path('logout/', views.user_logout, name='user_logout'),
     

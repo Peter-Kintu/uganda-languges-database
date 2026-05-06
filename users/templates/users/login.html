@@ -237,6 +237,18 @@
         box-shadow: 0 10px 20px -10px var(--accent);
     }
 
+    .google-signin-wrapper {
+        width: 100%;
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .g_id_signin {
+        width: 100%;
+        max-width: 100%;
+    }
+
     /* Grid improvements for rhythm */
     .grid-3 { 
         display: grid; 
@@ -349,6 +361,27 @@
                     </div>
                     <button type="submit" class="btn-primary">Sign In to Dashboard</button>
                 </form>
+
+                {% if google_client_id %}
+                <!-- Google Sign-in -->
+                <div class="google-signin-wrapper">
+                    <script src="https://accounts.google.com/gsi/client" async defer></script>
+                    <div id="g_id_onload"
+                         data-client_id="{{ google_client_id }}"
+                         data-login_uri="{{ google_auth_receiver_url }}"
+                         data-auto_prompt="false">
+                    </div>
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-shape="rectangular"
+                         data-theme="outline"
+                         data-text="signin_with"
+                         data-size="large"
+                         data-logo_alignment="left">
+                    </div>
+                </div>
+                {% endif %}
+
                 <p style="text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-muted);">
                     New here? <a href="{% url 'users:user_register' %}" style="color: var(--accent); font-weight: 600; text-decoration: none;">Create Account</a>
                 </p>

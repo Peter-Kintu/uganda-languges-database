@@ -16,6 +16,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.template import TemplateDoesNotExist
 from datetime import datetime
 
+# Google auth token verification
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
 # Official Google GenAI SDK imports (2025 Standard)
 from google import genai
 from google.genai import types
@@ -89,11 +93,64 @@ def user_login(request):
             messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
-    context = {'form': form, 'next': request.GET.get('next', '')}
+
+    google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    google_auth_receiver_url = request.build_absolute_uri(reverse('users:google_auth_receiver'))
+    context = {
+        'form': form,
+        'next': request.GET.get('next', ''),
+        'google_client_id': google_client_id,
+        'google_auth_receiver_url': google_auth_receiver_url,
+    }
     try:
         return render(request, 'users/login.html', context)
     except TemplateDoesNotExist:
         return render(request, 'login.html', context)
+
+@csrf_exempt
+def google_auth_receiver(request):
+    if request.method != 'POST':
+        return HttpResponse('POST required', status=405)
+
+    token = request.POST.get('credential')
+    if not token:
+        return HttpResponse('Missing credential', status=400)
+
+    client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    if not client_id:
+        return HttpResponse('Google client ID not configured', status=500)
+
+    try:
+        idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
+        if idinfo.get('iss') not in ['accounts.google.com', 'https://accounts.google.com']:
+            raise ValueError('Wrong issuer.')
+
+        email = idinfo.get('email')
+        if not email:
+            return HttpResponse('Email is required', status=400)
+
+        first_name = idinfo.get('given_name', '')
+        last_name = idinfo.get('family_name', '')
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': email,
+                'first_name': first_name,
+                'last_name': last_name,
+            }
+        )
+        if created:
+            user.save()
+
+        login(request, user)
+        return redirect('hotel:social_feed')
+
+    except ValueError:
+        return HttpResponse('Invalid token', status=403)
+    except Exception as e:
+        return HttpResponse(str(e), status=400)
+
 
 def user_register(request):
     ref = request.GET.get('ref')
