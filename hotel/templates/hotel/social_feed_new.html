@@ -1992,9 +1992,6 @@
     <div class="header-content">
         <div class="header-actions">
 
-            <button class="btn-header" data-icon="🌐" onclick="openTranslateModal()">Translate</button>
-            <button class="btn-header" data-icon="🗣️" onclick="openLanguageModal()">Languages</button>
-
             <button type="button" class="btn-header job-button" data-icon="💼" data-url="{% url 'languages:browse_job_listings' %}" data-post-count="{{ request.user.posts.count }}" onclick="handleJobButtonClick(event)">Jobs</button>
             <a href="{% url 'movie:movie_list' %}" class="btn-header" data-icon="🎬">Movies</a>
             <a href="{% url 'hotel:inbox' %}" class="btn-header" data-icon="📥">Inbox</a>
@@ -2004,16 +2001,6 @@
 </div>
 
 <div id="job-access-toast" class="toast" role="status" aria-live="polite"></div>
-
-
-<!-- Filter Tabs -->
-<div class="filter-tabs">
-    <a href="?type=all" class="chip {% if current_filter == 'all' or current_filter == '' %}active{% endif %}">🌐 All</a>
-    <a href="?type=text" class="chip {% if current_filter == 'text' %}active{% endif %}">✍️ Text</a>
-    <a href="?type=images" class="chip {% if current_filter == 'images' %}active{% endif %}">📸 Images</a>
-    <a href="?type=location" class="chip {% if current_filter == 'location' %}active{% endif %}">📍 Location</a>
-</div>
-
 
 <!-- Main Container -->
 <div class="container">

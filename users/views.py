@@ -105,8 +105,6 @@ def user_login(request):
         'google_auth_receiver_url': google_auth_receiver_url,
     }
 
-    context = {'form': form, 'next': request.GET.get('next', '')}
-
     try:
         return render(request, 'users/login.html', context)
     except TemplateDoesNotExist:
