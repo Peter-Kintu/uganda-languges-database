@@ -122,8 +122,12 @@ def google_auth_receiver(request):
         return HttpResponse('Missing credential', status=400)
 
     next_url = request.POST.get('next') or request.GET.get('next') or ''
-    if next_url and not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
-        next_url = ''
+    if next_url:
+        if next_url.startswith('/'):
+            # relative URL, allow
+            pass
+        elif not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+            next_url = ''
 
     client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
     if not client_id:
