@@ -322,10 +322,38 @@
         color: #000000;
         letter-spacing: 0.01em;
         font-weight: 400;
+        transition: max-height 0.3s ease;
     }
 
     .post-content p {
         margin: 0 0 0.45rem;
+    }
+
+    /* Truncate post content to 2 lines */
+    .post-content.collapsed {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .show-more-btn {
+        background: none;
+        border: none;
+        color: var(--primary);
+        padding: 4px 0;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        transition: color 0.2s ease;
+        margin-top: 6px;
+        display: inline-block;
+    }
+
+    .show-more-btn:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
     }
 
     .post-image {
@@ -2077,7 +2105,7 @@
                         </div>
 
                         <!-- Content -->
-                        <div class="post-content" data-post-id="{{ post.id }}" lang="{{ current_lang|default:'en' }}">
+                        <div class="post-content collapsed" data-post-id="{{ post.id }}" lang="{{ current_lang|default:'en' }}" data-full-content="{% if post.is_translated and post.translated_content %}{{ post.translated_content }}{% else %}{{ post.content }}{% endif %}">
                             {% if post.is_translated and post.translated_content %}
                                 {{ post.translated_content|urlize|linebreaks }}
                                 <div style="font-size: 12px; color: var(--gray-500); margin-top: 6px;">
@@ -2087,6 +2115,7 @@
                                 {{ post.content|urlize|linebreaks }}
                             {% endif %}
                         </div>
+                        <button class="show-more-btn" onclick="togglePostExpand(this, {{ post.id }})" style="display: none;">Show More</button>
 
                         <!-- Image -->
                         {% if post.image %}
@@ -2842,6 +2871,46 @@
         }
     }
 
+    // Toggle post expand/collapse for "Show More" functionality
+    function togglePostExpand(btn, postId) {
+        const postContent = document.querySelector(`.post-content[data-post-id="${postId}"]`);
+        if (postContent) {
+            postContent.classList.toggle('collapsed');
+            btn.textContent = postContent.classList.contains('collapsed') ? 'Show More' : 'Show Less';
+        }
+    }
+
+    // Check which posts need "Show More" button (posts longer than 2 lines)
+    function initShowMoreButtons() {
+        document.querySelectorAll('.post-content').forEach(content => {
+            const btn = content.nextElementSibling;
+            if (btn && btn.classList.contains('show-more-btn')) {
+                // Check if content needs truncation by cloning and measuring
+                const clone = content.cloneNode(true);
+                clone.classList.remove('collapsed');
+                clone.style.position = 'absolute';
+                clone.style.visibility = 'hidden';
+                clone.style.height = 'auto';
+                document.body.appendChild(clone);
+                
+                const fullHeight = clone.scrollHeight;
+                document.body.removeChild(clone);
+                
+                const computedStyle = window.getComputedStyle(content);
+                const lineHeight = parseFloat(computedStyle.lineHeight);
+                
+                // If full height is more than approximately 2.5 lines, show the button
+                if (fullHeight > lineHeight * 2.5) {
+                    btn.style.display = 'inline-block';
+                } else {
+                    // No truncation needed
+                    content.classList.remove('collapsed');
+                    btn.style.display = 'none';
+                }
+            }
+        });
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             removeSkeletonScreen();
@@ -2849,6 +2918,7 @@
             setupPrefetchHints();
             attachElasticRefresh();
             applyAdaptiveTheme();
+            initShowMoreButtons();
         });
     } else {
         removeSkeletonScreen();
@@ -2856,6 +2926,7 @@
         setupPrefetchHints();
         attachElasticRefresh();
         applyAdaptiveTheme();
+        initShowMoreButtons();
     }
 </script>
 {% endblock %}
