@@ -359,6 +359,7 @@
                         <label style="font-size: 13px; font-weight: 500; color: #e2e8f0;">Password</label>
                         <input type="password" name="password" class="form-input" placeholder="••••••••" required>
                     </div>
+                    <input type="hidden" name="next" value="{{ next }}">
                     <button type="submit" class="btn-primary">Sign In to Dashboard</button>
                 </form>
 
@@ -367,20 +368,57 @@
                 <!-- Google Sign-in -->
                 <div class="google-signin-wrapper">
                     <script src="https://accounts.google.com/gsi/client" async defer></script>
-                    <div id="g_id_onload"
-                         data-client_id="{{ google_client_id }}"
-                         data-login_uri="{{ google_auth_receiver_url }}"
-                         data-auto_prompt="false">
-                    </div>
-                    <div class="g_id_signin"
-                         data-type="standard"
-                         data-shape="rectangular"
-                         data-theme="outline"
-                         data-text="signin_with"
-                         data-size="large"
-                         data-logo_alignment="left">
-                    </div>
+                    <div id="g_id_signin"></div>
                 </div>
+                <script>
+                    function handleGoogleCredentialResponse(response) {
+                        fetch("{% url 'users:google_auth_receiver' %}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
+                            body: new URLSearchParams({
+                                credential: response.credential,
+                                next: "{{ next }}"
+                            })
+                        })
+                        .then(async (res) => {
+                            if (res.redirected) {
+                                window.location.href = res.url;
+                            } else if (res.ok) {
+                                window.location.reload();
+                            } else {
+                                const error = await res.text();
+                                console.error("Google auth failed:", error);
+                                alert("Google sign-in failed. Please try again.");
+                            }
+                        })
+                        .catch((err) => {
+                            console.error("Google auth error:", err);
+                            alert("Google sign-in error. Please try again.");
+                        });
+                    }
+
+                    window.addEventListener('load', function() {
+                        if (window.google && google.accounts && google.accounts.id) {
+                            google.accounts.id.initialize({
+                                client_id: "{{ google_client_id }}",
+                                callback: handleGoogleCredentialResponse,
+                                ux_mode: "popup"
+                            });
+                            google.accounts.id.renderButton(
+                                document.getElementById("g_id_signin"),
+                                {
+                                    type: "standard",
+                                    theme: "outline",
+                                    size: "large",
+                                    text: "signin_with",
+                                    logo_alignment: "left"
+                                }
+                            );
+                        }
+                    });
+                </script>
                 {% endif %}
 
 
