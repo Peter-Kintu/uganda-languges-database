@@ -60,6 +60,7 @@ if not DEBUG:
 CSRF_TRUSTED_ORIGINS = [
     'https://uganda-languges-database.onrender.com',
     'https://www.africanaai.info',
+    'https://africanaai.info',
 ]
 
 if DEBUG:
@@ -182,7 +183,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # --- SESSION SETTINGS ---
-SESSION_COOKIE_AGE = 2592000  # 30 days in seconds
+SESSION_COOKIE_AGE = 31536000  # 1 year 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # --- STATIC & MEDIA FILES ---

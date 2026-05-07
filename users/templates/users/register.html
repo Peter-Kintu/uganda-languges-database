@@ -118,12 +118,17 @@
     function handleCredentialResponse(response) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '{{ google_auth_receiver_url }}';
+        form.action = '{% url 'users:google_auth_receiver' %}';
         const credentialInput = document.createElement('input');
         credentialInput.type = 'hidden';
         credentialInput.name = 'credential';
         credentialInput.value = response.credential;
         form.appendChild(credentialInput);
+        const nextInput = document.createElement('input');
+        nextInput.type = 'hidden';
+        nextInput.name = 'next';
+        nextInput.value = '{{ next }}';
+        form.appendChild(nextInput);
         document.body.appendChild(form);
         form.submit();
     }

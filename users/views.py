@@ -98,12 +98,10 @@ def user_login(request):
 
 
     google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
-    google_auth_receiver_url = request.build_absolute_uri(reverse('users:google_auth_receiver'))
     context = {
         'form': form,
         'next': request.GET.get('next', ''),
         'google_client_id': google_client_id,
-        'google_auth_receiver_url': google_auth_receiver_url,
     }
 
     try:
@@ -204,11 +202,10 @@ def user_register(request):
     else:
         form = CustomUserCreationForm()
     google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
-    google_auth_receiver_url = request.build_absolute_uri(reverse('users:google_auth_receiver'))
     context = {
         'form': form,
         'google_client_id': google_client_id,
-        'google_auth_receiver_url': google_auth_receiver_url,
+        'next': request.GET.get('next', ''),
     }
     try:
         return render(request, 'users/register.html', context)
