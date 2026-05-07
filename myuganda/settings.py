@@ -52,7 +52,8 @@ if not DEBUG:
     # 4. Modern Browser Protections
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY' 
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
     # IMPORTANT: Careerjet tracking requires referrer to be sent to external domains
     SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
 
