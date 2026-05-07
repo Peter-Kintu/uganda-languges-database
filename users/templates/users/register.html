@@ -79,6 +79,24 @@
                 </div>
             </form>
 
+            <div class="mt-6 text-center">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">Or</span>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    {% if google_client_id %}
+                    <div class="google-signin-wrapper">
+                        <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signup_with" data-size="large" data-logo_alignment="left"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
             <div class="mt-10 pt-8 border-t border-white/5 text-center">
                 <p class="text-xs text-slate-500 mb-4">
                     Already a member? 
@@ -94,7 +112,22 @@
     </div>
 </main>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <script>
+    function handleCredentialResponse(response) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ google_auth_receiver_url }}';
+        const credentialInput = document.createElement('input');
+        credentialInput.type = 'hidden';
+        credentialInput.name = 'credential';
+        credentialInput.value = response.credential;
+        form.appendChild(credentialInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     // Modern Password Validation Logic
     const passwordInput = document.querySelector('input[type="password"]');
     const reqItems = {
@@ -135,6 +168,20 @@
             dot.classList.replace('bg-green-400', 'bg-slate-700');
         }
     }
+
+    // Google Sign-In initialization
+    window.addEventListener('load', function() {
+        if (typeof google !== 'undefined' && google.accounts) {
+            google.accounts.id.initialize({
+                client_id: '{{ google_client_id }}',
+                callback: handleCredentialResponse
+            });
+            google.accounts.id.renderButton(
+                document.querySelector('.g_id_signin'),
+                { theme: 'outline', size: 'large' }
+            );
+        }
+    });
 </script>
 
 <style>

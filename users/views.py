@@ -203,10 +203,17 @@ def user_register(request):
                     messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = CustomUserCreationForm()
+    google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    google_auth_receiver_url = request.build_absolute_uri(reverse('users:google_auth_receiver'))
+    context = {
+        'form': form,
+        'google_client_id': google_client_id,
+        'google_auth_receiver_url': google_auth_receiver_url,
+    }
     try:
-        return render(request, 'users/register.html', {'form': form})
+        return render(request, 'users/register.html', context)
     except TemplateDoesNotExist:
-        return render(request, 'register.html', {'form': form})
+        return render(request, 'register.html', context)
 
 @login_required
 def user_logout(request):

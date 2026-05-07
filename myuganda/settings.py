@@ -181,6 +181,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# --- SESSION SETTINGS ---
+SESSION_COOKIE_AGE = 2592000  # 30 days in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
 # --- STATIC & MEDIA FILES ---
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
