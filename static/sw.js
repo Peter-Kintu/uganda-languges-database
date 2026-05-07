@@ -1,6 +1,12 @@
 const CACHE_NAME = 'africanaai-pwa-v1';
 const CORE_ASSETS = [
   '/',
+  '/social/',
+  '/users/profile/',
+  '/eshop/',
+  '/languages/',
+  '/hotel/',
+  '/movie/',
   '/static/manifest.webmanifest',
   '/static/images/africana-ai-logo.png',
   '/static/robots.txt'

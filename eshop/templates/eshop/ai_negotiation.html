@@ -6,13 +6,13 @@
 {% block title %}Negotiate Price for {{ product.name }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-950 py-10">
-    <div class="container mx-auto px-4 py-8 md:py-12">
+<div class="min-h-screen bg-white py-10">
+    <div class="container mx-auto px-4 py-8 md:px-6 md:py-12">
         {# Main Negotiation Card #}
-        <div class="max-w-4xl mx-auto bg-slate-900/95 rounded-3xl shadow-2xl border border-indigo-500/30 overflow-hidden">
+        <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden">
         
         {# Header Section #}
-        <header class="bg-gradient-to-r from-blue-600/20 to-purple-700/20 p-6 border-b border-indigo-500/20 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <header class="bg-gradient-to-r from-blue-600/20 to-purple-700/20 p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
                     <span class="text-indigo-400">AI</span> Price Negotiator
@@ -31,21 +31,21 @@
                     </a>
                 </div>
             </div>
-            <div class="bg-gray-800/80 px-4 py-2 rounded-2xl border border-green-500/40 text-center">
-                <p class="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Original Price</p>
-                <p class="text-xl font-black text-green-400">{{ product.get_currency_code }} {{ product.price|floatformat:0|intcomma }}</p>
+            <div class="bg-gray-100 px-4 py-2 rounded-2xl border border-gray-200 text-center">
+                <p class="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Original Price</p>
+                <p class="text-xl font-black text-slate-900">{{ product.get_currency_code }} {{ product.price|floatformat:0|intcomma }}</p>
             </div>
         </header>
 
         <div class="p-4 md:p-8">
             {# Chat Window #}
             <div id="chat-window" 
-                 class="h-[450px] lg:h-[550px] overflow-y-auto p-4 space-y-6 mb-6 bg-gray-950/50 rounded-2xl border-2 border-gray-800 shadow-inner custom-scrollbar">
+                 class="h-[420px] sm:h-[480px] lg:h-[600px] overflow-y-auto p-4 space-y-6 mb-6 bg-white rounded-2xl border border-gray-200 shadow-inner custom-scrollbar">
                 
                 {# Initial Bot Greeting #}
                 <div class="flex justify-start">
-                    <div class="max-w-[85%] bg-gray-800 text-gray-200 p-4 rounded-2xl rounded-tl-none shadow-lg border border-gray-700">
-                        <p class="text-xs font-bold text-indigo-400 mb-1">Nakintu</p>
+                    <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-lg border border-gray-200">
+                        <p class="text-xs font-bold text-indigo-500 mb-1">Nakintu</p>
                         <p class="text-sm md:text-base italic">"Hello! I'm here to help you get the best deal. What's your offer for the {{ product.name }}?"</p>
                     </div>
                 </div>
@@ -53,15 +53,15 @@
                 {% for message in chat_history %}
                     {% if message.role == 'user' %}
                         <div class="flex justify-end">
-                            <div class="max-w-[85%] bg-indigo-600 text-white p-4 rounded-2xl rounded-tr-none shadow-xl transform transition hover:scale-[1.01]">
+                            <div class="max-w-[85%] chat-bubble-user p-4 rounded-2xl rounded-tr-none shadow-xl transform transition hover:scale-[1.01]">
                                 <p class="text-xs font-bold mb-1 opacity-70 text-right">You</p>
                                 <p class="text-sm md:text-base leading-relaxed">{{ message.text|safe }}</p>
                             </div>
                         </div>
                     {% else %}
                         <div class="flex justify-start">
-                            <div class="max-w-[85%] bg-gray-800 text-gray-200 p-4 rounded-2xl rounded-tl-none shadow-lg border border-gray-700 transform transition hover:scale-[1.01]">
-                                <p class="text-xs font-bold text-indigo-400 mb-1">Nakintu</p>
+                            <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-lg border border-gray-200 transform transition hover:scale-[1.01]">
+                                <p class="text-xs font-bold text-indigo-500 mb-1">Nakintu</p>
                                 <p class="text-sm md:text-base leading-relaxed">{{ message.text|safe }}</p>
                             </div>
                         </div>
@@ -69,14 +69,14 @@
                 {% endfor %}
                 
                 <div id="typing-indicator" class="hidden flex justify-start">
-                    <div class="bg-gray-800 p-3 rounded-xl animate-pulse text-gray-500 text-xs">Nakintu is thinking...</div>
+                    <div class="bg-gray-100 p-3 rounded-xl animate-pulse text-slate-600 text-xs">Nakintu is thinking...</div>
                 </div>
             </div>
 
             {# Input Form #}
             <form method="post" id="negotiation-form" class="relative">
                 {% csrf_token %}
-                <div class="flex flex-col sm:flex-row gap-3 bg-gray-800 p-2 rounded-2xl border border-gray-700 focus-within:border-indigo-500 transition-all shadow-2xl">
+                <div class="flex flex-col sm:flex-row gap-3 bg-gray-100 p-2 rounded-2xl border border-gray-200 focus-within:border-indigo-500 transition-all shadow-sm">
                     <div class="flex-grow">
                         {{ form.user_message }}
                     </div>
@@ -113,8 +113,8 @@
                         </a>
                     </div>
                 {% else %}
-                    <div class="w-full bg-gray-800/50 p-6 rounded-2xl border border-gray-700 text-center opacity-60">
-                        <p class="text-gray-400 font-medium text-sm sm:text-base">
+                    <div class="w-full bg-gray-100/90 p-6 rounded-2xl border border-gray-200 text-center opacity-95">
+                        <p class="text-slate-600 font-medium text-sm sm:text-base">
                             The "Lock In" button will appear once the AI agrees to your price.
                         </p>
                     </div>
@@ -125,15 +125,45 @@
 </div>
 
 <style>
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.9); border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.95); }
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(148, 163, 184, 0.15); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(79, 70, 229, 0.85); border-radius: 999px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(79, 70, 229, 1); }
 
-    #chat-window { background: rgba(15, 23, 42, 0.9); }
-    .chat-bubble-user { background: linear-gradient(135deg, #6366f1, #4338ca); }
-    .chat-bubble-bot { background: rgba(51, 65, 85, 0.9); }
+    #chat-window { background: #f8fafc; }
+    .chat-bubble-user { background: #4338ca; color: #ffffff; }
+    .chat-bubble-bot { background: #ffffff; color: #111827; border: 1px solid #e5e7eb; }
+    .chat-bubble-user p, .chat-bubble-bot p { margin: 0; }
+    .chat-bubble-user { box-shadow: 0 20px 55px rgba(67, 56, 202, 0.18); }
+    .chat-bubble-bot { box-shadow: 0 20px 55px rgba(15, 23, 42, 0.08); }
     .button-primary { transition: all 0.25s ease; }
+
+    header { min-height: 180px; }
+    header h1 { line-height: 1.05; }
+
+    @media (max-width: 1024px) {
+        .max-w-4xl { max-width: 92%; }
+        #chat-window { height: 520px; }
+        header h1 { font-size: 2rem; }
+        #chat-window p, #chat-window span { font-size: 0.96rem; }
+    }
+
+    @media (max-width: 768px) {
+        .container { padding-left: 1rem; padding-right: 1rem; }
+        #chat-window { height: 460px; }
+        .flex.flex-col.sm\:flex-row { flex-direction: column; }
+        .bg-gray-100 { padding: 1rem; }
+        button[type="submit"] { width: 100%; }
+        header { padding: 1.5rem; }
+    }
+
+    @media (max-width: 640px) {
+        #chat-window { height: 380px !important; }
+        button[type="submit"] { padding: 0.9rem 1rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .text-sm { font-size: 0.95rem !important; }
+        header h1 { font-size: 1.75rem; }
+    }
 </style>
 
 <script>
@@ -158,6 +188,26 @@
     const observer = new MutationObserver(scrollToBottom);
     if (chatWindow) {
         observer.observe(chatWindow, { childList: true });
+    }
+
+    // Offline message persistence for AI negotiator
+    const messageInput = document.getElementById('id_user_message');
+    if (messageInput) {
+        // Load saved message on page load
+        const savedMessage = localStorage.getItem('ai_negotiator_message');
+        if (savedMessage) {
+            messageInput.value = savedMessage;
+        }
+
+        // Save message on input
+        messageInput.addEventListener('input', () => {
+            localStorage.setItem('ai_negotiator_message', messageInput.value);
+        });
+
+        // Clear saved message on form submit
+        document.getElementById('negotiation-form').addEventListener('submit', () => {
+            localStorage.removeItem('ai_negotiator_message');
+        });
     }
 </script>
 {% endblock %}

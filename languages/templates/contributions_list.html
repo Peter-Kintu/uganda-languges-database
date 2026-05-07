@@ -266,6 +266,40 @@
                         </div>
                     </div>
                 </div>
+
+                {# Structured Data for Google Job Posting #}
+                <script type="application/ld+json">
+                {
+                    "@context": "https://schema.org",
+                    "@type": "JobPosting",
+                    "title": "{{ selected_job.post_content|truncatechars:100|escapejs }}",
+                    "description": "{{ selected_job.post_content|escapejs }}",
+                    "datePosted": "{{ selected_job.timestamp|date:'c' }}",
+                    "validThrough": "{{ selected_job.valid_through|default:selected_job.timestamp|date:'c' }}",
+                    "employmentType": "{{ selected_job.get_job_type_display }}",
+                    "hiringOrganization": {
+                        "@type": "Organization",
+                        "name": "{{ selected_job.recruiter_name|escapejs }}"
+                    },
+                    "jobLocation": {
+                        "@type": "Place",
+                        "address": {
+                            "@type": "PostalAddress",
+                            "addressLocality": "{{ selected_job.job_location_address|default:selected_job.recruiter_location|escapejs }}"
+                        }
+                    }
+                    {% if selected_job.base_salary %},
+                    "baseSalary": {
+                        "@type": "MonetaryAmount",
+                        "currency": "USD",
+                        "value": {
+                            "@type": "QuantitativeValue",
+                            "value": "{{ selected_job.base_salary|escapejs }}"
+                        }
+                    }
+                    {% endif %}
+                }
+                </script>
             </div>
 
         {% else %}

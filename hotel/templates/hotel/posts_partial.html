@@ -1,0 +1,83 @@
+{% for post in posts %}
+    <div class="post-card" id="post-{{ post.id }}" data-post-id="{{ post.id }}">
+        <!-- Header -->
+        <div class="post-header">
+            <div class="post-author">
+                <div class="avatar" style="width: 40px; height: 40px;">{{ post.author.first_name|slice:':1'|upper }}</div>
+                <div class="post-author-info">
+                    <div class="author-name">{{ post.author.get_full_name }}</div>
+                    <div class="author-meta">@{{ post.author.username }} · {{ post.created_at|date:"M j, g:i a" }}</div>
+                </div>
+            </div>
+            <div class="post-menu">
+                <button class="post-menu-btn" onclick="togglePostMenu({{ post.id }})">⋯</button>
+                <div class="post-menu-dropdown" id="menu-{{ post.id }}">
+                    <button onclick="sharePost({{ post.id }})">Share</button>
+                    <button onclick="reportPost({{ post.id }})">Report</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="post-content">
+            <p>{{ post.content }}</p>
+        </div>
+
+        <!-- Image -->
+        {% if post.image %}
+            <img src="{{ post.image.url }}" alt="Post image" class="post-image" loading="lazy" decoding="async" onclick="openImageModal('{{ post.image.url }}')">
+        {% endif %}
+
+        <!-- Location -->
+        {% if post.location %}
+            <div class="post-location">
+                📍 {{ post.location }}
+            </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="post-footer">
+            <div class="post-action" onclick="likePost({{ post.id }}, this)">
+                <span>👍 {{ post.likes.count }}</span>
+            </div>
+            <div class="post-action" onclick="toggleComments({{ post.id }}, this)">
+                <span>💬 {{ post.comments.count }}</span>
+            </div>
+            <div class="post-action" onclick="openTranslateModal({{ post.id }})">
+                <span>🌐 Translate</span>
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="comments-section" id="comments-{{ post.id }}" style="display: none;">
+            {% for comment in post.comments.all|slice:":3" %}
+                <div class="comment">
+                    <div class="comment-avatar-wrapper">
+                        <div class="comment-avatar">{{ comment.author.first_name|slice:':1'|upper }}</div>
+                    </div>
+                    <div class="comment-content">
+                        <div class="comment-header">
+                            <div class="comment-author">{{ comment.author.get_full_name }}</div>
+                            <div class="comment-handle">@{{ comment.author.username }}</div>
+                            <div class="comment-meta">{{ comment.created_at|date:"M j, g:i a" }}</div>
+                        </div>
+                        <div class="comment-text">{{ comment.content }}</div>
+                        <div class="comment-actions">
+                            <button class="comment-action-btn" onclick="likeComment(this)">👍 {{ comment.likes.count }}</button>
+                            <button class="comment-action-btn" onclick="replyToComment(this)">Reply</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            <div class="comment-input-wrapper">
+                <div class="comment-avatar-wrapper">
+                    <div class="comment-avatar">{{ request.user.first_name|slice:':1'|upper }}</div>
+                </div>
+                <form class="comment-input" onsubmit="addComment({{ post.id }}, this); return false;">
+                    <input type="text" placeholder="Write a comment..." required>
+                    <button type="submit">Post</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endfor %}

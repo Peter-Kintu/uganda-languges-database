@@ -362,7 +362,7 @@
         width: 100%;
         margin: 14px 0 0;
         border-radius: 12px;
-        object-fit: cover;
+        object-fit: contain;
         cursor: pointer;
         transition: transform 0.25s ease, filter 0.25s ease;
         display: block;
@@ -1001,12 +1001,11 @@
         margin: 16px -18px 0;
         height: auto;
         border-radius: 0 0 16px 16px;
-        object-fit: cover;
+        object-fit: contain;
         cursor: pointer;
         transition: all 0.3s ease;
         box-shadow: none;
         max-width: none;
-        aspect-ratio: 16 / 9;
     }
 
     .post-image:hover {
@@ -1120,12 +1119,11 @@
         margin: 16px -18px 0;
         height: auto;
         border-radius: 0 0 16px 16px;
-        object-fit: cover;
+        object-fit: contain;
         cursor: pointer;
         transition: transform 0.25s ease, filter 0.25s ease;
         box-shadow: none;
         max-width: none;
-        aspect-ratio: 16/9;
     }
 
     .post-image:hover {
@@ -1655,6 +1653,9 @@
 
         .post-header {
             margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .post-author {
@@ -1697,7 +1698,7 @@
             margin: 14px -18px 0;
             border-radius: 0 0 16px 16px;
             max-height: none;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         .post-footer {
@@ -1917,12 +1918,11 @@
         width: calc(100% + 32px);
         margin: 10px -16px 0;
         border-radius: 0 0 8px 8px;
-        object-fit: cover;
+        object-fit: contain;
         cursor: pointer;
         transition: transform 0.25s ease, filter 0.25s ease;
         box-shadow: none;
         max-width: none;
-        aspect-ratio: 16 / 9;
     }
 
     .post-image:hover {
@@ -2093,13 +2093,26 @@
                         <!-- Header -->
                         <div class="post-header">
                             <div class="post-author">
-                                <div class="avatar" style="width: 40px; height: 40px;">{{ post.author.first_name|slice:':1'|upper }}</div>
+                                <div class="avatar" style="width: 40px; height: 40px;">
+                                    {% if post.author.profile_image %}
+                                        <img src="{{ post.author.profile_image.url }}" alt="{{ post.author.username }}" class="w-full h-full object-cover rounded-full">
+                                    {% else %}
+                                        {{ post.author.first_name|slice:':1'|upper }}
+                                    {% endif %}
+                                </div>
                                 <div class="post-author-info">
                                     <div class="author-name">{{ post.author.get_full_name }}</div>
                                     <div class="author-meta">@{{ post.author.username }} · {{ post.created_at|date:"M j, g:i a" }}</div>
                                 </div>
                             </div>
-                            <button class="post-menu" title="More options">⋯</button>
+                            <div class="flex items-center gap-2">
+                                {% if post.author != request.user %}
+                                    <a href="{% url 'hotel:send_connection_request' post.author.id %}" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                                        Follow
+                                    </a>
+                                {% endif %}
+                                <button class="post-menu" title="More options">⋯</button>
+                            </div>
                         </div>
 
                         <!-- Content -->
@@ -2178,7 +2191,7 @@
             {% endfor %}
             {% if page_obj.has_next %}
             <div class="load-more-container">
-                <a href="?{% if current_filter != 'all' %}type={{ current_filter }}&{% endif %}{% if translate_feed %}translate=true&lang={{ current_lang }}&{% endif %}page={{ page_obj.next_page_number }}" class="load-more-button">Load more</a>
+                <div id="load-more-sentinel" style="height: 20px;"></div>
             </div>
         {% endif %}
         {% else %}
@@ -2212,6 +2225,9 @@
             </div>
             <div class="sidebar-item">
                 <span style="font-weight: 600;">Connections:</span> {{ connections.count }}
+            </div>
+            <div class="sidebar-item">
+                <span style="font-weight: 600;">Following:</span> {{ following_count }}
             </div>
         </div>
     </aside>
@@ -2878,7 +2894,7 @@
         }
     }
 
-    // Check which posts need "Show More" button (posts longer than 2 lines)
+    // Check which posts need "Show More" button (posts longer than 5 lines)
     function initShowMoreButtons() {
         document.querySelectorAll('.post-content').forEach(content => {
             const btn = content.nextElementSibling;
@@ -2897,8 +2913,8 @@
                 const computedStyle = window.getComputedStyle(content);
                 const lineHeight = parseFloat(computedStyle.lineHeight);
                 
-                // If full height is more than approximately 2.5 lines, show the button
-                if (fullHeight > lineHeight * 2.5) {
+                // If full height is more than approximately 5.5 lines, show the button
+                if (fullHeight > lineHeight * 5.5) {
                     btn.style.display = 'inline-block';
                 } else {
                     // No truncation needed
@@ -2925,6 +2941,51 @@
         attachElasticRefresh();
         applyAdaptiveTheme();
         initShowMoreButtons();
+    }
+
+    // Infinite Scroll Implementation
+    let currentPage = {{ page_obj.number }};
+    let isLoading = false;
+    const sentinel = document.getElementById('load-more-sentinel');
+
+    if (sentinel) {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isLoading && {{ page_obj.has_next|lower }}) {
+                loadMorePosts();
+            }
+        }, { threshold: 0.1 });
+        observer.observe(sentinel);
+    }
+
+    async function loadMorePosts() {
+        if (isLoading) return;
+        isLoading = true;
+        const nextPage = currentPage + 1;
+        const url = `?{% if current_filter != 'all' %}type={{ current_filter }}&{% endif %}{% if translate_feed %}translate=true&lang={{ current_lang }}&{% endif %}page=${nextPage}&format=json`;
+
+        try {
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+            if (data.html) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.html.trim();
+                const feed = document.querySelector('.feed');
+                const sentinelContainer = sentinel.parentElement;
+                while (tempDiv.firstChild) {
+                    feed.insertBefore(tempDiv.firstChild, sentinelContainer);
+                }
+                currentPage = nextPage;
+                if (!data.has_next) {
+                    sentinelContainer.style.display = 'none';
+                }
+            }
+        } catch (e) {
+            console.error('Error loading more posts:', e);
+        } finally {
+            isLoading = false;
+        }
     }
 </script>
 {% endblock %}

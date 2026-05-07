@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% load job_filters %}
+
+{% block meta_description %}Apply for {{ job_post.post_content|truncatechars:100 }} at {{ job_post.recruiter_name }}. Job details, requirements, and application information.{% endblock %}
+
+{% block title %}{{ job_post.post_content|truncatechars:50 }} | Africana AI Jobs{% endblock %}
+
+{% block extra_head %}
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #ffffff;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-screen bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div class="p-6 sm:p-8 lg:p-12">
+                <a href="{% url 'languages:browse_job_listings' %}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Jobs
+                </a>
+
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <div class="flex-shrink-0">
+                        {% if job_post.company_logo_or_media %}
+                            <img src="{{ job_post.company_logo_or_media.url }}" class="w-24 h-24 rounded-xl object-cover shadow-md" alt="Company Logo">
+                        {% else %}
+                            <div class="w-24 h-24 rounded-xl bg-blue-600 flex items-center justify-center text-2xl font-bold text-white shadow-md">
+                                {{ job_post.recruiter_name|slice:":1"|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex-1">
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                            {{ job_post.post_content|truncatechars:100 }}
+                        </h1>
+                        <div class="flex flex-wrap gap-4 items-center text-gray-600 mb-6">
+                            <span class="font-semibold text-blue-600">{{ job_post.recruiter_name }}</span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                </svg>
+                                {{ job_post.recruiter_location }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 pt-8 mt-8">
+                    <div class="prose prose-gray max-w-none">
+                        <div class="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap">
+                            {{ job_post.post_content }}
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 mt-8">
+                        {% if job_post.application_url %}
+                            <a href="{{ job_post.application_url }}"
+                               {% if job_post.is_external %}onclick="trackClick('{{ job_post.pk }}')"{% endif %}
+                               target="_blank"
+                               class="inline-flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-md">
+                                Apply Now
+                            </a>
+                        {% else %}
+                            <button onclick="openEasyApplyModal('{{ job_post.post_content|escapejs }}', '{{ job_post.recruiter_name|escapejs }}', '{{ job_post.recruiter_email|escapejs }}', '{{ job_post.recruiter_whatsapp|escapejs }}')"
+                                    class="inline-flex items-center justify-center px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-colors shadow-md">
+                                Apply Now
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# Structured Data for Google Job Posting #}
+            <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "JobPosting",
+                "title": "{{ job_post.post_content|truncatechars:100|escapejs }}",
+                "description": "{{ job_post.post_content|escapejs }}",
+                "datePosted": "{{ job_post.timestamp|date:'c' }}",
+                "validThrough": "{{ job_post.valid_through|default:job_post.timestamp|date:'c' }}",
+                "employmentType": "{{ job_post.get_job_type_display }}",
+                "hiringOrganization": {
+                    "@type": "Organization",
+                    "name": "{{ job_post.recruiter_name|escapejs }}"
+                },
+                "jobLocation": {
+                    "@type": "Place",
+                    "address": {
+                        "@type": "PostalAddress",
+                        "addressLocality": "{{ job_post.job_location_address|default:job_post.recruiter_location|escapejs }}"
+                    }
+                }
+                {% if job_post.base_salary %},
+                "baseSalary": {
+                    "@type": "MonetaryAmount",
+                    "currency": "USD",
+                    "value": {
+                        "@type": "QuantitativeValue",
+                        "value": "{{ job_post.base_salary|escapejs }}"
+                    }
+                }
+                {% endif %}
+            }
+            </script>
+        </div>
+    </div>
+</main>
+{% endblock %}

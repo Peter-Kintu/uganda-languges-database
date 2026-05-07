@@ -332,25 +332,14 @@ def gemini_proxy(request):
         # Pull profile data for personalization
         profile = _get_user_profile_data(request.user)
         
-        # SYSTEM INSTRUCTION: Branding and Personalized context
+        # SYSTEM INSTRUCTION: Branding and Personalized context (Shortened for token efficiency)
         system_instruction = (
-            f"You are Africana AI, the premier Career & Business Companion developed by Mwene Groups of Companies Limited. "
-            f"You are speaking with {profile['full_name']}, a {profile['headline']}. "
-            f"User Expertise: {', '.join(profile['skills'][:10])}. "
-            "\n\nPERSONALIZATION RULE:"
-            f"Address the user by name ({profile['full_name']}) occasionally. Tailor all career, business, and tech "
-            f"advice to fit their specific role as a {profile['headline']} and their skills in {', '.join(profile['skills'][:3])}."
-            "\n\nSEARCH LINK PROTOCOL:"
-            "\nWhenever the user asks for jobs, specific products, media, or market info, you MUST provide "
-            "Markdown links as actionable search buttons using these templates:"
-            "\n- JOBS: [🔍 Search Jobs on Google](https://www.google.com/search?q=jobs+for+QUERY)"
-            "\n- PRODUCTS: [🛒 Find on Amazon](https://www.amazon.com/s?k=QUERY) or [🛍️ Search Google Shopping](https://www.google.com/search?tbm=shop&q=QUERY)"
-            "\n- MOVIES/MEDIA: [🎬 Watch on YouTube](https://www.youtube.com/results?search_query=QUERY+movie) or [📺 Search on Amazon Prime](https://www.amazon.com/s?k=QUERY+movie)"
-            "\n- SELLING/MARKET: [📈 Research Market Prices](https://www.google.com/search?q=market+price+for+QUERY)"
-            "\nAlways provide high-quality professional advice first, then the helpful links."
+            f"You are Africana AI, career companion by Mwene Groups. "
+            f"User: {profile['full_name']}, {profile['headline']}. Skills: {', '.join(profile['skills'][:5])}. "
+            "Provide personalized career/business advice. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
         )
         
-        history = _format_history_for_sdk(raw_contents)
+        history = _format_history_for_sdk(raw_contents[-6:])  # Limit to last 3 exchanges for token efficiency
 
         models_to_try = [
             "gemini-2.0-flash", 
@@ -406,27 +395,16 @@ def cerebras_proxy(request):
         # Pull profile data for personalization
         profile = _get_user_profile_data(request.user)
 
-        # SYSTEM INSTRUCTION: Branding and Personalized context
+        # SYSTEM INSTRUCTION: Branding and Personalized context (Shortened for token efficiency)
         system_instruction = (
-            f"You are Africana AI, the premier Career & Business Companion developed by Mwene Groups of Companies Limited. "
-            f"You are speaking with {profile['full_name']}, a {profile['headline']}. "
-            f"User Expertise: {', '.join(profile['skills'][:10])}. "
-            "\n\nPERSONALIZATION RULE:"
-            f"Address the user by name ({profile['full_name']}) occasionally. Tailor all career, business, and tech "
-            f"advice to fit their specific role as a {profile['headline']} and their skills in {', '.join(profile['skills'][:3])}."
-            "\n\nSEARCH LINK PROTOCOL:"
-            "\nWhenever the user asks for jobs, specific products, media, or market info, you MUST provide "
-            "Markdown links as actionable search buttons using these templates:"
-            "\n- JOBS: [🔍 Search Jobs on Google](https://www.google.com/search?q=jobs+for+QUERY)"
-            "\n- PRODUCTS: [🛒 Find on Amazon](https://www.amazon.com/s?k=QUERY) or [🛍️ Search Google Shopping](https://www.google.com/search?tbm=shop&q=QUERY)"
-            "\n- MOVIES/MEDIA: [🎬 Watch on YouTube](https://www.youtube.com/results?search_query=QUERY+movie) or [📺 Search on Amazon Prime](https://www.amazon.com/s?k=QUERY+movie)"
-            "\n- SELLING/MARKET: [📈 Research Market Prices](https://www.google.com/search?q=market+price+for+QUERY)"
-            "\nAlways provide high-quality professional advice first, then the helpful links."
+            f"You are Africana AI, career companion by Mwene Groups. "
+            f"User: {profile['full_name']}, {profile['headline']}. Skills: {', '.join(profile['skills'][:5])}. "
+            "Provide personalized career/business advice. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
         )
 
-        # Convert chat history to Cerebras format
+        # Convert chat history to Cerebras format (trim to last 3 exchanges)
         messages = [{"role": "system", "content": system_instruction}]
-        for msg in raw_contents:
+        for msg in raw_contents[-6:]:
             role = "assistant" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
             text = msg.get("text", "").strip()
             if text:

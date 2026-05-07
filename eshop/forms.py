@@ -52,7 +52,7 @@ class NegotiationForm(forms.Form):
     """Form used in the AI price negotiation chat window."""
     user_message = forms.CharField(
         widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-4 bg-transparent text-gray-100 border-none focus:ring-0 placeholder-gray-500 text-sm md:text-base',
+            'class': 'w-full px-4 py-4 bg-white text-slate-900 border border-gray-300 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 placeholder-slate-400 text-sm md:text-base',
             'placeholder': 'Type your offer here...',
             'autocomplete': 'off'
         }),

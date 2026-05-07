@@ -192,7 +192,27 @@ def inbox(request):
     partner_ids = set(list(sent_ids) + list(received_ids))
     chat_partners = CustomUser.objects.filter(id__in=partner_ids)
     
-    return render(request, 'social/inbox.html', {'chat_partners': chat_partners})
+    # Get last message for each partner
+    conversations = []
+    for partner in chat_partners:
+        last_message = SecureMessage.objects.filter(
+            (Q(sender=request.user) & Q(recipient=partner)) |
+            (Q(sender=partner) & Q(recipient=request.user))
+        ).order_by('-created_at').first()
+        
+        if last_message:
+            conversations.append({
+                'partner': partner,
+                'last_message': last_message,
+                'unread_count': SecureMessage.objects.filter(
+                    sender=partner, recipient=request.user, is_read=False
+                ).count()
+            })
+    
+    # Sort by last message time
+    conversations.sort(key=lambda x: x['last_message'].created_at, reverse=True)
+    
+    return render(request, 'social/inbox.html', {'conversations': conversations})
 
 @login_required
 def chat_detail(request, partner_id):

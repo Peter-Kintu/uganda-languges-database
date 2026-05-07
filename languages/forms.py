@@ -18,6 +18,9 @@ class JobPostForm(forms.ModelForm):
             'required_skills', 
             'recruiter_name', 
             'recruiter_location',
+            'job_location_address',
+            'valid_through',
+            'base_salary',
             'application_url', 
             'recruiter_email',       # <--- ADDED FIELD
             'recruiter_whatsapp',    # <--- ADDED FIELD
@@ -46,6 +49,22 @@ class JobPostForm(forms.ModelForm):
             # This is the original 'contributor_location' field
             'recruiter_location': forms.TextInput(attrs={
                 'placeholder': 'Company Headquarters or Remote Location',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+            }),
+            # NEW: Job location address
+            'job_location_address': forms.TextInput(attrs={
+                'placeholder': 'Full address (e.g., 123 Main St, Kampala, Uganda)',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+            }),
+            # NEW: Valid through date
+            'valid_through': forms.DateTimeInput(attrs={
+                'type': 'datetime-local',
+                'placeholder': 'Job posting expiration date',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+            }),
+            # NEW: Base salary
+            'base_salary': forms.TextInput(attrs={
+                'placeholder': 'e.g., $50,000 - $70,000 per year',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
             }),
             # ADDED: Widget for the new application URL field
@@ -77,6 +96,9 @@ class JobPostForm(forms.ModelForm):
             'job_type': 'Employment Type',
             'recruiter_name': 'Your/Company Name',
             'recruiter_location': 'Location',
+            'job_location_address': 'Job Location Address',
+            'valid_through': 'Application Deadline',
+            'base_salary': 'Base Salary',
             'application_url': 'External Application Link (URL)', 
             'recruiter_email': 'Easy Apply Email',       # <--- ADDED LABEL
             'recruiter_whatsapp': 'Easy Apply WhatsApp Number', # <--- ADDED LABEL

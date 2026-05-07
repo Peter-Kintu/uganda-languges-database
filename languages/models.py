@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
+from datetime import timedelta
 
 # Renamed LANGUAGES to JOB_CATEGORIES
 JOB_CATEGORIES = (
@@ -133,6 +134,23 @@ class JobPost(models.Model):
         help_text=_("The WhatsApp number (e.g., +256701234567) applicants should use for 'Easy Apply'.")
     )
 
+    # === STRUCTURED DATA FIELDS FOR GOOGLE ===
+    job_location_address = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text=_("Full address for job location (required for Google structured data).")
+    )
+    valid_through = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_("Expiration date for the job posting (required for Google structured data).")
+    )
+    base_salary = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text=_("Base salary range or amount (e.g., '$50,000 - $70,000 per year').")
+    )
+
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     is_validated = models.BooleanField(
         default=True,
@@ -190,6 +208,10 @@ class JobPost(models.Model):
         Custom save method to automatically link recruiters, 
         sync location data, and update post counts.
         """
+        # Set default valid_through if not provided
+        if not self.valid_through:
+            self.valid_through = self.timestamp + timedelta(days=30)
+        
         # Automatically link to an Applicant model if the recruiter_name matches
         if not self.applicant and self.recruiter_name:
             # FIX: Ensure recruiter_location is synced to the Applicant model

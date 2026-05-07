@@ -44,6 +44,12 @@
         }
     }
 
+    @media (max-width: 480px) {
+        .app-container {
+            height: calc(100vh - 160px); /* Extra adjustment for very small screens */
+        }
+    }
+
     .sidebar {
         width: 280px;
         background: var(--bg-sidebar);
@@ -152,6 +158,11 @@
         font-family: inherit;
     }
 
+    textarea:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     .btn-send {
         background: var(--accent-green);
         color: white;
@@ -177,6 +188,12 @@
         transform: scale(0.95);
     }
 
+    .btn-send:disabled {
+        background: #6b7280;
+        cursor: not-allowed;
+        transform: none;
+    }
+
     @media (max-width: 768px) {
         .sidebar {
             position: absolute;
@@ -187,6 +204,99 @@
         }
         .sidebar.active { transform: translateX(0); }
         .chat-message { max-width: 92%; }
+        .chat-header {
+            padding: 0.5rem 0.75rem;
+        }
+        .chat-input-area {
+            padding: 0.75rem;
+        }
+        .input-glass-wrapper {
+            padding: 0.4rem 0.6rem;
+        }
+        textarea {
+            font-size: 0.9rem;
+            padding: 0.4rem;
+        }
+        .btn-send {
+            width: 32px;
+            height: 32px;
+        }
+        .btn-send svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    /* Extra small screens */
+    @media (max-width: 480px) {
+        .sidebar {
+            width: 260px;
+        }
+        .chat-message {
+            max-width: 95%;
+            font-size: 0.9rem;
+            padding: 0.7rem 0.9rem;
+        }
+        .chat-header {
+            padding: 0.4rem 0.6rem;
+        }
+        .chat-header span {
+            font-size: 0.85rem;
+        }
+        .chat-input-area {
+            padding: 0.6rem;
+        }
+        .input-glass-wrapper {
+            padding: 0.3rem 0.5rem;
+        }
+        textarea {
+            font-size: 0.85rem;
+            padding: 0.3rem;
+        }
+        .btn-send {
+            width: 28px;
+            height: 28px;
+        }
+        .btn-send svg {
+            width: 14px;
+            height: 14px;
+        }
+        #chatLog {
+            padding: 1rem 0.75rem;
+            gap: 1rem;
+        }
+        .history-item {
+            padding: 0.6rem 0.8rem;
+            margin: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* Large screens */
+    @media (min-width: 1024px) {
+        .sidebar {
+            width: 320px;
+        }
+        .chat-main-area {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .chat-message {
+            max-width: 75%;
+        }
+        .input-glass-wrapper {
+            max-width: 900px;
+        }
+    }
+
+    /* Medium screens */
+    @media (min-width: 768px) and (max-width: 1023px) {
+        .sidebar {
+            width: 280px;
+        }
+        .chat-message {
+            max-width: 80%;
+        }
     }
 
     .history-item {
@@ -309,13 +419,33 @@
         const text = chatInput.value.trim();
         if (!text) return;
 
+        // Check client-side cache first
+        const cacheKey = `ai_cache_${text.toLowerCase().replace(/\s+/g, '_')}`;
+        const cachedResponse = localStorage.getItem(cacheKey);
+        if (cachedResponse) {
+            appendMessage('user', text);
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            scrollToBottom();
+            appendMessage('ai', cachedResponse);
+            saveMessage(currentSessionId, 'user', text);
+            saveMessage(currentSessionId, 'ai', cachedResponse);
+            updateHistorySidebar();
+            return;
+        }
+
+        // Disable input and button to prevent spamming
+        chatInput.disabled = true;
+        const sendButton = document.querySelector('.btn-send');
+        if (sendButton) sendButton.disabled = true;
+
         appendMessage('user', text);
         chatInput.value = '';
         chatInput.style.height = 'auto';
         scrollToBottom();
 
         try {
-            const response = await fetch("{% url 'users:cerebras_proxy' %}", {
+            let response = await fetch("{% url 'users:cerebras_proxy' %}", {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -325,6 +455,21 @@
                     contents: [...getSessionHistory(currentSessionId), { role: 'user', text: text }] 
                 })
             });
+
+            // Fallback to Gemini if Cerebras fails with rate limit or service unavailable
+            if (!response.ok && (response.status === 429 || response.status === 503)) {
+                console.log('Cerebras rate limited, trying Gemini fallback...');
+                response = await fetch("{% url 'users:gemini_proxy' %}", {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF_TOKEN
+                    },
+                    body: JSON.stringify({ 
+                        contents: [...getSessionHistory(currentSessionId), { role: 'user', text: text }] 
+                    })
+                });
+            }
 
             const data = await response.json();
             if (!response.ok) {
@@ -341,6 +486,8 @@
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
+                // Cache the response
+                localStorage.setItem(cacheKey, data.text);
             } else {
                 const errorMessage = data.error || "No response from Africana AI.";
                 appendMessage('ai', errorMessage);
@@ -351,6 +498,12 @@
         } catch (e) {
             console.error(e);
             appendMessage('ai', "System Error: Connection failed.");
+        } finally {
+            // Re-enable input and button
+            chatInput.disabled = false;
+            const sendButton = document.querySelector('.btn-send');
+            if (sendButton) sendButton.disabled = false;
+            chatInput.focus();
         }
     }
 

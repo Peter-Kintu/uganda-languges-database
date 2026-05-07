@@ -6,31 +6,30 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap');
     
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 18%), radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.14), transparent 25%), #02040a; color: #e2e8f0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; color: #0f172a; }
     .font-heading { font-family: 'Space Grotesk', sans-serif; }
     
     .glass-card {
-        background: rgba(15, 23, 42, 0.88);
-        backdrop-filter: blur(18px);
-        border: 1px solid rgba(96, 165, 250, 0.18);
-        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+        background: #ffffff;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        box-shadow: 0 30px 60px rgba(148, 163, 184, 0.18);
     }
 
     input, textarea, select {
-        background: rgba(15, 23, 42, 0.95);
-        color: #e2e8f0;
-        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid rgba(148, 163, 184, 0.4);
     }
 
     input::placeholder,
     textarea::placeholder,
     select::placeholder {
-        color: rgba(148, 163, 184, 0.7);
+        color: rgba(100, 116, 139, 0.7);
     }
 
     input:focus, textarea:focus, select:focus {
-        border-color: rgba(59, 130, 246, 0.8) !important;
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        border-color: rgba(37, 99, 235, 0.8) !important;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
         outline: none;
     }
 
@@ -38,12 +37,68 @@
         transition: all 0.25s ease;
     }
 
-    /* Animation for satellite sync */
+    #locate-me-button {
+        background: #2563eb;
+        color: #ffffff;
+    }
+
+    #locate-me-button:hover {
+        background: #1d4ed8;
+    }
+
+    #google-map-locator {
+        background: #f8fafc;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        color: #0f172a;
+    }
+
+    #map-message {
+        color: #334155;
+    }
+
+    .glass-card .text-white { color: #0f172a !important; }
+    .glass-card .bg-gray-800 { background: #f8fafc !important; color: #0f172a !important; }
+    .glass-card .bg-white\/5 { background: rgba(255,255,255,0.72) !important; }
+    .glass-card .text-slate-200 { color: #475569 !important; }
+    .glass-card .text-indigo-400 { color: #2563eb !important; }
+    .glass-card .text-white.text-black { color: #111827 !important; }
+
+    .custom-button {
+        background: #2563eb;
+        color: #ffffff;
+    }
+
+    .custom-button:hover {
+        background: #1d4ed8;
+    }
+
     @keyframes pulse-indigo {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
     }
     .loading-pulse { animation: pulse-indigo 2s infinite; }
+
+    @media (max-width: 1024px) {
+        .grid { grid-template-columns: 1fr !important; }
+        #google-map-locator { height: 340px; }
+        .glass-card { padding: 2.5rem; }
+    }
+
+    @media (max-width: 768px) {
+        .max-w-6xl { max-width: 95%; }
+        .glass-card { border-radius: 2rem; }
+        #google-map-locator { height: 320px; }
+        .flex.justify-between { flex-direction: column; gap: 1rem; }
+        .bg-white\/5 { background: #f1f5f9 !important; }
+        .text-left { text-align: left !important; }
+    }
+
+    @media (max-width: 640px) {
+        .min-h-screen { padding-top: 1rem; padding-bottom: 1rem; }
+        .glass-card { padding: 2rem; }
+        header h1 { font-size: 2.5rem; }
+        #confirm-button { padding: 1.2rem 1rem; }
+    }
 </style>
 
 <div class="min-h-screen pt-24 pb-12 px-4 relative overflow-hidden">
@@ -53,21 +108,21 @@
     <div class="max-w-6xl mx-auto relative z-10">
         <header class="text-center mb-12">
             <div class="inline-block px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6">
-                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Logistics Protocol v4.0</span>
+                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Delivery Protocol v4.0</span>
             </div>
-            <h1 class="font-heading text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight">
-                Delivery <span class="text-indigo-500 italic">Coordinates.</span>
+            <h1 class="font-heading text-4xl md:text-6xl font-bold text-slate-900 mb-4 tracking-tight">
+                Delivery <span class="text-indigo-500 italic">Location.</span>
             </h1>
-            <p class="text-slate-400 max-w-2xl mx-auto font-light">
-                Initialize your neural location node to bridge the gap between digital commerce and physical delivery.
+            <p class="text-slate-600 max-w-2xl mx-auto font-light">
+                Set up your location to connect online shopping with real delivery.
             </p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             <div class="lg:col-span-7 space-y-6">
-                <div class="glass-card rounded-[2.5rem] p-8 border border-white/5 relative overflow-hidden">
-                    <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <div class="glass-card rounded-[2.5rem] p-8 border border-slate-200 relative overflow-hidden">
+                    <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
                         <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
                         Geospatial Uplink
                     </h2>
@@ -81,8 +136,8 @@
                         <div class="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                     </button>
 
-                    <div id="google-map-locator" class="w-full h-[380px] bg-black/40 rounded-3xl flex flex-col items-center justify-center border border-white/10 shadow-inner relative">
-                        <div id="status-icon" class="mb-4 p-4 rounded-full bg-indigo-500/5 border border-indigo-500/20">
+                    <div id="google-map-locator" class="w-full h-[380px] bg-slate-100 rounded-3xl flex flex-col items-center justify-center border border-slate-200 shadow-inner relative">
+                        <div id="status-icon" class="mb-4 p-4 rounded-full bg-indigo-500/10 border border-indigo-500/20">
                             <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m-4.243 0a8 8 0 1111.314 0z"></path>
                             </svg>
@@ -93,12 +148,12 @@
                         </p>
                     </div>
 
-                    <div class="mt-6 flex items-center justify-between p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                    <div class="mt-6 flex items-center justify-between p-5 bg-slate-50 border border-slate-200 rounded-2xl">
                         <div>
                             <p class="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Live Coordinates</p>
-                            <p class="text-sm text-indigo-400 font-mono font-bold" id="selected-coords">0.000000° N, 0.000000° E</p>
+                            <p class="text-sm text-indigo-500 font-mono font-bold" id="selected-coords">0.000000° N, 0.000000° E</p>
                         </div>
-                        <div class="h-8 w-[1px] bg-white/10"></div>
+                        <div class="h-8 w-[1px] bg-slate-200"></div>
                         <div class="text-right">
                             <p class="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Status</p>
                             <p id="signal-status" class="text-xs font-bold text-red-500 uppercase tracking-tighter">Offline</p>
@@ -108,8 +163,8 @@
             </div>
 
             <div class="lg:col-span-5 space-y-6">
-                <div class="glass-card rounded-[2.5rem] p-8 border border-indigo-500/20 shadow-[0_0_50px_rgba(79,70,229,0.1)]">
-                    <h2 class="text-xl font-bold text-white mb-6 flex items-center justify-between">
+                <div class="glass-card rounded-[2.5rem] p-8 border border-slate-200 shadow-[0_0_50px_rgba(79,70,229,0.08)]">
+                    <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center justify-between">
                         Manifest Summary
                         <span class="text-[10px] font-black bg-white/5 px-3 py-1 rounded-full text-slate-400">CART</span>
                     </h2>
@@ -147,7 +202,7 @@
                         <div class="relative group">
                             <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-2 block group-focus-within:text-indigo-400">Street / Landmark</label>
                             <input type="text" id="address" name="address" required 
-                                class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none transition-all placeholder-slate-700"
+                                class="w-full px-6 py-4 bg-white/75 border border-slate-200 rounded-2xl text-slate-900 outline-none transition-all placeholder-slate-500"
                                 placeholder="e.g. Plot 4, Near Mall">
                         </div>
                         
@@ -155,13 +210,13 @@
                             <div class="group">
                                 <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-2 block">City</label>
                                 <input type="text" id="city" name="city" required 
-                                    class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none transition-all"
+                                    class="w-full px-6 py-4 bg-white/75 border border-slate-200 rounded-2xl text-slate-900 outline-none transition-all placeholder-slate-500"
                                     placeholder="Kampala">
                             </div>
                             <div class="group">
                                 <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-2 block">Phone</label>
                                 <input type="tel" id="phone" name="phone" required 
-                                    class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none transition-all"
+                                    class="w-full px-6 py-4 bg-white/75 border border-slate-200 rounded-2xl text-slate-900 outline-none transition-all placeholder-slate-500"
                                     placeholder="+256...">
                             </div>
                         </div>
@@ -303,6 +358,30 @@
         }
         
         window.location.href = `https://wa.me/${cleanVendorPhoneNumber}?text=${message}`;
+    });
+
+    // Offline form data persistence
+    const form = document.getElementById('delivery-form');
+    const inputs = ['address', 'city', 'phone', 'input_latitude', 'input_longitude'];
+
+    // Load saved data on page load
+    window.addEventListener('load', () => {
+        inputs.forEach(id => {
+            const saved = localStorage.getItem(`delivery_${id}`);
+            if (saved && document.getElementById(id)) {
+                document.getElementById(id).value = saved;
+            }
+        });
+    });
+
+    // Save data on input change
+    inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', () => {
+                localStorage.setItem(`delivery_${id}`, element.value);
+            });
+        }
     });
 </script>
 {% endblock %}

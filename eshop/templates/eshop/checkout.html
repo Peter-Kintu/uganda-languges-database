@@ -4,60 +4,63 @@
 {% block title %}Confirm Your Order {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-20 text-center">
-    
-    <div class="max-w-3xl mx-auto bg-gray-800 p-10 rounded-3xl shadow-4xl border-t-8 border-green-500/70 transform transition duration-500 hover:shadow-green-500/50">
-        
-        <svg class="w-16 h-16 text-green-400 mx-auto mb-6 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-
-        <h1 class="text-5xl font-extrabold text-green-400 mb-4 tracking-tighter sm:text-6xl animate-fade-in-down"> Order Confirmed! Adventure Awaits! 🌍
-        </h1>
-        <p class="text-gray-300 text-xl max-w-2xl mx-auto mb-10">
-            Thank you! Your order is being processed. Please review the final details below.
-        </p>
-
-        <div class="text-left bg-gray-700 p-6 rounded-xl mb-10 border border-gray-600 shadow-inner">
-            <h2 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Your Order Summary</h2>
-            
-            <div class="flex justify-between text-lg text-gray-300 py-1">
-                <span>Total Items:</span>
-                <span class="font-semibold">{{ total_items_count|default:"0" }}</span>
-            </div>
-            
-            <div class="flex justify-between text-lg text-gray-300 py-1">
-                <span>Estimated Total:</span>
-                <span class="font-semibold text-green-400">
-                   {{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0|intcomma }}
-                </span>
+<div class="min-h-screen bg-white py-16 px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-3xl">
+        <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_30px_80px_rgba(15,23,42,0.08)] transition duration-500 hover:shadow-[0_35px_90px_rgba(15,23,42,0.12)]">
+            <div class="text-center">
+                <svg class="mx-auto mb-6 h-16 w-16 text-emerald-500 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">Order Confirmed! Adventure Awaits! 🌍</h1>
+                <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                    Thank you! Your order is being processed. Review the final details and choose your next step below.
+                </p>
             </div>
 
-            {% if request.session.active_referrer %}
-            <div class="flex justify-between text-sm text-indigo-400 py-1 mt-2 border-t border-gray-600 pt-2 italic">
-                <span>Referral Applied:</span>
-                <span>@{{ request.session.active_referrer }}</span>
+            <div class="mt-10 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Your Order Summary</h2>
+                        <p class="mt-2 text-sm text-slate-500">Everything is ready to move to delivery.</p>
+                    </div>
+                    <div class="rounded-3xl bg-white px-5 py-3 text-center shadow-sm">
+                        <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Total Items</p>
+                        <p class="mt-1 text-2xl font-semibold text-slate-900">{{ total_items_count|default:"0" }}</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 grid gap-4 sm:grid-cols-2">
+                    <div class="rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+                        <p class="text-sm font-medium text-slate-500">Estimated Total</p>
+                        <p class="mt-2 text-2xl font-bold text-emerald-600">{{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0|intcomma }}</p>
+                    </div>
+                    {% if request.session.active_referrer %}
+                    <div class="rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+                        <p class="text-sm font-medium text-slate-500">Referral Applied</p>
+                        <p class="mt-2 text-lg font-semibold text-indigo-600">@{{ request.session.active_referrer }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <p class="mt-6 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-medium text-slate-700">
+                    A vendor will contact you shortly to confirm the final price, delivery details, and payment.
+                </p>
             </div>
-            {% endif %}
 
-            <p class="text-sm text-yellow-400 mt-4 italic font-semibold"> 
-                A vendor will contact you to confirm the final price, delivery, and payment.
-            </p>
-        </div>
+            <div class="mt-10 grid gap-4 sm:grid-cols-2">
+                <a href="{% url 'eshop:delivery_location' %}?vendor_phone={{ vendor.phone_number }}"
+                   class="inline-flex items-center justify-center rounded-3xl bg-slate-900 px-8 py-4 text-base font-semibold text-white transition duration-300 hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200">
+                    Set Delivery Location Now 🗺️
+                </a>
 
-        <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <a href="{% url 'eshop:delivery_location' %}?vendor_phone={{ vendor.phone_number }}" 
-               class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 px-8 rounded-xl transition-all duration-300 shadow-2xl shadow-indigo-600/50 transform hover:scale-[1.05] ring-4 ring-indigo-600/30"> 
-                Set Delivery Location Now 🗺️
-            </a>
-
-            {% with referrer=request.session.active_referrer %}
-            <a href="https://wa.me/{{ vendor.phone_number }}?text={{ order_message|urlencode }}{% if referrer %}%0A%0A*Referrer%20to%20Payout:*%20@{{ referrer }}{% endif %}"
-               target="_blank"
-               class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 shadow-lg shadow-green-600/30 transform hover:scale-[1.03]">
-                Contact Vendor via WhatsApp 💬
-            </a>
-            {% endwith %}
+                {% with referrer=request.session.active_referrer %}
+                <a href="https://wa.me/{{ vendor.phone_number }}?text={{ order_message|urlencode }}{% if referrer %}%0A%0A*Referrer%20to%20Payout:*%20@{{ referrer }}{% endif %}"
+                   target="_blank"
+                   class="inline-flex items-center justify-center rounded-3xl bg-emerald-600 px-8 py-4 text-base font-semibold text-white transition duration-300 hover:bg-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-200">
+                    Contact Vendor via WhatsApp 💬
+                </a>
+                {% endwith %}
+            </div>
         </div>
     </div>
 </div>
@@ -77,6 +80,16 @@
         0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
         40% {transform: translateY(-10px);}
         60% {transform: translateY(-5px);}
+    }
+
+    @media (max-width: 768px) {
+        .container { padding-top: 0; padding-bottom: 0; }
+        .max-w-3xl { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .rounded-[2rem] { border-radius: 1.5rem; }
+        h1 { font-size: 2.5rem; }
+        .text-base { font-size: 0.95rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .grid { gap: 1rem; }
     }
 </style>
 {% endblock %}

@@ -10,7 +10,8 @@
     <meta name="theme-color" content="#3B82F6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="{% static 'images/africana-ai-logo.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/africana-ai-logo.svg' %}">
+    <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
     
     <link rel="canonical" href="https://www.africanaai.info/">
     
@@ -21,7 +22,7 @@
     
     <meta property="og:title" content="Africana AI | Marketplace, Jobs, Social Feed - africanaai">
    <meta property="og:description" content="Africana AI fetches over 2 million jobs daily and empowers African communities with localized AI chatbot, marketplace, and curated job board for worldwide opportunities.">
-    <meta property="og:image" content="/static/images/africana-ai-preview.png">
+    <meta property="og:image" content="{% static 'images/africana-ai-logo.svg' %}">
     <meta property="og:url" content="https://www.africanaai.info/">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Africana AI">
@@ -29,7 +30,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Africana AI | Marketplace, Jobs, Social Feed - africanaai">
     <meta name="twitter:description" content="Africana AI fetches over 2 million jobs daily and empowers African communities with localized feeds, marketplace, and curated job board for worldwide opportunities.">
-    <meta name="twitter:image" content="/static/images/africana-ai-preview.png">
+    <meta name="twitter:image" content="{% static 'images/africana-ai-logo.svg' %}">
     
     <script type="application/ld+json">
     {
@@ -37,7 +38,7 @@
       "@type": "Organization",
       "name": "Africana AI",
       "url": "https://www.africanaai.info",
-      "logo": "https://www.africanaai.info/static/images/africana-ai-logo.png",
+      "logo": "https://www.africanaai.info{% static 'images/africana-ai-logo.svg' %}",
       "description": "Africana AI fetches over 2 million jobs daily and empowers African communities with localized feeds, marketplace, and curated job board connecting talent to worldwide opportunities.",
       "foundingDate": "2024",
       "founders": [

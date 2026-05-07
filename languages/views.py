@@ -34,7 +34,7 @@ def google_verification(request):
 def robots_txt(request):
     lines = [
         "User-agent: *",
-        "allow:",
+        "Disallow:",
         f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")

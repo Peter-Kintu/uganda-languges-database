@@ -118,6 +118,7 @@ SITE_ID = 1
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware', # High-performance static serving
+    'django.middleware.gzip.GZipMiddleware',  # Compress responses for faster loading
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -328,8 +329,18 @@ LOGGING = {
 
 # --- CACHING CONFIGURATION ---
 # Required for LibreTranslate caching to avoid repeated API calls
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+if DATABASE_URL and not DEBUG:
+    # Use database cache in production for better performance across instances
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'django_cache_table',
+        }
     }
-}
+else:
+    # Use local memory cache in development
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }

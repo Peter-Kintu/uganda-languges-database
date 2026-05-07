@@ -9,7 +9,7 @@ from .models import Post, Comment, Like, Connection, Message, Share
 from .forms import PostForm
 from users.models import CustomUser
 from django.conf import settings
-import requests
+from django.template.loader import render_to_string
 import json
 import os
 
@@ -30,15 +30,15 @@ def social_feed(request):
     global_posts_query = Post.objects.filter(
         author__user_type='investor',
         author__is_approved=True
-    ).order_by('-created_at')[:10]
+    ).select_related('author').prefetch_related('comments', 'likes').order_by('-created_at')[:10]
     global_posts = list(global_posts_query)
     global_post_ids = [post.id for post in global_posts]
 
     # 3. Get ALL ACTIVE POSTS (visible to all logged-in users)
     # Show posts from all users (not just connections) so everyone can see the feed
-    regular_posts_query = Post.objects.exclude(id__in=global_post_ids).order_by('-created_at')
+    regular_posts_query = Post.objects.exclude(id__in=global_post_ids).select_related('author').prefetch_related('comments', 'likes').order_by('-created_at')
     partner_posts_query = Post.objects.filter(author__user_type='investor', author__is_approved=True)\
-        .exclude(id__in=global_post_ids).order_by('-created_at')
+        .exclude(id__in=global_post_ids).select_related('author').prefetch_related('comments', 'likes').order_by('-created_at')
 
     # 4. Apply Filtering Logic to BOTH querysets
     if feed_type == 'text':
@@ -79,12 +79,21 @@ def social_feed(request):
 
     # Paginate feed so we do not load every post at once
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(posts, 6)
+    paginator = Paginator(posts, 20)
     try:
         page_obj = paginator.page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.page(1)
     posts = list(page_obj.object_list)
+
+    # Handle AJAX requests for infinite scroll
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        html = render_to_string('hotel/posts_partial.html', {'posts': posts, 'request': request})
+        return JsonResponse({
+            'html': html,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
 
     # Translate posts if requested
     if translate_feed and target_lang != 'en':
@@ -99,11 +108,13 @@ def social_feed(request):
         Q(sender=request.user) | Q(receiver=request.user),
         status='accepted'
     )
+    following_count = Connection.objects.filter(sender=request.user, status='accepted').count()
     all_users = CustomUser.objects.exclude(id=request.user.id)
     context = {
         'posts': posts,
         'page_obj': page_obj,
         'connections': connections,
+        'following_count': following_count,
         'all_users': all_users,
         'current_filter': feed_type,
         'translate_feed': translate_feed,
@@ -197,8 +208,9 @@ def add_comment(request, post_id):
     return JsonResponse({'success': False}, status=400)
 
 @login_required
+@login_required
 def send_connection_request(request, user_id):
-    receiver = get_object_or_404(settings.AUTH_USER_MODEL, id=user_id)
+    receiver = get_object_or_404(CustomUser, id=user_id)
     if receiver != request.user:
         Connection.objects.get_or_create(sender=request.user, receiver=receiver)
         messages.success(request, f'Connection request sent to {receiver.username}!')
