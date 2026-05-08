@@ -4,146 +4,254 @@
 {% block title %}Messages & Communities | MyUganda{% endblock %}
 
 {% block content %}
-<div class="bg-gray-50 min-h-screen py-16 px-4">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header Section with Profile Button Integration -->
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-            <h1 class="text-2xl font-bold text-gray-900">Messages & Communities</h1>
-            
-            <!-- Styled Profile Button Integration -->
-            <div class="flex space-x-2">
-                <a href="{% url 'users:profile' %}" class="flex items-center space-x-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-700 hover:text-indigo-600 hover:border-indigo-400 transition-colors shadow-sm">
-                    <span class="nav-icon-container">
-                        <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                        </svg>
-                    </span>
-                    <span class="text-base font-medium">View My Profile</span>
-                </a>
-                <a href="{% url 'hotel:create_community' %}" class="flex items-center space-x-2 bg-indigo-600 text-white rounded-lg px-4 py-2 hover:bg-indigo-700 transition-colors shadow-sm">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                    </svg>
-                    <span class="text-base font-medium">Create Community</span>
-                </a>
+<style>
+    /* Premium Container Styling */
+    .inbox-wrapper {
+        background-color: #f8fafc;
+        min-height: 100vh;
+        padding: 1.5rem;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Main Container */
+    .inbox-card {
+        max-width: 900px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    /* Tab Navigation Style */
+    .inbox-tabs {
+        display: flex;
+        background: #ffffff;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 1.25rem;
+        text-align: center;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 3px solid transparent;
+        font-size: 0.95rem;
+    }
+
+    .tab-btn.active {
+        color: #4f46e5;
+        border-bottom-color: #4f46e5;
+        background: #f8fafc;
+    }
+
+    /* Tab Content Panes */
+    .tab-pane {
+        display: none;
+    }
+
+    .tab-pane.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Message Item (WhatsApp Style) */
+    .chat-row {
+        display: flex;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        text-decoration: none;
+        color: inherit;
+        transition: background 0.2s;
+    }
+
+    .chat-row:hover {
+        background-color: #f1f5f9;
+    }
+
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .chat-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .chat-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2px;
+    }
+
+    .sender-title {
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .time-stamp {
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    .text-preview {
+        font-size: 0.875rem;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Red Badge for Notifications */
+    .count-badge {
+        background: #ef4444;
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 8px;
+        margin-left: 5px;
+    }
+
+    /* Notification Row (LinkedIn Style) */
+    .notif-item {
+        background: #eff6ff; /* Soft blue for unread */
+        border-left: 4px solid #3b82f6;
+    }
+</style>
+
+<div class="inbox-wrapper">
+    <div class="inbox-card">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-slate-800">My Inbox</h1>
+            <a href="{% url 'hotel:create_community' %}" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow hover:bg-indigo-700 transition">
+                Create Community
+            </a>
+        </div>
+
+        <div class="inbox-tabs">
+            <div class="tab-btn active" onclick="switchPane(event, 'chats')">Messages</div>
+            <div class="tab-btn" onclick="switchPane(event, 'groups')">Communities</div>
+            <div class="tab-btn" onclick="switchPane(event, 'alerts')">
+                Notifications
+                {% if unread_count > 0 %}<span class="count-badge">{{ unread_count }}</span>{% endif %}
             </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div class="border-b border-gray-200">
-                <nav class="flex">
-                    <button id="messages-tab" class="tab-button active px-6 py-3 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600">
-                        Messages
-                    </button>
-                    <button id="communities-tab" class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
-                        Communities
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Messages Tab Content -->
-            <div id="messages-content" class="tab-content p-6">
-                {% if messages %}
-                    <div class="space-y-4">
-                        {% for message in messages %}
-                        <a href="{% url 'hotel:conversation' message.sender.id %}" class="block bg-white border border-gray-200 rounded-lg p-4 transition-all hover:shadow-md hover:border-indigo-300 {% if not message.is_read %}bg-blue-50 border-blue-200{% endif %}">
-                            <div class="flex items-start space-x-3">
-                                <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
-                                    <span class="text-indigo-600 font-semibold">{{ message.sender.username|first|upper }}</span>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <div class="flex items-center space-x-2">
-                                            <h3 class="font-semibold text-gray-900">{{ message.sender.get_full_name|default:message.sender.username }}</h3>
-                                            {% if not message.is_read %}
-                                                <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">New</span>
-                                            {% endif %}
-                                        </div>
-                                        <span class="text-gray-500 text-xs">{{ message.created_at|timesince }} ago</span>
-                                    </div>
-                                    <p class="text-gray-700 leading-relaxed">{{ message.content|truncatechars:100 }}</p>
-                                </div>
+        <div id="chats" class="tab-pane active">
+            {% if messages_list %}
+                {% for group in messages_list %}
+                    {% with msg=group.list.0 %}
+                    <a href="{% url 'hotel:conversation' msg.sender.id %}" class="chat-row">
+                        <div class="user-avatar">{{ msg.sender.username|first|upper }}</div>
+                        <div class="chat-details">
+                            <div class="chat-meta">
+                                <span class="sender-title">{{ msg.sender.username }}</span>
+                                <span class="time-stamp">{{ msg.created_at|timesince }} ago</span>
                             </div>
-                        </a>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No messages</h3>
-                        <p class="mt-1 text-sm text-gray-500">You haven't received any messages yet.</p>
-                    </div>
-                {% endif %}
-            </div>
+                            <p class="text-preview">{{ msg.content }}</p>
+                        </div>
+                    </a>
+                    {% endwith %}
+                {% endfor %}
+            {% else %}
+                <div class="py-20 text-center text-slate-400">No messages yet.</div>
+            {% endif %}
+        </div>
 
-            <!-- Communities Tab Content -->
-            <div id="communities-content" class="tab-content p-6 hidden">
-                {% if communities %}
-                    <div class="space-y-4">
-                        {% for community in communities %}
-                        <a href="{% url 'hotel:community_conversation' community.id %}" class="block bg-white border border-gray-200 rounded-lg p-4 transition-all hover:shadow-md hover:border-indigo-300">
-                            <div class="flex items-start space-x-3">
-                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                    </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <h3 class="font-semibold text-gray-900">{{ community.name }}</h3>
-                                        <span class="text-gray-500 text-xs">{{ community.created_at|timesince }} ago</span>
-                                    </div>
-                                    <p class="text-gray-700 leading-relaxed">{{ community.description|truncatechars:100|default:"No description" }}</p>
-                                    <div class="mt-2 text-sm text-gray-500">
-                                        {{ community.members.count }} members
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                        {% endfor %}
+        <div id="groups" class="tab-pane">
+            {% if communities %}
+                {% for community in communities %}
+                <a href="{% url 'hotel:community_conversation' community.id %}" class="chat-row">
+                    <div class="user-avatar" style="background: #10b981; border-radius: 12px;">
+                        {{ community.name|first|upper }}
                     </div>
-                {% else %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No communities</h3>
-                        <p class="mt-1 text-sm text-gray-500">Create your first community to start connecting with others.</p>
+                    <div class="chat-details">
+                        <div class="chat-meta">
+                            <span class="sender-title">{{ community.name }}</span>
+                            <span class="time-stamp">{{ community.members.count }} Members</span>
+                        </div>
+                        <p class="text-preview">{{ community.description|default:"Group Discussion" }}</p>
                     </div>
-                {% endif %}
-            </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="py-20 text-center text-slate-400">Join a community to see it here.</div>
+            {% endif %}
+        </div>
+
+        <div id="alerts" class="tab-pane">
+            {% if unread_messages %}
+                {% for message in unread_messages %}
+                <div class="chat-row notif-item" id="notif-{{ message.id }}">
+                    <div class="user-avatar" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                        {{ message.sender.username|first|upper }}
+                    </div>
+                    <div class="chat-details">
+                        <p class="text-sm text-slate-700">
+                            <strong>{{ message.sender.username }}</strong> sent you a new message.
+                        </p>
+                        <div class="flex gap-4 mt-2">
+                            <a href="{% url 'hotel:conversation' message.sender.id %}" class="text-xs font-bold text-indigo-600 hover:underline">Read Message</a>
+                            <button onclick="dismissNotification({{ message.id }})" class="text-xs font-bold text-slate-400 hover:text-slate-700">Clear</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="py-20 text-center text-slate-400">All caught up! No new notifications.</div>
+            {% endif %}
         </div>
     </div>
 </div>
 
 <script>
-    // Tab switching functionality
-    document.getElementById('messages-tab').addEventListener('click', function() {
-        showTab('messages');
-    });
-    document.getElementById('communities-tab').addEventListener('click', function() {
-        showTab('communities');
-    });
+    // Tab switching logic
+    function switchPane(evt, paneId) {
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(paneId).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
 
-    function showTab(tabName) {
-        // Hide all tab contents
-        document.getElementById('messages-content').classList.add('hidden');
-        document.getElementById('communities-content').classList.add('hidden');
-        
-        // Remove active class from all tabs
-        document.getElementById('messages-tab').classList.remove('active', 'text-indigo-600', 'border-indigo-600');
-        document.getElementById('messages-tab').classList.add('text-gray-500');
-        document.getElementById('communities-tab').classList.remove('active', 'text-indigo-600', 'border-indigo-600');
-        document.getElementById('communities-tab').classList.add('text-gray-500');
-        
-        // Show selected tab content and activate tab
-        document.getElementById(tabName + '-content').classList.remove('hidden');
-        document.getElementById(tabName + '-tab').classList.add('active', 'text-indigo-600', 'border-indigo-600');
-        document.getElementById(tabName + '-tab').classList.remove('text-gray-500');
+    // Dismiss notification via AJAX
+    function dismissNotification(id) {
+        fetch(`/mark-message-read/${id}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const element = document.getElementById(`notif-${id}`);
+                element.style.opacity = '0';
+                element.style.transform = 'translateX(20px)';
+                setTimeout(() => element.remove(), 300);
+            }
+        });
     }
 </script>
 {% endblock %}
-```[cite: 1]

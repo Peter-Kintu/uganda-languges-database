@@ -18,15 +18,15 @@
             <div class="flex items-center gap-2 flex-wrap">
                 {% if post.author != request.user %}
                     {% if post.author.is_following %}
-                        <a href="{% url 'hotel:unfollow_user' post.author.id %}" class="follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                        <button onclick="toggleFollow({{ post.author.id }}, this)" class="follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors" data-following="true">
                             Following
-                        </a>
+                        </button>
                     {% else %}
-                        <a href="{% url 'hotel:follow_user' post.author.id %}" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                        <button onclick="toggleFollow({{ post.author.id }}, this)" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors" data-following="false">
                             Follow
-                        </a>
+                        </button>
                     {% endif %}
-                    <span class="text-xs text-gray-500">{{ post.author.follower_count }} followers</span>
+                    <span class="text-xs text-gray-500 follower-count-{{ post.author.id }}">{{ post.author.follower_count }} followers</span>
                 {% endif %}
                 <button class="post-menu" title="More options">⋯</button>
             </div>
@@ -59,15 +59,23 @@
 
         <!-- Footer -->
         <div class="post-footer">
-            <div class="post-action" onclick="likePost({{ post.id }}, this)">
+            <button class="post-action" onclick="likePost({{ post.id }}, this)">
                 <span>👍 {{ post.likes.count }}</span>
-            </div>
-            <div class="post-action" onclick="toggleComments({{ post.id }}, this)">
+            </button>
+            <button class="post-action" onclick="toggleComments({{ post.id }}, this)">
                 <span>💬 {{ post.comments.count }}</span>
-            </div>
-            <div class="post-action" onclick="openTranslateModal({{ post.id }})">
+            </button>
+            <button class="post-action" onclick="openTranslateModal({{ post.id }})">
                 <span>🌐 Translate</span>
-            </div>
+            </button>
+            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')">
+                <span>✉️</span>
+                <span>Message</span>
+            </button>
+            <button class="post-action" onclick="sharePost({{ post.id }})">
+                <span>🔗</span>
+                <span>Share</span>
+            </button>
         </div>
 
         <!-- Comments Section -->

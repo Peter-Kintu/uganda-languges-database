@@ -403,12 +403,65 @@ def send_message(request, user_id):
 
 @login_required
 def inbox(request):
+    return redirect('hotel:inbox_messages')
+
+@login_required
+def inbox_messages(request):
     messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')
     communities = Community.objects.filter(members=request.user).order_by('-created_at')
+    unread_messages = messages_list.filter(is_read=False)[:5]
+    unread_count = messages_list.filter(is_read=False).count()
     return render(request, 'hotel/inbox.html', {
         'messages': messages_list,
-        'communities': communities
+        'communities': communities,
+        'unread_messages': unread_messages,
+        'unread_count': unread_count,
     })
+
+@login_required
+def inbox_communities(request):
+    messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')
+    communities = Community.objects.filter(members=request.user).order_by('-created_at')
+    unread_messages = messages_list.filter(is_read=False)[:5]
+    unread_count = messages_list.filter(is_read=False).count()
+    return render(request, 'hotel/inbox_communities.html', {
+        'messages': messages_list,
+        'communities': communities,
+        'unread_messages': unread_messages,
+        'unread_count': unread_count,
+    })
+
+@login_required
+def inbox_notifications(request):
+    messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')
+    communities = Community.objects.filter(members=request.user).order_by('-created_at')
+    unread_messages = messages_list.filter(is_read=False)[:5]
+    unread_count = messages_list.filter(is_read=False).count()
+    return render(request, 'hotel/inbox_notifications.html', {
+        'messages': messages_list,
+        'communities': communities,
+        'unread_messages': unread_messages,
+        'unread_count': unread_count,
+    })
+
+@login_required
+def mark_message_read(request, message_id):
+    if request.method == 'POST':
+        message = get_object_or_404(Message, id=message_id, receiver=request.user)
+        message.is_read = True
+        message.save()
+        
+        # Check if it's an AJAX request
+        is_ajax = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+            'application/json' in request.headers.get('Accept', '')
+        )
+        
+        if is_ajax:
+            return JsonResponse({'success': True})
+        
+        return redirect('hotel:inbox')
+    return JsonResponse({'success': False}, status=400)
 
 @login_required
 def share_post(request, post_id):
@@ -580,21 +633,72 @@ def community_conversation(request, community_id):
 @login_required
 def follow_user(request, user_id):
     user_to_follow = get_object_or_404(CustomUser, id=user_id)
-    if user_to_follow != request.user:
-        connection, created = Connection.objects.get_or_create(
-            sender=request.user,
-            receiver=user_to_follow,
-            defaults={'status': 'accepted'}
-        )
-        if created:
-            messages.success(request, f'You are now following {user_to_follow.username}!')
-        else:
-            messages.info(request, f'You are already following {user_to_follow.username}.')
+    
+    # Check if it's an AJAX request first
+    is_ajax = (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+        'application/json' in request.headers.get('Accept', '')
+    )
+    
+    if user_to_follow == request.user:
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'message': 'You cannot follow yourself.'
+            })
+        messages.error(request, 'You cannot follow yourself.')
+        return redirect(request.META.get('HTTP_REFERER', 'hotel:social_feed'))
+    
+    connection, created = Connection.objects.get_or_create(
+        sender=request.user,
+        receiver=user_to_follow,
+        defaults={'status': 'accepted'}
+    )
+    if created:
+        message = f'You are now following {user_to_follow.username}!'
+    else:
+        message = f'You are already following {user_to_follow.username}.'
+    
+    if is_ajax:
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'is_following': True,
+            'follower_count': Connection.objects.filter(receiver=user_to_follow, status='accepted').count()
+        })
+    
+    messages.success(request, message)
     return redirect(request.META.get('HTTP_REFERER', 'hotel:social_feed'))
 
 @login_required
 def unfollow_user(request, user_id):
     user_to_unfollow = get_object_or_404(CustomUser, id=user_id)
+    
+    # Check if it's an AJAX request first
+    is_ajax = (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+        'application/json' in request.headers.get('Accept', '')
+    )
+    
+    if user_to_unfollow == request.user:
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'message': 'You cannot unfollow yourself.'
+            })
+        messages.error(request, 'You cannot unfollow yourself.')
+        return redirect(request.META.get('HTTP_REFERER', 'hotel:social_feed'))
+    
     Connection.objects.filter(sender=request.user, receiver=user_to_unfollow).delete()
-    messages.success(request, f'Unfollowed {user_to_unfollow.username}.')
+    message = f'Unfollowed {user_to_unfollow.username}.'
+    
+    if is_ajax:
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'is_following': False,
+            'follower_count': Connection.objects.filter(receiver=user_to_unfollow, status='accepted').count()
+        })
+    
+    messages.success(request, message)
     return redirect(request.META.get('HTTP_REFERER', 'hotel:social_feed'))

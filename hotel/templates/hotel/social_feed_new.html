@@ -2124,15 +2124,15 @@
                             <div class="flex items-center gap-2 flex-wrap">
                                 {% if post.author != request.user %}
                                     {% if post.author.is_following %}
-                                        <a href="{% url 'hotel:unfollow_user' post.author.id %}" class="follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                                        <button onclick="toggleFollow({{ post.author.id }}, this)" class="follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors" data-following="true">
                                             Following
-                                        </a>
+                                        </button>
                                     {% else %}
-                                        <a href="{% url 'hotel:follow_user' post.author.id %}" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                                        <button onclick="toggleFollow({{ post.author.id }}, this)" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors" data-following="false">
                                             Follow
-                                        </a>
+                                        </button>
                                     {% endif %}
-                                    <span class="text-xs text-gray-500">{{ post.author.follower_count }} followers</span>
+                                    <span class="text-xs text-gray-500 follower-count-{{ post.author.id }}">{{ post.author.follower_count }} followers</span>
                                 {% endif %}
                                 <button class="post-menu" title="More options">⋯</button>
                             </div>
@@ -2169,6 +2169,14 @@
                             <button class="post-action" onclick="openTranslateModal({{ post.id }})" title="Translate post">
                                 <span>🌐</span>
                                 <span>Translate</span>
+                            </button>
+                            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')" title="Send a message">
+                                <span>✉️</span>
+                                <span>Message</span>
+                            </button>
+                            <button class="post-action" onclick="sharePost({{ post.id }})" title="Share post">
+                                <span>🔗</span>
+                                <span>Share</span>
                             </button>
                         </div>
 
@@ -2394,6 +2402,54 @@
         });
     }
 
+    // Toggle Follow
+    function toggleFollow(userId, btn) {
+        const isFollowing = btn.dataset.following === 'true';
+        const url = isFollowing ? `/hotel/unfollow/${userId}/` : `/hotel/follow/${userId}/`;
+        
+        fetch(url, {
+            method: 'POST',
+            headers: { 
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (isFollowing) {
+                    // Now unfollowed
+                    btn.textContent = 'Follow';
+                    btn.className = 'follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors';
+                    btn.dataset.following = 'false';
+                } else {
+                    // Now following
+                    btn.textContent = 'Following';
+                    btn.className = 'follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors';
+                    btn.dataset.following = 'true';
+                }
+                // Update follower count
+                const followerSpan = document.querySelector(`.follower-count-${userId}`);
+                if (followerSpan) {
+                    followerSpan.textContent = `${data.follower_count} followers`;
+                }
+                showJobAccessToast(data.message);
+            } else {
+                alert(data.message || 'Failed to update follow status. Please try again.');
+            }
+        })
+        .catch(e => {
+            console.error('Follow toggle failed:', e);
+            alert('Failed to update follow status. Please try again.');
+        });
+    }
+
     // Toggle Comments
     function toggleComments(postId, btn) {
         const commentsDiv = document.getElementById(`comments-${postId}`);
@@ -2567,14 +2623,7 @@
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                // Update share count
-                const shareBtn = document.querySelector(`button[onclick="sharePost(${postId})"]`);
-                if (shareBtn) {
-                    const shareSpan = shareBtn.querySelector('span:last-child');
-                    if (shareSpan) {
-                        shareSpan.textContent = data.shares_count;
-                    }
-                }
+                showJobAccessToast('Post share count updated.');
             }
         })
         .catch(e => console.error('Share count update failed:', e));
@@ -2587,16 +2636,9 @@
                 url: shareUrl
             }).catch(err => console.log('Share cancelled'));
         } else {
-            const fullShareText = `${shareText}\n\n${shareUrl}`;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(fullShareText).then(() => {
-                    alert('✅ Post shared to clipboard!');
-                }).catch(() => {
-                    alert('Share: ' + fullShareText);
-                });
-            } else {
-                alert('Share: ' + fullShareText);
-            }
+            // Fallback to LinkedIn-style share dialog, using the current URL
+            const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+            window.open(linkedInUrl, '_blank', 'noopener');
         }
     }
 
