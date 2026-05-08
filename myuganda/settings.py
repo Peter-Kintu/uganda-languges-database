@@ -40,7 +40,7 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     
     # 2. Strict Transport Security (HSTS) - Essential for the "Secure" padlock
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_SECONDS = 15768000  # 6 months - Reduced from 1 year for faster testing of HTTPS enforcement
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     

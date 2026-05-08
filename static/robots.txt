@@ -1,4 +1,9 @@
 User-agent: *
-Disallow:
+Allow: /
+
+# Disallow admin and sensitive areas
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /api/
 
 Sitemap: https://www.africanaai.info/sitemap.xml
