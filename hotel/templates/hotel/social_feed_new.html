@@ -1630,6 +1630,11 @@
         50% { opacity: 0.5; }
     }
 
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
     /* ═════════════════════════════════════════════════════════════════ */
     /* WORLD-CLASS RESPONSIVE DESIGN                                     */
     /* ═════════════════════════════════════════════════════════════════ */
@@ -2282,6 +2287,10 @@
                 </select>
             </div>
             <div id="translate-result" style="background: var(--gray-100); padding: 16px; border-radius: 8px; margin-bottom: 16px; display: none; min-height: 80px; line-height: 1.5;"></div>
+            <div id="translate-loading" style="display: none; text-align: center; padding: 16px; color: var(--gray-600);">
+                <div style="display: inline-block; width: 20px; height: 20px; border: 2px solid var(--gray-300); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite; margin-right: 8px;"></div>
+                Translating...
+            </div>
             <button class="btn-primary" style="width: 100%;" onclick="performTranslation()">Translate with Africana AI</button>
         </div>
     </div>
@@ -2574,6 +2583,7 @@
     function closeTranslateModal() {
         document.getElementById('translate-modal').classList.remove('active');
         document.getElementById('translate-result').style.display = 'none';
+        document.getElementById('translate-loading').style.display = 'none';
     }
 
     // Translate with Gemini
@@ -2587,6 +2597,12 @@
         }
         
         const postContent = (postElement.dataset.fullContent || postElement.textContent).trim();
+        
+        // Show loading indicator
+        const resultDiv = document.getElementById('translate-result');
+        const loadingDiv = document.getElementById('translate-loading');
+        resultDiv.style.display = 'none';
+        loadingDiv.style.display = 'block';
         
         fetch('/hotel/gemini-translate/', {
             method: 'POST',
@@ -2605,7 +2621,8 @@
             return r.json();
         })
         .then(data => {
-            const resultDiv = document.getElementById('translate-result');
+            // Hide loading, show result
+            loadingDiv.style.display = 'none';
             if (data.success && data.translated) {
                 resultDiv.innerHTML = `<strong>Translated:</strong><br>${data.translated}`;
                 resultDiv.style.display = 'block';
@@ -2618,7 +2635,8 @@
         })
         .catch(e => {
             console.error('Translation error:', e);
-            const resultDiv = document.getElementById('translate-result');
+            // Hide loading, show error
+            loadingDiv.style.display = 'none';
             resultDiv.innerHTML = `❌ Translation failed: ${e.message}. Showing original text.`;
             resultDiv.style.display = 'block';
         });
