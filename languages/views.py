@@ -462,12 +462,6 @@ def fetch_careerjet_data(request, keywords, location=""):
         session.mount("http://", adapter)
         session.headers.update(headers)
 
-        print(f"[CareerJet] Request details:")
-        print(f"  URL: {url}")
-        print(f"  Location param: '{params.get('location', 'empty')}'")
-        print(f"  Keywords: '{params.get('keywords', 'empty')}'")
-        print(f"  Auth header: {headers.get('Authorization', 'MISSING')[:20]}...")
-
         response = session.get(url, params=params, timeout=20)
         print(f"CareerJet Status: {response.status_code}")
 
@@ -553,16 +547,12 @@ def fetch_careerjet_data(request, keywords, location=""):
                         set_cache_result(cache_key, processed_jobs)
                         return processed_jobs
         
-        # For 403/429 errors, provide detailed diagnostics
+        # For 403/429 errors, return empty gracefully
         elif response.status_code in (403, 429):
-            print(f"\n[CareerJet ERROR] {response.status_code} - Access Denied")
-            print(f"Response headers: {dict(response.headers)}")
-            print(f"Response body (first 200 chars): {response.text[:200]}")
-            print("\n[TROUBLESHOOTING]")
-            print("1. API Key: Verify CAREERJET_API_KEY or CAREERJET_PUBLISHER_ID is correct in .env")
-            print("2. IP Whitelisting: Check if your production IP needs to be whitelisted in CareerJet dashboard")
-            print("3. Affiliate Account: Ensure your CareerJet account is 'activated' for API access")
-            print("4. Rate Limiting: You may have exceeded rate limits - try again later\n")
+            if response.status_code == 403:
+                print("[CareerJet] 403 - Access denied (IP/auth issue). Falling back to Jooble.")
+            else:
+                print("[CareerJet] 429 - Rate limited. Falling back to Jooble.")
             return []
         elif response.status_code == 401:
             print("[CareerJet] 401 Unauthorized - API key is invalid or expired")
@@ -669,9 +659,9 @@ def browse_job_listings(request):
     
     if job_id:
         try:
-            selected_job = get_object_or_404(JobPost, pk=job_id)
+            selected_job = JobPost.objects.get(pk=job_id)
         except (ValueError, JobPost.DoesNotExist):
-            pass 
+            selected_job = None
 
     external_jobs = []
     priority_jobs = []
@@ -775,9 +765,13 @@ def browse_job_listings(request):
             careerjet_jobs = fetch_careerjet_data(request, search_query or 'jobs', effective_location)
             jooble_jobs = fetch_jooble_data(search_query or 'jobs', effective_location)
             
+            print(f"[Browse] Fetched {len(careerjet_jobs)} CareerJet, {len(jooble_jobs)} Jooble jobs")
+            
             # Combine and deduplicate
             combined_jobs = careerjet_jobs + jooble_jobs
             external_jobs = deduplicate_jobs(combined_jobs)
+
+            print(f"[Browse] After dedup: {len(external_jobs)} unique external jobs")
 
             if uganda_visitor and not effective_location:
                 priority_external_jobs = [job for job in external_jobs if is_external_africa_remote(job)]
