@@ -13,7 +13,7 @@
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
-    /* Main Container */
+    /* Main Card Layout */
     .inbox-card {
         max-width: 900px;
         margin: 0 auto;
@@ -39,186 +39,133 @@
         color: #64748b;
         cursor: pointer;
         transition: all 0.2s ease;
-        border-bottom: 3px solid transparent;
-        font-size: 0.95rem;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+    }
+
+    .tab-btn:hover {
+        color: #4f46e5;
+        background-color: #f8fafc;
     }
 
     .tab-btn.active {
         color: #4f46e5;
         border-bottom-color: #4f46e5;
-        background: #f8fafc;
     }
 
-    /* Tab Content Panes */
+    /* Content Panes */
     .tab-pane {
         display: none;
+        animation: fadeIn 0.3s ease-in-out;
     }
 
     .tab-pane.active {
         display: block;
-        animation: fadeIn 0.3s ease-in-out;
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(5px); }
+        from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Message Item (WhatsApp Style) */
-    .chat-row {
-        display: flex;
-        align-items: center;
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #f1f5f9;
-        text-decoration: none;
-        color: inherit;
-        transition: background 0.2s;
-    }
-
-    .chat-row:hover {
-        background-color: #f1f5f9;
-    }
-
-    .user-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        margin-right: 1rem;
-        flex-shrink: 0;
-    }
-
-    .chat-details {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .chat-meta {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 2px;
-    }
-
-    .sender-title {
-        font-weight: 700;
-        color: #1e293b;
-    }
-
-    .time-stamp {
-        font-size: 0.75rem;
-        color: #94a3b8;
-    }
-
-    .text-preview {
-        font-size: 0.875rem;
-        color: #64748b;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* Red Badge for Notifications */
-    .count-badge {
+    .unread-badge {
         background: #ef4444;
         color: white;
         font-size: 0.7rem;
         padding: 2px 6px;
-        border-radius: 8px;
-        margin-left: 5px;
-    }
-
-    /* Notification Row (LinkedIn Style) */
-    .notif-item {
-        background: #eff6ff; /* Soft blue for unread */
-        border-left: 4px solid #3b82f6;
+        border-radius: 99px;
+        margin-left: 4px;
     }
 </style>
 
 <div class="inbox-wrapper">
     <div class="inbox-card">
-        <div class="p-6 border-b flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-slate-800">My Inbox</h1>
-            <a href="{% url 'hotel:create_community' %}" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow hover:bg-indigo-700 transition">
-                Create Community
-            </a>
-        </div>
-
         <div class="inbox-tabs">
-            <div class="tab-btn active" onclick="switchPane(event, 'chats')">Messages</div>
-            <div class="tab-btn" onclick="switchPane(event, 'groups')">Communities</div>
-            <div class="tab-btn" onclick="switchPane(event, 'alerts')">
+            <div class="tab-btn active" onclick="switchPane(event, 'messages')">
+                Messages
+                {% if unread_messages_count > 0 %}
+                    <span class="unread-badge">{{ unread_messages_count }}</span>
+                {% endif %}
+            </div>
+            <div class="tab-btn" onclick="switchPane(event, 'communities')">Communities</div>
+            <div class="tab-btn" onclick="switchPane(event, 'notifications')">
                 Notifications
-                {% if unread_count > 0 %}<span class="count-badge">{{ unread_count }}</span>{% endif %}
+                {% if notifications.count > 0 %}
+                    <span class="unread-badge">{{ notifications.count }}</span>
+                {% endif %}
             </div>
         </div>
 
-        <div id="chats" class="tab-pane active">
-            {% if messages_list %}
-                {% for group in messages_list %}
-                    {% with msg=group.list.0 %}
-                    <a href="{% url 'hotel:conversation' msg.sender.id %}" class="chat-row">
-                        <div class="user-avatar">{{ msg.sender.username|first|upper }}</div>
-                        <div class="chat-details">
-                            <div class="chat-meta">
-                                <span class="sender-title">{{ msg.sender.username }}</span>
-                                <span class="time-stamp">{{ msg.created_at|timesince }} ago</span>
+        <div id="messages" class="tab-pane active">
+            {% if message_groups %}
+                <div class="divide-y divide-slate-100">
+                    {% for group in message_groups %}
+                        {% with message=group.list.0 %}
+                        <a href="{% url 'hotel:conversation' group.grouper.id %}" class="flex items-center p-4 hover:bg-slate-50 transition-colors">
+                            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold mr-4">
+                                {{ group.grouper.username|first|upper }}
                             </div>
-                            <p class="text-preview">{{ msg.content }}</p>
-                        </div>
-                    </a>
-                    {% endwith %}
-                {% endfor %}
-            {% else %}
-                <div class="py-20 text-center text-slate-400">No messages yet.</div>
-            {% endif %}
-        </div>
-
-        <div id="groups" class="tab-pane">
-            {% if communities %}
-                {% for community in communities %}
-                <a href="{% url 'hotel:community_conversation' community.id %}" class="chat-row">
-                    <div class="user-avatar" style="background: #10b981; border-radius: 12px;">
-                        {{ community.name|first|upper }}
-                    </div>
-                    <div class="chat-details">
-                        <div class="chat-meta">
-                            <span class="sender-title">{{ community.name }}</span>
-                            <span class="time-stamp">{{ community.members.count }} Members</span>
-                        </div>
-                        <p class="text-preview">{{ community.description|default:"Group Discussion" }}</p>
-                    </div>
-                </a>
-                {% endfor %}
-            {% else %}
-                <div class="py-20 text-center text-slate-400">Join a community to see it here.</div>
-            {% endif %}
-        </div>
-
-        <div id="alerts" class="tab-pane">
-            {% if unread_messages %}
-                {% for message in unread_messages %}
-                <div class="chat-row notif-item" id="notif-{{ message.id }}">
-                    <div class="user-avatar" style="width: 40px; height: 40px; font-size: 0.8rem;">
-                        {{ message.sender.username|first|upper }}
-                    </div>
-                    <div class="chat-details">
-                        <p class="text-sm text-slate-700">
-                            <strong>{{ message.sender.username }}</strong> sent you a new message.
-                        </p>
-                        <div class="flex gap-4 mt-2">
-                            <a href="{% url 'hotel:conversation' message.sender.id %}" class="text-xs font-bold text-indigo-600 hover:underline">Read Message</a>
-                            <button onclick="dismissNotification({{ message.id }})" class="text-xs font-bold text-slate-400 hover:text-slate-700">Clear</button>
-                        </div>
-                    </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-baseline">
+                                    <h3 class="font-semibold text-slate-900 truncate">{{ group.grouper.username }}</h3>
+                                    <span class="text-xs text-slate-400">{{ message.created_at|timesince }} ago</span>
+                                </div>
+                                <p class="text-sm text-slate-500 truncate">{{ message.content }}</p>
+                            </div>
+                        </a>
+                        {% endwith %}
+                    {% endfor %}
                 </div>
-                {% endfor %}
             {% else %}
-                <div class="py-20 text-center text-slate-400">All caught up! No new notifications.</div>
+                <div class="py-20 text-center">
+                    <p class="text-slate-400">No conversations yet.</p>
+                    <a href="{% url 'hotel:social_feed' %}" class="text-indigo-600 font-medium mt-2 inline-block">Find people to message</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div id="communities" class="tab-pane p-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-slate-800">Your Communities</h2>
+                <a href="{% url 'hotel:create_community' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700">
+                    + Create New
+                </a>
+            </div>
+            {% if communities %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for community in communities %}
+                    <a href="{% url 'hotel:community_conversation' community.id %}" class="block p-4 border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-sm transition-all">
+                        <h3 class="font-bold text-indigo-600">{{ community.name }}</h3>
+                        <p class="text-xs text-slate-500 mt-1">{{ community.members.count }} members</p>
+                    </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="py-12 text-center border-2 border-dashed border-slate-200 rounded-xl">
+                    <p class="text-slate-400">You haven't joined any communities.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div id="notifications" class="tab-pane">
+            {% if notifications %}
+                <div class="divide-y divide-slate-100">
+                    {% for n in notifications %}
+                    <div id="notif-{{ n.id }}" class="p-4 flex justify-between items-start hover:bg-slate-50 transition-all">
+                        <div class="flex-1">
+                            <p class="text-sm text-slate-800">{{ n.content }}</p>
+                            <span class="text-xs text-slate-400">{{ n.created_at|timesince }} ago</span>
+                        </div>
+                        <button onclick="dismissNotification({{ n.id }})" class="ml-4 text-slate-400 hover:text-red-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="py-20 text-center text-slate-400">No new notifications.</div>
             {% endif %}
         </div>
     </div>
@@ -234,7 +181,7 @@
         evt.currentTarget.classList.add('active');
     }
 
-    // Dismiss notification via AJAX
+    // AJAX Dismiss notification
     function dismissNotification(id) {
         fetch(`/mark-message-read/${id}/`, {
             method: 'POST',
@@ -251,7 +198,8 @@
                 element.style.transform = 'translateX(20px)';
                 setTimeout(() => element.remove(), 300);
             }
-        });
+        })
+        .catch(err => console.error('Error:', err));
     }
 </script>
 {% endblock %}

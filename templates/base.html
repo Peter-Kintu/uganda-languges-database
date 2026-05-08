@@ -313,6 +313,26 @@
                 height: max(0px, env(safe-area-inset-bottom));
             }
         }
+
+        /* Slide-out animation for notifications */
+        .slide-out-left {
+            animation: slideLeft 0.5s forwards;
+        }
+
+        @keyframes slideLeft {
+            0% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(-100%); opacity: 0; display: none; }
+        }
+
+        /* Style for the temporary alerts at the top */
+        .system-notification {
+            background: #fff;
+            border-left: 4px solid #6366f1;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -414,7 +434,7 @@
         {% if messages %}
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             {% for message in messages %}
-            <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-900/50 border border-red-500 text-red-200{% elif message.tags == 'success' %}bg-green-900/50 border border-green-500 text-green-200{% else %}bg-blue-900/50 border border-blue-500 text-blue-200{% endif %}">
+            <div class="system-notification mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-900/50 border border-red-500 text-red-200{% elif message.tags == 'success' %}bg-green-900/50 border border-green-500 text-green-200{% else %}bg-blue-900/50 border border-blue-500 text-blue-200{% endif %}">
                 {{ message }}
             </div>
             {% endfor %}
@@ -564,6 +584,21 @@
                     });
             });
         }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select all messages at the top
+            const alerts = document.querySelectorAll('.system-notification');
+            
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.classList.add('slide-out-left');
+                    // Remove from DOM after animation finishes
+                    setTimeout(() => alert.remove(), 500);
+                }, 2000); // Wait 2 seconds before pushing left
+            });
+        });
     </script>
 </body>
 </html>

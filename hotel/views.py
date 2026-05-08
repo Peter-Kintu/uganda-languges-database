@@ -397,7 +397,7 @@ def send_message(request, user_id):
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'})
             else:
-                messages.success(request, f'Message sent to {receiver.username}!')
+                # messages.success(request, f'Message sent to {receiver.username}!')
                 return redirect('hotel:inbox')
     return JsonResponse({'success': False}, status=400)
 
@@ -667,7 +667,7 @@ def follow_user(request, user_id):
             'follower_count': Connection.objects.filter(receiver=user_to_follow, status='accepted').count()
         })
     
-    messages.success(request, message)
+    # messages.success(request, message)
     return redirect(request.META.get('HTTP_REFERER', 'hotel:social_feed'))
 
 @login_required
@@ -700,5 +700,5 @@ def unfollow_user(request, user_id):
             'follower_count': Connection.objects.filter(receiver=user_to_unfollow, status='accepted').count()
         })
     
-    messages.success(request, message)
+    # messages.success(request, message)
     return redirect(request.META.get('HTTP_REFERER', 'hotel:social_feed'))
