@@ -157,9 +157,16 @@ def google_auth_receiver(request):
         login(request, user)
         return redirect(next_url or reverse('hotel:social_feed'))
 
-    except ValueError:
+    except ValueError as e:
+        # Log the error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Google auth ValueError: {str(e)}, client_id: {client_id[:10]}...")
         return HttpResponse('Invalid token', status=403)
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Google auth error: {str(e)}")
         return HttpResponse(str(e), status=400)
 
 
