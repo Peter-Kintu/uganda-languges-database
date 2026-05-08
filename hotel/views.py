@@ -305,23 +305,12 @@ def translate_smart(text, target_lang, source_lang='en'):
     target_lang = target_lang.lower() if isinstance(target_lang, str) else target_lang
     source_lang = source_lang.lower() if isinstance(source_lang, str) else source_lang
 
-    # Detect source language if auto
+    # Handle auto source language
     if source_lang == 'auto':
-        try:
-            detect_res = requests.post(LIBRE_URL.replace('/translate', '/detect'), json={
-                "q": text[:500]
-            }, timeout=5, headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            })
-            if detect_res.status_code == 200:
-                detected = detect_res.json()
-                if detected and len(detected) > 0:
-                    source_lang = detected[0].get('language', 'en')
-        except:
-            source_lang = 'en'  # Fallback to English
+        source_lang = 'en'  # Assume English as default source
 
     # Early returns for no-ops
-    if not text or not text.strip() or (target_lang == source_lang and source_lang != 'auto'):
+    if not text or not text.strip() or target_lang == source_lang:
         return text
 
     # Cache hit = instant return, saves API calls
@@ -334,60 +323,7 @@ def translate_smart(text, target_lang, source_lang='en'):
     target_code = LANGUAGE_SERVICE_OVERRIDES.get(target_lang, target_lang)
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # TIER 1: NLLB for African Languages (Specialist Provider)
-    # ═══════════════════════════════════════════════════════════════════════════
-    if target_code in NLLB_LANGS and NLLB_URL and source_lang != 'auto':
-        try:
-            r = requests.post(NLLB_URL, json={
-                "text": text[:500],
-                "target": target_code,
-                "source": source_lang
-            }, timeout=12)  # Generous timeout for NLLB
-            if r.status_code == 200:
-                result = r.json()
-                translated = result.get('translated', text)
-                if translated and translated != text:
-                    _safe_cache_set(cache_key, translated, 86400)  # Cache 24h
-                    return translated
-        except requests.Timeout:
-            print(f"NLLB timeout for {target_lang} ({target_code}), trying Tier 2...")
-        except Exception as e:
-            print(f"NLLB error for {target_lang} ({target_code}): {str(e)[:80]}")
-
-    # ═══════════════════════════════════════════════════════════════════════════
-    # TIER 2: LibreTranslate for Global Languages (Generalist Provider)
-    # Skip for African languages to avoid 400 errors
-    # ═══════════════════════════════════════════════════════════════════════════
-    if target_code in LIBRE_SUPPORTED and target_code not in NLLB_LANGS:
-        try:
-            res = requests.post(LIBRE_URL, json={
-                "q": text[:500],
-                "source": source_lang,
-                "target": target_code,
-                "format": "text"
-            }, timeout=5, headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            })
-            
-            if res.status_code == 200:
-                translated = res.json().get('translatedText', text)
-                if translated and translated != text:
-                    _safe_cache_set(cache_key, translated, 86400)
-                    return translated
-            elif res.status_code == 429:
-                print(f"LibreTranslate rate limited (429) for {target_lang}, falling to Tier 3...")
-            elif res.status_code == 400:
-                print(f"LibreTranslate doesn't support {target_lang}, falling to Tier 3...")
-            else:
-                print(f"LibreTranslate error {res.status_code}, falling to Tier 3...")
-        except requests.Timeout:
-            print(f"LibreTranslate timeout for {target_lang}, falling to Tier 3...")
-        except Exception as e:
-            print(f"LibreTranslate error: {str(e)[:80]}")
-
-    # ═══════════════════════════════════════════════════════════════════════════
-    # TIER 3: MyMemory Universal Fallback (Supports 400+ languages)
-    # Used as safety net for all failures in Tier 1 or Tier 2
+    # DIRECT TO MYMEMORY - Most reliable for all languages
     # ═══════════════════════════════════════════════════════════════════════════
     try:
         res = requests.get(
@@ -396,7 +332,7 @@ def translate_smart(text, target_lang, source_lang='en'):
                 'q': text[:500],
                 'langpair': f'{source_lang}|{target_code}'
             },
-            timeout=5,
+            timeout=10,
             headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
@@ -407,7 +343,7 @@ def translate_smart(text, target_lang, source_lang='en'):
             if result.get('responseStatus') == 200:
                 translated = result.get('responseData', {}).get('translatedText', text)
                 if translated and translated != text and translated.lower() != 'undefined':
-                    _safe_cache_set(cache_key, translated, 86400)
+                    _safe_cache_set(cache_key, translated, 86400)  # Cache 24h
                     return translated
             else:
                 print(f"MyMemory status {result.get('responseStatus')} for {target_lang}")

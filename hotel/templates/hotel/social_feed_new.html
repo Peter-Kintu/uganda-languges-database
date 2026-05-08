@@ -325,6 +325,25 @@
         letter-spacing: 0.01em;
         font-weight: 400;
         transition: max-height 0.3s ease;
+        max-height: none;
+        overflow: hidden;
+    }
+
+    .post-content.collapsed {
+        max-height: calc(1.35 * 14px * 5.5);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .post-content.collapsed::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 30px;
+        background: linear-gradient(transparent, rgba(255, 255, 255, 0.99));
+        pointer-events: none;
     }
 
     .post-content p {
@@ -2130,6 +2149,7 @@
                                 {{ post.content|urlize|linebreaks }}
                             {% endif %}
                         </div>
+                        <button class="show-more-btn" onclick="togglePostExpand(this, {{ post.id }})" style="display: none;">Show More</button>
 
                         <!-- Image -->
                         {% if post.image %}
@@ -2937,6 +2957,7 @@
                 clone.style.position = 'absolute';
                 clone.style.visibility = 'hidden';
                 clone.style.height = 'auto';
+                clone.style.maxHeight = 'none';
                 document.body.appendChild(clone);
                 
                 const fullHeight = clone.scrollHeight;
@@ -2945,9 +2966,11 @@
                 const computedStyle = window.getComputedStyle(content);
                 const lineHeight = parseFloat(computedStyle.lineHeight);
                 
-                // If full height is more than approximately 5.5 lines, show the button
+                // If full height is more than 5 lines, show the button and collapse content
                 if (fullHeight > lineHeight * 5.5) {
+                    content.classList.add('collapsed');
                     btn.style.display = 'inline-block';
+                    btn.textContent = 'Show More';
                 } else {
                     // No truncation needed
                     content.classList.remove('collapsed');
@@ -3008,6 +3031,8 @@
                 while (tempDiv.firstChild) {
                     feed.insertBefore(tempDiv.firstChild, sentinelContainer);
                 }
+                // Reinitialize "Show More" buttons for newly loaded posts
+                initShowMoreButtons();
                 currentPage = nextPage;
                 if (!data.has_next) {
                     sentinelContainer.style.display = 'none';
