@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Conversation with {{ other_user.get_full_name|default:other_user.username }} | MyUganda{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen py-16 px-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <span class="text-indigo-600 font-semibold">{{ other_user.username|first|upper }}</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ other_user.get_full_name|default:other_user.username }}</h1>
+                    <p class="text-gray-500 text-sm">Active now</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div id="messages-container" class="h-96 overflow-y-auto p-6 space-y-4">
+                {% for message in messages %}
+                <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+                    <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg {% if message.sender == request.user %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-900{% endif %}">
+                        <p class="text-sm">{{ message.content }}</p>
+                        <p class="text-xs mt-1 opacity-70">{{ message.created_at|date:"M j, H:i" }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <form method="post" class="flex space-x-4">
+                {% csrf_token %}
+                <input type="text" name="content" placeholder="Type a message..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto scroll to bottom of messages
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('messages-container');
+        container.scrollTop = container.scrollHeight;
+    });
+</script>
+{% endblock %}

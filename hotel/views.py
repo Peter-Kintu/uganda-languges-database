@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from .models import Post, Comment, Like, Connection, Message, Share
+from .models import Post, Comment, Like, Connection, Message, Share, Community, CommunityMessage
 from .forms import PostForm
 from users.models import CustomUser
 from django.conf import settings
@@ -126,6 +126,27 @@ def social_feed(request):
     )
     following_count = Connection.objects.filter(sender=request.user, status='accepted').count()
     all_users = CustomUser.objects.exclude(id=request.user.id)
+    
+    # Add follower count and following status to each post author
+    author_ids = set(post.author.id for post in posts)
+    follower_counts = {}
+    following_status = {}
+    
+    for author_id in author_ids:
+        follower_counts[author_id] = Connection.objects.filter(
+            receiver_id=author_id, 
+            status='accepted'
+        ).count()
+        following_status[author_id] = Connection.objects.filter(
+            sender=request.user,
+            receiver_id=author_id,
+            status='accepted'
+        ).exists()
+    
+    for post in posts:
+        post.author.follower_count = follower_counts.get(post.author.id, 0)
+        post.author.is_following = following_status.get(post.author.id, False)
+    
     context = {
         'posts': posts,
         'page_obj': page_obj,
@@ -284,8 +305,23 @@ def translate_smart(text, target_lang, source_lang='en'):
     target_lang = target_lang.lower() if isinstance(target_lang, str) else target_lang
     source_lang = source_lang.lower() if isinstance(source_lang, str) else source_lang
 
+    # Detect source language if auto
+    if source_lang == 'auto':
+        try:
+            detect_res = requests.post(LIBRE_URL.replace('/translate', '/detect'), json={
+                "q": text[:500]
+            }, timeout=5, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            if detect_res.status_code == 200:
+                detected = detect_res.json()
+                if detected and len(detected) > 0:
+                    source_lang = detected[0].get('language', 'en')
+        except:
+            source_lang = 'en'  # Fallback to English
+
     # Early returns for no-ops
-    if not text or not text.strip() or target_lang == source_lang or target_lang == 'en':
+    if not text or not text.strip() or (target_lang == source_lang and source_lang != 'auto'):
         return text
 
     # Cache hit = instant return, saves API calls
@@ -300,7 +336,7 @@ def translate_smart(text, target_lang, source_lang='en'):
     # ═══════════════════════════════════════════════════════════════════════════
     # TIER 1: NLLB for African Languages (Specialist Provider)
     # ═══════════════════════════════════════════════════════════════════════════
-    if target_code in NLLB_LANGS and NLLB_URL:
+    if target_code in NLLB_LANGS and NLLB_URL and source_lang != 'auto':
         try:
             r = requests.post(NLLB_URL, json={
                 "text": text[:500],
@@ -428,7 +464,11 @@ def send_message(request, user_id):
 @login_required
 def inbox(request):
     messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')
-    return render(request, 'hotel/inbox.html', {'messages': messages_list})
+    communities = Community.objects.filter(members=request.user).order_by('-created_at')
+    return render(request, 'hotel/inbox.html', {
+        'messages': messages_list,
+        'communities': communities
+    })
 
 @login_required
 def share_post(request, post_id):
@@ -477,7 +517,7 @@ def gemini_translate(request):
             return JsonResponse({'error': 'Text required'}, status=400)
         
         # Don't translate if source and target are the same
-        if source_language == target_language or target_language == 'en':
+        if source_language == target_language:
             return JsonResponse({
                 'success': True,
                 'translated': text,
@@ -536,3 +576,85 @@ def gemini_translate(request):
             'error': 'Translation service error', 
             'success': False
         }, status=500)
+
+@login_required
+def conversation(request, user_id):
+    other_user = get_object_or_404(CustomUser, id=user_id)
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        if content:
+            Message.objects.create(sender=request.user, receiver=other_user, content=content)
+            # Mark messages as read when replying
+            Message.objects.filter(sender=other_user, receiver=request.user, is_read=False).update(is_read=True)
+        return redirect('hotel:conversation', user_id=user_id)
+    
+    # Get messages between the two users
+    messages = Message.objects.filter(
+        (Q(sender=request.user) & Q(receiver=other_user)) |
+        (Q(sender=other_user) & Q(receiver=request.user))
+    ).order_by('created_at')
+    
+    # Mark received messages as read
+    Message.objects.filter(sender=other_user, receiver=request.user, is_read=False).update(is_read=True)
+    
+    return render(request, 'hotel/conversation.html', {
+        'other_user': other_user,
+        'messages': messages
+    })
+
+@login_required
+def create_community(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        if name:
+            community = Community.objects.create(name=name, description=description, creator=request.user)
+            community.members.add(request.user)
+            messages.success(request, f'Community "{name}" created successfully!')
+            return redirect('hotel:community_conversation', community_id=community.id)
+    return render(request, 'hotel/create_community.html')
+
+@login_required
+def join_community(request, invite_link):
+    community = get_object_or_404(Community, invite_link=invite_link)
+    if request.user not in community.members.all():
+        community.members.add(request.user)
+        messages.success(request, f'Joined community "{community.name}"!')
+    return redirect('hotel:community_conversation', community_id=community.id)
+
+@login_required
+def community_conversation(request, community_id):
+    community = get_object_or_404(Community, id=community_id, members=request.user)
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        if content:
+            CommunityMessage.objects.create(community=community, sender=request.user, content=content)
+        return redirect('hotel:community_conversation', community_id=community_id)
+    
+    messages = community.messages.all().order_by('created_at')
+    return render(request, 'hotel/community_conversation.html', {
+        'community': community,
+        'messages': messages
+    })
+
+@login_required
+def follow_user(request, user_id):
+    user_to_follow = get_object_or_404(CustomUser, id=user_id)
+    if user_to_follow != request.user:
+        connection, created = Connection.objects.get_or_create(
+            sender=request.user,
+            receiver=user_to_follow,
+            defaults={'status': 'accepted'}
+        )
+        if created:
+            messages.success(request, f'You are now following {user_to_follow.username}!')
+        else:
+            messages.info(request, f'You are already following {user_to_follow.username}.')
+    return redirect(request.META.get('HTTP_REFERER', 'hotel:social_feed'))
+
+@login_required
+def unfollow_user(request, user_id):
+    user_to_unfollow = get_object_or_404(CustomUser, id=user_id)
+    Connection.objects.filter(sender=request.user, receiver=user_to_unfollow).delete()
+    messages.success(request, f'Unfollowed {user_to_unfollow.username}.')
+    return redirect(request.META.get('HTTP_REFERER', 'hotel:social_feed'))

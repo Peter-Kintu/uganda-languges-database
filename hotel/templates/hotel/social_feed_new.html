@@ -330,14 +330,6 @@
     .post-content p {
         margin: 0 0 0.45rem;
     }
-
-    /* Truncate post content to 2 lines */
-    .post-content.collapsed {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
     .show-more-btn {
@@ -2110,18 +2102,25 @@
                                     <div class="author-meta">@{{ post.author.username }} · {{ post.created_at|date:"M j, g:i a" }}</div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 {% if post.author != request.user %}
-                                    <a href="{% url 'hotel:send_connection_request' post.author.id %}" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
-                                        Follow
-                                    </a>
+                                    {% if post.author.is_following %}
+                                        <a href="{% url 'hotel:unfollow_user' post.author.id %}" class="follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                                            Following
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'hotel:follow_user' post.author.id %}" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                                            Follow
+                                        </a>
+                                    {% endif %}
+                                    <span class="text-xs text-gray-500">{{ post.author.follower_count }} followers</span>
                                 {% endif %}
                                 <button class="post-menu" title="More options">⋯</button>
                             </div>
                         </div>
 
                         <!-- Content -->
-                        <div class="post-content collapsed" data-post-id="{{ post.id }}" lang="{{ current_lang|default:'en' }}" data-full-content="{% if post.is_translated and post.translated_content %}{{ post.translated_content }}{% else %}{{ post.content }}{% endif %}">
+                        <div class="post-content" data-post-id="{{ post.id }}" lang="{{ current_lang|default:'en' }}" data-full-content="{{ post.content }}">
                             {% if post.is_translated and post.translated_content %}
                                 {{ post.translated_content|urlize|linebreaks }}
                                 <div style="font-size: 12px; color: var(--gray-500); margin-top: 6px;">
@@ -2131,7 +2130,6 @@
                                 {{ post.content|urlize|linebreaks }}
                             {% endif %}
                         </div>
-                        <button class="show-more-btn" onclick="togglePostExpand(this, {{ post.id }})" style="display: none;">Show More</button>
 
                         <!-- Image -->
                         {% if post.image %}
@@ -2257,7 +2255,7 @@
                         <option value="teo">Teso (teo)</option>
                         <option value="xog">Soga (xog)</option>
                     </optgroup>
-                    <optgroup label="Other Languages">
+                    <optgroup label="Other African Languages">
                         <option value="sw">Swahili (sw)</option>
                         <option value="xh">Xhosa (xh)</option>
                         <option value="yo">Yoruba (yo)</option>
@@ -2265,8 +2263,6 @@
                         <option value="am">Amharic (am)</option>
                         <option value="luo">Luo (luo)</option>
                         <option value="luy">Luyia (luy)</option>
-                    </optgroup>
-                    <optgroup label="Other Languages">
                         <option value="rw">Kinyarwanda (rw)</option>
                         <option value="rn">Kirundi (rn)</option>
                         <option value="so">Somali (so)</option>
@@ -2283,6 +2279,7 @@
                         <option value="pt">🇵🇹 Portuguese</option>
                         <option value="ja">🇯🇵 Japanese</option>
                         <option value="zh">🇨🇳 Chinese</option>
+                        <option value="en">🇺🇸 English</option>
                     </optgroup>
                 </select>
             </div>
@@ -2515,6 +2512,23 @@
     }
 
     // Share Post
+    function likePost(postId, btn) {
+        fetch(`/hotel/like-post/${postId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(r => r.json())
+        .then(data => {
+            const likeIcon = document.getElementById(`like-icon-${postId}`);
+            const likeCount = document.getElementById(`like-count-${postId}`);
+            if (likeIcon && likeCount) {
+                likeCount.textContent = data.likes_count;
+                // Keep the icon as 🤍, just update count
+            }
+        })
+        .catch(e => console.error('Like failed:', e));
+    }
+
     function sharePost(postId) {
         // Get post content and author
         const postContentDiv = document.querySelector(`.post-content[data-post-id="${postId}"]`);
@@ -2609,7 +2623,7 @@
             body: JSON.stringify({
                 text: postContent,
                 target_language: lang,
-                source_language: 'en'
+                source_language: 'auto'
             }),
             headers: {
                 'Content-Type': 'application/json',

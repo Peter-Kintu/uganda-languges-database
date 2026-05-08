@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ community.name }} | MyUganda{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen py-16 px-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ community.name }}</h1>
+                    <p class="text-gray-500 text-sm">{{ community.members.count }} members</p>
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="copyInviteLink()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+                    Share Link
+                </button>
+            </div>
+        </div>
+
+        <!-- Community Info -->
+        {% if community.description %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <p class="text-gray-700">{{ community.description }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Invite Link -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Invite Link</h3>
+            <p class="text-gray-600 text-sm mb-3">Share this link to invite others to join the community:</p>
+            <div class="flex items-center space-x-2">
+                <input type="text" id="invite-link" value="{{ request.scheme }}://{{ request.get_host }}{% url 'hotel:join_community' community.invite_link %}" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+                <button onclick="copyInviteLink()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                    Copy
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div id="messages-container" class="h-96 overflow-y-auto p-6 space-y-4">
+                {% for message in messages %}
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
+                        <span class="text-indigo-600 font-semibold text-sm">{{ message.sender.username|first|upper }}</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <span class="font-semibold text-gray-900 text-sm">{{ message.sender.get_full_name|default:message.sender.username }}</span>
+                            <span class="text-gray-500 text-xs">{{ message.created_at|date:"M j, H:i" }}</span>
+                        </div>
+                        <p class="text-gray-700">{{ message.content }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <form method="post" class="flex space-x-4">
+                {% csrf_token %}
+                <input type="text" name="content" placeholder="Type a message..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto scroll to bottom of messages
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('messages-container');
+        container.scrollTop = container.scrollHeight;
+    });
+
+    function copyInviteLink() {
+        const link = '{{ request.scheme }}://{{ request.get_host }}{% url "hotel:join_community" community.invite_link %}';
+        navigator.clipboard.writeText(link).then(() => {
+            alert('Invite link copied to clipboard!');
+        }).catch(() => {
+            alert('Failed to copy link. Link: ' + link);
+        });
+    }
+</script>
+{% endblock %}

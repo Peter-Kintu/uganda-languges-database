@@ -81,16 +81,17 @@
  * Share to WhatsApp using Web Share API or fallback URL
  */
 function shareToWhatsApp(text, url) {
+    const fullText = `"${text}"\n\nCheck out this post: ${url}\n\nDiscover more at: https://africanaai.info`;
     if (navigator.share) {
         // Native Web Share API
         navigator.share({
             title: '{{ post.author.get_full_name|default:post.author.username }}\'s Post',
-            text: text,
+            text: fullText,
             url: url
         }).catch(err => console.log('Share failed:', err));
     } else {
         // Fallback: Open WhatsApp direct link
-        const message = encodeURIComponent(`"${text}"\n\nCheck out this post: ${url}`);
+        const message = encodeURIComponent(fullText);
         window.open(`https://wa.me/?text=${message}`, '_blank');
     }
 }
@@ -99,7 +100,8 @@ function shareToWhatsApp(text, url) {
  * Share to Twitter
  */
 function shareToTwitter(text, url) {
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    const fullText = `${text} ${url} #AfricanaAI`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(fullText)}&url=https://africanaai.info`;
     window.open(twitterUrl, '_blank', 'width=550,height=420');
 }
 
@@ -107,7 +109,8 @@ function shareToTwitter(text, url) {
  * Share to Telegram
  */
 function shareTelegram(text, url) {
-    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    const fullText = `${text}\n\n${url}\n\nDiscover more at: https://africanaai.info`;
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(fullText)}`;
     window.open(telegramUrl, '_blank');
 }
 
@@ -115,7 +118,8 @@ function shareTelegram(text, url) {
  * Copy share link to clipboard
  */
 function copyShareLink(url) {
-    navigator.clipboard.writeText(url).then(() => {
+    const fullUrl = `${url}\n\nDiscover more at: https://africanaai.info`;
+    navigator.clipboard.writeText(fullUrl).then(() => {
         const btn = event.target.closest('button');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Copied!';

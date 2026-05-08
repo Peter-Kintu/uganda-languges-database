@@ -69,3 +69,31 @@ class Share(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class Community(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_communities')
+    members = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='communities', blank=True)
+    invite_link = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Community: {self.name} by {self.creator.username}"
+
+    def save(self, *args, **kwargs):
+        if not self.invite_link:
+            self.invite_link = str(uuid.uuid4())[:8]
+        super().save(*args, **kwargs)
+
+class CommunityMessage(models.Model):
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Message in {self.community.name} by {self.sender.username}"
+
+    class Meta:
+        ordering = ['created_at']

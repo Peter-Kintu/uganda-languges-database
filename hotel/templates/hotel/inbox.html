@@ -1,62 +1,149 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Inbox | MyUganda{% endblock %}
+{% block title %}Messages & Communities | MyUganda{% endblock %}
 
 {% block content %}
 <div class="bg-gray-50 min-h-screen py-16 px-4">
     <div class="max-w-4xl mx-auto">
         <!-- Header Section with Profile Button Integration -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-            <h1 class="text-2xl font-bold text-gray-900">Messages</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Messages & Communities</h1>
             
             <!-- Styled Profile Button Integration -->
-            <a href="{% url 'users:profile' %}" class="flex items-center space-x-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-700 hover:text-indigo-600 hover:border-indigo-400 transition-colors shadow-sm">
-                <span class="nav-icon-container">
-                    <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            <div class="flex space-x-2">
+                <a href="{% url 'users:profile' %}" class="flex items-center space-x-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-700 hover:text-indigo-600 hover:border-indigo-400 transition-colors shadow-sm">
+                    <span class="nav-icon-container">
+                        <svg class="w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a7.488 7.488 0 0 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                    </span>
+                    <span class="text-base font-medium">View My Profile</span>
+                </a>
+                <a href="{% url 'hotel:create_community' %}" class="flex items-center space-x-2 bg-indigo-600 text-white rounded-lg px-4 py-2 hover:bg-indigo-700 transition-colors shadow-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                     </svg>
-                </span>
-                <span class="text-base font-medium">View My Profile</span>
-            </a>
+                    <span class="text-base font-medium">Create Community</span>
+                </a>
+            </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            {% if messages %}
-                <div class="space-y-4 mb-6">
-                    {% for message in messages %}
-                    <div class="bg-white border border-gray-200 rounded-lg p-4 transition-all hover:shadow-md {% if not message.is_read %}bg-blue-50 border-blue-200{% endif %}">
-                        <div class="flex items-start space-x-3">
-                            <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
-                                <span class="text-indigo-600 font-semibold">{{ message.sender.username|first|upper }}</span>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between mb-2">
-                                    <div class="flex items-center space-x-2">
-                                        <h3 class="font-semibold text-gray-900">{{ message.sender.get_full_name|default:message.sender.username }}</h3>
-                                        {% if not message.is_read %}
-                                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">New</span>
-                                        {% endif %}
-                                    </div>
-                                    <span class="text-gray-500 text-xs">{{ message.created_at|timesince }} ago</span>
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex">
+                    <button id="messages-tab" class="tab-button active px-6 py-3 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600">
+                        Messages
+                    </button>
+                    <button id="communities-tab" class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Communities
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Messages Tab Content -->
+            <div id="messages-content" class="tab-content p-6">
+                {% if messages %}
+                    <div class="space-y-4">
+                        {% for message in messages %}
+                        <a href="{% url 'hotel:conversation' message.sender.id %}" class="block bg-white border border-gray-200 rounded-lg p-4 transition-all hover:shadow-md hover:border-indigo-300 {% if not message.is_read %}bg-blue-50 border-blue-200{% endif %}">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
+                                    <span class="text-indigo-600 font-semibold">{{ message.sender.username|first|upper }}</span>
                                 </div>
-                                <p class="text-gray-700 leading-relaxed">{{ message.content }}</p>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center space-x-2">
+                                            <h3 class="font-semibold text-gray-900">{{ message.sender.get_full_name|default:message.sender.username }}</h3>
+                                            {% if not message.is_read %}
+                                                <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">New</span>
+                                            {% endif %}
+                                        </div>
+                                        <span class="text-gray-500 text-xs">{{ message.created_at|timesince }} ago</span>
+                                    </div>
+                                    <p class="text-gray-700 leading-relaxed">{{ message.content|truncatechars:100 }}</p>
+                                </div>
                             </div>
-                        </div>
+                        </a>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="text-center py-12">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No messages</h3>
-                    <p class="mt-1 text-sm text-gray-500">You haven't received any messages yet.</p>
-                </div>
-            {% endif %}
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No messages</h3>
+                        <p class="mt-1 text-sm text-gray-500">You haven't received any messages yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Communities Tab Content -->
+            <div id="communities-content" class="tab-content p-6 hidden">
+                {% if communities %}
+                    <div class="space-y-4">
+                        {% for community in communities %}
+                        <a href="{% url 'hotel:community_conversation' community.id %}" class="block bg-white border border-gray-200 rounded-lg p-4 transition-all hover:shadow-md hover:border-indigo-300">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-semibold text-gray-900">{{ community.name }}</h3>
+                                        <span class="text-gray-500 text-xs">{{ community.created_at|timesince }} ago</span>
+                                    </div>
+                                    <p class="text-gray-700 leading-relaxed">{{ community.description|truncatechars:100|default:"No description" }}</p>
+                                    <div class="mt-2 text-sm text-gray-500">
+                                        {{ community.members.count }} members
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No communities</h3>
+                        <p class="mt-1 text-sm text-gray-500">Create your first community to start connecting with others.</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Tab switching functionality
+    document.getElementById('messages-tab').addEventListener('click', function() {
+        showTab('messages');
+    });
+    document.getElementById('communities-tab').addEventListener('click', function() {
+        showTab('communities');
+    });
+
+    function showTab(tabName) {
+        // Hide all tab contents
+        document.getElementById('messages-content').classList.add('hidden');
+        document.getElementById('communities-content').classList.add('hidden');
+        
+        // Remove active class from all tabs
+        document.getElementById('messages-tab').classList.remove('active', 'text-indigo-600', 'border-indigo-600');
+        document.getElementById('messages-tab').classList.add('text-gray-500');
+        document.getElementById('communities-tab').classList.remove('active', 'text-indigo-600', 'border-indigo-600');
+        document.getElementById('communities-tab').classList.add('text-gray-500');
+        
+        // Show selected tab content and activate tab
+        document.getElementById(tabName + '-content').classList.remove('hidden');
+        document.getElementById(tabName + '-tab').classList.add('active', 'text-indigo-600', 'border-indigo-600');
+        document.getElementById(tabName + '-tab').classList.remove('text-gray-500');
+    }
+</script>
 {% endblock %}
 ```[cite: 1]
