@@ -2159,24 +2159,16 @@
                         <!-- Footer Actions -->
                         <div class="post-footer">
                             <button class="post-action" onclick="likePost({{ post.id }}, this)" title="Like this post">
-                                <span id="like-icon-{{ post.id }}">🤍</span>
+                                <span id="like-icon-{{ post.id }}">👍</span>
                                 <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
                             </button>
                             <button class="post-action" onclick="toggleComments({{ post.id }}, this)" title="View comments">
                                 <span>💬</span>
                                 <span id="comment-count-{{ post.id }}">{{ post.comments.count }}</span>
                             </button>
-                            <button class="post-action" onclick="sharePost({{ post.id }})" title="Share this post">
-                                <span>🔄</span>
-                                <span>{{ post.shares.count|default:'0' }}</span>
-                            </button>
                             <button class="post-action" onclick="openTranslateModal({{ post.id }})" title="Translate post">
                                 <span>🌐</span>
                                 <span>Translate</span>
-                            </button>
-                            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')" title="Send message">
-                                <span>✉️</span>
-                                <span>Message</span>
                             </button>
                         </div>
 
@@ -3031,7 +3023,7 @@
                 while (tempDiv.firstChild) {
                     feed.insertBefore(tempDiv.firstChild, sentinelContainer);
                 }
-                // Reinitialize "Show More" buttons for newly loaded posts
+                // Reinitialize functionality for newly inserted posts, including Show More.
                 initShowMoreButtons();
                 currentPage = nextPage;
                 if (!data.has_next) {

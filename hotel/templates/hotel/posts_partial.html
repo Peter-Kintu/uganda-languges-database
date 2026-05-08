@@ -3,30 +3,47 @@
         <!-- Header -->
         <div class="post-header">
             <div class="post-author">
-                <div class="avatar" style="width: 40px; height: 40px;">{{ post.author.first_name|slice:':1'|upper }}</div>
+                <div class="avatar" style="width: 40px; height: 40px;">
+                    {% if post.author.profile_image %}
+                        <img src="{{ post.author.profile_image.url }}" alt="{{ post.author.username }}" class="w-full h-full object-cover rounded-full">
+                    {% else %}
+                        {{ post.author.first_name|slice:':1'|upper }}
+                    {% endif %}
+                </div>
                 <div class="post-author-info">
                     <div class="author-name">{{ post.author.get_full_name }}</div>
                     <div class="author-meta">@{{ post.author.username }} · {{ post.created_at|date:"M j, g:i a" }}</div>
                 </div>
             </div>
-            <div class="post-menu">
-                <button class="post-menu-btn" onclick="togglePostMenu({{ post.id }})">⋯</button>
-                <div class="post-menu-dropdown" id="menu-{{ post.id }}">
-                    <button onclick="sharePost({{ post.id }})">Share</button>
-                    <button onclick="reportPost({{ post.id }})">Report</button>
-                </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                {% if post.author != request.user %}
+                    {% if post.author.is_following %}
+                        <a href="{% url 'hotel:unfollow_user' post.author.id %}" class="follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                            Following
+                        </a>
+                    {% else %}
+                        <a href="{% url 'hotel:follow_user' post.author.id %}" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors">
+                            Follow
+                        </a>
+                    {% endif %}
+                    <span class="text-xs text-gray-500">{{ post.author.follower_count }} followers</span>
+                {% endif %}
+                <button class="post-menu" title="More options">⋯</button>
             </div>
         </div>
 
         <!-- Content -->
-        <div class="post-content">
+        <div class="post-content" data-post-id="{{ post.id }}" lang="{{ current_lang|default:'en' }}" data-full-content="{{ post.content }}">
             {% if post.is_translated and post.translated_content %}
                 {{ post.translated_content|urlize|linebreaks }}
-                <div class="translation-note" style="font-size: 12px; color: #6b7280; margin-top: 6px;">Translated from English</div>
+                <div style="font-size: 12px; color: var(--gray-500); margin-top: 6px;">
+                    <em>Translated from English to {{ current_lang }}</em>
+                </div>
             {% else %}
                 {{ post.content|urlize|linebreaks }}
             {% endif %}
         </div>
+        <button class="show-more-btn" onclick="togglePostExpand(this, {{ post.id }})" style="display: none;">Show More</button>
 
         <!-- Image -->
         {% if post.image %}

@@ -113,7 +113,11 @@ def social_feed(request):
 
     # Handle AJAX requests for infinite scroll
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
-        html = render_to_string('hotel/posts_partial.html', {'posts': posts, 'request': request})
+        html = render_to_string('hotel/posts_partial.html', {
+            'posts': posts,
+            'request': request,
+            'current_lang': target_lang,
+        })
         return JsonResponse({
             'html': html,
             'has_next': page_obj.has_next(),
