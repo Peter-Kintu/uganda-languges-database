@@ -16,6 +16,21 @@ import os
 
 INVESTOR_CREATE_PASSCODE = getattr(settings, 'INVESTOR_CREATE_PASSCODE', '23882')
 
+
+def _safe_cache_get(key, default=None):
+    try:
+        return cache.get(key, default)
+    except Exception as e:
+        print(f"Cache get failed: {e}")
+        return default
+
+
+def _safe_cache_set(key, value, timeout=None):
+    try:
+        cache.set(key, value, timeout)
+    except Exception as e:
+        print(f"Cache set failed: {e}")
+
 @login_required
 def social_feed(request):
     # 1. Get the Filter Type from URL parameters (e.g., ?type=images)
@@ -275,7 +290,8 @@ def translate_smart(text, target_lang, source_lang='en'):
 
     # Cache hit = instant return, saves API calls
     cache_key = f"trans_{hash(text)}_{source_lang}_{target_lang}"
-    if cached := cache.get(cache_key):
+    cached = _safe_cache_get(cache_key)
+    if cached:
         return cached
 
     translated = text
@@ -295,7 +311,7 @@ def translate_smart(text, target_lang, source_lang='en'):
                 result = r.json()
                 translated = result.get('translated', text)
                 if translated and translated != text:
-                    cache.set(cache_key, translated, 86400)  # Cache 24h
+                    _safe_cache_set(cache_key, translated, 86400)  # Cache 24h
                     return translated
         except requests.Timeout:
             print(f"NLLB timeout for {target_lang} ({target_code}), trying Tier 2...")
@@ -320,7 +336,7 @@ def translate_smart(text, target_lang, source_lang='en'):
             if res.status_code == 200:
                 translated = res.json().get('translatedText', text)
                 if translated and translated != text:
-                    cache.set(cache_key, translated, 86400)
+                    _safe_cache_set(cache_key, translated, 86400)
                     return translated
             elif res.status_code == 429:
                 print(f"LibreTranslate rate limited (429) for {target_lang}, falling to Tier 3...")
@@ -355,7 +371,7 @@ def translate_smart(text, target_lang, source_lang='en'):
             if result.get('responseStatus') == 200:
                 translated = result.get('responseData', {}).get('translatedText', text)
                 if translated and translated != text and translated.lower() != 'undefined':
-                    cache.set(cache_key, translated, 86400)
+                    _safe_cache_set(cache_key, translated, 86400)
                     return translated
             else:
                 print(f"MyMemory status {result.get('responseStatus')} for {target_lang}")
@@ -473,7 +489,8 @@ def gemini_translate(request):
         
         # Check cache first
         cache_key = f"trans_{hash(text)}_{source_language}_{target_language}"
-        if cached := cache.get(cache_key):
+        cached = _safe_cache_get(cache_key)
+        if cached:
             return JsonResponse({
                 'success': True,
                 'translated': cached,
