@@ -10,6 +10,7 @@ from .forms import PostForm
 from users.models import CustomUser
 from django.conf import settings
 from django.template.loader import render_to_string
+import requests
 import json
 import os
 
@@ -86,15 +87,6 @@ def social_feed(request):
         page_obj = paginator.page(1)
     posts = list(page_obj.object_list)
 
-    # Handle AJAX requests for infinite scroll
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
-        html = render_to_string('hotel/posts_partial.html', {'posts': posts, 'request': request})
-        return JsonResponse({
-            'html': html,
-            'has_next': page_obj.has_next(),
-            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
-        })
-
     # Translate posts if requested
     if translate_feed and target_lang != 'en':
         for post in posts:
@@ -103,6 +95,15 @@ def social_feed(request):
                 if translated and translated != post.content:
                     post.translated_content = translated
                     post.is_translated = True
+
+    # Handle AJAX requests for infinite scroll
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        html = render_to_string('hotel/posts_partial.html', {'posts': posts, 'request': request})
+        return JsonResponse({
+            'html': html,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
 
     connections = Connection.objects.filter(
         Q(sender=request.user) | Q(receiver=request.user),

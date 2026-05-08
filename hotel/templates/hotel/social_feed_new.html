@@ -2586,7 +2586,7 @@
             return;
         }
         
-        const postContent = postElement.textContent.trim();
+        const postContent = (postElement.dataset.fullContent || postElement.textContent).trim();
         
         fetch('/hotel/gemini-translate/', {
             method: 'POST',

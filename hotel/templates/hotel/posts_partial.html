@@ -20,7 +20,12 @@
 
         <!-- Content -->
         <div class="post-content">
-            <p>{{ post.content }}</p>
+            {% if post.is_translated and post.translated_content %}
+                {{ post.translated_content|urlize|linebreaks }}
+                <div class="translation-note" style="font-size: 12px; color: #6b7280; margin-top: 6px;">Translated from English</div>
+            {% else %}
+                {{ post.content|urlize|linebreaks }}
+            {% endif %}
         </div>
 
         <!-- Image -->
