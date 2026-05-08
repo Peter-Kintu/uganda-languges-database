@@ -445,6 +445,7 @@ def fetch_careerjet_data(request, keywords, location=""):
         'Content-Type': 'application/json',
         'User-Agent': 'AfricanaAI-JobSearch/1.0',
         'Accept': 'application/json',
+        'Referer': 'https://www.africanaai.info',
     }
 
     display_location = normalized_location if normalized_location else 'Worldwide'
