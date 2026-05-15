@@ -450,12 +450,48 @@
         color: #111827;
     }
 
-    .comments-section {
-        margin-top: 12px;
-        background: rgba(249, 250, 251, 0.6);
-        border-radius: 12px;
-        border: 1px solid rgba(229, 231, 235, 0.6);
-        padding: 12px;
+        .reaction-picker {
+            position: absolute;
+            display: inline-flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(209, 213, 219, 0.9);
+            border-radius: 999px;
+            padding: 8px 10px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+            z-index: 1002;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(6px) scale(0.95);
+        }
+
+        .reaction-picker.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
+        }
+
+        .reaction-btn {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 1px solid rgba(229, 231, 235, 0.9);
+            background: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+
+        .reaction-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+            border-color: rgba(99, 102, 241, 0.25);
+        }
+
     }
 
     .comment {
@@ -2158,7 +2194,7 @@
 
                         <!-- Footer Actions -->
                         <div class="post-footer">
-                            <button class="post-action" onclick="likePost({{ post.id }}, this)" title="Like this post">
+                            <button class="post-action" onclick="openReactionPicker({{ post.id }}, this)" data-post-id="{{ post.id }}" title="React to this post">
                                 <span id="like-icon-{{ post.id }}">👍</span>
                                 <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
                             </button>
@@ -2362,6 +2398,14 @@
     </div>
 </div>
 
+<div id="reaction-picker" class="reaction-picker">
+    <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'like')" title="Like">👍</button>
+    <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'celebrate')" title="Celebrate">🎉</button>
+    <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'love')" title="Love">❤️</button>
+    <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'support')" title="Support">💪</button>
+    <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'funny')" title="Funny">😄</button>
+</div>
+
 <!-- Image Lightbox Modal -->
 <div id="image-modal" class="image-modal">
     <div class="image-modal-content">
@@ -2378,29 +2422,7 @@
     let currentLanguage = localStorage.getItem('preferredLanguage') || 'en';
 
     // Like Post
-    function likePost(postId, btn) {
-        fetch(`/hotel/like-post/${postId}/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken }
-        })
-        .then(r => r.json())
-        .then(data => {
-            const likeIcon = document.getElementById(`like-icon-${postId}`);
-            const likeCount = document.getElementById(`like-count-${postId}`);
-            if (likeIcon.textContent === '🤍') {
-                likeIcon.textContent = '❤️';
-                btn.classList.add('liked');
-            } else {
-                likeIcon.textContent = '🤍';
-                btn.classList.remove('liked');
-            }
-            likeCount.textContent = data.likes_count;
-        })
-        .catch(e => {
-            console.error('Like failed:', e);
-            alert('Failed to like post. Please try again.');
-        });
-    }
+    // This function is intentionally declared later with reaction support.
 
     // Toggle Follow
     function toggleFollow(userId, btn) {
@@ -2579,8 +2601,38 @@
         }
     }
 
-    // Share Post
-    function likePost(postId, btn) {
+    function openReactionPicker(postId, btn) {
+        const picker = document.getElementById('reaction-picker');
+        if (!picker) return;
+
+        reactionTarget = { postId, btn };
+        const rect = btn.getBoundingClientRect();
+        const left = rect.left + window.pageXOffset + rect.width / 2 - picker.offsetWidth / 2;
+        const top = rect.top + window.pageYOffset - picker.offsetHeight - 12;
+
+        picker.style.left = `${Math.max(12, left)}px`;
+        picker.style.top = `${Math.max(12, top)}px`;
+        picker.style.display = 'inline-flex';
+        picker.classList.add('visible');
+    }
+
+    function hideReactionPicker() {
+        const picker = document.getElementById('reaction-picker');
+        if (!picker) return;
+        picker.classList.remove('visible');
+        picker.style.display = 'none';
+    }
+
+    function selectReaction(postId, reactionType) {
+        const btn = document.querySelector(`button[data-post-id='${postId}']`);
+        if (!btn) return;
+        likePost(postId, btn, reactionType);
+        hideReactionPicker();
+    }
+
+    let reactionTarget = null;
+
+    function likePost(postId, btn, reactionType = 'like') {
         fetch(`/hotel/like-post/${postId}/`, {
             method: 'POST',
             headers: { 'X-CSRFToken': csrfToken }
@@ -2590,11 +2642,22 @@
             const likeIcon = document.getElementById(`like-icon-${postId}`);
             const likeCount = document.getElementById(`like-count-${postId}`);
             if (likeIcon && likeCount) {
+                const emojiMap = {
+                    like: '👍',
+                    celebrate: '🎉',
+                    love: '❤️',
+                    support: '💪',
+                    funny: '😄'
+                };
+                likeIcon.textContent = emojiMap[reactionType] || '👍';
                 likeCount.textContent = data.likes_count;
-                // Keep the icon as 🤍, just update count
+                btn.classList.add('liked');
             }
         })
-        .catch(e => console.error('Like failed:', e));
+        .catch(e => {
+            console.error('Like failed:', e);
+            alert('Failed to like post. Please try again.');
+        });
     }
 
     function sharePost(postId) {
@@ -2772,7 +2835,6 @@
         .then(data => {
             if (data.success) {
                 closeMessageModal();
-                alert(data.message || 'Message sent successfully!');
             } else {
                 alert(data.message || 'Unable to send message.');
             }
@@ -2970,6 +3032,17 @@
             document.body.style.background = 'linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%)';
         }
     }
+
+    document.addEventListener('click', function(event) {
+        const picker = document.getElementById('reaction-picker');
+        if (!picker) return;
+        const isOpen = picker.classList.contains('visible');
+        if (!isOpen) return;
+        if (event.target.closest('#reaction-picker') || event.target.closest('.post-action[data-post-id]')) {
+            return;
+        }
+        hideReactionPicker();
+    });
 
     // Toggle post expand/collapse for "Show More" functionality
     function togglePostExpand(btn, postId) {

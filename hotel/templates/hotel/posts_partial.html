@@ -59,7 +59,7 @@
 
         <!-- Footer -->
         <div class="post-footer">
-            <button class="post-action" onclick="likePost({{ post.id }}, this)" title="Like this post">
+            <button class="post-action" onclick="openReactionPicker({{ post.id }}, this)" data-post-id="{{ post.id }}" title="React to this post">
                 <span id="like-icon-{{ post.id }}">👍</span>
                 <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
             </button>
