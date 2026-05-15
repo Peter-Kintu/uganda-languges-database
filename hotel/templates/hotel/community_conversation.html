@@ -42,11 +42,22 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Invite Link</h3>
             <p class="text-gray-600 text-sm mb-3">Share this link to invite others to join the community:</p>
-            <div class="flex items-center space-x-2">
-                <input type="text" id="invite-link" value="{{ request.scheme }}://{{ request.get_host }}{% url 'hotel:join_community' community.invite_link %}" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
-                <button onclick="copyInviteLink()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-                    Copy
-                </button>
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="invite-link" value="{{ request.scheme }}://{{ request.get_host }}{% url 'hotel:join_community' community.invite_link %}" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+                    <button onclick="copyInviteLink()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                        Copy
+                    </button>
+                </div>
+                <a id="join-community-link" href="{% url 'hotel:join_community' community.invite_link %}" class="inline-flex items-center justify-center rounded-lg border-2 border-indigo-500 bg-indigo-100 px-4 py-3 text-indigo-700 font-semibold hover:bg-indigo-200 transition-all" {% if request.user in community.members.all %}style="display: none;"{% endif %}>Join This Community</a>
+                {% if request.user in community.members.all %}
+                <div class="inline-flex items-center justify-center rounded-lg border-2 border-green-500 bg-green-100 px-4 py-3 text-green-700 font-semibold">✓ Member</div>
+                {% endif %}
+                <div class="flex flex-wrap gap-2 text-sm">
+                    <a id="whatsapp-share" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-green-500 bg-green-50 px-3 py-2 text-green-700 hover:bg-green-100">Share on WhatsApp</a>
+                    <a id="linkedin-share" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-slate-700 hover:bg-slate-100">Share on LinkedIn</a>
+                    <button type="button" onclick="openShareSheet()" class="inline-flex items-center justify-center rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-indigo-700 hover:bg-indigo-100">Share</button>
+                </div>
             </div>
         </div>
 
@@ -63,7 +74,45 @@
                             <span class="font-semibold text-gray-900 text-sm">{{ message.sender.get_full_name|default:message.sender.username }}</span>
                             <span class="text-gray-500 text-xs">{{ message.created_at|date:"M j, H:i" }}</span>
                         </div>
-                        <p class="text-gray-700">{{ message.content }}</p>
+                        {% with lower=message.content|lower %}
+                            {% if "data:image" in lower %}
+                                <img src="{{ message.content }}" alt="Photo" class="max-w-full rounded-xl border border-slate-200" />
+                            {% elif "data:video" in lower %}
+                                <video controls class="max-w-full rounded-xl border border-slate-200" style="max-height: 300px;">
+                                    <source src="{{ message.content }}">
+                                    Your browser does not support the video tag.
+                                </video>
+                            {% elif "data:application/pdf" in lower %}
+                                <div class="bg-red-50 border border-red-200 rounded-lg p-3 inline-block">
+                                    <a href="{{ message.content }}" download="document.pdf" class="inline-flex items-center gap-2 text-red-700 hover:text-red-900 font-semibold">
+                                        <span>📄 PDF Document</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    </a>
+                                </div>
+                            {% elif "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document" in lower or "data:application/msword" in lower %}
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 inline-block">
+                                    <a href="{{ message.content }}" download="document.docx" class="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold">
+                                        <span>📋 Word Document</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    </a>
+                                </div>
+                            {% elif "http" in lower %}
+                                {% if "gif" in lower or "png" in lower or "jpg" in lower or "jpeg" in lower or "mp4" in lower or "webm" in lower %}
+                                    {% if "mp4" in lower or "webm" in lower or "video" in lower %}
+                                        <video controls class="max-w-full rounded-xl border border-slate-200" style="max-height: 300px;">
+                                            <source src="{{ message.content }}">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    {% else %}
+                                        <img src="{{ message.content }}" alt="Shared GIF" class="max-w-full rounded-xl border border-slate-200" />
+                                    {% endif %}
+                                {% else %}
+                                    <p class="text-gray-700">{{ message.content }}</p>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-gray-700">{{ message.content }}</p>
+                            {% endif %}
+                        {% endwith %}
                     </div>
                 </div>
                 {% endfor %}
@@ -72,31 +121,204 @@
 
         <!-- Message Input -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <form method="post" class="flex space-x-4">
+            <form method="post" class="flex flex-col gap-4">
                 {% csrf_token %}
-                <input type="text" name="content" placeholder="Type a message..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    Send
-                </button>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="toggleEmojiPicker()" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100">😀 Emoji</button>
+                    <button type="button" onclick="toggleGifPanel()" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100">GIF</button>
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <span>📷 Photo</span>
+                        <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="uploadPhoto()">
+                    </label>
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <span>🎥 Video</span>
+                        <input type="file" id="video-input" accept="video/*" class="hidden" onchange="uploadVideo()">
+                    </label>
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <span>📄 PDF</span>
+                        <input type="file" id="pdf-input" accept=".pdf" class="hidden" onchange="uploadPDF()">
+                    </label>
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <span>📋 Word</span>
+                        <input type="file" id="word-input" accept=".doc,.docx,.DOC,.DOCX" class="hidden" onchange="uploadWord()">
+                    </label>
+                </div>
+                <div id="emoji-picker" class="hidden flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <button type="button" onclick="insertEmoji('😀')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😀</button>
+                    <button type="button" onclick="insertEmoji('😍')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😍</button>
+                    <button type="button" onclick="insertEmoji('😂')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😂</button>
+                    <button type="button" onclick="insertEmoji('😎')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😎</button>
+                    <button type="button" onclick="insertEmoji('😢')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😢</button>
+                    <button type="button" onclick="insertEmoji('🎉')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🎉</button>
+                    <button type="button" onclick="insertEmoji('🙌')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🙌</button>
+                    <button type="button" onclick="insertEmoji('💬')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">💬</button>
+                    <button type="button" onclick="insertEmoji('❤️')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">❤️</button>
+                    <button type="button" onclick="insertEmoji('🔥')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🔥</button>
+                </div>
+                <div id="gif-panel" class="hidden flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div class="flex gap-2">
+                        <input id="gif-search" type="text" placeholder="Search GIFs" class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" onclick="searchGif()" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Search</button>
+                    </div>
+                    <div id="gif-results" class="grid grid-cols-2 gap-2"></div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <input id="message-input" type="text" name="content" placeholder="Type a message or paste gif URL..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Send</button>
+                </div>
             </form>
         </div>
     </div>
 </div>
 
 <script>
-    // Auto scroll to bottom of messages
+    const inviteLink = '{{ request.scheme }}://{{ request.get_host }}{% url "hotel:join_community" community.invite_link %}';
+    const communityName = '{{ community.name|escapejs }}';
+
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('messages-container');
-        container.scrollTop = container.scrollHeight;
+        if (container) container.scrollTop = container.scrollHeight;
+        const whatsapp = document.getElementById('whatsapp-share');
+        const linkedin = document.getElementById('linkedin-share');
+        if (whatsapp) {
+            whatsapp.href = `https://wa.me/?text=${encodeURIComponent(`Join ${communityName} on MyUganda: ${inviteLink}`)}`;
+        }
+        if (linkedin) {
+            linkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(inviteLink)}`;
+        }
     });
 
     function copyInviteLink() {
-        const link = '{{ request.scheme }}://{{ request.get_host }}{% url "hotel:join_community" community.invite_link %}';
-        navigator.clipboard.writeText(link).then(() => {
+        navigator.clipboard.writeText(inviteLink).then(() => {
             alert('Invite link copied to clipboard!');
         }).catch(() => {
-            alert('Failed to copy link. Link: ' + link);
+            alert('Failed to copy link. Link: ' + inviteLink);
         });
+    }
+
+    function openShareSheet() {
+        if (navigator.share) {
+            navigator.share({
+                title: `Join ${communityName} on MyUganda`,
+                text: `Join ${communityName} community on MyUganda`,
+                url: inviteLink,
+            }).catch(() => {});
+        } else {
+            window.open(inviteLink, '_blank');
+        }
+    }
+
+    function toggleEmojiPicker() {
+        const picker = document.getElementById('emoji-picker');
+        picker.classList.toggle('hidden');
+        document.getElementById('gif-panel').classList.add('hidden');
+    }
+
+    function toggleGifPanel() {
+        const panel = document.getElementById('gif-panel');
+        panel.classList.toggle('hidden');
+        document.getElementById('emoji-picker').classList.add('hidden');
+    }
+
+    function insertEmoji(emoji) {
+        const input = document.getElementById('message-input');
+        input.value += emoji;
+        input.focus();
+    }
+
+    function searchGif() {
+        const query = document.getElementById('gif-search').value.trim();
+        const results = document.getElementById('gif-results');
+        if (!query) {
+            results.innerHTML = '<p class="text-sm text-slate-500">Type something to search GIFs.</p>';
+            return;
+        }
+        results.innerHTML = '<p class="text-sm text-slate-500">Loading GIFs…</p>';
+        fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=LIVDSRZULELA&limit=8`)
+            .then(res => res.json())
+            .then(data => {
+                results.innerHTML = '';
+                (data.results || []).forEach(item => {
+                    const media = item.media[0];
+                    const gifUrl = media?.gif?.url || media?.tinygif?.url || media?.mediumgif?.url;
+                    if (!gifUrl) return;
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'overflow-hidden rounded-xl border border-slate-200 bg-white';
+                    button.innerHTML = `<img src="${gifUrl}" alt="GIF" class="h-24 w-full object-cover" />`;
+                    button.onclick = () => chooseGif(gifUrl);
+                    results.appendChild(button);
+                });
+                if (!results.children.length) {
+                    results.innerHTML = '<p class="text-sm text-slate-500">No GIFs found.</p>';
+                }
+            })
+            .catch(() => {
+                results.innerHTML = '<p class="text-sm text-red-500">Unable to load GIFs. Try again later.</p>';
+            });
+    }
+
+    function chooseGif(url) {
+        const input = document.getElementById('message-input');
+        input.value = url;
+        document.getElementById('gif-panel').classList.add('hidden');
+        input.focus();
+    }
+
+    function uploadPhoto() {
+        const input = document.getElementById('photo-input');
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const messageInput = document.getElementById('message-input');
+            messageInput.value = e.target.result;
+            messageInput.focus();
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function uploadVideo() {
+        const input = document.getElementById('video-input');
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const messageInput = document.getElementById('message-input');
+            messageInput.value = e.target.result;
+            messageInput.focus();
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function uploadPDF() {
+        const input = document.getElementById('pdf-input');
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const messageInput = document.getElementById('message-input');
+            messageInput.value = e.target.result;
+            messageInput.focus();
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function uploadWord() {
+        const input = document.getElementById('word-input');
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const messageInput = document.getElementById('message-input');
+            messageInput.value = e.target.result;
+            messageInput.focus();
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
     }
 </script>
 {% endblock %}

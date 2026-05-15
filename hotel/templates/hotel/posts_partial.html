@@ -59,20 +59,23 @@
 
         <!-- Footer -->
         <div class="post-footer">
-            <button class="post-action" onclick="likePost({{ post.id }}, this)">
-                <span>👍 {{ post.likes.count }}</span>
+            <button class="post-action" onclick="likePost({{ post.id }}, this)" title="Like this post">
+                <span id="like-icon-{{ post.id }}">👍</span>
+                <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
             </button>
-            <button class="post-action" onclick="toggleComments({{ post.id }}, this)">
-                <span>💬 {{ post.comments.count }}</span>
+            <button class="post-action" onclick="toggleComments({{ post.id }}, this)" title="View comments">
+                <span>💬</span>
+                <span id="comment-count-{{ post.id }}">{{ post.comments.count }}</span>
             </button>
-            <button class="post-action" onclick="openTranslateModal({{ post.id }})">
-                <span>🌐 Translate</span>
+            <button class="post-action" onclick="openTranslateModal({{ post.id }})" title="Translate post">
+                <span>🌐</span>
+                <span>Translate</span>
             </button>
-            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')">
+            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')" title="Send a message">
                 <span>✉️</span>
                 <span>Message</span>
             </button>
-            <button class="post-action" onclick="sharePost({{ post.id }})">
+            <button class="post-action" onclick="sharePost({{ post.id }})" title="Share post">
                 <span>🔗</span>
                 <span>Share</span>
             </button>
@@ -93,8 +96,8 @@
                         </div>
                         <div class="comment-text">{{ comment.content }}</div>
                         <div class="comment-actions">
-                            <button class="comment-action-btn" onclick="likeComment(this)">👍 {{ comment.likes.count }}</button>
-                            <button class="comment-action-btn" onclick="replyToComment(this)">Reply</button>
+                            <button class="comment-action-btn" onclick="likeComment(this)" title="Like comment">👍 {{ comment.likes.count }}</button>
+                            <button class="comment-action-btn" onclick="replyToComment(this)" title="Reply to comment">Reply</button>
                         </div>
                     </div>
                 </div>
@@ -104,7 +107,7 @@
                     <div class="comment-avatar">{{ request.user.first_name|slice:':1'|upper }}</div>
                 </div>
                 <form class="comment-input" onsubmit="addComment({{ post.id }}, this); return false;">
-                    <input type="text" placeholder="Write a comment..." required>
+                    <input type="text" name="content" class="comment-input" placeholder="Write a comment..." required>
                     <button type="submit">Post</button>
                 </form>
             </div>

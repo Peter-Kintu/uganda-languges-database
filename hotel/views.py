@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from urllib.parse import quote
 from .models import Post, Comment, Like, Connection, Message, Share, Community, CommunityMessage
 from .forms import PostForm
 from users.models import CustomUser
@@ -407,15 +408,33 @@ def inbox(request):
 
 @login_required
 def inbox_messages(request):
-    messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')
+    messages_list = Message.objects.filter(
+        Q(sender=request.user) | Q(receiver=request.user)
+    ).order_by('-created_at')
+
+    conversations = {}
+    for msg in messages_list:
+        partner = msg.receiver if msg.sender == request.user else msg.sender
+        if partner.id not in conversations:
+            conversations[partner.id] = {
+                'grouper': partner,
+                'list': []
+            }
+        conversations[partner.id]['list'].append(msg)
+
+    message_groups = list(conversations.values())
+    unread_messages = messages_list.filter(receiver=request.user, is_read=False)[:5]
+    unread_messages_count = messages_list.filter(receiver=request.user, is_read=False).count()
     communities = Community.objects.filter(members=request.user).order_by('-created_at')
-    unread_messages = messages_list.filter(is_read=False)[:5]
-    unread_count = messages_list.filter(is_read=False).count()
+    notifications = Message.objects.none()
+
     return render(request, 'hotel/inbox.html', {
+        'message_groups': message_groups,
         'messages': messages_list,
         'communities': communities,
         'unread_messages': unread_messages,
-        'unread_count': unread_count,
+        'unread_messages_count': unread_messages_count,
+        'notifications': notifications,
     })
 
 @login_required
@@ -607,9 +626,11 @@ def create_community(request):
             return redirect('hotel:community_conversation', community_id=community.id)
     return render(request, 'hotel/create_community.html')
 
-@login_required
 def join_community(request, invite_link):
     community = get_object_or_404(Community, invite_link=invite_link)
+    if not request.user.is_authenticated:
+        next_url = quote(request.path)
+        return redirect(f"{settings.LOGIN_URL}?next={next_url}")
     if request.user not in community.members.all():
         community.members.add(request.user)
         messages.success(request, f'Joined community "{community.name}"!')

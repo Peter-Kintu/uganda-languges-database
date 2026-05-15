@@ -4,58 +4,248 @@
 {% block title %}Conversation with {{ other_user.get_full_name|default:other_user.username }} | MyUganda{% endblock %}
 
 {% block content %}
-<div class="bg-gray-50 min-h-screen py-16 px-4">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center space-x-4">
-                <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </a>
-                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <span class="text-indigo-600 font-semibold">{{ other_user.username|first|upper }}</span>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">{{ other_user.get_full_name|default:other_user.username }}</h1>
-                    <p class="text-gray-500 text-sm">Active now</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Messages Container -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div id="messages-container" class="h-96 overflow-y-auto p-6 space-y-4">
-                {% for message in messages %}
-                <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
-                    <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg {% if message.sender == request.user %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-900{% endif %}">
-                        <p class="text-sm">{{ message.content }}</p>
-                        <p class="text-xs mt-1 opacity-70">{{ message.created_at|date:"M j, H:i" }}</p>
+<div class="bg-gray-50 min-h-screen py-4 md:py-16 px-2 md:px-4 flex flex-col">
+    <div class="max-w-4xl mx-auto w-full flex-1 flex flex-col h-[calc(100vh-40px)] md:h-auto">
+        <div class="mb-6">
+            <!-- Header -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <span class="text-indigo-600 font-semibold">{{ other_user.username|first|upper }}</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ other_user.get_full_name|default:other_user.username }}</h1>
+                        <p class="text-gray-500 text-sm">Active now</p>
                     </div>
                 </div>
-                {% endfor %}
             </div>
         </div>
 
-        <!-- Message Input -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <form method="post" class="flex space-x-4">
+        <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-white rounded-t-xl shadow-inner border border-gray-200">
+            {% for message in messages %}
+            <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-lg {% if message.sender == request.user %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-900{% endif %}">
+                    {% with lower=message.content|lower %}
+                        {% if "data:image" in lower %}
+                            <img src="{{ message.content }}" alt="Photo" class="max-w-xs rounded-xl" />
+                        {% elif "data:video" in lower %}
+                            <video controls class="max-w-xs rounded-xl" style="max-height: 300px;">
+                                <source src="{{ message.content }}">
+                                Your browser does not support the video tag.
+                            </video>
+                        {% elif "data:application/pdf" in lower %}
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3 inline-block">
+                                <a href="{{ message.content }}" download="document.pdf" class="inline-flex items-center gap-2 text-red-700 hover:text-red-900 font-semibold">
+                                    <span>📄 PDF Document</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                </a>
+                            </div>
+                        {% elif "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document" in lower or "data:application/msword" in lower %}
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 inline-block">
+                                <a href="{{ message.content }}" download="document.docx" class="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold">
+                                    <span>📋 Word Document</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                </a>
+                            </div>
+                        {% elif "http" in lower %}
+                            {% if "gif" in lower or "png" in lower or "jpg" in lower or "jpeg" in lower or "mp4" in lower or "webm" in lower %}
+                                {% if "mp4" in lower or "webm" in lower or "video" in lower %}
+                                    <video controls class="max-w-xs rounded-xl" style="max-height: 300px;">
+                                        <source src="{{ message.content }}">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                {% else %}
+                                    <img src="{{ message.content }}" alt="GIF" class="max-w-full rounded-xl" />
+                                {% endif %}
+                            {% else %}
+                                <p class="text-sm">{{ message.content }}</p>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-sm">{{ message.content }}</p>
+                        {% endif %}
+                    {% endwith %}
+                    <p class="text-xs mt-1 opacity-70">{{ message.created_at|date:"M j, H:i" }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="bg-white p-4 border-t border-gray-200 rounded-b-xl sticky bottom-0">
+            <form method="post" class="flex flex-col gap-4">
                 {% csrf_token %}
-                <input type="text" name="content" placeholder="Type a message..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    Send
-                </button>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="toggleEmojiPicker()" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100">😀 Emoji</button>
+                    <button type="button" onclick="toggleGifPanel()" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100">GIF</button>
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <span>📷 Photo</span>
+                        <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="uploadPhoto()">
+                    </label>
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <span>🎥 Video</span>
+                        <input type="file" id="video-input" accept="video/*" class="hidden" onchange="uploadVideo()">
+                    </label>
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <span>📄 PDF</span>
+                        <input type="file" id="pdf-input" accept=".pdf" class="hidden" onchange="uploadPDF()">
+                    </label>
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
+                        <span>📋 Word</span>
+                        <input type="file" id="word-input" accept=".doc,.docx,.DOC,.DOCX" class="hidden" onchange="uploadWord()">
+                    </label>
+                </div>
+                <div id="emoji-picker" class="hidden flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <button type="button" onclick="insertEmoji('😀')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😀</button>
+                    <button type="button" onclick="insertEmoji('😍')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😍</button>
+                    <button type="button" onclick="insertEmoji('😂')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😂</button>
+                    <button type="button" onclick="insertEmoji('😎')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😎</button>
+                    <button type="button" onclick="insertEmoji('😢')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😢</button>
+                    <button type="button" onclick="insertEmoji('🎉')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🎉</button>
+                    <button type="button" onclick="insertEmoji('🙌')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🙌</button>
+                    <button type="button" onclick="insertEmoji('💬')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">💬</button>
+                    <button type="button" onclick="insertEmoji('❤️')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">❤️</button>
+                    <button type="button" onclick="insertEmoji('🔥')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🔥</button>
+                </div>
+                <div id="gif-panel" class="hidden flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div class="flex gap-2">
+                        <input id="gif-search" type="text" placeholder="Search GIFs" class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" onclick="searchGif()" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Search</button>
+                    </div>
+                    <div id="gif-results" class="grid grid-cols-2 gap-2"></div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <input id="message-input" type="text" name="content" placeholder="Type a message or paste gif URL..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 h-12 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg h-12 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Send</button>
+                </div>
             </form>
         </div>
     </div>
 </div>
 
 <script>
-    // Auto scroll to bottom of messages
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('messages-container');
-        container.scrollTop = container.scrollHeight;
+        if (container) container.scrollTop = container.scrollHeight;
     });
+
+    function toggleEmojiPicker() {
+        const picker = document.getElementById('emoji-picker');
+        picker.classList.toggle('hidden');
+        const panel = document.getElementById('gif-panel');
+        if (panel) panel.classList.add('hidden');
+    }
+
+    function toggleGifPanel() {
+        const panel = document.getElementById('gif-panel');
+        panel.classList.toggle('hidden');
+        const picker = document.getElementById('emoji-picker');
+        if (picker) picker.classList.add('hidden');
+    }
+
+    function insertEmoji(emoji) {
+        const input = document.getElementById('message-input');
+        input.value += emoji;
+        input.focus();
+    }
+
+    function searchGif() {
+        const query = document.getElementById('gif-search').value.trim();
+        const results = document.getElementById('gif-results');
+        if (!query) {
+            results.innerHTML = '<p class="text-sm text-slate-500">Type something to search GIFs.</p>';
+            return;
+        }
+        results.innerHTML = '<p class="text-sm text-slate-500">Loading GIFs…</p>';
+        fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=LIVDSRZULELA&limit=8`)
+            .then(res => res.json())
+            .then(data => {
+                results.innerHTML = '';
+                (data.results || []).forEach(item => {
+                    const media = item.media[0];
+                    const gifUrl = media?.gif?.url || media?.tinygif?.url || media?.mediumgif?.url;
+                    if (!gifUrl) return;
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'overflow-hidden rounded-xl border border-slate-200 bg-white';
+                    button.innerHTML = `<img src="${gifUrl}" alt="GIF" class="h-24 w-full object-cover" />`;
+                    button.onclick = () => chooseGif(gifUrl);
+                    results.appendChild(button);
+                });
+                if (!results.children.length) {
+                    results.innerHTML = '<p class="text-sm text-slate-500">No GIFs found.</p>';
+                }
+            })
+            .catch(() => {
+                results.innerHTML = '<p class="text-sm text-red-500">Unable to load GIFs. Try again later.</p>';
+            });
+    }
+
+    function chooseGif(url) {
+        const input = document.getElementById('message-input');
+        input.value = url;
+        const panel = document.getElementById('gif-panel');
+        if (panel) panel.classList.add('hidden');
+        input.focus();
+    }
+
+    function uploadPhoto() {
+        const input = document.getElementById('photo-input');
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const messageInput = document.getElementById('message-input');
+            messageInput.value = e.target.result;
+            messageInput.focus();
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function uploadVideo() {
+        const input = document.getElementById('video-input');
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const messageInput = document.getElementById('message-input');
+            messageInput.value = e.target.result;
+            messageInput.focus();
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function uploadPDF() {
+        const input = document.getElementById('pdf-input');
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const messageInput = document.getElementById('message-input');
+            messageInput.value = e.target.result;
+            messageInput.focus();
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function uploadWord() {
+        const input = document.getElementById('word-input');
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const messageInput = document.getElementById('message-input');
+            messageInput.value = e.target.result;
+            messageInput.focus();
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
+    }
 </script>
 {% endblock %}
