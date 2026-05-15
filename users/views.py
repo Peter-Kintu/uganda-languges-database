@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
-from django.db import IntegrityError
+from django.db import IntegrityError, models
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -32,6 +32,15 @@ from cerebras.cloud.sdk import Cerebras
 
 # Custom Forms and Models
 from .models import CustomUser, Experience, Education, Skill, SocialConnection 
+# Import cross-app models for profile aggregates (keep optional to avoid hard failures)
+try:
+    from hotel.models import Post, Like, Comment, Share, Connection
+except Exception:
+    Post = None
+    Like = None
+    Comment = None
+    Share = None
+    Connection = None
 from .forms import CustomUserCreationForm, ProfileEditForm
 from django.contrib.auth import get_user_model
 
@@ -243,12 +252,58 @@ def user_profile(request):
         referral_earnings = successful_referrals.aggregate(Sum('total_commission'))['total_commission__sum'] or 0
     base_url = request.build_absolute_uri(reverse('users:user_register'))
     referral_link = f"{base_url}?ref={user.username}"
+    # --- Profile aggregates ---
+    # Connections / followers
+    followers_count = 0
+    following_count = 0
+    connections_count = 0
+    if Connection:
+        followers_count = Connection.objects.filter(receiver=user, status='accepted').count()
+        following_count = Connection.objects.filter(sender=user, status='accepted').count()
+        connections_count = Connection.objects.filter(models.Q(sender=user) | models.Q(receiver=user), status='accepted').count()
+
+    # Posts and engagements
+    user_posts = []
+    posts_count = 0
+    impressions = None
+    watch_hours = None
+    try:
+        if Post:
+            user_posts = Post.objects.filter(author=user).order_by('-created_at')
+            posts_count = user_posts.count()
+
+            # If posts have explicit impression/watch fields, aggregate them, else compute a simple proxy
+            if hasattr(Post, 'impressions'):
+                impressions = user_posts.aggregate(Sum('impressions'))['impressions__sum'] or 0
+            else:
+                likes_count = Like.objects.filter(post__author=user).count() if Like else 0
+                comments_count = Comment.objects.filter(post__author=user).count() if Comment else 0
+                shares_count = Share.objects.filter(original_post__author=user).count() if Share else 0
+                impressions = likes_count + comments_count + shares_count
+
+            # Watch time aggregation if available on Post model
+            if hasattr(Post, 'watch_seconds'):
+                total_seconds = user_posts.aggregate(Sum('watch_seconds'))['watch_seconds__sum'] or 0
+                watch_hours = round((total_seconds or 0) / 3600, 2)
+    except Exception:
+        # Be defensive: don't break profile rendering if any cross-app query fails
+        user_posts = []
+        posts_count = 0
+        impressions = None
+        watch_hours = None
     context = {
         'user': user, 'experiences': experiences, 'educations': educations,
         'skills': skills, 'social_connections': social_connections,
         'referral_link': referral_link, 'successful_referrals': successful_referrals,
         'total_referral_earnings': referral_earnings,
         'total_referral_count': successful_referrals.count() if Order else 0,
+        'connections_count': connections_count,
+        'followers_count': followers_count,
+        'following_count': following_count,
+        'user_posts': user_posts,
+        'posts_count': posts_count,
+        'impressions': impressions,
+        'watch_hours': watch_hours,
     }
     try:
         return render(request, 'users/profile.html', context)
