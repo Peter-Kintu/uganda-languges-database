@@ -114,4 +114,17 @@
     </div>
     {% endif %}
 </div>
+
+<div id="google_translate_element" class="hidden"></div>
+<script type="text/javascript">
+function googleTranslateElementInit() {
+    new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,lg,nyn,ach,xsm,teo,lue,alur,luc,sw,rw,rn,ln,som,yo,ha,ig,ak,zu,xh,sn,ny,am,om,fr,pt,ar',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+    }, 'google_translate_element');
+}
+</script>
+<script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 {% endblock %}
