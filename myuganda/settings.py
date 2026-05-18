@@ -212,8 +212,16 @@ CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY")
 TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+
+# Translation service endpoints
 SUNBIRD_API_URL = os.getenv('SUNBIRD_API_URL', 'https://api.sunbird.ai')
 SUNBIRD_API_KEY = os.getenv('SUNBIRD_API_KEY')
+NLLB_API_URL = os.getenv('NLLB_API_URL', '')
+
+# Cache backend selection. For production use with DatabaseCache, enable this explicitly
+# and create the cache table via `python manage.py createcachetable`.
+USE_DATABASE_CACHE = os.getenv('USE_DATABASE_CACHE', 'False').lower() in ('1', 'true', 'yes')
+DJANGO_CACHE_TABLE = os.getenv('DJANGO_CACHE_TABLE', 'django_cache_table')
 
 # --- STORAGE BACKENDS ---
 # Check if Cloudinary is properly configured
@@ -330,17 +338,17 @@ LOGGING = {
 }
 
 # --- CACHING CONFIGURATION ---
-# Required for LibreTranslate caching to avoid repeated API calls
-if DATABASE_URL and not DEBUG:
-    # Use database cache in production for better performance across instances
+# Required for LibreTranslate caching to avoid repeated API calls.
+# Use database cache only when explicitly enabled and the cache table exists.
+if DATABASE_URL and not DEBUG and USE_DATABASE_CACHE:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-            'LOCATION': 'django_cache_table',
+            'LOCATION': DJANGO_CACHE_TABLE,
         }
     }
 else:
-    # Use local memory cache in development
+    # Use local memory cache by default to avoid startup failures from missing DB cache tables.
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',

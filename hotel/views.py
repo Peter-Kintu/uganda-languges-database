@@ -14,6 +14,7 @@ from django.template.loader import render_to_string
 import requests
 import json
 import os
+import hashlib
 
 INVESTOR_CREATE_PASSCODE = getattr(settings, 'INVESTOR_CREATE_PASSCODE', '23882')
 
@@ -31,6 +32,73 @@ def _safe_cache_set(key, value, timeout=None):
         cache.set(key, value, timeout)
     except Exception as e:
         print(f"Cache set failed: {e}")
+
+
+def _is_suspicious_text(t, original_len):
+    if not t or not isinstance(t, str):
+        return True
+    s = t.strip()
+    if len(s) == 0:
+        return True
+    # too long or contains unrelated tokens (quick heuristics)
+    if len(s) > max(2000, original_len * 15):
+        return True
+    lowered = s.lower()
+    # Count only if multiple spam indicators present
+    suspicious_count = sum(1 for tok in ['http://', 'https://', 'www.'] if tok in lowered)
+    if suspicious_count > 1:
+        return True
+    return False
+
+
+def _google_translate(text, source_lang, target_lang):
+    if not text or not isinstance(text, str) or not target_lang:
+        return None
+
+    text = text.strip()
+    if not text:
+        return None
+    source = source_lang if source_lang != 'auto' else 'auto'
+    params = {
+        'client': 'gtx',
+        'sl': source,
+        'tl': target_lang,
+        'dt': 't',
+        'q': text,
+    }
+    try:
+        res = requests.get(
+            GOOGLE_TRANSLATE_BASE,
+            params=params,
+            timeout=20,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                'Accept': 'application/json',
+            }
+        )
+        if res.status_code != 200:
+            print(f"Google fallback status {res.status_code} for {target_lang}: {res.text[:200]}")
+            return None
+
+        data = res.json()
+        if not isinstance(data, list) or not data or not isinstance(data[0], list):
+            return None
+
+        translated_segments = []
+        for item in data[0]:
+            if isinstance(item, list) and item and isinstance(item[0], str):
+                segment = item[0].strip()
+                if segment:
+                    translated_segments.append(segment)
+
+        translated = ' '.join(translated_segments).strip()
+        if translated and isinstance(translated, str) and len(translated) > 2 and translated != text and not _is_suspicious_text(translated, len(text)):
+            return translated
+    except Exception as e:
+        print(f"Google fallback error for {target_lang}: {str(e)[:150]}")
+
+    return None
+
 
 @login_required
 def social_feed(request):
@@ -106,11 +174,15 @@ def social_feed(request):
     # Translate posts if requested
     if translate_feed and target_lang != 'en':
         for post in posts:
-            if post.content:  # Only translate if there's text
-                translated = translate_smart(post.content, target_lang)
-                if translated and translated != post.content:
-                    post.translated_content = translated
-                    post.is_translated = True
+            try:
+                if post.content:  # Only translate if there's text
+                    translated = translate_smart(post.content, target_lang, 'en')
+                    if translated and isinstance(translated, str) and translated.strip() and translated != post.content:
+                        post.translated_content = translated
+                        post.is_translated = True
+            except Exception as e:
+                print(f"Translation error for post {post.id}: {str(e)[:100]}")
+                post.is_translated = False
 
     # Handle AJAX requests for infinite scroll
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
@@ -272,8 +344,10 @@ def accept_connection(request, connection_id):
 
 SUNBIRD_URL = getattr(settings, 'SUNBIRD_API_URL', 'https://api.sunbird.ai')
 SUNBIRD_API_KEY = getattr(settings, 'SUNBIRD_API_KEY', None)
-NLLB_URL = getattr(settings, 'NLLB_API_URL', 'https://sing-sjf2.onrender.com/translate')
+NLLB_URL = getattr(settings, 'NLLB_API_URL', None) or 'https://sing-sjf2.onrender.com/translate'
 LIBRE_URL = "https://libretranslate.com/translate"
+LIBRE_ALT_URL = getattr(settings, 'LIBRE_ALT_URL', 'https://libretranslate.de/translate')
+LIBRE_API_KEY = getattr(settings, 'LIBRE_API_KEY', None)
 
 # Sunbird supports these African/Ugandan languages.
 SUNBIRD_LANGS = {
@@ -301,6 +375,8 @@ LIBRE_SUPPORTED = {
     'sl', 'sk', 'lt', 'et', 'lv', 'he', 'af', 'tl', 'vi', 'th', 'id', 'ms'
 }
 
+GOOGLE_TRANSLATE_BASE = 'https://translate.googleapis.com/translate_a/single'
+
 # Allow UI language codes to be mapped to service-specific translation codes.
 LANGUAGE_SERVICE_OVERRIDES = {
     'lg': 'lug',  # Luganda is commonly selected as 'lg' in the UI but NLLB expects ISO 639-3 'lug'
@@ -319,10 +395,7 @@ def translate_smart(text, target_lang, source_lang='en'):
     """
     target_lang = target_lang.lower() if isinstance(target_lang, str) else target_lang
     source_lang = source_lang.lower() if isinstance(source_lang, str) else source_lang
-
-    # Handle auto source language
-    if source_lang == 'auto':
-        source_lang = 'en'  # Assume English as default source
+    service_source_lang = 'en' if source_lang == 'auto' else source_lang
 
     # Early returns for no-ops
     if not text or not text.strip() or target_lang == source_lang:
@@ -335,213 +408,250 @@ def translate_smart(text, target_lang, source_lang='en'):
     if isinstance(source_lang, str):
         source_lang = source_lang.lower().strip()
 
-    cache_key = f"trans_{hash(text)}_{source_lang}_{target_lang}"
+    # Use stable cache key (hash can vary between runs)
+    text_hash = hashlib.md5(text.encode()).hexdigest()[:8]
+    cache_key = f"trans_{text_hash}_{source_lang}_{target_lang}"
     cached = _safe_cache_get(cache_key)
-
-    def _is_suspicious(t, original_len):
-        if not t or not isinstance(t, str):
-            return True
-        s = t.strip()
-        if len(s) == 0:
-            return True
-        # too long or contains unrelated tokens (quick heuristics)
-        if len(s) > max(1000, original_len * 12):
-            return True
-        lowered = s.lower()
-        suspicious_tokens = ['http', 'https', '://', 'www.']
-        for tok in suspicious_tokens:
-            if tok in lowered:
-                return True
-        return False
-
-    # 1) For Sunbird-supported languages use Sunbird first, then NLLB and MyMemory as fallback.
-    if target_code in SUNBIRD_LANGS or target_lang in SUNBIRD_LANGS:
-        try:
-            if SUNBIRD_API_KEY:
-                api_source = 'eng' if source_lang in {'en', 'eng'} else source_lang
-                payload = {
-                    'source_language': api_source,
-                    'target_language': target_code,
-                    'text': text
-                }
-                request_url = SUNBIRD_URL.rstrip('/') + '/tasks/translate'
-                res = requests.post(
-                    request_url,
-                    json=payload,
-                    timeout=30,
-                    headers={
-                        'Authorization': f'Bearer {SUNBIRD_API_KEY}',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    translated_text = (
-                        data.get('output', {}).get('translated_text') or
-                        data.get('output', {}).get('translatedText') or
-                        data.get('output', {}).get('text')
-                    )
-                    if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious(translated_text, len(text)):
-                        _safe_cache_set(cache_key, translated_text, 604800)
-                        return translated_text
-                    else:
-                        print(f"Sunbird returned suspicious/empty result for {target_code}: {json.dumps(data)[:400]}")
-                else:
-                    print(f"Sunbird status {res.status_code} for {target_code}: {res.text[:200]}")
-            else:
-                print("Sunbird API key not configured, skipping Sunbird translation")
-        except requests.Timeout:
-            print(f"Sunbird timeout for {target_code}")
-        except Exception as e:
-            print(f"Sunbird error: {str(e)[:120]}")
-
-    # Validate cached result for Uganda languages
-    if cached:
-        try:
-            if target_lang in SUNBIRD_LANGS or target_code in SUNBIRD_LANGS:
-                if _is_suspicious(cached, len(text)):
-                    try:
-                        cache.delete(cache_key)
-                    except Exception:
-                        _safe_cache_set(cache_key, None, 1)
-                    cached = None
-        except Exception as e:
-            print(f"Cache validation error: {e}")
-            pass
-    if cached:
+    if cached is not None and isinstance(cached, str) and len(cached) > 0:
         return cached
 
-    # 2) Try NLLB for African languages (preferred for many African languages)
-    try:
-        if target_code in NLLB_LANGS or target_lang in NLLB_LANGS:
-            try:
-                api_target = target_code
-                api_source = 'en' if source_lang in {'en', 'eng'} else source_lang
-                payload = {
-                    'source': api_source,
-                    'target': api_target,
-                    'text': text
-                }
-                request_url = NLLB_URL if NLLB_URL.endswith('/') else f"{NLLB_URL}/"
-                headers = {
+    def _try_sunbird():
+        if not SUNBIRD_API_KEY:
+            print("Sunbird API key not configured, skipping Sunbird translation")
+            return None
+
+        api_source = 'eng' if source_lang in {'en', 'eng'} else source_lang
+        payload = {
+            'source_language': api_source,
+            'target_language': target_code,
+            'text': text
+        }
+        request_url = SUNBIRD_URL.rstrip('/') + '/tasks/translate'
+        res = requests.post(
+            request_url,
+            json=payload,
+            timeout=30,
+            headers={
+                'Authorization': f'Bearer {SUNBIRD_API_KEY}',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        )
+        if res.status_code != 200:
+            print(f"Sunbird status {res.status_code} for {target_code}: {res.text[:200]}")
+            return None
+
+        data = res.json()
+        translated_text = (
+            data.get('output', {}).get('translated_text') or
+            data.get('output', {}).get('translatedText') or
+            data.get('output', {}).get('text')
+        )
+        if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious_text(translated_text, len(text)):
+            return translated_text
+        print(f"Sunbird returned suspicious/empty result for {target_code}: {json.dumps(data)[:400]}")
+        return None
+
+    def _try_nllb():
+        if not NLLB_URL:
+            print("NLLB API URL not configured, skipping NLLB translation")
+            return None
+        request_url = NLLB_URL.rstrip('/') + '/'
+        payload = {
+            'source': 'en' if service_source_lang in {'en', 'eng'} else service_source_lang,
+            'target': target_code,
+            'text': text
+        }
+        try:
+            res = requests.post(
+                request_url,
+                json=payload,
+                timeout=100,
+                headers={
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 }
-                session = requests.Session()
-                try:
-                    session.get(request_url, headers={'User-Agent': headers['User-Agent'], 'Accept': 'text/html'}, timeout=20)
-                except Exception:
-                    pass
-                csrf_token = session.cookies.get('csrftoken')
-                if csrf_token:
-                    headers['X-CSRFToken'] = csrf_token
-                    headers['Referer'] = request_url
-                # Use a generous timeout to survive Render cold starts
-                res = session.post(
-                    request_url,
-                    json=payload,
-                    timeout=100,
-                    headers=headers
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    translated_text = data.get('translated_text') or data.get('translation') or data.get('translated')
-                    if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious(translated_text, len(text)):
-                        _safe_cache_set(cache_key, translated_text, 604800)  # Cache 7 days
-                        return translated_text
-                    else:
-                        print(f"NLLB returned suspicious/empty result for {target_code}: {json.dumps(data)[:400]}")
-                else:
-                    print(f"NLLB status {res.status_code} for {target_code}: {res.text[:200]}")
-            except requests.Timeout:
-                print(f"NLLB timeout for {target_code} (possible Render cold start)")
-            except Exception as e:
-                print(f"NLLB error: {str(e)[:120]}")
-    except Exception:
-        pass
+            )
+        except requests.Timeout:
+            print(f"NLLB timeout for {target_code} (possible Render cold start)")
+            return None
+        except Exception as e:
+            print(f"NLLB request error for {target_code}: {str(e)[:120]}")
+            return None
 
-    # 3) Try LibreTranslate for supported languages
-    try:
-        if target_code in LIBRE_SUPPORTED:
-            try:
-                res = requests.post(
-                    LIBRE_URL,
-                    data={
-                        'q': text,
-                        'source': source_lang,
-                        'target': target_code,
-                        'format': 'text'
-                    },
-                    timeout=5,
-                    headers={
-                        'User-Agent': 'Mozilla/5.0'
-                    }
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    translated_text = data.get('translatedText') or data.get('translation') or data.get('translated')
-                    if isinstance(translated_text, str) and translated_text.strip() and translated_text != text:
-                        _safe_cache_set(cache_key, translated_text, 604800)
-                        return translated_text
-                else:
-                    print(f"LibreTranslate status {res.status_code} for {target_code}")
-            except requests.Timeout:
-                print(f"LibreTranslate timeout for {target_code}")
-            except Exception as e:
-                print(f"LibreTranslate error: {str(e)[:120]}")
-    except Exception:
-        pass
+        if res.status_code != 200:
+            print(f"NLLB status {res.status_code} for {target_code}: {res.text[:200]}")
+            return None
 
-    # 4) Final fallback: MyMemory (broad coverage)
-    try:
-        res = requests.get(
-            'https://api.mymemory.translated.net/get',
-            params={
-                'q': text[:500],
-                'langpair': f'{source_lang}|{target_code}'
-            },
-            timeout=10,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        try:
+            data = res.json()
+        except Exception as e:
+            print(f"NLLB JSON parse error for {target_code}: {e}")
+            return None
+
+        translated_text = data.get('translated_text') or data.get('translation') or data.get('translated')
+        if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious_text(translated_text, len(text)):
+            return translated_text
+        print(f"NLLB returned suspicious/empty result for {target_code}: {json.dumps(data)[:400]}")
+        return None
+
+    def _try_libre():
+        if target_code not in LIBRE_SUPPORTED and target_lang not in LIBRE_SUPPORTED:
+            return None
+
+        def _call_libre(url):
+            payload = {
+                'q': text,
+                'source': service_source_lang,
+                'target': target_code,
+                'format': 'text'
             }
-        )
-        if res.status_code == 200:
+            if LIBRE_API_KEY:
+                payload['api_key'] = LIBRE_API_KEY
+            res = requests.post(
+                url,
+                json=payload,
+                timeout=10,
+                headers={
+                    'User-Agent': 'Mozilla/5.0',
+                    'Content-Type': 'application/json'
+                }
+            )
+            return res
+
+        for url in [LIBRE_URL, LIBRE_ALT_URL]:
+            try:
+                res = _call_libre(url)
+                if res.status_code != 200:
+                    if res.status_code == 400 and 'api key' in res.text.lower():
+                        print(f"LibreTranslate {url} requires API key for {target_code}: {res.text[:200]}")
+                        continue
+                    if res.status_code == 429:
+                        print(f"LibreTranslate rate limited at {url} for {target_code}: {res.text[:200]}")
+                        continue
+                    print(f"LibreTranslate status {res.status_code} for {target_code} at {url}: {res.text[:200]}")
+                    continue
+                data = res.json()
+                translated_text = data.get('translatedText') or data.get('translation') or data.get('translated')
+                if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious_text(translated_text, len(text)):
+                    return translated_text
+            except requests.Timeout:
+                print(f"LibreTranslate timeout for {target_code} at {url}")
+            except Exception as e:
+                print(f"LibreTranslate error for {target_code} at {url}: {str(e)[:120]}")
+        return None
+
+    def _try_mymemory():
+        if not service_source_lang or not target_code:
+            return None
+        try:
+            res = requests.get(
+                'https://api.mymemory.translated.net/get',
+                params={
+                    'q': text[:500],
+                    'langpair': f'{service_source_lang}|{target_code}'
+                },
+                timeout=8,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            )
+            if res.status_code != 200:
+                print(f"MyMemory status {res.status_code} for {target_lang}: {res.text[:200]}")
+                return None
             result = res.json()
             if result.get('responseStatus') == 200:
-                translated = result.get('responseData', {}).get('translatedText', text)
-                if translated and translated != text and translated.lower() != 'undefined' and not _is_suspicious(translated, len(text)):
-                    _safe_cache_set(cache_key, translated, 604800)  # Cache 7 days
+                translated = result.get('responseData', {}).get('translatedText', '')
+                if translated and isinstance(translated, str) and translated.strip() and translated != text and translated.lower() != 'undefined' and not _is_suspicious_text(translated, len(text)):
                     return translated
             else:
                 print(f"MyMemory status {result.get('responseStatus')} for {target_lang}")
-    except requests.Timeout:
-        print(f"MyMemory timeout for {target_lang}")
-    except Exception as e:
-        print(f"MyMemory error: {str(e)[:80]}")
+        except requests.Timeout:
+            print(f"MyMemory timeout for {target_lang}")
+        except Exception as e:
+            print(f"MyMemory error: {str(e)[:80]}")
+        return None
 
-    # Final fallback: return original text
+    def _try_google():
+        try:
+            for code in [target_lang, target_code]:
+                if not code:
+                    continue
+                text_candidate = _google_translate(text, source_lang, code)
+                if text_candidate:
+                    return text_candidate
+            return None
+        except Exception as e:
+            print(f"Google translate fallback error for {target_lang}: {e}")
+            return None
+
+    if target_code in SUNBIRD_LANGS or target_lang in SUNBIRD_LANGS:
+        translated_text = _try_sunbird()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_mymemory()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_nllb()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_libre()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_google()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+    else:
+        translated_text = _try_mymemory()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_libre()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_google()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+
     print(f"All translation tiers failed for {target_lang} ({source_lang}), returning original")
     return text
 
 @login_required
 def translate_text(request):
     """API endpoint for translating text"""
-    text = request.GET.get('text', '')
-    target_lang = request.GET.get('target_lang', request.user.language or 'en')
-    source_lang = request.GET.get('source_lang', 'en')
-    if isinstance(target_lang, str):
-        target_lang = target_lang.lower()
-    if isinstance(source_lang, str):
-        source_lang = source_lang.lower()
-    
-    if not text:
-        return JsonResponse({'error': 'Text required'}, status=400)
-    
-    translated = translate_smart(text, target_lang, source_lang)
-    return JsonResponse({'translated': translated})
+    try:
+        text = request.GET.get('text', '').strip()
+        target_lang = request.GET.get('target_lang', getattr(request.user, 'language', 'en') or 'en')
+        source_lang = request.GET.get('source_lang', 'en')
+        
+        if isinstance(target_lang, str):
+            target_lang = target_lang.lower().strip()
+        if isinstance(source_lang, str):
+            source_lang = source_lang.lower().strip()
+        
+        if not text:
+            return JsonResponse({'error': 'Text required', 'translated': ''}, status=400)
+        
+        if len(text) > 5000:
+            return JsonResponse({'error': 'Text too long (max 5000 chars)', 'translated': text}, status=400)
+        
+        translated = translate_smart(text, target_lang, source_lang)
+        if not translated:
+            translated = text
+        
+        return JsonResponse({'translated': translated, 'success': True})
+    except Exception as e:
+        print(f"translate_text error: {str(e)[:150]}")
+        return JsonResponse({'error': str(e)[:100], 'translated': ''}, status=500)
 
 @login_required
 def send_message(request, user_id):

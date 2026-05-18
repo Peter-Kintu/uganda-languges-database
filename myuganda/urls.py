@@ -49,6 +49,11 @@ urlpatterns = [
     path("users/", include("users.urls")),
 
     # 3. Languages App at root (jobs, recruiters, etc.)
+    path(
+        "languages/",
+        RedirectView.as_view(pattern_name='languages:home', permanent=False),
+        name='languages_redirect'
+    ),
     path("", include("languages.urls")),
 
     # 4. Login Redirects (for third‑party apps expecting /accounts/login/)
