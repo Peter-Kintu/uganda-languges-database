@@ -212,6 +212,8 @@ CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY")
 TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+SUNBIRD_API_URL = os.getenv('SUNBIRD_API_URL', 'https://api.sunbird.ai')
+SUNBIRD_API_KEY = os.getenv('SUNBIRD_API_KEY')
 
 # --- STORAGE BACKENDS ---
 # Check if Cloudinary is properly configured

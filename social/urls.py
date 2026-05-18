@@ -1,10 +1,14 @@
 from django.urls import path
+from django.views.generic.base import RedirectView
 from . import views
 
 # The namespace used in {% url 'social:...' %}
 app_name = 'social'
 
 urlpatterns = [
+    # Redirect /social/ to the actual feed path for legacy compatibility
+    path('', RedirectView.as_view(pattern_name='social:social_feed', permanent=False), name='social_root_redirect'),
+
     # --- PILLAR 2: DISCOVERY LAYER ---
     # Main social feed displaying Business Reels (TikTok 2.0 Shoppable Feed)
     path('feed/', views.FeedView.as_view(), name='social_feed'),

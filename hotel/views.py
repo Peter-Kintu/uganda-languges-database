@@ -270,8 +270,17 @@ def accept_connection(request, connection_id):
 # TRANSLATION CONFIGURATION - NLLB + LibreTranslate
 # ═════════════════════════════════════════════════════════════════════════════
 
-NLLB_URL = "https://sing-sjf2.onrender.com/translate/"
+SUNBIRD_URL = getattr(settings, 'SUNBIRD_API_URL', 'https://api.sunbird.ai')
+SUNBIRD_API_KEY = getattr(settings, 'SUNBIRD_API_KEY', None)
+NLLB_URL = getattr(settings, 'NLLB_API_URL', 'https://sing-sjf2.onrender.com/translate')
 LIBRE_URL = "https://libretranslate.com/translate"
+
+# Sunbird supports these African/Ugandan languages.
+SUNBIRD_LANGS = {
+    'ach', 'eng', 'ibo', 'lgg', 'lug', 'nyn', 'swa', 'teo', 'xog', 'kin', 'myx',
+    'adh', 'alz', 'bfa', 'cgg', 'gwr', 'kdi', 'kdj', 'keo', 'koo', 'kpz',
+    'laj', 'lsm', 'luc', 'mhi', 'pok', 'rub', 'ruc', 'rwm', 'tlj', 'nuj', 'nyo'
+}
 
 # NLLB handles these African languages - LibreTranslate doesn't support well
 NLLB_LANGS = {
@@ -301,11 +310,12 @@ LANGUAGE_SERVICE_OVERRIDES = {
 def translate_smart(text, target_lang, source_lang='en'):
     """
     Intelligent translation routing with smart service selection:
-    1. NLLB for African languages (6s timeout)
-    2. LibreTranslate ONLY for supported languages (5s timeout)
-    3. MyMemory for everything else + all African languages (4s timeout)
-    4. 7-day caching to reduce API load
-    5. Graceful fallback to original text on all failures
+    1. Sunbird for Uganda languages
+    2. NLLB for African languages
+    3. LibreTranslate for broadly supported languages
+    4. MyMemory as a final fallback
+    5. 7-day caching to reduce API load
+    6. Graceful fallback to original text on all failures
     """
     target_lang = target_lang.lower() if isinstance(target_lang, str) else target_lang
     source_lang = source_lang.lower() if isinstance(source_lang, str) else source_lang
@@ -328,8 +338,6 @@ def translate_smart(text, target_lang, source_lang='en'):
     cache_key = f"trans_{hash(text)}_{source_lang}_{target_lang}"
     cached = _safe_cache_get(cache_key)
 
-    uganda_codes = {'lg', 'lug', 'nyn', 'ach', 'lgg', 'teo', 'xog', 'ttj', 'nyo', 'laj', 'alz'}
-
     def _is_suspicious(t, original_len):
         if not t or not isinstance(t, str):
             return True
@@ -346,10 +354,53 @@ def translate_smart(text, target_lang, source_lang='en'):
                 return True
         return False
 
+    # 1) For Sunbird-supported languages use Sunbird first, then NLLB and MyMemory as fallback.
+    if target_code in SUNBIRD_LANGS or target_lang in SUNBIRD_LANGS:
+        try:
+            if SUNBIRD_API_KEY:
+                api_source = 'eng' if source_lang in {'en', 'eng'} else source_lang
+                payload = {
+                    'source_language': api_source,
+                    'target_language': target_code,
+                    'text': text
+                }
+                request_url = SUNBIRD_URL.rstrip('/') + '/tasks/translate'
+                res = requests.post(
+                    request_url,
+                    json=payload,
+                    timeout=30,
+                    headers={
+                        'Authorization': f'Bearer {SUNBIRD_API_KEY}',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    translated_text = (
+                        data.get('output', {}).get('translated_text') or
+                        data.get('output', {}).get('translatedText') or
+                        data.get('output', {}).get('text')
+                    )
+                    if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious(translated_text, len(text)):
+                        _safe_cache_set(cache_key, translated_text, 604800)
+                        return translated_text
+                    else:
+                        print(f"Sunbird returned suspicious/empty result for {target_code}: {json.dumps(data)[:400]}")
+                else:
+                    print(f"Sunbird status {res.status_code} for {target_code}: {res.text[:200]}")
+            else:
+                print("Sunbird API key not configured, skipping Sunbird translation")
+        except requests.Timeout:
+            print(f"Sunbird timeout for {target_code}")
+        except Exception as e:
+            print(f"Sunbird error: {str(e)[:120]}")
+
     # Validate cached result for Uganda languages
     if cached:
         try:
-            if target_lang in uganda_codes or target_code in uganda_codes:
+            if target_lang in SUNBIRD_LANGS or target_code in SUNBIRD_LANGS:
                 if _is_suspicious(cached, len(text)):
                     try:
                         cache.delete(cache_key)
@@ -362,49 +413,39 @@ def translate_smart(text, target_lang, source_lang='en'):
     if cached:
         return cached
 
-    # 1) For Uganda languages try MyMemory first (more stable for some local dialects)
-    if target_code in uganda_codes or target_lang in uganda_codes:
-        try:
-            res = requests.get(
-                'https://api.mymemory.translated.net/get',
-                params={
-                    'q': text[:500],
-                    'langpair': f'{source_lang}|{target_code}'
-                },
-                timeout=8,
-                headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                }
-            )
-            if res.status_code == 200:
-                result = res.json()
-                if result.get('responseStatus') == 200:
-                    candidate = result.get('responseData', {}).get('translatedText', '')
-                    if candidate and isinstance(candidate, str) and candidate.strip() and candidate != text and not _is_suspicious(candidate, len(text)):
-                        _safe_cache_set(cache_key, candidate, 604800)
-                        return candidate
-                else:
-                    print(f"MyMemory Uganda-first returned status {result.get('responseStatus')} - falling back to NLLB")
-            else:
-                print(f"MyMemory Uganda-first HTTP status {res.status_code} for {target_code} - falling back to NLLB")
-        except requests.Timeout:
-            print(f"MyMemory timeout (uganda-first) for {target_code} - falling back to NLLB")
-        except Exception as e:
-            print(f"MyMemory error (uganda-first): {str(e)[:120]} - falling back to NLLB")
-
     # 2) Try NLLB for African languages (preferred for many African languages)
     try:
         if target_code in NLLB_LANGS or target_lang in NLLB_LANGS:
             try:
-                api_target = 'lg' if target_code in {'lg', 'lug'} else target_code
+                api_target = target_code
                 api_source = 'en' if source_lang in {'en', 'eng'} else source_lang
                 payload = {
-                    'source_lang': api_source,
-                    'target_lang': api_target,
+                    'source': api_source,
+                    'target': api_target,
                     'text': text
                 }
+                request_url = NLLB_URL if NLLB_URL.endswith('/') else f"{NLLB_URL}/"
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+                session = requests.Session()
+                try:
+                    session.get(request_url, headers={'User-Agent': headers['User-Agent'], 'Accept': 'text/html'}, timeout=20)
+                except Exception:
+                    pass
+                csrf_token = session.cookies.get('csrftoken')
+                if csrf_token:
+                    headers['X-CSRFToken'] = csrf_token
+                    headers['Referer'] = request_url
                 # Use a generous timeout to survive Render cold starts
-                res = requests.post(NLLB_URL, json=payload, timeout=100)
+                res = session.post(
+                    request_url,
+                    json=payload,
+                    timeout=100,
+                    headers=headers
+                )
                 if res.status_code == 200:
                     data = res.json()
                     translated_text = data.get('translated_text') or data.get('translation') or data.get('translated')

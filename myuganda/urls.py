@@ -45,6 +45,8 @@ urlpatterns = [
 
     # 2. Users (Authentication & Profile) at root
     path("", include("users.urls")),
+    # Compatibility alias for legacy /users/... URLs
+    path("users/", include("users.urls")),
 
     # 3. Languages App at root (jobs, recruiters, etc.)
     path("", include("languages.urls")),
