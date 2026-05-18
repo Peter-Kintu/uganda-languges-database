@@ -45,38 +45,68 @@ def sync_aliexpress_products(request):
         )
 
         # Hot-Selling Categories for Africa & Global Markets
+       # AI, Smart Wearables, Robotics & Next-Gen Smart Home
+       # Comprehensive Tech, AI, Smart Home, Smart Beauty & Personal Care Sync
+       # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
         search_groups = [
+            # --- AI Wearables & Smart Jewelry ---
+            {'query': 'AI smart glasses video recording live stream audio', 'count': 10},
+            {'query': 'smart ring health tracker heart rate sleep monitor', 'count': 10},
+            {'query': 'smart bracelet bangle fitness tracker touch screen', 'count': 10},
+            {'query': 'pendant necklace hidden mini spy camera audio recorder', 'count': 10},
+            {'query': 'series 10 ultra smartwatch bluetooth call rugged gps', 'count': 10},
 
-            # --- Tech & Gadgets (Hot Global Trend) ---
-           
-            {'query': 'smart home security camera wireless', 'count': 10},
-            {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
-            
-            # --- Health & Beauty (High Repeat Orders) ---
-            {'query': 'tws wireless earbuds noise cancelling bluetooth', 'count': 10},
-            {'query': 'mini bluetooth speaker portable waterproof', 'count': 10},
-            {'query': 'android 5G smartphone unlocked global version', 'count': 10},
-            {'query': 'series 9 smartwatch ultra waterproof', 'count': 10},
-    
-            {'query': 'ultrasonic teeth cleaner dental scaler', 'count': 10},
-            {'query': 'vaseline intensive care whitening lotion', 'count': 10},
-            {'query': 'organic hair growth oils for men women', 'count': 10},
-            {'query': 'facial cleansing brush electric waterproof', 'count': 10},
-            {'query': 'reusable makeup remover pads washable', 'count': 10},
-            
-            # --- Power & Energy (Massive Demand in Africa) ---
-            {'query': 'hybrid solar inverter 5kw pure sine wave', 'count': 10},
-            {'query': 'portable power station solar generator', 'count': 10},
-            {'query': '10000mah power bank fast charging dual usb', 'count': 10},
-            
-            
-            # --- Fashion & Jewelry (High Margin) ---
-            {'query': 'luxury gold jewelry sets dubai african style', 'count': 10},
-            {'query': 'mens automatic mechanical wrist watch luxury', 'count': 10},
-            
-            # --- Home & Auto (Problem Solvers) ---
-            {'query': 'car diagnostic tool obd2 scanner professional', 'count': 10},
-            {'query': 'mini portable projector 4k home theater', 'count': 10},
+            # --- Robotics & Smart Play Toys ---
+            {'query': 'intelligent AI robot companion voice control dancing', 'count': 10},
+            {'query': 'smart robot vacuum cleaner auto empty dock laser navigation', 'count': 10},
+            {'query': 'educational smart robot programming toy for kids', 'count': 10},
+            {'query': 'interactive AI rc pet robot dog gesture control', 'count': 10},
+
+            # --- AI Security & Smart Cameras ---
+            {'query': 'AI face recognition tracking security camera outdoor wifi', 'count': 10},
+            {'query': '4K dual lens wifi PTZ camera humanoid auto tracking', 'count': 10},
+            {'query': 'hidden mini camera wireless smart home night vision', 'count': 10},
+
+            # --- Advanced Smart Home Ecosystem ---
+            {'query': 'smart home automation hub gateway zigbee wifi alexa', 'count': 10},
+            {'query': 'smart thermostatic radiator valve programmable voice control', 'count': 10},
+            {'query': 'smart fingerprint door lock biometric electronic keyless', 'count': 10},
+            {'query': 'smart led light bulbs rgb color changing app control', 'count': 10},
+            {'query': 'smart curtain switch motor track automatic timer control', 'count': 10},
+            {'query': 'smart plug socket power monitor switch wifi home assistant', 'count': 10},
+
+            # --- Smart Dental & Tooth Cleaning Tech ---
+            {'query': 'ultrasonic teeth cleaner dental scaler calculus remover', 'count': 10},
+            {'query': 'smart electric toothbrush sonic rechargeable app control', 'count': 10},
+            {'query': 'oral irrigator cordless dental water flosser portable', 'count': 10},
+            {'query': 'uv light toothbrush sterilizer holder automatic dispenser', 'count': 10},
+
+            # --- Smart Cosmetics & High-Tech Makeup ---
+            {'query': 'led makeup mirror light adjustable touch screen smart sensor', 'count': 10},
+            {'query': 'electric makeup brush cleaner automatic spinning washer dryer', 'count': 10},
+            {'query': 'microcurrent facial massager anti aging face lift skin tightening', 'count': 10},
+            {'query': 'led light therapy face mask photon skin rejuvenation acne', 'count': 10},
+            {'query': 'smart skin analyzer moisture oil tester digital monitor', 'count': 10},
+
+            # --- Advanced Hair Care Tech ---
+            {'query': 'high speed ionic hair dryer professional brushless motor', 'count': 10},
+            {'query': 'laser hair growth helmet anti hair loss treatment cap', 'count': 10},
+            {'query': 'wireless automatic hair curler rotating ceramic cordless usb', 'count': 10},
+            {'query': 'electric scalp massager waterproof hair growth stimulation', 'count': 10},
+
+            # --- Fast-Moving Daily Essentials & Face Towels (High Repeat Orders) ---
+            {'query': 'disposable face towel 100 natural cotton makeup cleansing wipes', 'count': 10},
+            {'query': 'microfiber hair drying towel wrap super absorbent quick dry cap', 'count': 10},
+            {'query': 'silicone dishwashing scrubber gloves heat resistant reusable kitchen', 'count': 10},
+            {'query': 'automatic liquid soap dispenser touchless infrared motion sensor', 'count': 10},
+            {'query': 'portable lint remover clothes fuzz shaver pellet cutting machine', 'count': 10},
+
+            # --- Cheap, High-Volume Trending Innovations (Impulse Buys) ---
+            {'query': 'digital kitchen scale electronic food weight measuring tool precision', 'count': 10},
+            {'query': 'mini bag sealer heat portable plastic packaging closing sealer machine', 'count': 10},
+            {'query': 'magnetic phone holder car mount universal air vent dashboard magnet', 'count': 10},
+            {'query': 'flame air humidifier ultrasonic essential oil aroma diffuser led light', 'count': 10},
+            {'query': 'rechargeable mini neck fan portable bladeless mute wearable fans usb', 'count': 10},
         ]
         
         created_count = 0
