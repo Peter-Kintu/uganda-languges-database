@@ -48,6 +48,7 @@ def sync_aliexpress_products(request):
        # AI, Smart Wearables, Robotics & Next-Gen Smart Home
        # Comprehensive Tech, AI, Smart Home, Smart Beauty & Personal Care Sync
        # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
+        # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
         search_groups = [
             # --- AI Wearables & Smart Jewelry ---
             {'query': 'AI smart glasses video recording live stream audio', 'count': 10},
@@ -62,10 +63,16 @@ def sync_aliexpress_products(request):
             {'query': 'educational smart robot programming toy for kids', 'count': 10},
             {'query': 'interactive AI rc pet robot dog gesture control', 'count': 10},
 
-            # --- AI Security & Smart Cameras ---
+            # --- AI Security & High-End Cameras ---
             {'query': 'AI face recognition tracking security camera outdoor wifi', 'count': 10},
             {'query': '4K dual lens wifi PTZ camera humanoid auto tracking', 'count': 10},
             {'query': 'hidden mini camera wireless smart home night vision', 'count': 10},
+
+            # --- Targeted Budget Cameras ($5 & $10 Brackets) ---
+            {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 10},
+            {'query': 'budget cctv home security wifi camera night vision 10 dollars', 'count': 10},
+            {'query': 'action camera sports video recorder mini dvr small under 10', 'count': 10},
+            {'query': 'webcam micro camera usb plug play cheap clear audio 5', 'count': 10},
 
             # --- Advanced Smart Home Ecosystem ---
             {'query': 'smart home automation hub gateway zigbee wifi alexa', 'count': 10},
@@ -108,7 +115,6 @@ def sync_aliexpress_products(request):
             {'query': 'flame air humidifier ultrasonic essential oil aroma diffuser led light', 'count': 10},
             {'query': 'rechargeable mini neck fan portable bladeless mute wearable fans usb', 'count': 10},
         ]
-        
         created_count = 0
         updated_count = 0
 
