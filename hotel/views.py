@@ -270,7 +270,7 @@ def accept_connection(request, connection_id):
 # TRANSLATION CONFIGURATION - NLLB + LibreTranslate
 # ═════════════════════════════════════════════════════════════════════════════
 
-NLLB_URL = "https://sing-sjf2.onrender.com/translate"
+NLLB_URL = "https://sing-sjf2.onrender.com/translate/"
 LIBRE_URL = "https://libretranslate.com/translate"
 
 # NLLB handles these African languages - LibreTranslate doesn't support well
@@ -318,18 +318,143 @@ def translate_smart(text, target_lang, source_lang='en'):
     if not text or not text.strip() or target_lang == source_lang:
         return text
 
-    # Cache hit = instant return, saves API calls
+    # Prepare common values and helpers up-front
+    target_code = LANGUAGE_SERVICE_OVERRIDES.get(target_lang, target_lang)
+    if isinstance(target_code, str):
+        target_code = target_code.lower().strip()
+    if isinstance(source_lang, str):
+        source_lang = source_lang.lower().strip()
+
     cache_key = f"trans_{hash(text)}_{source_lang}_{target_lang}"
     cached = _safe_cache_get(cache_key)
+
+    uganda_codes = {'lg', 'lug', 'nyn', 'ach', 'lgg', 'teo', 'xog', 'ttj', 'nyo', 'laj', 'alz'}
+
+    def _is_suspicious(t, original_len):
+        if not t or not isinstance(t, str):
+            return True
+        s = t.strip()
+        if len(s) == 0:
+            return True
+        # too long or contains unrelated tokens (quick heuristics)
+        if len(s) > max(1000, original_len * 12):
+            return True
+        lowered = s.lower()
+        suspicious_tokens = ['http', 'https', '://', 'www.']
+        for tok in suspicious_tokens:
+            if tok in lowered:
+                return True
+        return False
+
+    # Validate cached result for Uganda languages
+    if cached:
+        try:
+            if target_lang in uganda_codes or target_code in uganda_codes:
+                if _is_suspicious(cached, len(text)):
+                    try:
+                        cache.delete(cache_key)
+                    except Exception:
+                        _safe_cache_set(cache_key, None, 1)
+                    cached = None
+        except Exception as e:
+            print(f"Cache validation error: {e}")
+            pass
     if cached:
         return cached
 
-    translated = text
-    target_code = LANGUAGE_SERVICE_OVERRIDES.get(target_lang, target_lang)
+    # 1) For Uganda languages try MyMemory first (more stable for some local dialects)
+    if target_code in uganda_codes or target_lang in uganda_codes:
+        try:
+            res = requests.get(
+                'https://api.mymemory.translated.net/get',
+                params={
+                    'q': text[:500],
+                    'langpair': f'{source_lang}|{target_code}'
+                },
+                timeout=8,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                }
+            )
+            if res.status_code == 200:
+                result = res.json()
+                if result.get('responseStatus') == 200:
+                    candidate = result.get('responseData', {}).get('translatedText', '')
+                    if candidate and isinstance(candidate, str) and candidate.strip() and candidate != text and not _is_suspicious(candidate, len(text)):
+                        _safe_cache_set(cache_key, candidate, 604800)
+                        return candidate
+                else:
+                    print(f"MyMemory Uganda-first returned status {result.get('responseStatus')} - falling back to NLLB")
+            else:
+                print(f"MyMemory Uganda-first HTTP status {res.status_code} for {target_code} - falling back to NLLB")
+        except requests.Timeout:
+            print(f"MyMemory timeout (uganda-first) for {target_code} - falling back to NLLB")
+        except Exception as e:
+            print(f"MyMemory error (uganda-first): {str(e)[:120]} - falling back to NLLB")
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # DIRECT TO MYMEMORY - Most reliable for all languages
-    # ═══════════════════════════════════════════════════════════════════════════
+    # 2) Try NLLB for African languages (preferred for many African languages)
+    try:
+        if target_code in NLLB_LANGS or target_lang in NLLB_LANGS:
+            try:
+                api_target = 'lg' if target_code in {'lg', 'lug'} else target_code
+                api_source = 'en' if source_lang in {'en', 'eng'} else source_lang
+                payload = {
+                    'source_lang': api_source,
+                    'target_lang': api_target,
+                    'text': text
+                }
+                # Use a generous timeout to survive Render cold starts
+                res = requests.post(NLLB_URL, json=payload, timeout=100)
+                if res.status_code == 200:
+                    data = res.json()
+                    translated_text = data.get('translated_text') or data.get('translation') or data.get('translated')
+                    if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious(translated_text, len(text)):
+                        _safe_cache_set(cache_key, translated_text, 604800)  # Cache 7 days
+                        return translated_text
+                    else:
+                        print(f"NLLB returned suspicious/empty result for {target_code}: {json.dumps(data)[:400]}")
+                else:
+                    print(f"NLLB status {res.status_code} for {target_code}: {res.text[:200]}")
+            except requests.Timeout:
+                print(f"NLLB timeout for {target_code} (possible Render cold start)")
+            except Exception as e:
+                print(f"NLLB error: {str(e)[:120]}")
+    except Exception:
+        pass
+
+    # 3) Try LibreTranslate for supported languages
+    try:
+        if target_code in LIBRE_SUPPORTED:
+            try:
+                res = requests.post(
+                    LIBRE_URL,
+                    data={
+                        'q': text,
+                        'source': source_lang,
+                        'target': target_code,
+                        'format': 'text'
+                    },
+                    timeout=5,
+                    headers={
+                        'User-Agent': 'Mozilla/5.0'
+                    }
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    translated_text = data.get('translatedText') or data.get('translation') or data.get('translated')
+                    if isinstance(translated_text, str) and translated_text.strip() and translated_text != text:
+                        _safe_cache_set(cache_key, translated_text, 604800)
+                        return translated_text
+                else:
+                    print(f"LibreTranslate status {res.status_code} for {target_code}")
+            except requests.Timeout:
+                print(f"LibreTranslate timeout for {target_code}")
+            except Exception as e:
+                print(f"LibreTranslate error: {str(e)[:120]}")
+    except Exception:
+        pass
+
+    # 4) Final fallback: MyMemory (broad coverage)
     try:
         res = requests.get(
             'https://api.mymemory.translated.net/get',
@@ -342,13 +467,12 @@ def translate_smart(text, target_lang, source_lang='en'):
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         )
-        
         if res.status_code == 200:
             result = res.json()
             if result.get('responseStatus') == 200:
                 translated = result.get('responseData', {}).get('translatedText', text)
-                if translated and translated != text and translated.lower() != 'undefined':
-                    _safe_cache_set(cache_key, translated, 86400)  # Cache 24h
+                if translated and translated != text and translated.lower() != 'undefined' and not _is_suspicious(translated, len(text)):
+                    _safe_cache_set(cache_key, translated, 604800)  # Cache 7 days
                     return translated
             else:
                 print(f"MyMemory status {result.get('responseStatus')} for {target_lang}")
