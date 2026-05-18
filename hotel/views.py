@@ -420,7 +420,17 @@ def translate_smart(text, target_lang, source_lang='en'):
             print("Sunbird API key not configured, skipping Sunbird translation")
             return None
 
-        api_source = 'eng' if source_lang in {'en', 'eng'} else source_lang
+        # Sunbird doesn't support 'auto' - always use 'eng' or map source lang
+        if source_lang in {'en', 'eng', 'auto'}:
+            api_source = 'eng'
+        else:
+            api_source = source_lang
+        
+        # Validate that target language is supported by Sunbird
+        if target_code not in SUNBIRD_LANGS and target_lang not in SUNBIRD_LANGS:
+            print(f"Target language {target_code} not supported by Sunbird")
+            return None
+            
         payload = {
             'source_language': api_source,
             'target_language': target_code,
@@ -439,10 +449,19 @@ def translate_smart(text, target_lang, source_lang='en'):
             }
         )
         if res.status_code != 200:
-            print(f"Sunbird status {res.status_code} for {target_code}: {res.text[:200]}")
+            if res.status_code == 422:
+                print(f"Sunbird validation error for {target_code}: {res.text[:300]}")
+            elif res.status_code >= 500:
+                print(f"Sunbird server error {res.status_code}")
+            else:
+                print(f"Sunbird status {res.status_code} for {target_code}: {res.text[:200]}")
             return None
 
-        data = res.json()
+        try:
+            data = res.json()
+        except Exception as e:
+            print(f"Sunbird JSON parse error: {str(e)[:100]}")
+            return None
         translated_text = (
             data.get('output', {}).get('translated_text') or
             data.get('output', {}).get('translatedText') or
@@ -458,8 +477,10 @@ def translate_smart(text, target_lang, source_lang='en'):
             print("NLLB API URL not configured, skipping NLLB translation")
             return None
         request_url = NLLB_URL.rstrip('/') + '/'
+        # NLLB expects proper language codes, default to 'en' for auto
+        source_code = 'en' if service_source_lang in {'en', 'eng', 'auto'} else service_source_lang
         payload = {
-            'source': 'en' if service_source_lang in {'en', 'eng'} else service_source_lang,
+            'source': source_code,
             'target': target_code,
             'text': text
         }
@@ -482,7 +503,12 @@ def translate_smart(text, target_lang, source_lang='en'):
             return None
 
         if res.status_code != 200:
-            print(f"NLLB status {res.status_code} for {target_code}: {res.text[:200]}")
+            if res.status_code == 403:
+                print(f"NLLB access forbidden (rate limited or IP blocked) for {target_code}")
+            elif res.status_code >= 500:
+                print(f"NLLB server error {res.status_code}")
+            else:
+                print(f"NLLB status {res.status_code} for {target_code}: {res.text[:100]}")
             return None
 
         try:
@@ -502,9 +528,13 @@ def translate_smart(text, target_lang, source_lang='en'):
             return None
 
         def _call_libre(url):
+            # LibreTranslate expects 'auto' for auto-detect, otherwise use language code
+            libre_source = service_source_lang if service_source_lang in {'auto', 'en', 'eng'} else service_source_lang
+            if libre_source == 'eng':
+                libre_source = 'en'
             payload = {
                 'q': text,
-                'source': service_source_lang,
+                'source': libre_source,
                 'target': target_code,
                 'format': 'text'
             }
@@ -526,12 +556,16 @@ def translate_smart(text, target_lang, source_lang='en'):
                 res = _call_libre(url)
                 if res.status_code != 200:
                     if res.status_code == 400 and 'api key' in res.text.lower():
-                        print(f"LibreTranslate {url} requires API key for {target_code}: {res.text[:200]}")
+                        print(f"LibreTranslate {url} requires API key for {target_code}")
                         continue
                     if res.status_code == 429:
-                        print(f"LibreTranslate rate limited at {url} for {target_code}: {res.text[:200]}")
+                        print(f"LibreTranslate rate limited at {url}")
                         continue
-                    print(f"LibreTranslate status {res.status_code} for {target_code} at {url}: {res.text[:200]}")
+                    if res.status_code == 403:
+                        print(f"LibreTranslate access forbidden at {url}")
+                        continue
+                    if res.status_code >= 500:
+                        print(f"LibreTranslate server error {res.status_code} at {url}")
                     continue
                 data = res.json()
                 translated_text = data.get('translatedText') or data.get('translation') or data.get('translated')
@@ -544,14 +578,16 @@ def translate_smart(text, target_lang, source_lang='en'):
         return None
 
     def _try_mymemory():
-        if not service_source_lang or not target_code:
+        if not target_code:
             return None
+        # MyMemory doesn't support 'auto' source, default to 'en'
+        mymem_source = 'en' if service_source_lang in {'auto', 'en', 'eng'} else service_source_lang
         try:
             res = requests.get(
                 'https://api.mymemory.translated.net/get',
                 params={
                     'q': text[:500],
-                    'langpair': f'{service_source_lang}|{target_code}'
+                    'langpair': f'{mymem_source}|{target_code}'
                 },
                 timeout=8,
                 headers={
@@ -559,7 +595,12 @@ def translate_smart(text, target_lang, source_lang='en'):
                 }
             )
             if res.status_code != 200:
-                print(f"MyMemory status {res.status_code} for {target_lang}: {res.text[:200]}")
+                if res.status_code == 403:
+                    print(f"MyMemory access forbidden (rate limited or IP blocked) for {target_lang}")
+                elif res.status_code >= 500:
+                    print(f"MyMemory server error {res.status_code}")
+                else:
+                    print(f"MyMemory status {res.status_code} for {target_lang}")
                 return None
             result = res.json()
             if result.get('responseStatus') == 200:
