@@ -49,71 +49,112 @@ def sync_aliexpress_products(request):
        # Comprehensive Tech, AI, Smart Home, Smart Beauty & Personal Care Sync
        # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
         # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
+       # Fully Expanded Product Sync: AI Gear, Wearables, Robotics, Smart Home, Dental/Cosmetic Tech & Daily Innovations
         search_groups = [
-            # --- AI Wearables & Smart Jewelry ---
+            # =================================================================
+            # 1. AI WEARABLES & SMART JEWELRY (High Perceived Value)
+            # =================================================================
             {'query': 'AI smart glasses video recording live stream audio', 'count': 10},
-            {'query': 'smart ring health tracker heart rate sleep monitor', 'count': 10},
-            {'query': 'smart bracelet bangle fitness tracker touch screen', 'count': 10},
-            {'query': 'pendant necklace hidden mini spy camera audio recorder', 'count': 10},
-            {'query': 'series 10 ultra smartwatch bluetooth call rugged gps', 'count': 10},
+            {'query': 'smart glasses bluetooth audio wireless polarized sunglasses', 'count': 10},
+            {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
+            {'query': 'smart ring health tracker heart rate sleep monitor fitness', 'count': 10},
+            {'query': 'smart ring waterproof NFC tech ring digital access control', 'count': 10},
+            {'query': 'smart bracelet bangle fitness tracker touch screen blood pressure', 'count': 10},
+            {'query': 'pendant necklace hidden mini spy camera audio voice recorder', 'count': 10},
+            {'query': 'series 10 ultra smartwatch bluetooth call rugged gps men women', 'count': 10},
+            {'query': 'amoled display smart watch round luxury sports business watch', 'count': 10},
 
-            # --- Robotics & Smart Play Toys ---
-            {'query': 'intelligent AI robot companion voice control dancing', 'count': 10},
-            {'query': 'smart robot vacuum cleaner auto empty dock laser navigation', 'count': 10},
-            {'query': 'educational smart robot programming toy for kids', 'count': 10},
-            {'query': 'interactive AI rc pet robot dog gesture control', 'count': 10},
+            # =================================================================
+            # 2. ROBOTICS & SMART PLAY TOYS (High-Tech Engagement)
+            # =================================================================
+            {'query': 'intelligent AI robot companion voice control dancing gesture', 'count': 10},
+            {'query': 'smart robot vacuum cleaner auto empty dock laser lidar navigation', 'count': 10},
+            {'query': 'educational smart robot programming steam toy for kids coding', 'count': 10},
+            {'query': 'interactive AI rc pet robot dog gesture control remote smart', 'count': 10},
+            {'query': 'diy robotic arm mechanical claw kit programming robotics education', 'count': 10},
+            {'query': 'smart balance rc pocket robot dance music voice recording toy', 'count': 10},
 
-            # --- AI Security & High-End Cameras ---
-            {'query': 'AI face recognition tracking security camera outdoor wifi', 'count': 10},
-            {'query': '4K dual lens wifi PTZ camera humanoid auto tracking', 'count': 10},
-            {'query': 'hidden mini camera wireless smart home night vision', 'count': 10},
+            # =================================================================
+            # 3. AI SECURITY & HIGH-END CAMERAS (Ecosystem Staples)
+            # =================================================================
+            {'query': 'AI face recognition tracking security camera outdoor wifi ip', 'count': 10},
+            {'query': '4K dual lens wifi PTZ camera humanoid auto tracking zoom cctv', 'count': 10},
+            {'query': 'hidden mini camera wireless smart home night vision motion alarm', 'count': 10},
+            {'query': 'solar panel battery power wireless security camera outdoor waterproof', 'count': 10},
+            {'query': 'smart video doorbell camera wireless intercom night vision home', 'count': 10},
 
-            # --- Targeted Budget Cameras ($5 & $10 Brackets) ---
+            # =================================================================
+            # 4. TARGETED BUDGET & MINI CAMERAS ($5 & $10 Brackets)
+            # =================================================================
             {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 10},
             {'query': 'budget cctv home security wifi camera night vision 10 dollars', 'count': 10},
             {'query': 'action camera sports video recorder mini dvr small under 10', 'count': 10},
             {'query': 'webcam micro camera usb plug play cheap clear audio 5', 'count': 10},
+            {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 10},
+            {'query': 'magnetic mini wifi camera night vision smart home security a9', 'count': 10},
 
-            # --- Advanced Smart Home Ecosystem ---
-            {'query': 'smart home automation hub gateway zigbee wifi alexa', 'count': 10},
-            {'query': 'smart thermostatic radiator valve programmable voice control', 'count': 10},
-            {'query': 'smart fingerprint door lock biometric electronic keyless', 'count': 10},
-            {'query': 'smart led light bulbs rgb color changing app control', 'count': 10},
-            {'query': 'smart curtain switch motor track automatic timer control', 'count': 10},
-            {'query': 'smart plug socket power monitor switch wifi home assistant', 'count': 10},
+            # =================================================================
+            # 5. ADVANCED SMART HOME ECOSYSTEM (Home Automation)
+            # =================================================================
+            {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
+            {'query': 'smart thermostatic radiator valve programmable voice control tuya', 'count': 10},
+            {'query': 'smart fingerprint door lock biometric electronic keyless app bluetooth', 'count': 10},
+            {'query': 'smart led light bulbs rgb color changing app timer control pack', 'count': 10},
+            {'query': 'smart curtain switch motor track automatic timer remote control', 'count': 10},
+            {'query': 'smart plug socket power monitor switch wifi home assistant alexa', 'count': 10},
+            {'query': 'universal smart ir remote control hub wifi tuya alexa smart home', 'count': 10},
+            {'query': 'smart air quality monitor co2 detector temperature humidity wifi', 'count': 10},
 
-            # --- Smart Dental & Tooth Cleaning Tech ---
-            {'query': 'ultrasonic teeth cleaner dental scaler calculus remover', 'count': 10},
-            {'query': 'smart electric toothbrush sonic rechargeable app control', 'count': 10},
-            {'query': 'oral irrigator cordless dental water flosser portable', 'count': 10},
-            {'query': 'uv light toothbrush sterilizer holder automatic dispenser', 'count': 10},
+            # =================================================================
+            # 6. SMART DENTAL & TOOTH CLEANING TECH (Personal Health)
+            # =================================================================
+            {'query': 'ultrasonic teeth cleaner dental scaler calculus remover plaque tartar', 'count': 10},
+            {'query': 'smart electric toothbrush sonic rechargeable app control timer pressure', 'count': 10},
+            {'query': 'oral irrigator cordless dental water flosser portable travel waterproof', 'count': 10},
+            {'query': 'uv light toothbrush sterilizer holder automatic toothpaste dispenser', 'count': 10},
+            {'query': 'electric tooth stain eraser plaque remover dental cleaning whitening kit', 'count': 10},
+            {'query': 'visual ultrasonic dental scaler hd camera built-in phone app wireless', 'count': 10},
 
-            # --- Smart Cosmetics & High-Tech Makeup ---
-            {'query': 'led makeup mirror light adjustable touch screen smart sensor', 'count': 10},
-            {'query': 'electric makeup brush cleaner automatic spinning washer dryer', 'count': 10},
-            {'query': 'microcurrent facial massager anti aging face lift skin tightening', 'count': 10},
-            {'query': 'led light therapy face mask photon skin rejuvenation acne', 'count': 10},
-            {'query': 'smart skin analyzer moisture oil tester digital monitor', 'count': 10},
+            # =================================================================
+            # 7. SMART COSMETICS & HIGH-TECH MAKEUP (Beauty Tech)
+            # =================================================================
+            {'query': 'led makeup mirror light adjustable touch screen smart sensor dimmable', 'count': 10},
+            {'query': 'electric makeup brush cleaner automatic spinning washer rapid dryer', 'count': 10},
+            {'query': 'microcurrent facial massager anti aging face lift skin tightening device', 'count': 10},
+            {'query': 'led light therapy face mask photon skin rejuvenation acne treatment red', 'count': 10},
+            {'query': 'smart skin analyzer moisture oil tester digital monitor sensor display', 'count': 10},
+            {'query': 'rf face lifting device radio frequency skin tightening ems facial', 'count': 10},
+            {'query': 'ipl laser hair remover permanent painless electric epilator photo flash', 'count': 10},
 
-            # --- Advanced Hair Care Tech ---
-            {'query': 'high speed ionic hair dryer professional brushless motor', 'count': 10},
-            {'query': 'laser hair growth helmet anti hair loss treatment cap', 'count': 10},
-            {'query': 'wireless automatic hair curler rotating ceramic cordless usb', 'count': 10},
-            {'query': 'electric scalp massager waterproof hair growth stimulation', 'count': 10},
+            # =================================================================
+            # 8. ADVANCED HAIR CARE TECH (High Margins)
+            # =================================================================
+            {'query': 'high speed ionic hair dryer professional brushless motor blower dry', 'count': 10},
+            {'query': 'laser hair growth helmet anti hair loss treatment cap red light therapy', 'count': 10},
+            {'query': 'wireless automatic hair curler rotating ceramic cordless usb charging', 'count': 10},
+            {'query': 'electric scalp massager waterproof hair growth stimulation head relax', 'count': 10},
+            {'query': 'hot air brush 5 in 1 hair styler straightener curler comb electric dryer', 'count': 10},
 
-            # --- Fast-Moving Daily Essentials & Face Towels (High Repeat Orders) ---
-            {'query': 'disposable face towel 100 natural cotton makeup cleansing wipes', 'count': 10},
-            {'query': 'microfiber hair drying towel wrap super absorbent quick dry cap', 'count': 10},
-            {'query': 'silicone dishwashing scrubber gloves heat resistant reusable kitchen', 'count': 10},
-            {'query': 'automatic liquid soap dispenser touchless infrared motion sensor', 'count': 10},
-            {'query': 'portable lint remover clothes fuzz shaver pellet cutting machine', 'count': 10},
+            # =================================================================
+            # 9. FAST-MOVING DAILY ESSENTIALS & TOWELS (High Volume Reorders)
+            # =================================================================
+            {'query': 'disposable face towel 100 natural cotton makeup cleansing wipes rolls', 'count': 10},
+            {'query': 'microfiber hair drying towel wrap super absorbent quick dry shower cap', 'count': 10},
+            {'query': 'silicone dishwashing scrubber gloves heat resistant reusable kitchen cleaning', 'count': 10},
+            {'query': 'automatic liquid soap dispenser touchless infrared motion sensor wall mount', 'count': 10},
+            {'query': 'portable lint remover clothes fuzz shaver pellet cutting machine trimmer', 'count': 10},
+            {'query': 'compressed towels mini portable disposable cotton face towel tablet outdoor', 'count': 10},
 
-            # --- Cheap, High-Volume Trending Innovations (Impulse Buys) ---
-            {'query': 'digital kitchen scale electronic food weight measuring tool precision', 'count': 10},
-            {'query': 'mini bag sealer heat portable plastic packaging closing sealer machine', 'count': 10},
-            {'query': 'magnetic phone holder car mount universal air vent dashboard magnet', 'count': 10},
-            {'query': 'flame air humidifier ultrasonic essential oil aroma diffuser led light', 'count': 10},
-            {'query': 'rechargeable mini neck fan portable bladeless mute wearable fans usb', 'count': 10},
+            # =================================================================
+            # 10. CHEAP, HIGH-VOLUME TRENDING INNOVATIONS (Impulse Checkout Buys)
+            # =================================================================
+            {'query': 'digital kitchen scale electronic food weight measuring tool precision lcd', 'count': 10},
+            {'query': 'mini bag sealer heat portable plastic packaging closing sealer machine tool', 'count': 10},
+            {'query': 'magnetic phone holder car mount universal air vent dashboard magnet stand', 'count': 10},
+            {'query': 'flame air humidifier ultrasonic essential oil aroma diffuser led light effect', 'count': 10},
+            {'query': 'rechargeable mini neck fan portable bladeless mute wearable outdoor fans usb', 'count': 10},
+            {'query': 'led motion sensor light under cabinet wireless magnetic rechargeable kitchen night', 'count': 10},
+            {'query': 'electric automatic pepper salt mill grinder gravity auto kitchen tool usb', 'count': 10},
         ]
         created_count = 0
         updated_count = 0
