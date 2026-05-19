@@ -669,31 +669,28 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
     FINAL_FLOOR = round_price(product_price * Decimal('0.90'), product_price)
     STAGE_TWO_PRICE = round_price(product_price * Decimal('0.95'), product_price)
     STAGE_ONE_PRICE = round_price(product_price * Decimal('0.98'), product_price)
-    
-    last_ai_offer = product.negotiated_price or product_price
-    
-    if product.negotiated_price and product.negotiated_price <= FINAL_FLOOR and product.negotiated_price < product_price:
-        return generate_response('already_agreed', round_price(product.negotiated_price, product_price))
 
+    session_price = get_session_negotiated_price(request, product)
+    last_ai_offer = session_price or product_price
+
+    if session_price and session_price <= FINAL_FLOOR and session_price < product_price:
+        return generate_response('already_agreed', round_price(session_price, product_price))
 
     offer = None
     # Use regex to find the first number in the message
     # It will extract "200" from "200ugsh" or "100,000" from "100,000"
     offer_match = re.search(r'(\d[\d,\.]*)', user_message)
-    
+
     if offer_match:
         try:
             # Step 1: Remove commas and periods used for formatting
             val = offer_match.group(1).replace(',', '')
-            
             # Step 2: Convert strictly to the number typed. 
             # If the user types 10, offer = 10. If they type 200, offer = 200.
             offer = Decimal(val).quantize(Decimal('0'))
-            
-            raw_offer_text = f"{curr} {offer:,.0f}" 
-        except (InvalidOperation, ValueError): 
+            raw_offer_text = f"{curr} {offer:,.0f}"
+        except (InvalidOperation, ValueError):
             offer = None
-    
 
     if offer is None:
         user_msg_lower = user_message.lower()
@@ -701,51 +698,68 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
             if last_ai_offer >= product_price * Decimal('0.99'):
                 new_price = STAGE_ONE_PRICE
             elif last_ai_offer > STAGE_TWO_PRICE + Decimal('1'):
-                 new_price = STAGE_TWO_PRICE 
+                new_price = STAGE_TWO_PRICE
             elif last_ai_offer > FINAL_FLOOR + Decimal('1'):
-                 new_price = FINAL_FLOOR
+                new_price = FINAL_FLOOR
             else:
-                 return generate_response('final_floor_rejection', FINAL_FLOOR, raw_offer_text)
-            
-            product.negotiated_price = new_price
-            product.save()
-            return generate_response('initial_ask_counter' if new_price==STAGE_ONE_PRICE else ('mid_ask_counter' if new_price==STAGE_TWO_PRICE else 'final_ask_counter'), new_price)
+                return generate_response('final_floor_rejection', FINAL_FLOOR, raw_offer_text)
+
+            set_session_negotiated_price(request, product, new_price)
+            return generate_response('initial_ask_counter' if new_price == STAGE_ONE_PRICE else ('mid_ask_counter' if new_price == STAGE_TWO_PRICE else 'final_ask_counter'), new_price)
         return generate_response('default_query')
 
-    if offer < VENDOR_MIN_ENGAGEMENT: 
+    if offer < VENDOR_MIN_ENGAGEMENT:
         if last_ai_offer >= product_price * Decimal('0.99'):
-             product.negotiated_price = STAGE_ONE_PRICE
-             product.save()
-             return generate_response('too_low_initial_counter', STAGE_ONE_PRICE, raw_offer_text)
+            set_session_negotiated_price(request, product, STAGE_ONE_PRICE)
+            return generate_response('too_low_initial_counter', STAGE_ONE_PRICE, raw_offer_text)
         return generate_response('final_floor_rejection', last_ai_offer, raw_offer_text)
 
     if offer > product_price:
-        product.negotiated_price = product_price
-        product.save()
+        set_session_negotiated_price(request, product, product_price)
         return generate_response('too_high_offer', product_price, raw_offer_text)
 
     if offer >= FINAL_FLOOR:
         final_p = round_price(offer if offer < product_price else product_price, product_price)
-        product.negotiated_price = final_p
-        product.save()
+        set_session_negotiated_price(request, product, final_p)
         return generate_response('accept', final_p)
-    
+
     if last_ai_offer >= product_price * Decimal('0.99'):
         new_price = STAGE_ONE_PRICE
-        product.negotiated_price = new_price
-        product.save()
+        set_session_negotiated_price(request, product, new_price)
         return generate_response('stage_one_offer', new_price, raw_offer_text)
     elif last_ai_offer > STAGE_TWO_PRICE + Decimal('1'):
         new_price = STAGE_TWO_PRICE
-        product.negotiated_price = new_price
-        product.save()
+        set_session_negotiated_price(request, product, new_price)
         return generate_response('stage_two_offer', new_price, raw_offer_text)
     elif last_ai_offer > FINAL_FLOOR + Decimal('1'):
-        product.negotiated_price = FINAL_FLOOR
-        product.save()
+        set_session_negotiated_price(request, product, FINAL_FLOOR)
         return generate_response('final_offer', FINAL_FLOOR)
-    else: 
+    else:
         return generate_response('final_floor_rejection', FINAL_FLOOR, raw_offer_text)
+
+
+def get_session_negotiated_price(request, product):
+    value = request.session.get(f'negotiated_price_{product.slug}')
+    if value is None:
+        return None
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError):
+        return None
+
+def set_session_negotiated_price(request, product, price):
+    request.session[f'negotiated_price_{product.slug}'] = str(price)
+    request.session.modified = True
+
+def clear_session_negotiation(request, slug):
+    for key in [
+        f'chat_history_{slug}',
+        f'negotiated_price_{slug}',
+        f'accepted_price_{slug}',
+        f'negotiation_language_{slug}',
+    ]:
+        request.session.pop(key, None)
+
 
 def get_ai_response(request, product, user_message, chat_history):
     """Wrapper function to trigger the AI negotiation response."""
@@ -773,30 +787,35 @@ def ai_negotiation_view(request, slug):
         ai_response_text = get_ai_response(request, product, user_message, chat_history)
         chat_history.append({'role': 'ai', 'text': ai_response_text})
         request.session[f'chat_history_{slug}'] = chat_history
-        return redirect('eshop:ai_negotiation', slug=slug) 
-        
-    is_negotiation_active = product.negotiated_price and product.negotiated_price <= product.price * Decimal('0.90')
+        return redirect('eshop:ai_negotiation', slug=slug)
+
+    negotiated_price = get_session_negotiated_price(request, product)
+    is_negotiation_active = negotiated_price and negotiated_price <= product.price * Decimal('0.90')
 
     context = {
-        'product': product, 'form': form, 'chat_history': chat_history,
-        'is_negotiation_active': is_negotiation_active, 'final_price': product.negotiated_price
+        'product': product,
+        'form': form,
+        'chat_history': chat_history,
+        'is_negotiation_active': is_negotiation_active,
+        'final_price': negotiated_price
     }
     return render(request, 'eshop/ai_negotiation.html', context)
 
 @login_required
 def accept_negotiated_price(request, slug):
-    """Confirms the negotiated price, updates the cart item, and cleans up session data."""
+    """Confirms the negotiated price and cleans up negotiation session state."""
     product = get_object_or_404(Product, slug=slug)
     curr = product.get_currency_code()
-    cart = get_user_cart(request)
-    if product.negotiated_price and product.negotiated_price <= product.price:
-        # Note: Cart logic may need adjustment if multiple quantities exist; 
-        # Here it ensures the negotiated price is applied to the product context.
-        CartItem.objects.filter(cart=cart, product=product).delete() 
+    negotiated_price = get_session_negotiated_price(request, product)
+
+    if negotiated_price and negotiated_price <= product.price:
+        request.session[f'accepted_price_{slug}'] = str(negotiated_price)
         request.session.pop(f'chat_history_{slug}', None)
         request.session.pop(f'negotiation_language_{slug}', None)
-        messages.success(request, f"🎉 Negotiated price of {curr} {product.negotiated_price:,.0f} accepted!")
+        request.session.pop(f'negotiated_price_{slug}', None)
+        messages.success(request, f"🎉 Negotiated price of {curr} {negotiated_price:,.0f} accepted!")
         return redirect('eshop:product_detail', slug=slug)
+
     messages.error(request, "Oops! You must successfully negotiate first.")
     return redirect('eshop:ai_negotiation', slug=slug)
 
@@ -835,15 +854,6 @@ def buy_now(request, product_id):
 
 def reset_negotiation(request, slug):
     """Clears the chat history and negotiated price for a specific product session."""
-    # Define keys based on your naming convention
-    chat_key = f'chat_history_{slug}'
-    price_key = f'negotiated_price_{slug}'
-    
-    # Remove them from the session if they exist
-    if chat_key in request.session:
-        del request.session[chat_key]
-    if price_key in request.session:
-        del request.session[price_key]
-        
+    clear_session_negotiation(request, slug)
     messages.info(request, "Negotiation history has been cleared.")
     return redirect('eshop:ai_negotiation', slug=slug)  
