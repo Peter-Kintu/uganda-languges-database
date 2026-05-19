@@ -40,11 +40,10 @@
         <div class="p-4 md:p-8">
             {# Chat Window #}
             <div id="chat-window" 
-                 class="h-[420px] sm:h-[480px] lg:h-[600px] overflow-y-auto p-4 space-y-6 mb-6 bg-white rounded-2xl border border-gray-200 shadow-inner custom-scrollbar">
-                
+                 class="h-[420px] sm:h-[480px] lg:h-[600px] overflow-y-auto p-4 space-y-6 mb-6 bg-white rounded-2xl custom-scrollbar">
                 {# Initial Bot Greeting #}
                 <div class="flex justify-start">
-                    <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-lg border border-gray-200">
+                    <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-sm">
                         <div class="flex items-center gap-3 mb-1">
                             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-500">🧕🏾</span>
                             <span class="text-xs font-bold text-indigo-500">Nakintu</span>
@@ -63,7 +62,7 @@
                         </div>
                     {% else %}
                         <div class="flex justify-start">
-                            <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-lg border border-gray-200 transform transition hover:scale-[1.01]">
+                            <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-sm transform transition hover:scale-[1.01]">
                                 <div class="flex items-center gap-3 mb-1">
                                     <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-500">🧕🏾</span>
                                     <span class="text-xs font-bold text-indigo-500">Nakintu</span>
@@ -82,7 +81,7 @@
             {# Input Form #}
             <form method="post" id="negotiation-form" class="relative">
                 {% csrf_token %}
-                <div class="flex flex-col sm:flex-row gap-3 bg-gray-100 p-2 rounded-2xl border border-gray-200 focus-within:border-indigo-500 transition-all shadow-sm">
+                <div class="flex flex-col sm:flex-row gap-3 bg-gray-100 p-2 rounded-2xl border border-gray-200 focus-within:border-indigo-500 transition-all shadow-sm negotiation-input">
                     <div class="flex-grow">
                         {{ form.user_message }}
                     </div>
@@ -144,11 +143,17 @@
 
     #chat-window { background: #f8fafc; }
     .chat-bubble-user { background: #4338ca; color: #ffffff; }
-    .chat-bubble-bot { background: #ffffff; color: #111827; border: 1px solid #e5e7eb; }
+    .chat-bubble-bot { background: #ffffff; color: #111827; }
     .chat-bubble-user p, .chat-bubble-bot p { margin: 0; }
-    .chat-bubble-user { box-shadow: 0 20px 55px rgba(67, 56, 202, 0.18); }
-    .chat-bubble-bot { box-shadow: 0 20px 55px rgba(15, 23, 42, 0.08); }
+    .chat-bubble-user { box-shadow: none !important; }
+    .chat-bubble-bot { box-shadow: none !important; }
     .button-primary { transition: all 0.25s ease; }
+        .negotiation-input { border-color: rgba(209, 213, 219, 0.6); }
+
+    /* Global shadow removal for negotiator UI */
+    #chat-window, .chat-bubble-user, .chat-bubble-bot, .negotiation-input, button[type="submit"], .max-w-4xl, .accept-button, .shadow-2xl, .shadow-xl, .shadow-lg, .shadow-sm, .shadow-inner {
+        box-shadow: none !important;
+    }
 
     header { min-height: 180px; }
     header h1 { line-height: 1.05; }
@@ -167,6 +172,12 @@
         .bg-gray-100 { padding: 1rem; }
         button[type="submit"] { width: 100%; }
         header { padding: 1.5rem; }
+            .chat-bubble-user, .chat-bubble-bot { box-shadow: none; }
+            #chat-window { padding: 1rem; }
+            .chat-bubble-user, .chat-bubble-bot { max-width: 100%; }
+            .chat-bubble-bot { border: none; }
+            .chat-bubble-user { border: none; }
+            .negotiation-input { border: none; box-shadow: none; }
     }
 
     @media (max-width: 640px) {
@@ -175,6 +186,12 @@
         .rounded-2xl { border-radius: 1rem; }
         .text-sm { font-size: 0.95rem !important; }
         header h1 { font-size: 1.75rem; }
+            #chat-window { background: #f9fafb; }
+            .chat-bubble-user, .chat-bubble-bot { padding: 1rem; }
+            .chat-bubble-user { border-radius: 1.25rem; }
+            .chat-bubble-bot { border-radius: 1.25rem; }
+            .chat-bubble-user p, .chat-bubble-bot p { font-size: 0.96rem; }
+            .negotiation-input { padding: 0.75rem; }
     }
 </style>
 

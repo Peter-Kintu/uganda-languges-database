@@ -649,18 +649,18 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
             return get_luganda_response(stage_key, price_str, curr, raw_offer_text)
         
         eng_responses = {
-            'accept': f"Yes! **{curr} {price_str}** is an agreement. We have a deal! 🎉",
-            'final_floor_rejection': f"I appreciate the offer of **{raw_offer_text}**, but it's too low. My price remains **{curr} {price_str}**.",
-            'initial_ask_counter': f"I hear you! I can start at **{curr} {price_str}** (2% drop). What's your counter?",
-            'mid_ask_counter': f"I will drop it again to **{curr} {price_str}** (5% drop). I have one final move left.",
-            'final_ask_counter': f"Last chance! The lowest I can go is **{curr} {price_str}** (10% floor). What do you say?",
+            'accept': f"Yes! {curr} {price_str} is an agreement. We have a deal! 🎉",
+            'final_floor_rejection': f"I appreciate the offer of {raw_offer_text}, but it's too low. My price remains **{curr} {price_str}**.",
+            'initial_ask_counter': f"I hear you! I can start at {curr} {price_str} (2% drop). What's your counter?",
+            'mid_ask_counter': f"I will drop it again to {curr} {price_str} (5% drop). I have one final move left.",
+            'final_ask_counter': f"Last chance! The lowest I can go is {curr} {price_str} (10% floor). What do you say?",
             'default_query': f"I'm not sure how to process that. Please make a clear offer (e.g., '{curr} 80,000').",
-            'already_agreed': f"We've already agreed on **{curr} {price_str}**! Click 'Lock In' below. 🔒",
-            'too_low_initial_counter': f"Offer of **{raw_offer_text}** is far too low. I'll drop to **{curr} {price_str}** to start.",
-            'too_high_offer': f"That's higher than the original! We'll sell it for **{curr} {price_str}**. 😊",
-            'stage_one_offer': f"I appreciate the offer of {raw_offer_text}. I can drop it to **{curr} {price_str}** (2% off).",
-            'stage_two_offer': f"Good move! I will drop it to **{curr} {price_str}** (5% off). One final move left.",
-            'final_offer': f"I'm going to my final floor! The lowest is **{curr} {price_str}**. Ready to lock it in? 🤝"
+            'already_agreed': f"We've already agreed on {curr} {price_str}! Click 'Lock In' below. 🔒",
+            'too_low_initial_counter': f"Offer of {raw_offer_text} is far too low. I'll drop to {curr} {price_str} to start.",
+            'too_high_offer': f"That's higher than the original! We'll sell it for {curr} {price_str}. 😊",
+            'stage_one_offer': f"I appreciate the offer of {raw_offer_text}. I can drop it to {curr} {price_str} (2% off).",
+            'stage_two_offer': f"Good move! I will drop it to {curr} {price_str} (5% off). One final move left.",
+            'final_offer': f"I'm going to my final floor! The lowest is {curr} {price_str}. Ready to lock it in? 🤝"
         }
         return eng_responses.get(stage_key, "An internal error occurred.")
 
