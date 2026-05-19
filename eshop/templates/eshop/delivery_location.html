@@ -107,9 +107,7 @@
 
     <div class="max-w-6xl mx-auto relative z-10">
         <header class="text-center mb-12">
-            <div class="inline-block px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6">
-                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Delivery Protocol v4.0</span>
-            </div>
+            
             <h1 class="font-heading text-4xl md:text-6xl font-bold text-slate-900 mb-4 tracking-tight">
                 Delivery <span class="text-indigo-500 italic">Location.</span>
             </h1>
@@ -124,12 +122,12 @@
                 <div class="glass-card rounded-[2.5rem] p-8 border border-slate-200 relative overflow-hidden">
                     <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
                         <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                        Geospatial Uplink
+                        Find My Location
                     </h2>
                     
                     <button type="button" id="locate-me-button"
                         class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-5 px-6 rounded-2xl mb-6 transition-all duration-300 flex items-center justify-center gap-3 group relative overflow-hidden">
-                        <span class="relative z-10 uppercase tracking-widest text-[11px]" id="btn-text">Establish GPS Link</span>
+                        <span class="relative z-10 uppercase tracking-widest text-[11px]" id="btn-text">Use My Current Location 📍</span>
                         <svg id="gps-icon" class="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243m-4.243 0a8 8 0 1111.314 0z"></path>
                         </svg>
@@ -144,7 +142,7 @@
                         </div>
                         
                         <p class="text-slate-500 text-center font-medium max-w-xs px-6 transition-all duration-500" id="map-message">
-                            Waiting for satellite synchronization. Click the button above to begin.
+                            Click the button above to find your location. If it fails, you can enter your address manually below.
                         </p>
                     </div>
 
@@ -165,7 +163,7 @@
             <div class="lg:col-span-5 space-y-6">
                 <div class="glass-card rounded-[2.5rem] p-8 border border-slate-200 shadow-[0_0_50px_rgba(79,70,229,0.08)]">
                     <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center justify-between">
-                        Manifest Summary
+                        Your Order
                         <span class="text-[10px] font-black bg-white/5 px-3 py-1 rounded-full text-slate-400">CART</span>
                     </h2>
                     
@@ -224,7 +222,7 @@
 
                     <button type="submit" id="confirm-button" 
                             class="w-full py-6 bg-white text-black hover:bg-indigo-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all duration-500 shadow-2xl transform active:scale-[0.98] mt-4">
-                        Confirm & Transact via WhatsApp
+                        Send Order to Vendor via WhatsApp 💬
                     </button>
                 </form>
             </div>
@@ -260,8 +258,8 @@
         const lngInput = document.getElementById('input_longitude');
 
         // Visual feedback to prompt user to check browser permissions
-        btnText.textContent = 'Synchronizing...';
-        mapMessage.textContent = '🛰️ Satellite uplink requested. Please click "Allow" on the browser prompt to lock your coordinates.';
+        btnText.textContent = 'Getting your location...';
+        mapMessage.textContent = 'Getting your location... Please allow location access when the browser asks.';
         mapMessage.classList.add('loading-pulse');
         
         if (!navigator.geolocation) {
@@ -292,21 +290,21 @@
                 signalStatus.className = 'text-xs font-bold text-green-400 uppercase tracking-tighter';
                 
                 mapMessage.classList.remove('loading-pulse');
-                mapMessage.innerHTML = '<span class="text-white font-bold">Location Uplink Established!</span><br>Technical coordinates locked into manifest.';
+                mapMessage.innerHTML = '<span class="text-white font-bold">Location found!</span><br>Your coordinates have been recorded.';
                 statusIcon.innerHTML = `<svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
-                btnText.textContent = 'GPS Re-Sync';
+                btnText.textContent = 'Re-sync Location';
             },
             function(error) {
                 console.error(error);
                 mapMessage.classList.remove('loading-pulse');
-                let errorMsg = "Uplink Failed.";
-                
-                if(error.code === 1) errorMsg = "Access Denied. Please enable GPS in your browser settings.";
-                if(error.code === 2) errorMsg = "Signal Weak. Try moving outdoors.";
-                if(error.code === 3) errorMsg = "Timeout. Satellite link timed out.";
-                
+                let errorMsg = "We couldn't get your device location.";
+
+                if(error.code === 1) errorMsg = "Location access denied. Please enable location permissions or enter your address manually.";
+                if(error.code === 2) errorMsg = "Couldn't locate you. Try moving outdoors or enter address manually.";
+                if(error.code === 3) errorMsg = "Location request timed out. Try again.";
+
                 mapMessage.innerHTML = `<span class="text-red-400 font-bold">${errorMsg}</span>`;
-                btnText.textContent = 'Retry Uplink';
+                btnText.textContent = 'Try Again';
                 signalStatus.textContent = 'Offline';
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -323,9 +321,16 @@
         const phone = document.getElementById('phone').value;
         const vendorPhoneNumber = document.getElementById('input_vendor_whatsapp').value; 
 
-        if (address === '' || city === '' || phone === '' || lat === '0.000000') {
-            alert('Please click "Establish GPS Link" first to lock your coordinates.');
+        if (address === '' || city === '' || phone === '') {
+            alert('Please fill address, city and phone.');
             return;
+        }
+
+        // If GPS was not established, allow manual submission after user confirmation
+        let includeGps = true;
+        if (lat === '0.000000' || lng === '0.000000') {
+            includeGps = confirm('We could not fetch your GPS coordinates. Send the order using the address only? (Recommended if you cannot get location)');
+            if (!includeGps) return;
         }
 
         let itemsList = "";
@@ -335,15 +340,15 @@
         {% endfor %}
 
         // Note: Using standard maps URL for universal compatibility
-        const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+        const mapUrl = (includeGps && lat !== '0.000000') ? `https://www.google.com/maps?q=${lat},${lng}` : '';
 
         let messageContent = `*NEW DELIVERY ORDER (Africana AI)*\n\n` +
-                            `*🛍️ Items:*\n${itemsList}\n` +
-                            `*💰 Total:* {{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0 }}\n\n` +
-                            `*📍 Address:* ${address}, ${city}\n` +
-                            `*📞 Phone:* ${phone}\n` +
-                            `*🌍 GPS:* ${lat}, ${lng}\n` +
-                            `*🗺️ Map:* ${mapUrl}\n`;
+                    `*🛍️ Items:*\n${itemsList}\n` +
+                    `*💰 Total:* {{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0 }}\n\n` +
+                    `*📍 Address:* ${address}, ${city}\n` +
+                    `*📞 Phone:* ${phone}\n` +
+                    (includeGps && lat !== '0.000000' ? `*🌍 GPS:* ${lat}, ${lng}\n` : '') +
+                    (mapUrl ? `*🗺️ Map:* ${mapUrl}\n` : '') ;
 
         if (activeReferrer !== '') {
             messageContent += `\n*Referrer:* @${activeReferrer}\n`;

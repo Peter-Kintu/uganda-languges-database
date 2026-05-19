@@ -15,19 +15,19 @@
         <header class="bg-gradient-to-r from-blue-600/20 to-purple-700/20 p-6 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-                    <span class="text-indigo-400">AI</span> Price Negotiator
+                    Nakintu — Bargain Helper
                 </h1>
                 <p class="text-gray-400 text-sm">Bargaining for: <span class="text-indigo-300 font-semibold">{{ product.name }}</span></p>
                 
                 {# New Reset/Clear Button #}
                 <div class="mt-2">
-                    <a href="{% url 'eshop:reset_negotiation' product.slug %}" 
-                       onclick="return confirm('Reset this chat and start the bargaining from scratch?')"
-                       class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-300 transition-colors">
+                          <a href="{% url 'eshop:reset_negotiation' product.slug %}" 
+                              onclick="return confirm('Clear chat and restart negotiation?')"
+                              class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-300 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        Clear History & Reset Price
+                        Clear Chat & Restart
                     </a>
                 </div>
             </div>
@@ -45,8 +45,11 @@
                 {# Initial Bot Greeting #}
                 <div class="flex justify-start">
                     <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-lg border border-gray-200">
-                        <p class="text-xs font-bold text-indigo-500 mb-1">Nakintu</p>
-                        <p class="text-sm md:text-base italic">"Hello! I'm here to help you get the best deal. What's your offer for the {{ product.name }}?"</p>
+                        <div class="flex items-center gap-3 mb-1">
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-500">🧕🏾</span>
+                            <span class="text-xs font-bold text-indigo-500">Nakintu</span>
+                        </div>
+                        <p class="text-sm md:text-base italic">Hello! I'm Nakintu — I help you bargain for a fair price. Try typing: "I can offer 80,000" or write in your language.</p>
                     </div>
                 </div>
 
@@ -61,7 +64,10 @@
                     {% else %}
                         <div class="flex justify-start">
                             <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-lg border border-gray-200 transform transition hover:scale-[1.01]">
-                                <p class="text-xs font-bold text-indigo-500 mb-1">Nakintu</p>
+                                <div class="flex items-center gap-3 mb-1">
+                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-500">🧕🏾</span>
+                                    <span class="text-xs font-bold text-indigo-500">Nakintu</span>
+                                </div>
                                 <p class="text-sm md:text-base leading-relaxed">{{ message.text|safe }}</p>
                             </div>
                         </div>
@@ -83,7 +89,7 @@
                     <button type="submit" 
                             onclick="showTyping()"
                             class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
-                        <span>Send Offer</span>
+                        <span>Make My Offer 🤝</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                         </svg>
@@ -109,7 +115,13 @@
                         {# Points to negotiated_price passed from session via view context #}
                         <a href="{% url 'eshop:accept_negotiated_price' product.slug %}" 
                            class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-black text-xl py-5 px-12 rounded-2xl transition-all duration-300 shadow-2xl shadow-green-600/40 transform hover:scale-[1.03] ring-4 ring-green-600/20 text-center">
-                            Accept {{ product.get_currency_code }} {{ negotiated_price|default:product.price|floatformat:0|intcomma }} & Close Deal 🤝
+                            {% if negotiated_price %}
+                                Accept {{ product.get_currency_code }} {{ negotiated_price|floatformat:0|intcomma }} & Close Deal 🤝
+                            {% elif product.negotiated_price %}
+                                Accept {{ product.get_currency_code }} {{ product.negotiated_price|floatformat:0|intcomma }} & Close Deal 🤝
+                            {% else %}
+                                Accept {{ product.get_currency_code }} {{ product.price|floatformat:0|intcomma }} & Close Deal 🤝
+                            {% endif %}
                         </a>
                     </div>
                 {% else %}
