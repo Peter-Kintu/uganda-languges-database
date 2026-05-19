@@ -19,6 +19,19 @@
 
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* Make interactive controls visually transparent while preserving layout/function */
+    button, .plus-btn, .plus-btn.youtube, .side-btn, .fab-group a, .video-overlay button, .video-overlay a, .publish-fab {
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        color: inherit !important;
+    }
+    /* Keep icons visible and slightly elevated for affordance */
+    .plus-btn svg, .plus-btn span, .side-btn span, button span, .heart-icon, .verification-seal {
+        filter: none !important;
+        opacity: 0.95;
+    }
     
     #reel-container {
         height: 100vh;
