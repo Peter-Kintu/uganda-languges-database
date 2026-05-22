@@ -106,14 +106,37 @@ def sync_aliexpress_products(request):
             {'query': 'smart air quality monitor co2 detector temperature humidity wifi', 'count': 10},
 
             # =================================================================
-            # 6. SMART DENTAL & TOOTH CLEANING TECH (Personal Health)
+            # 6. ROBOTICS, STEAM & FASHION (Expanded)
             # =================================================================
-            {'query': 'ultrasonic teeth cleaner dental scaler calculus remover plaque tartar', 'count': 10},
-            {'query': 'smart electric toothbrush sonic rechargeable app control timer pressure', 'count': 10},
-            {'query': 'oral irrigator cordless dental water flosser portable travel waterproof', 'count': 10},
-            {'query': 'uv light toothbrush sterilizer holder automatic toothpaste dispenser', 'count': 10},
-            {'query': 'electric tooth stain eraser plaque remover dental cleaning whitening kit', 'count': 10},
-            {'query': 'visual ultrasonic dental scaler hd camera built-in phone app wireless', 'count': 10},
+            # Robotics & STEAM kits (education, hobby, and AI companions)
+            {'query': 'educational STEAM robot kit arduino coding STEM robotic arm kit', 'count': 10},
+            {'query': 'DIY robot kit for kids programmable educational STEAM electronics', 'count': 10},
+            {'query': 'robotics kit arduino raspberry pi programming sensors motors kit', 'count': 10},
+            {'query': 'robotic arm mechanical claw kit programmable gripper hobby kit', 'count': 10},
+            {'query': 'ai robot companion voice control coding educational smart pet robot', 'count': 10},
+            {'query': 'steam engine model kit educational physics mechanical steam toy', 'count': 10},
+            {'query': 'science experiment kit kids STEAM chemistry physics engineering set', 'count': 10},
+            # Women's Fashion & Apparel (high-demand categories)
+            {'query': 'women evening party dress sexy slim-fit suspender solid color dress', 'count': 12},
+            {'query': 'vintage summer dress women v-neck flowers printed casual beach dress', 'count': 12},
+            {'query': 'satin lace briefs sexy women underwear low-rise soft brief lingerie', 'count': 12},
+            {'query': 'deep v neck sleeveless lace blouse summer fashion womens tops', 'count': 12},
+            {'query': 'women cami top lace trim sleeveless open back ribbed crop tank', 'count': 12},
+            {'query': 'women bikini push-up padded bra thong two pieces swimwear sexy', 'count': 12},
+            {'query': 'solid zipper bodycon bodysuits women mock neck long sleeve', 'count': 12},
+            {'query': 'plus size women sleeveless loose t shirt summer tank pockets', 'count': 12},
+            {'query': 'women bohemian floral dress sleeveless casual beach plus size', 'count': 12},
+            # Men's Fashion & Apparel
+            {'query': "mens oversized t shirt summer breathable round neck short sleeve", 'count': 12},
+            {'query': "mens shorts set casual stripe printed elastic waist two piece", 'count': 12},
+            {'query': "mens linen shirt high collar long sleeve summer casual breathable", 'count': 12},
+            {'query': "mens polo shirt business casual short sleeve breathable comfortable", 'count': 12},
+            # Jewelry & Accessories, Luggage, Underwear, Beauty & Health
+            {'query': 'women jewelry necklace tiara choker earrings bridal set', 'count': 10},
+            {'query': 'trendy pendant necklace heart pendant crystal zircon chain women jewelry', 'count': 10},
+            {'query': 'luggage travel backpack carry-on handbag womens tote', 'count': 10},
+            {'query': "mens underwear boxer briefs cotton breathable men's briefs", 'count': 10},
+            {'query': 'beauty skincare facial massager led light therapy face mask photon', 'count': 10},
 
             # =================================================================
             # 7. SMART COSMETICS & HIGH-TECH MAKEUP (Beauty Tech)
