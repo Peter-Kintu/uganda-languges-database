@@ -196,6 +196,12 @@ def sync_aliexpress_products(request):
         created_count = 0
         updated_count = 0
 
+        adult_blacklist = [
+            'vibrator', 'sex toy', 'clitoris', 'clit', 'dildo', 'anal', 'nipple', 'masturbator',
+            'porn', 'adult', 'erotic', 'sucking', 'thrusting', 'dirty', 'bondage',
+            'orgasm', 'sexy toy', 'sex supplies', 'sensual', 'g spot', 'g-spot'
+        ]
+
         for group in search_groups:
             # Using the fixed get_products method
             items = api.get_products(
@@ -209,6 +215,10 @@ def sync_aliexpress_products(request):
 
             for item in items.products:
                 try:
+                    title_lower = str(getattr(item, 'product_title', '')).lower()
+                    if any(term in title_lower for term in adult_blacklist):
+                        continue
+
                     img_url = item.product_main_image_url
                     if img_url and img_url.startswith('//'):
                         img_url = f"https:{img_url}"
@@ -237,6 +247,11 @@ def sync_aliexpress_products(request):
                     else: updated_count += 1
                 except Exception:
                     continue
+
+        # Remove any previously imported adult products that may have been added before filtering was enabled
+        Product.objects.filter(
+            name__iregex=r"(vibrator|sex toy|clitoris|clit|dildo|anal|nipple|masturbator|porn|adult|erotic|sucking|thrusting|g[ -]?spot)"
+        ).delete()
 
         messages.success(request, f"Global Sync Complete! {created_count} hot-selling products added to your catalog.")
     except Exception as e:
