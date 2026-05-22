@@ -51,147 +51,44 @@ def sync_aliexpress_products(request):
         # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
        # Fully Expanded Product Sync: AI Gear, Wearables, Robotics, Smart Home, Dental/Cosmetic Tech & Daily Innovations
         search_groups = [
-            # Priority: Clothes & Fusion AI Glasses (moved to top)
-            {'query': 'women evening party dress sexy slim-fit suspender solid color dress', 'count': 12},
+            # TOP PRIORITY: AI Smart Glasses
+            {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 12},
+            {'query': 'AI smart glasses video recording live stream audio', 'count': 12},
+            {'query': 'smart glasses bluetooth audio wireless polarized sunglasses', 'count': 10},
+            {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
+
+            # NEXT: Mini Cameras & Budget Action Cams
+            {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 12},
+            {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 12},
+            {'query': 'action camera sports video recorder mini dvr small under 10', 'count': 12},
+            {'query': 'webcam micro camera usb plug play cheap clear audio 5', 'count': 12},
+
+            # NEXT: Fusion Products for Men & Women (fusion clothing + accessories)
             {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 12},
             {'query': 'women fusion street traditional hybrid dress cheap high quality', 'count': 12},
             {'query': 'women fusion casual dress budget everyday stylish', 'count': 12},
-            {'query': 'women fusion plus size affordable party dress', 'count': 12},
-            {'query': 'women fusion kimono dress modern ethnic inexpensive', 'count': 12},
-            {'query': 'mens oversized t shirt summer breathable round neck short sleeve', 'count': 12},
-            {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 10},
-            {'query': 'vintage summer dress women v-neck flowers printed casual beach dress', 'count': 12},
-            {'query': 'satin lace briefs sexy women underwear low-rise soft brief lingerie', 'count': 12},
-            {'query': 'deep v neck sleeveless lace blouse summer fashion womens tops', 'count': 12},
-            {'query': 'women cami top lace trim sleeveless open back ribbed crop tank', 'count': 12},
-            {'query': 'women bikini push-up padded bra thong two pieces swimwear sexy', 'count': 12},
-            # =================================================================
-            # 1. AI WEARABLES & SMART JEWELRY (High Perceived Value)
-            # =================================================================
-            {'query': 'AI smart glasses video recording live stream audio', 'count': 10},
-            {'query': 'smart glasses bluetooth audio wireless polarized sunglasses', 'count': 10},
-            {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
-            {'query': 'smart ring health tracker heart rate sleep monitor fitness', 'count': 10},
-            {'query': 'smart ring waterproof NFC tech ring digital access control', 'count': 10},
-            {'query': 'smart bracelet bangle fitness tracker touch screen blood pressure', 'count': 10},
-            {'query': 'pendant necklace hidden mini spy camera audio voice recorder', 'count': 10},
-            {'query': 'series 10 ultra smartwatch bluetooth call rugged gps men women', 'count': 10},
-            {'query': 'amoled display smart watch round luxury sports business watch', 'count': 10},
+            {'query': 'fusion bags cheap travel tote crossbody fusion style', 'count': 12},
 
-            # =================================================================
-            # 2. ROBOTICS & SMART PLAY TOYS (High-Tech Engagement)
-            # =================================================================
-            {'query': 'intelligent AI robot companion voice control dancing gesture', 'count': 10},
-            {'query': 'smart robot vacuum cleaner auto empty dock laser lidar navigation', 'count': 10},
-            {'query': 'educational smart robot programming steam toy for kids coding', 'count': 10},
-            {'query': 'interactive AI rc pet robot dog gesture control remote smart', 'count': 10},
-            {'query': 'diy robotic arm mechanical claw kit programming robotics education', 'count': 10},
-            {'query': 'smart balance rc pocket robot dance music voice recording toy', 'count': 10},
+            # NEXT: Robotics & STEAM (education, hobby, AI companions)
+            {'query': 'educational STEAM robot kit arduino coding STEM robotic arm kit', 'count': 12},
+            {'query': 'DIY robot kit for kids programmable educational STEAM electronics', 'count': 12},
+            {'query': 'robotics kit arduino raspberry pi programming sensors motors kit', 'count': 12},
+            {'query': 'robotic arm mechanical claw kit programmable gripper hobby kit', 'count': 12},
 
-            # =================================================================
-            # 3. AI SECURITY & HIGH-END CAMERAS (Ecosystem Staples)
-            # =================================================================
-            {'query': 'AI face recognition tracking security camera outdoor wifi ip', 'count': 10},
-            {'query': '4K dual lens wifi PTZ camera humanoid auto tracking zoom cctv', 'count': 10},
-            {'query': 'hidden mini camera wireless smart home night vision motion alarm', 'count': 10},
-            {'query': 'solar panel battery power wireless security camera outdoor waterproof', 'count': 10},
-            {'query': 'smart video doorbell camera wireless intercom night vision home', 'count': 10},
-
-            # =================================================================
-            # 4. TARGETED BUDGET & MINI CAMERAS ($5 & $10 Brackets)
-            # =================================================================
-            {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 10},
-            {'query': 'budget cctv home security wifi camera night vision 10 dollars', 'count': 10},
-            {'query': 'action camera sports video recorder mini dvr small under 10', 'count': 10},
-            {'query': 'webcam micro camera usb plug play cheap clear audio 5', 'count': 10},
-            {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 10},
-            {'query': 'magnetic mini wifi camera night vision smart home security a9', 'count': 10},
-
-            # =================================================================
-            # 5. ADVANCED SMART HOME ECOSYSTEM (Home Automation)
-            # =================================================================
-            {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
-            {'query': 'smart thermostatic radiator valve programmable voice control tuya', 'count': 10},
-            {'query': 'smart fingerprint door lock biometric electronic keyless app bluetooth', 'count': 10},
-            {'query': 'smart led light bulbs rgb color changing app timer control pack', 'count': 10},
-            {'query': 'smart curtain switch motor track automatic timer remote control', 'count': 10},
-            {'query': 'smart plug socket power monitor switch wifi home assistant alexa', 'count': 10},
-            {'query': 'universal smart ir remote control hub wifi tuya alexa smart home', 'count': 10},
-            {'query': 'smart air quality monitor co2 detector temperature humidity wifi', 'count': 10},
-
-            # =================================================================
-            # 6. ROBOTICS, STEAM & FASHION (Expanded)
-            # =================================================================
-            # Robotics & STEAM kits (education, hobby, and AI companions)
-            {'query': 'educational STEAM robot kit arduino coding STEM robotic arm kit', 'count': 10},
-            {'query': 'DIY robot kit for kids programmable educational STEAM electronics', 'count': 10},
-            {'query': 'robotics kit arduino raspberry pi programming sensors motors kit', 'count': 10},
-            {'query': 'robotic arm mechanical claw kit programmable gripper hobby kit', 'count': 10},
-            {'query': 'ai robot companion voice control coding educational smart pet robot', 'count': 10},
-            {'query': 'steam engine model kit educational physics mechanical steam toy', 'count': 10},
-            {'query': 'science experiment kit kids STEAM chemistry physics engineering set', 'count': 10},
-            # Women's Fashion & Apparel (high-demand categories)
+            # NEXT: Clothes (general high-demand categories)
             {'query': 'women evening party dress sexy slim-fit suspender solid color dress', 'count': 12},
             {'query': 'vintage summer dress women v-neck flowers printed casual beach dress', 'count': 12},
-            {'query': 'satin lace briefs sexy women underwear low-rise soft brief lingerie', 'count': 12},
-            {'query': 'deep v neck sleeveless lace blouse summer fashion womens tops', 'count': 12},
-            {'query': 'women cami top lace trim sleeveless open back ribbed crop tank', 'count': 12},
-            {'query': 'women bikini push-up padded bra thong two pieces swimwear sexy', 'count': 12},
-            {'query': 'solid zipper bodycon bodysuits women mock neck long sleeve', 'count': 12},
-            {'query': 'plus size women sleeveless loose t shirt summer tank pockets', 'count': 12},
-            {'query': 'women bohemian floral dress sleeveless casual beach plus size', 'count': 12},
-            # Men's Fashion & Apparel
             {'query': "mens oversized t shirt summer breathable round neck short sleeve", 'count': 12},
             {'query': "mens shorts set casual stripe printed elastic waist two piece", 'count': 12},
-            {'query': "mens linen shirt high collar long sleeve summer casual breathable", 'count': 12},
-            {'query': "mens polo shirt business casual short sleeve breathable comfortable", 'count': 12},
-            # Jewelry & Accessories, Luggage, Underwear, Beauty & Health
-            {'query': 'women jewelry necklace tiara choker earrings bridal set', 'count': 10},
-            {'query': 'trendy pendant necklace heart pendant crystal zircon chain women jewelry', 'count': 10},
-            {'query': 'luggage travel backpack carry-on handbag womens tote', 'count': 10},
-            {'query': "mens underwear boxer briefs cotton breathable men's briefs", 'count': 10},
-            {'query': 'beauty skincare facial massager led light therapy face mask photon', 'count': 10},
 
-            # =================================================================
-            # 7. SMART COSMETICS & HIGH-TECH MAKEUP (Beauty Tech)
-            # =================================================================
-            {'query': 'led makeup mirror light adjustable touch screen smart sensor dimmable', 'count': 10},
-            {'query': 'electric makeup brush cleaner automatic spinning washer rapid dryer', 'count': 10},
-            {'query': 'microcurrent facial massager anti aging face lift skin tightening device', 'count': 10},
-            {'query': 'led light therapy face mask photon skin rejuvenation acne treatment red', 'count': 10},
-            {'query': 'smart skin analyzer moisture oil tester digital monitor sensor display', 'count': 10},
-            {'query': 'rf face lifting device radio frequency skin tightening ems facial', 'count': 10},
-            {'query': 'ipl laser hair remover permanent painless electric epilator photo flash', 'count': 10},
+            # NEXT: Luggage & Bags (cheap travel options)
+            {'query': 'luggage travel backpack carry-on handbag womens tote', 'count': 12},
+            {'query': 'cheap travel backpacks lightweight foldable tote bag', 'count': 12},
 
-            # =================================================================
-            # 8. ADVANCED HAIR CARE TECH (High Margins)
-            # =================================================================
-            {'query': 'high speed ionic hair dryer professional brushless motor blower dry', 'count': 10},
-            {'query': 'laser hair growth helmet anti hair loss treatment cap red light therapy', 'count': 10},
-            {'query': 'wireless automatic hair curler rotating ceramic cordless usb charging', 'count': 10},
-            {'query': 'electric scalp massager waterproof hair growth stimulation head relax', 'count': 10},
-            {'query': 'hot air brush 5 in 1 hair styler straightener curler comb electric dryer', 'count': 10},
-
-            # =================================================================
-            # 9. FAST-MOVING DAILY ESSENTIALS & TOWELS (High Volume Reorders)
-            # =================================================================
-            {'query': 'disposable face towel 100 natural cotton makeup cleansing wipes rolls', 'count': 10},
-            {'query': 'microfiber hair drying towel wrap super absorbent quick dry shower cap', 'count': 10},
-            {'query': 'silicone dishwashing scrubber gloves heat resistant reusable kitchen cleaning', 'count': 10},
-            {'query': 'automatic liquid soap dispenser touchless infrared motion sensor wall mount', 'count': 10},
-            {'query': 'portable lint remover clothes fuzz shaver pellet cutting machine trimmer', 'count': 10},
-            {'query': 'compressed towels mini portable disposable cotton face towel tablet outdoor', 'count': 10},
-
-            # =================================================================
-            # 10. CHEAP, HIGH-VOLUME TRENDING INNOVATIONS (Impulse Checkout Buys)
-            # =================================================================
+            # FALLBACK: Other categories (left intact)
+            {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
             {'query': 'digital kitchen scale electronic food weight measuring tool precision lcd', 'count': 10},
-            {'query': 'mini bag sealer heat portable plastic packaging closing sealer machine tool', 'count': 10},
-            {'query': 'magnetic phone holder car mount universal air vent dashboard magnet stand', 'count': 10},
-            {'query': 'flame air humidifier ultrasonic essential oil aroma diffuser led light effect', 'count': 10},
             {'query': 'rechargeable mini neck fan portable bladeless mute wearable outdoor fans usb', 'count': 10},
-            {'query': 'led motion sensor light under cabinet wireless magnetic rechargeable kitchen night', 'count': 10},
-            {'query': 'electric automatic pepper salt mill grinder gravity auto kitchen tool usb', 'count': 10},
         ]
         created_count = 0
         updated_count = 0
@@ -915,22 +812,22 @@ def reset_negotiation(request, slug):
 # from django.contrib.auth.decorators import user_passes_test
 
 # @user_passes_test(lambda u: u.is_superuser)  # Only superuser can trigger this
-# def temporary_delete_ali_products(request):
-#     """Temporary view to delete unused AliExpress products while preserving order history. Delete this view after running."""
-#     # Find all AliExpress product IDs that are tied to existing orders
-#     ordered_product_ids = OrderItem.objects.filter(
-#         product__source='aliexpress'
-#     ).values_list('product_id', flat=True).distinct()
+def temporary_delete_ali_products(request):
+    """Temporary view to delete unused AliExpress products while preserving order history. Delete this view after running."""
+    # Find all AliExpress product IDs that are tied to existing orders
+    ordered_product_ids = OrderItem.objects.filter(
+        product__source='aliexpress'
+    ).values_list('product_id', flat=True).distinct()
     
-#     # Delete only AliExpress products that have NEVER been ordered
-#     unordered_products = Product.objects.filter(source='aliexpress').exclude(id__in=ordered_product_ids)
-#     deleted_count, _ = unordered_products.delete()
+    # Delete only AliExpress products that have NEVER been ordered
+    unordered_products = Product.objects.filter(source='aliexpress').exclude(id__in=ordered_product_ids)
+    deleted_count, _ = unordered_products.delete()
     
-#     skipped_count = ordered_product_ids.count() if ordered_product_ids else 0
+    skipped_count = ordered_product_ids.count() if ordered_product_ids else 0
     
-#     return HttpResponse(
-#         f"Cleanup complete! Deleted {deleted_count} unused AliExpress products. "
-#         f"Preserved {skipped_count} products because they are linked to order history. "
-#         f"Remember to delete this route and view from the code."
-#     )
+    return HttpResponse(
+        f"Cleanup complete! Deleted {deleted_count} unused AliExpress products. "
+        f"Preserved {skipped_count} products because they are linked to order history. "
+        f"Remember to delete this route and view from the code."
+    )
   
