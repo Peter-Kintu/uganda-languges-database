@@ -916,7 +916,21 @@ from django.contrib.auth.decorators import user_passes_test
 
 @user_passes_test(lambda u: u.is_superuser)  # Only superuser can trigger this
 def temporary_delete_ali_products(request):
-    """Temporary view to delete all AliExpress products. Delete this view after running."""
-    deleted_count, _ = Product.objects.filter(source='aliexpress').delete()
-    return HttpResponse(f"Success! Deleted {deleted_count} AliExpress products. Remember to delete this route and view from the code.")
+    """Temporary view to delete unused AliExpress products while preserving order history. Delete this view after running."""
+    # Find all AliExpress product IDs that are tied to existing orders
+    ordered_product_ids = OrderItem.objects.filter(
+        product__source='aliexpress'
+    ).values_list('product_id', flat=True).distinct()
+    
+    # Delete only AliExpress products that have NEVER been ordered
+    unordered_products = Product.objects.filter(source='aliexpress').exclude(id__in=ordered_product_ids)
+    deleted_count, _ = unordered_products.delete()
+    
+    skipped_count = ordered_product_ids.count() if ordered_product_ids else 0
+    
+    return HttpResponse(
+        f"Cleanup complete! Deleted {deleted_count} unused AliExpress products. "
+        f"Preserved {skipped_count} products because they are linked to order history. "
+        f"Remember to delete this route and view from the code."
+    )
   
