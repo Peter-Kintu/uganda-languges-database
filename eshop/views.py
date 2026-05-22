@@ -52,28 +52,37 @@ def sync_aliexpress_products(request):
        # Fully Expanded Product Sync: AI Gear, Wearables, Robotics, Smart Home, Dental/Cosmetic Tech & Daily Innovations
         search_groups = [
             # TOP PRIORITY: AI Smart Glasses
-            {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 12},
+            {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 14},
             {'query': 'AI smart glasses video recording live stream audio', 'count': 12},
             {'query': 'smart glasses bluetooth audio wireless polarized sunglasses', 'count': 10},
             {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
 
-            # NEXT: Mini Cameras & Budget Action Cams
-            {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 12},
+            # NEXT: Mini Cameras, Necklaces with Cameras & Budget Action Cams
+            {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 14},
             {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 12},
             {'query': 'action camera sports video recorder mini dvr small under 10', 'count': 12},
             {'query': 'webcam micro camera usb plug play cheap clear audio 5', 'count': 12},
+            {'query': 'pendant necklace hidden mini spy camera audio video recorder', 'count': 12},
 
             # NEXT: Fusion Products for Men & Women (fusion clothing + accessories)
-            {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 12},
-            {'query': 'women fusion street traditional hybrid dress cheap high quality', 'count': 12},
-            {'query': 'women fusion casual dress budget everyday stylish', 'count': 12},
+            {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 14},
+            {'query': 'women fusion street traditional hybrid dress cheap high quality', 'count': 14},
+            {'query': 'women fusion casual dress budget everyday stylish', 'count': 14},
+            {'query': 'women fusion cheap quality dress affordable fusion wear', 'count': 14},
+            {'query': 'mens fusion lightweight breathable fusion shirt cheap quality', 'count': 12},
             {'query': 'fusion bags cheap travel tote crossbody fusion style', 'count': 12},
 
-            # NEXT: Robotics & STEAM (education, hobby, AI companions)
+            # NEXT: Smart Wearables & Accessories (rings, bangles, padlocks)
+            {'query': 'smart ring nfc payment sleep tracker fitness tracker', 'count': 12},
+            {'query': 'smart bangle fitness tracker waterproof health monitor', 'count': 12},
+            {'query': 'smart padlock bluetooth fingerprint wifi outdoor security lock', 'count': 12},
+            {'query': 'smart necklace pendant wearable nfc gps sos personal tracker', 'count': 10},
+
+            # NEXT: Programmable Robots & STEAM (education, hobby, AI companions)
+            {'query': 'programmable robot kit wifi bluetooth coding obstacle avoidance', 'count': 14},
+            {'query': 'programmable robotic car kit obstacle avoidance arduino rpi', 'count': 12},
             {'query': 'educational STEAM robot kit arduino coding STEM robotic arm kit', 'count': 12},
             {'query': 'DIY robot kit for kids programmable educational STEAM electronics', 'count': 12},
-            {'query': 'robotics kit arduino raspberry pi programming sensors motors kit', 'count': 12},
-            {'query': 'robotic arm mechanical claw kit programmable gripper hobby kit', 'count': 12},
 
             # NEXT: Clothes (general high-demand categories)
             {'query': 'women evening party dress sexy slim-fit suspender solid color dress', 'count': 12},
@@ -87,6 +96,8 @@ def sync_aliexpress_products(request):
 
             # FALLBACK: Other categories (left intact)
             {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
+            {'query': 'edge ai npu accelerator usb ai inference device', 'count': 10},
+            {'query': 'ai voice assistant smart speaker compact bluetooth alexa assistant', 'count': 10},
             {'query': 'digital kitchen scale electronic food weight measuring tool precision lcd', 'count': 10},
             {'query': 'rechargeable mini neck fan portable bladeless mute wearable outdoor fans usb', 'count': 10},
         ]
@@ -812,22 +823,22 @@ def reset_negotiation(request, slug):
 # from django.contrib.auth.decorators import user_passes_test
 
 # @user_passes_test(lambda u: u.is_superuser)  # Only superuser can trigger this
-def temporary_delete_ali_products(request):
-    """Temporary view to delete unused AliExpress products while preserving order history. Delete this view after running."""
-    # Find all AliExpress product IDs that are tied to existing orders
-    ordered_product_ids = OrderItem.objects.filter(
-        product__source='aliexpress'
-    ).values_list('product_id', flat=True).distinct()
+# def temporary_delete_ali_products(request):
+#     """Temporary view to delete unused AliExpress products while preserving order history. Delete this view after running."""
+#     # Find all AliExpress product IDs that are tied to existing orders
+#     ordered_product_ids = OrderItem.objects.filter(
+#         product__source='aliexpress'
+#     ).values_list('product_id', flat=True).distinct()
     
-    # Delete only AliExpress products that have NEVER been ordered
-    unordered_products = Product.objects.filter(source='aliexpress').exclude(id__in=ordered_product_ids)
-    deleted_count, _ = unordered_products.delete()
+#     # Delete only AliExpress products that have NEVER been ordered
+#     unordered_products = Product.objects.filter(source='aliexpress').exclude(id__in=ordered_product_ids)
+#     deleted_count, _ = unordered_products.delete()
     
-    skipped_count = ordered_product_ids.count() if ordered_product_ids else 0
+#     skipped_count = ordered_product_ids.count() if ordered_product_ids else 0
     
-    return HttpResponse(
-        f"Cleanup complete! Deleted {deleted_count} unused AliExpress products. "
-        f"Preserved {skipped_count} products because they are linked to order history. "
-        f"Remember to delete this route and view from the code."
-    )
+#     return HttpResponse(
+#         f"Cleanup complete! Deleted {deleted_count} unused AliExpress products. "
+#         f"Preserved {skipped_count} products because they are linked to order history. "
+#         f"Remember to delete this route and view from the code."
+#     )
   
