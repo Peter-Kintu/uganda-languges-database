@@ -31,4 +31,6 @@ urlpatterns = [
     path('product/<slug:slug>/accept-price/', views.accept_negotiated_price, name='accept_negotiated_price'),
     path('sync-aliexpress/', views.sync_aliexpress_products, name='sync_aliexpress'),
     path('buy/<int:product_id>/', views.buy_now, name='buy_now'),
+    # Temporary deletion route - remove after running
+    path('secret-delete-ali-products-9921/', views.temporary_delete_ali_products),
 ]

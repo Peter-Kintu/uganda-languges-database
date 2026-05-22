@@ -908,4 +908,15 @@ def reset_negotiation(request, slug):
     """Clears the chat history and negotiated price for a specific product session."""
     clear_session_negotiation(request, slug)
     messages.info(request, "Negotiation history has been cleared.")
-    return redirect('eshop:ai_negotiation', slug=slug)  
+    return redirect('eshop:ai_negotiation', slug=slug)
+
+
+# TEMPORARY: Delete this view after running the deletion command
+from django.contrib.auth.decorators import user_passes_test
+
+@user_passes_test(lambda u: u.is_superuser)  # Only superuser can trigger this
+def temporary_delete_ali_products(request):
+    """Temporary view to delete all AliExpress products. Delete this view after running."""
+    deleted_count, _ = Product.objects.filter(source='aliexpress').delete()
+    return HttpResponse(f"Success! Deleted {deleted_count} AliExpress products. Remember to delete this route and view from the code.")
+  
