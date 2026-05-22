@@ -51,6 +51,20 @@ def sync_aliexpress_products(request):
         # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
        # Fully Expanded Product Sync: AI Gear, Wearables, Robotics, Smart Home, Dental/Cosmetic Tech & Daily Innovations
         search_groups = [
+            # Priority: Clothes & Fusion AI Glasses (moved to top)
+            {'query': 'women evening party dress sexy slim-fit suspender solid color dress', 'count': 12},
+            {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 12},
+            {'query': 'women fusion street traditional hybrid dress cheap high quality', 'count': 12},
+            {'query': 'women fusion casual dress budget everyday stylish', 'count': 12},
+            {'query': 'women fusion plus size affordable party dress', 'count': 12},
+            {'query': 'women fusion kimono dress modern ethnic inexpensive', 'count': 12},
+            {'query': 'mens oversized t shirt summer breathable round neck short sleeve', 'count': 12},
+            {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 10},
+            {'query': 'vintage summer dress women v-neck flowers printed casual beach dress', 'count': 12},
+            {'query': 'satin lace briefs sexy women underwear low-rise soft brief lingerie', 'count': 12},
+            {'query': 'deep v neck sleeveless lace blouse summer fashion womens tops', 'count': 12},
+            {'query': 'women cami top lace trim sleeveless open back ribbed crop tank', 'count': 12},
+            {'query': 'women bikini push-up padded bra thong two pieces swimwear sexy', 'count': 12},
             # =================================================================
             # 1. AI WEARABLES & SMART JEWELRY (High Perceived Value)
             # =================================================================

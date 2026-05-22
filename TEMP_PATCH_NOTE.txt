@@ -1,0 +1,1 @@
+Temporary note: inserting additional affordable women's fusion clothing queries at top of search_groups in eshop/views.py
