@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /go/
 
 # Disallow admin and sensitive areas
 Disallow: /admin/

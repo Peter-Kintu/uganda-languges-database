@@ -2251,6 +2251,10 @@
             {% if page_obj.has_next %}
             <div class="load-more-container">
                 <div id="load-more-sentinel" style="height: 20px;"></div>
+                <div id="load-more-indicator" class="load-more-indicator">
+                    <div class="load-more-spinner"></div>
+                    <span>Loading more feeds...</span>
+                </div>
             </div>
         {% endif %}
         {% else %}
@@ -3108,20 +3112,32 @@
     // Infinite Scroll Implementation
     let currentPage = {{ page_obj.number }};
     let isLoading = false;
+    let hasNextPage = {{ page_obj.has_next|lower }};
     const sentinel = document.getElementById('load-more-sentinel');
 
     if (sentinel) {
         const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !isLoading && {{ page_obj.has_next|lower }}) {
+            if (entries[0].isIntersecting && !isLoading && hasNextPage) {
                 loadMorePosts();
             }
         }, { threshold: 0.1 });
         observer.observe(sentinel);
     }
 
+    const loadMoreIndicator = document.getElementById('load-more-indicator');
+    function updateLoadMoreIndicator(show) {
+        if (!loadMoreIndicator) return;
+        loadMoreIndicator.style.display = show ? 'inline-flex' : 'none';
+    }
+
+    if (loadMoreIndicator) {
+        updateLoadMoreIndicator(hasNextPage);
+    }
+
     async function loadMorePosts() {
         if (isLoading) return;
         isLoading = true;
+        updateLoadMoreIndicator(true);
         const nextPage = currentPage + 1;
         const url = `?{% if current_filter != 'all' %}type={{ current_filter }}&{% endif %}{% if translate_feed %}translate=true&lang={{ current_lang }}&{% endif %}page=${nextPage}&format=json`;
 
@@ -3142,13 +3158,20 @@
                 initShowMoreButtons();
                 currentPage = nextPage;
                 if (!data.has_next) {
+                    hasNextPage = false;
                     sentinelContainer.style.display = 'none';
+                    updateLoadMoreIndicator(false);
+                } else {
+                    hasNextPage = true;
                 }
             }
         } catch (e) {
             console.error('Error loading more posts:', e);
         } finally {
             isLoading = false;
+            if (hasNextPage) {
+                updateLoadMoreIndicator(true);
+            }
         }
     }
 </script>

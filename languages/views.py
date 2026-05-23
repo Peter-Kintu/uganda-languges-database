@@ -34,6 +34,7 @@ def robots_txt(request):
     lines = [
         "User-agent: *",
         "Disallow:",
+        "Allow: /go/",
         f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
