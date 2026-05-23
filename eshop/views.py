@@ -175,7 +175,8 @@ def robots_txt(request):
     """Generates robots.txt for search engine crawlers."""
     lines = [
         "User-agent: *",
-        "allow:",
+        "Disallow:",
+        "Allow: /",
         f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
