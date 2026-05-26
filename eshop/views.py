@@ -58,43 +58,47 @@ def sync_aliexpress_products(request):
             {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
 
             # NEXT: Mini Cameras, Necklaces with Cameras & Budget Action Cams
-            {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 14},
+            {'query': 'mini spy camera cheap wireless security pocket cam', 'count': 14},
             {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 12},
-            {'query': 'action camera sports video recorder mini dvr small under 10', 'count': 12},
-            {'query': 'webcam micro camera usb plug play cheap clear audio 5', 'count': 12},
+            {'query': 'action camera sports video recorder mini dvr small', 'count': 12},
+            {'query': 'webcam micro camera usb plug play clear audio', 'count': 12},
             {'query': 'pendant necklace hidden mini spy camera audio video recorder', 'count': 12},
 
-            # NEXT: Fusion Products for Men & Women (fusion clothing + accessories)
+            # NEXT: Cheap, Top-selling Women-Focused Accessories & Beauty (Dropshipping-friendly)
+            {'query': 'women earrings shell pearl fashion cheap top selling', 'count': 16},
+            {'query': 'minimalist gold plated necklace women popular affordable', 'count': 14},
+            {'query': 'korean skincare face roller jade gua sha affordable', 'count': 12},
+            {'query': 'makeup brush set professional soft synthetic cheap', 'count': 14},
+            {'query': 'false eyelashes volume mink look cheap top selling', 'count': 14},
+            {'query': 'hair claw clip large acrylic trendy women cheap', 'count': 16},
+            {'query': 'scrunchies set velvet hair elastic pretty cheap', 'count': 16},
+            {'query': 'women crossbody purse small vintage cute cheap', 'count': 12},
+            {'query': 'fashion sunglasses women polarized stylish cheap', 'count': 12},
+            {'query': 'anklet bracelet women boho gold cheap top selling', 'count': 12},
+            {'query': 'layered necklace set women bohemian cute affordable', 'count': 12},
+
+            # NEXT: Beauty & Personal Care small appliances
+            {'query': 'portable facial steamer nano face steamer home use cheap', 'count': 12},
+            {'query': 'led face mask skincare phototherapy anti aging affordable', 'count': 10},
+            {'query': 'nail art kit gel polish set cheap popular', 'count': 12},
+            {'query': 'compact makeup mirror led light portable cheap', 'count': 12},
+
+            # NEXT: Fashion & Activewear (Women)
+            {'query': 'women leggings high waist seamless gym cheap popular', 'count': 12},
+            {'query': 'seamless sports bra crop top women affordable', 'count': 12},
+            {'query': 'boho summer dress women casual cute affordable', 'count': 14},
+
+            # NEXT: Home & Lifestyle Accessories popular with women
+            {'query': 'cute phone holder ring stand bling cheap top selling', 'count': 12},
+            {'query': 'reusable makeup remover pads washable eco friendly cheap', 'count': 12},
+            {'query': 'travel jewelry organizer pouch small cheap', 'count': 12},
+
+            # NEXT: Fusion Products for Men & Women (kept some existing queries)
             {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 14},
             {'query': 'women fusion street traditional hybrid dress cheap high quality', 'count': 14},
-            {'query': 'women fusion casual dress budget everyday stylish', 'count': 14},
-            {'query': 'women fusion cheap quality dress affordable fusion wear', 'count': 14},
-            {'query': 'mens fusion lightweight breathable fusion shirt cheap quality', 'count': 12},
             {'query': 'fusion bags cheap travel tote crossbody fusion style', 'count': 12},
 
-            # NEXT: Smart Wearables & Accessories (rings, bangles, padlocks)
-            {'query': 'smart ring nfc payment sleep tracker fitness tracker', 'count': 12},
-            {'query': 'smart bangle fitness tracker waterproof health monitor', 'count': 12},
-            {'query': 'smart padlock bluetooth fingerprint wifi outdoor security lock', 'count': 12},
-            {'query': 'smart necklace pendant wearable nfc gps sos personal tracker', 'count': 10},
-
-            # NEXT: Programmable Robots & STEAM (education, hobby, AI companions)
-            {'query': 'programmable robot kit wifi bluetooth coding obstacle avoidance', 'count': 14},
-            {'query': 'programmable robotic car kit obstacle avoidance arduino rpi', 'count': 12},
-            {'query': 'educational STEAM robot kit arduino coding STEM robotic arm kit', 'count': 12},
-            {'query': 'DIY robot kit for kids programmable educational STEAM electronics', 'count': 12},
-
-            # NEXT: Clothes (general high-demand categories)
-            {'query': 'women evening party dress sexy slim-fit suspender solid color dress', 'count': 12},
-            {'query': 'vintage summer dress women v-neck flowers printed casual beach dress', 'count': 12},
-            {'query': "mens oversized t shirt summer breathable round neck short sleeve", 'count': 12},
-            {'query': "mens shorts set casual stripe printed elastic waist two piece", 'count': 12},
-
-            # NEXT: Luggage & Bags (cheap travel options)
-            {'query': 'luggage travel backpack carry-on handbag womens tote', 'count': 12},
-            {'query': 'cheap travel backpacks lightweight foldable tote bag', 'count': 12},
-
-            # FALLBACK: Other categories (left intact)
+            # FALLBACK: Other tech & home categories
             {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
             {'query': 'edge ai npu accelerator usb ai inference device', 'count': 10},
             {'query': 'ai voice assistant smart speaker compact bluetooth alexa assistant', 'count': 10},
