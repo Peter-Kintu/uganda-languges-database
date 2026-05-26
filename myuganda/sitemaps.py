@@ -10,6 +10,10 @@ from django.views.decorators.cache import cache_page
 # FIX: Import all required models for dynamic sitemaps
 from eshop.models import Product 
 from languages.models import JobPost # Assuming JobPost is the model for the languages app
+from django.contrib.auth import get_user_model
+from social.models import BusinessReel
+
+User = get_user_model()
 
 # 1. Sitemap for static, named URLs
 class StaticViewSitemap(Sitemap):
@@ -85,7 +89,60 @@ class JobPostSitemap(Sitemap):
             return None
 
 
-# 4. Custom Sitemap View - Replaces request domain with DEFAULT_DOMAIN setting
+# 4. Dynamic Sitemap for User Profiles (User-Generated Content Discovery)
+class UserProfileSitemap(Sitemap):
+    priority = 0.5
+    changefreq = 'monthly'
+    
+    def items(self):
+        # Returns all active users to make their profiles discoverable
+        try:
+            return User.objects.filter(is_active=True).order_by('-date_joined')
+        except Exception:
+            return []
+
+    def location(self, obj):
+        try:
+            # Uses the username to create a profile URL
+            return reverse('languages:user_profile', kwargs={'username': obj.username})
+        except Exception:
+            return f'/profile/{obj.username}/'
+
+    def lastmod(self, obj):
+        try:
+            # Use the last_login or date_joined field
+            return obj.last_login or obj.date_joined
+        except Exception:
+            return None
+
+
+# 5. Dynamic Sitemap for Business Reels / Social Feed Posts (User-Generated Content)
+class BusinessReelSitemap(Sitemap):
+    priority = 0.6
+    changefreq = 'daily'
+    
+    def items(self):
+        # Returns active, visible business reels for content discovery
+        try:
+            return BusinessReel.objects.filter(is_active=True).order_by('-created_at')
+        except Exception:
+            return []
+
+    def location(self, obj):
+        try:
+            # Use the reel ID or share_token for a unique URL
+            return f'/social/reel/{obj.id}/'
+        except Exception:
+            return '/social/'
+
+    def lastmod(self, obj):
+        try:
+            return obj.created_at
+        except Exception:
+            return None
+
+
+# 6. Custom Sitemap View - Replaces request domain with DEFAULT_DOMAIN setting
 @cache_page(60 * 60)
 def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.xml', content_type='application/xml'):
     """

@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from django.views.generic.base import RedirectView
 from django.views.generic import TemplateView
 
-from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap, custom_sitemap_view
+from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap, UserProfileSitemap, BusinessReelSitemap, custom_sitemap_view
 
 import requests
 from django.http import HttpResponse
@@ -20,6 +20,8 @@ sitemaps_dict = {
     'products': ProductSitemap,
     'movies': ProductSitemap,
     'jobs': JobPostSitemap,
+    'profiles': UserProfileSitemap,
+    'feeds': BusinessReelSitemap,
 }
 
 urlpatterns = [

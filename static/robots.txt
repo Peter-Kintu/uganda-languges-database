@@ -1,10 +1,21 @@
 User-agent: *
 Allow: /
 Allow: /go/
+Allow: /profile/
+Allow: /social/
+Allow: /social/reel/
+Allow: /jobs/
+Allow: /languages/
+Allow: /eshop/
 
 # Disallow admin and sensitive areas
 Disallow: /admin/
 Disallow: /accounts/
 Disallow: /api/
+Disallow: /cart/
+Disallow: /checkout/
 
 Sitemap: https://www.africanaai.info/sitemap.xml
+Sitemap: https://www.africanaai.info/sitemap-jobs.xml
+Sitemap: https://www.africanaai.info/sitemap-profiles.xml
+Sitemap: https://www.africanaai.info/sitemap-feeds.xml
