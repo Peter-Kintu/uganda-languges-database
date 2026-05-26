@@ -104,6 +104,56 @@ def sync_aliexpress_products(request):
             {'query': 'ai voice assistant smart speaker compact bluetooth alexa assistant', 'count': 10},
             {'query': 'digital kitchen scale electronic food weight measuring tool precision lcd', 'count': 10},
             {'query': 'rechargeable mini neck fan portable bladeless mute wearable outdoor fans usb', 'count': 10},
+
+             # TOP PRIORITY: AI Smart Glasses
+            {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 14},
+            {'query': 'AI smart glasses video recording live stream audio', 'count': 12},
+            {'query': 'smart glasses bluetooth audio wireless polarized sunglasses', 'count': 10},
+            {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
+
+            # NEXT: Mini Cameras, Necklaces with Cameras & Budget Action Cams
+            {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 14},
+            {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 12},
+            {'query': 'action camera sports video recorder mini dvr small under 10', 'count': 12},
+            {'query': 'webcam micro camera usb plug play cheap clear audio 5', 'count': 12},
+            {'query': 'pendant necklace hidden mini spy camera audio video recorder', 'count': 12},
+
+            # NEXT: Fusion Products for Men & Women (fusion clothing + accessories)
+            {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 14},
+            {'query': 'women fusion street traditional hybrid dress cheap high quality', 'count': 14},
+            {'query': 'women fusion casual dress budget everyday stylish', 'count': 14},
+            {'query': 'women fusion cheap quality dress affordable fusion wear', 'count': 14},
+            {'query': 'mens fusion lightweight breathable fusion shirt cheap quality', 'count': 12},
+            {'query': 'fusion bags cheap travel tote crossbody fusion style', 'count': 12},
+
+            # NEXT: Smart Wearables & Accessories (rings, bangles, padlocks)
+            {'query': 'smart ring nfc payment sleep tracker fitness tracker', 'count': 12},
+            {'query': 'smart bangle fitness tracker waterproof health monitor', 'count': 12},
+            {'query': 'smart padlock bluetooth fingerprint wifi outdoor security lock', 'count': 12},
+            {'query': 'smart necklace pendant wearable nfc gps sos personal tracker', 'count': 10},
+
+            # NEXT: Programmable Robots & STEAM (education, hobby, AI companions)
+            {'query': 'programmable robot kit wifi bluetooth coding obstacle avoidance', 'count': 14},
+            {'query': 'programmable robotic car kit obstacle avoidance arduino rpi', 'count': 12},
+            {'query': 'educational STEAM robot kit arduino coding STEM robotic arm kit', 'count': 12},
+            {'query': 'DIY robot kit for kids programmable educational STEAM electronics', 'count': 12},
+
+            # NEXT: Clothes (general high-demand categories)
+            {'query': 'women evening party dress sexy slim-fit suspender solid color dress', 'count': 12},
+            {'query': 'vintage summer dress women v-neck flowers printed casual beach dress', 'count': 12},
+            {'query': "mens oversized t shirt summer breathable round neck short sleeve", 'count': 12},
+            {'query': "mens shorts set casual stripe printed elastic waist two piece", 'count': 12},
+
+            # NEXT: Luggage & Bags (cheap travel options)
+            {'query': 'luggage travel backpack carry-on handbag womens tote', 'count': 12},
+            {'query': 'cheap travel backpacks lightweight foldable tote bag', 'count': 12},
+
+            # FALLBACK: Other categories (left intact)
+            {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
+            {'query': 'edge ai npu accelerator usb ai inference device', 'count': 10},
+            {'query': 'ai voice assistant smart speaker compact bluetooth alexa assistant', 'count': 10},
+            {'query': 'digital kitchen scale electronic food weight measuring tool precision lcd', 'count': 10},
+            {'query': 'rechargeable mini neck fan portable bladeless mute wearable outdoor fans usb', 'count': 10},
         ]
         created_count = 0
         updated_count = 0
