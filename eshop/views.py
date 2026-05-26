@@ -111,14 +111,19 @@ def sync_aliexpress_products(request):
         ]
 
         for group in search_groups:
-            # Using the fixed get_products method
-            items = api.get_products(
-                keywords=group['query'], 
-                page_size=group['count'], 
-                sort=models.SortBy.LAST_VOLUME_DESC  # Valid AliExpress sort enum for hot-selling items
-            )
-            
-            if not items or not hasattr(items, 'products'):
+            try:
+                # Avoid passing a risky sort parameter that may trigger API gateway 405
+                items = api.get_products(
+                    keywords=group['query'], 
+                    page_size=group['count']
+                )
+
+                if not items or not hasattr(items, 'products') or not items.products:
+                    logger.warning(f"AliExpress returned no products for query: {group['query']}")
+                    continue
+
+            except Exception as api_err:
+                logger.error(f"AliExpress API error for query '{group['query']}': {api_err}")
                 continue
 
             for item in items.products:
