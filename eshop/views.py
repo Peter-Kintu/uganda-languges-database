@@ -115,7 +115,7 @@ def sync_aliexpress_products(request):
             items = api.get_products(
                 keywords=group['query'], 
                 page_size=group['count'], 
-                sort='NUMBER_OF_ORDERS_DESC' # Ensures we only get the hot-selling ones
+                sort=models.SortBy.LAST_VOLUME_DESC  # Valid AliExpress sort enum for hot-selling items
             )
             
             if not items or not hasattr(items, 'products'):
@@ -163,6 +163,7 @@ def sync_aliexpress_products(request):
 
         messages.success(request, f"Global Sync Complete! {created_count} hot-selling products added to your catalog.")
     except Exception as e:
+        logger.exception("AliExpress sync failed")
         messages.error(request, f"Sync error: {str(e)}")
 
     return redirect('eshop:product_list')
