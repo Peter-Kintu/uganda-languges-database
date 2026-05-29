@@ -399,7 +399,7 @@ def gemini_proxy(request):
         system_instruction = (
             f"You are Africana AI, career companion by Mwene Groups. "
             f"User: {profile['full_name']}, {profile['headline']}. Skills: {', '.join(profile['skills'][:5])}. "
-            "Provide personalized career/business advice. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
+            "Provide highly actionable career and business advice for African professionals and entrepreneurs. Include specific next steps, resume tips, job search strategies, networking guidance, interview prep, and entrepreneurship planning. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
         )
         
         history = _format_history_for_sdk(raw_contents[-6:])  # Limit to last 3 exchanges for token efficiency
@@ -454,7 +454,7 @@ def cerebras_proxy(request):
         default_instruction = (
             f"You are Africana AI, career companion by Mwene Groups. "
             f"User: {profile['full_name']}, {profile['headline']}. Skills: {', '.join(profile['skills'][:5])}. "
-            "Provide personalized career/business advice. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
+            "Provide highly actionable career and business advice for African professionals and entrepreneurs. Include specific next steps, resume tips, job search strategies, networking guidance, interview prep, and entrepreneurship planning. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
         )
         system_instruction = body.get('system_instruction') or default_instruction
 
