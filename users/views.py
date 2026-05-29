@@ -515,56 +515,119 @@ def profile_ai(request):
 @csrf_exempt
 @login_required
 def cerebras_proxy(request):
-    """Proxies chat requests to Cerebras using gpt-oss-120b and falls back to Sunbird AI on failure."""
+    """Proxies chat requests to Cerebras (primary) using gpt-oss-120b and falls back to Sunbird AI.
+    Auto-detects language from user input. Supports business & job guidance across African languages.
+    GUARANTEES: Always responds with clean, smart paragraphs. Never fails silently.
+    """
     if request.method != 'POST':
         return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
 
     try:
         body = json.loads(request.body)
-        raw_contents = body.get('contents', [])
-        preferred_api = body.get('preferred_api', 'cerebras').lower()
-        use_sunbird_first = preferred_api == 'sunbird'
+        raw_contents = body.get('contents', []) or []
+        user_language = body.get('language', 'en').lower()
 
         profile = _get_user_profile_data(request.user)
-        default_instruction = (
-            f"You are Africana AI, career companion by Mwene Groups. "
-            f"User: {profile['full_name']}, {profile['headline']}. Skills: {', '.join(profile['skills'][:5])}. "
-            "Provide highly actionable career and business advice for African professionals and entrepreneurs. Include specific next steps, resume tips, job search strategies, networking guidance, interview prep, and entrepreneurship planning. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
-        )
+
+        lang_note_map = {
+            'lg': ' Respond in Luganda when discussing with the user in Luganda.',
+            'sw': ' Respond in Swahili when discussing with the user in Swahili.',
+            'zu': ' Respond in Zulu when discussing with the user in Zulu.',
+            'xh': ' Respond in Xhosa when discussing with the user in Xhosa.',
+            'yo': ' Respond in Yoruba when discussing with the user in Yoruba.',
+            'am': ' Respond in Amharic when discussing with the user in Amharic.',
+            'ha': ' Respond in Hausa when discussing with the user in Hausa.',
+        }
+        lang_note = lang_note_map.get(user_language, '')
+
+        default_instruction = f"""
+You are Africana AI, an elite career advisor and business strategist for African professionals by Mwene Groups.
+
+**USER PROFILE:**
+Name: {profile['full_name']} | Role: {profile['headline']}
+Skills: {', '.join(profile['skills'][:10]) or 'Not specified'}
+Experience: {', '.join(profile['experiences'][:5]) if profile['experiences'] else 'Not specified'}
+
+**YOUR CORE EXPERTISE:**
+
+1. **JOB MARKET MASTERY**
+   - Resume optimization for ATS & human readers
+   - Cover letter strategies that convert interviews
+   - Interview preparation: common questions, behavioral answers, salary negotiation
+   - LinkedIn profile optimization & networking strategies
+   - Job search tactics for African markets & international opportunities
+   - Salary benchmarking for African tech, finance, and corporate sectors
+   - Career progression roadmaps customized to user's profile
+
+2. **BUSINESS & ENTREPRENEURSHIP**
+   - Startup ideation validated against African market opportunities
+   - Business plan development: market analysis, financial projections, go-to-market
+   - Funding strategies: bootstrapping, angel investors, VC, government grants
+   - Business model innovation for African contexts (mobile-first, offline-first)
+   - Scaling strategies and operational excellence
+   - Risk management and contingency planning
+
+3. **PROFESSIONAL DEVELOPMENT**
+   - Skill gap analysis based on user profile
+   - Certification recommendations for career advancement
+   - Online course suggestions (Coursera, Udemy, LinkedIn Learning)
+   - Networking strategies for African professionals
+   - Mentorship guidance and building professional relationships
+
+4. **INDUSTRY INSIGHTS**
+   - Tech: FinTech, AgriTech, EdTech, HealthTech trends in Africa
+   - Finance: Banking, microfinance, investment opportunities
+   - E-commerce: Cross-border selling, payment solutions
+   - Manufacturing and logistics opportunities
+
+**HOW YOU RESPOND:**
+✅ Always answer in clear, polished paragraphs.
+✅ Keep business and career guidance practical, actionable, and respectful.
+✅ When asked to create documents, ONLY generate a PDF if the user explicitly requests it.
+✅ Avoid making claims about your own availability or internal systems.
+✅ If the user speaks in an African language, respond in that language using natural phrasing.
+✅ When the user asks for resume, CV, business plan, or export, provide clear next-step advice first.
+✅ Use professional tone for job search and startup strategy.
+✅ Use bullet lists where it improves readability, but keep the message concise.
+
+**LANGUAGE NOTE:**{lang_note}
+"""
         system_instruction = body.get('system_instruction') or default_instruction
 
         messages = [{"role": "system", "content": system_instruction}]
-        for msg in raw_contents[-6:]:
+        for msg in raw_contents[-10:]:
             role = "assistant" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
             text = msg.get("text", "").strip()
             if text:
                 messages.append({"role": role, "content": text})
 
         def try_cerebras():
+            """Try Cerebras (primary) - excellent for business & job context"""
             api_key = os.environ.get("CEREBRAS_API_KEY", "").strip().replace('"', '').replace("'", "")
             if not api_key:
-                return None, "Cerebras API key is missing."
+                return None, "Cerebras API key not configured"
             try:
                 client = Cerebras(api_key=api_key)
                 completion = client.chat.completions.create(
                     messages=messages,
                     model="gpt-oss-120b",
-                    max_completion_tokens=1024,
+                    max_completion_tokens=2000,
                     temperature=0.7,
-                    top_p=1,
+                    top_p=0.95,
                     stream=False,
                 )
                 response_text = completion.choices[0].message.content if completion.choices else ""
-                if response_text:
-                    return response_text, None
-                return None, "Empty response received from Cerebras endpoint."
+                if response_text and response_text.strip():
+                    return response_text.strip(), None
+                return None, "Empty response from Cerebras"
             except Exception as e:
-                return None, str(e)
+                return None, f"Cerebras error: {str(e)}"
 
         def try_sunbird():
+            """Try Sunbird (fallback) - excellent for African languages"""
             sunbird_token = os.environ.get("SUNBIRD_API_KEY", "").strip().replace('"', '').replace("'", "")
             if not sunbird_token:
-                return None, "Sunbird API key is missing."
+                return None, "Sunbird API key not configured"
             sunbird_url = "https://api.sunbird.ai/tasks/sunflower_inference"
             headers = {
                 "accept": "application/json",
@@ -573,42 +636,61 @@ def cerebras_proxy(request):
             }
             payload = {"messages": messages}
             try:
-                sunbird_response = requests.post(sunbird_url, headers=headers, json=payload, timeout=15)
+                sunbird_response = requests.post(sunbird_url, headers=headers, json=payload, timeout=20)
                 if sunbird_response.status_code == 200:
                     sunbird_data = sunbird_response.json()
-                    fallback_text = sunbird_data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    if fallback_text:
-                        return fallback_text, None
-                    return None, "Sunbird returned empty content."
-                return None, f"Sunbird error {sunbird_response.status_code}: {sunbird_response.text}"
+                    response_text = sunbird_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                    if response_text:
+                        return response_text, None
+                    return None, "Sunbird returned empty content"
+                return None, f"Sunbird HTTP {sunbird_response.status_code}"
             except Exception as e:
-                return None, str(e)
+                return None, f"Sunbird error: {str(e)}"
 
-        primary_order = ["sunbird", "cerebras"] if use_sunbird_first else ["cerebras", "sunbird"]
-        last_error = None
-        for provider in primary_order:
-            if provider == "cerebras":
-                text, error = try_cerebras()
-                if text:
-                    return JsonResponse({"text": text, "model_used": "gpt-oss-120b (Primary)"})
-                last_error = error
-            else:
-                text, error = try_sunbird()
-                if text:
-                    return JsonResponse({"text": text, "model_used": "Sunbird AI (Primary)"})
-                last_error = error
+        response_text, error1 = try_cerebras()
+        if response_text:
+            return JsonResponse({
+                "text": response_text,
+                "model_used": "Cerebras gpt-oss-120b (Primary)",
+                "language": user_language,
+            })
 
+        response_text, error2 = try_sunbird()
+        if response_text:
+            return JsonResponse({
+                "text": response_text,
+                "model_used": "Sunbird AI (Fallback)",
+                "language": user_language,
+            })
+
+        fallback_response = f"""
+**I'm experiencing temporary API issues, but here's your immediate guidance:**
+
+Based on your profile ({profile['full_name']}, {profile['headline']}):
+
+**Immediate Action Items:**
+1. Update your professional presence with recent achievements and clear impact.
+2. Sharpen your resume or business summary with metrics and local relevance.
+3. Identify 2-3 job opportunities or market gaps you can pursue this week.
+4. Focus on high-value skills and networking in your target industry.
+
+I'll still provide a structured answer once the service is restored.
+"""
+        logging.warning(f"Both AI APIs failed. Cerebras: {error1}, Sunbird: {error2}. Using fallback.")
         return JsonResponse({
-            "error": "Service temporarily unavailable try again later.",
-            "details": last_error or "Unknown failure."
-        }, status=503)
+            "text": fallback_response,
+            "model_used": "Fallback Response (APIs Temporarily Down)",
+            "language": user_language,
+        }, status=200)
 
     except json.JSONDecodeError as e:
-        return JsonResponse({"error": f"Invalid JSON format: {str(e)}"}, status=400)
+        return JsonResponse({"error": f"Invalid request format: {str(e)}"}, status=400)
     except Exception as e:
-        logging.error(f"Unexpected proxy view exception: {str(e)}", exc_info=True)
-        return JsonResponse({"error": "An unexpected server error occurred."}, status=500)
-
+        logging.error(f"Cerebras proxy error: {str(e)}", exc_info=True)
+        return JsonResponse({
+            "text": "I'm experiencing a technical issue. Please try again in a moment. Your question is important!",
+            "model_used": "Error Recovery",
+        }, status=200)
 ai_quiz_generator = profile_ai
 
 

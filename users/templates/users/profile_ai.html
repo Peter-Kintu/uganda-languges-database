@@ -414,7 +414,7 @@
             <button class="menu-toggle-btn" onclick="toggleMobileMenu()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <div style="font-weight: 600; color: var(--text-primary);" id="chatTitle">Career AI Companion</div>
+            <div style="font-weight: 600; color: var(--text-primary);" id="chatTitle">Africana AI - Career & Business</div>
         </div>
 
         <div class="chat-log-container">
@@ -441,7 +441,7 @@
     const overlay = document.getElementById('menuOverlay');
 
     let currentSessionId = '';
-    const WELCOME_MESSAGE = "Hello! I am your Career AI. How can I assist you with your career growth, job matching, or profile strategy today?";
+    const WELCOME_MESSAGE = "Hello! I am Africana AI, your intelligent career and business companion. I'm here to help with job strategies, career advancement, business planning, entrepreneurship, and professional development. What can I assist you with today?";
 
     if (window.marked) {
         const customRenderer = new marked.Renderer();
@@ -536,7 +536,7 @@
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
         bubble.innerHTML = `
-            <span style="font-weight: 600;">Loading response</span>
+            <span style="font-weight: 600;">Africana AI is thinking</span>
             <span class="loading-dots">
                 <span class="loading-dot"></span>
                 <span class="loading-dot"></span>
@@ -563,6 +563,23 @@
         }
     }
 
+    // Auto-detect language from user input
+    function detectLanguage(text) {
+        const swahiliKeywords = ['mimi', 'unajua', 'karibu', 'shukrani', 'leo', 'nini', 'lakini', 'tunaweza'];
+        const lugandaKeywords = ['nze', 'okukuba', 'omugenyi', 'webale', 'leero', 'ki', 'naye', 'tusobola'];
+        const yorubaKeywords = ['mo', 'lo', 'se', 'e', 'nko', 'wa', 'soso'];
+        
+        const lowerText = text.toLowerCase();
+        const swahiliScore = swahiliKeywords.filter(kw => lowerText.includes(kw)).length;
+        const lugandaScore = lugandaKeywords.filter(kw => lowerText.includes(kw)).length;
+        const yorubaScore = yorubaKeywords.filter(kw => lowerText.includes(kw)).length;
+
+        if (swahiliScore > lugandaScore && swahiliScore > yorubaScore && swahiliScore > 0) return 'sw';
+        if (lugandaScore > swahiliScore && lugandaScore > yorubaScore && lugandaScore > 0) return 'lg';
+        if (yorubaScore > 0) return 'yo';
+        return 'en';
+    }
+
     async function typeQuery() {
         const text = chatInput.value.trim();
         if (!text || !currentSessionId) return;
@@ -575,8 +592,10 @@
 
         updateHistorySidebar();
 
+        const detectedLang = detectLanguage(text);
+
         try {
-            const response = await fetch('/api/v1/gemini_proxy/', {
+            const response = await fetch('/api/v1/cerebras_proxy/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -585,27 +604,62 @@
                 body: JSON.stringify({
                     contents: getSessionHistory(currentSessionId).map(m => ({
                         role: m.role === 'user' ? 'user' : 'assistant',
-                        parts: [{ text: m.text }]
-                    }))
+                        text: m.text
+                    })),
+                    preferred_api: 'cerebras',
+                    language: detectedLang
                 })
             });
 
             const data = await response.json();
-            const reply = data.text || data.reply || data.response;
-            if (data.status === 'success' || reply) {
-                removeLoadingMessage();
-                appendMessage('ai', reply);
+            const reply = data.text || data.reply || data.response || data.choices?.[0]?.message?.content;
+            
+            removeLoadingMessage();
+            
+            if (reply) {
+                // Check if user asked for PDF export
+                if (text.toLowerCase().includes('resume') || text.toLowerCase().includes('cv') || text.toLowerCase().includes('export')) {
+                    appendMessage('ai', reply);
+                    appendMessage('ai', '📄 **Would you like me to export this as a PDF Resume?** You can say "export as resume" and I\'ll generate it for you.');
+                } else if (text.toLowerCase().includes('business plan') || text.toLowerCase().includes('plan') || text.toLowerCase().includes('startup')) {
+                    appendMessage('ai', reply);
+                    appendMessage('ai', '📋 **Would you like me to export this as a Business Plan PDF?** Just say "export as plan" and I\'ll create it.');
+                } else if (text.toLowerCase().includes('export as resume') || text.toLowerCase().includes('download resume')) {
+                    exportToPDF(reply, 'resume');
+                    appendMessage('ai', '✅ Your **Resume PDF** is being generated and will download shortly.');
+                } else if (text.toLowerCase().includes('export as plan') || text.toLowerCase().includes('download plan')) {
+                    exportToPDF(reply, 'business_plan');
+                    appendMessage('ai', '✅ Your **Business Plan PDF** is being generated and will download shortly.');
+                } else {
+                    appendMessage('ai', reply);
+                }
                 saveMessage(currentSessionId, 'ai', reply);
             } else {
-                removeLoadingMessage();
-                console.error('AI proxy failed', data);
-                appendMessage('ai', "Service temporarily unavailable try again later.");
+                appendMessage('ai', data.error || "I'm experiencing a technical issue. Please try again.");
             }
         } catch(err) {
             console.error(err);
             removeLoadingMessage();
-            appendMessage('ai', "Service temporarily unavailable try again later.");
+            appendMessage('ai', "I apologize, the service encountered an issue. Please try your question again.");
         }
+    }
+
+    function exportToPDF(content, docType) {
+        fetch('/api/v1/generate_document_pdf/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ text: content, doc_type: docType })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.redirect_url) {
+                window.open(data.redirect_url + '?download=1', '_blank');
+            }
+        })
+        .catch(err => console.error(err));
     }
 
     function updateHistorySidebar() {
@@ -618,7 +672,7 @@
             item.className = `history-item ${id === currentSessionId ? 'active' : ''}`;
             
             const userMsgs = sessions[id].filter(m => m.role === 'user');
-            item.innerText = userMsgs.length > 0 ? userMsgs[0].text : "New Chat Session";
+            item.innerText = userMsgs.length > 0 ? userMsgs[0].text.substring(0, 30) + '...' : "New Chat";
             
             item.onclick = () => {
                 switchSession(id);
@@ -652,7 +706,7 @@
     }
 
     function clearChat() {
-        if(confirm("Are you sure you want to erase all chat history?")) {
+        if(confirm("Are you sure you want to erase all chat history? This cannot be undone.")) {
             localStorage.removeItem('chat_sessions');
             localStorage.removeItem('lastSessionId');
             createNewChat();
