@@ -4,6 +4,7 @@
 
 {% block content %}
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js" integrity="sha512-GjU2WDNlctH9wB2ai0gvW2ij1mhTNE3LulLkzPmQfJh5A6S8H6PG08v4wmXW/664sVshn5d4O7h6Rq4Uj7RPkA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
     :root {
         --bg-main: #ffffff;
@@ -119,6 +120,27 @@
         color: var(--accent-green);
         text-decoration: underline;
         word-break: break-word;
+    }
+
+    .message-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+        font-size: 0.95rem;
+    }
+    .message-content th,
+    .message-content td {
+        border: 1px solid rgba(15, 23, 42, 0.15);
+        padding: 0.75rem 1rem;
+        text-align: left;
+    }
+    .message-content th {
+        background-color: rgba(22, 163, 74, 0.1);
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+    .message-content p {
+        margin-bottom: 0.85rem;
     }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -655,26 +677,7 @@
 
     function formatMessageText(text) {
         if (!text) return '';
-
-        const processInline = (value) => {
-            const escaped = escapeHtml(value.trim());
-            const bolded = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            const italic = bolded.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            return linkify(italic);
-        };
-
-        const blocks = text.trim().split(/\n\s*\n+/);
-        return blocks.map(block => {
-            const trimmed = block.trim();
-            if (/^(?:\*|-|\+)\s+/m.test(trimmed) || /^\d+\.\s+/m.test(trimmed)) {
-                const isOrdered = /^\d+\.\s+/m.test(trimmed);
-                const items = trimmed.split(/\n+/).map(line => line.replace(/^(?:\*|-|\+|\d+\.)\s+/, ''));
-                const listItems = items.map(item => `<li>${processInline(item)}</li>`).join('');
-                return isOrdered ? `<ol>${listItems}</ol>` : `<ul>${listItems}</ul>`;
-            }
-            const paragraph = trimmed.split(/\n/).map(line => processInline(line)).join('<br>');
-            return `<p>${paragraph}</p>`;
-        }).join('');
+        return marked.parse(escapeHtml(text.trim()));
     }
 
     function appendMessage(role, text) {
@@ -700,22 +703,23 @@
 
         const contentDiv = div.querySelector('.message-content');
         let index = 0;
-        const speed = 16;
+        const speed = 15;
+        const chunkSize = 10;
 
-        const typeNextChar = () => {
-            index += 1;
+        const typeNextChunk = () => {
+            index += chunkSize;
             if (index < text.length) {
-                contentDiv.innerHTML = escapeHtml(text.slice(0, index)).replace(/\n/g, '<br>');
+                contentDiv.innerHTML = formatMessageText(text.slice(0, index));
             } else {
                 contentDiv.innerHTML = formatMessageText(text);
             }
             scrollToBottom();
             if (index < text.length) {
-                setTimeout(typeNextChar, speed);
+                setTimeout(typeNextChunk, speed);
             }
         };
 
-        setTimeout(typeNextChar, speed);
+        setTimeout(typeNextChunk, speed);
     }
 
     function scrollToBottom() {
