@@ -393,8 +393,29 @@ def gemini_proxy(request):
     try:
         client = genai.Client(api_key=api_key)
         data = json.loads(request.body)
-        raw_contents = data.get('contents', [])
+        raw_contents = data.get('contents', []) or []
         
+        if not raw_contents:
+            history_items = data.get('history') or []
+            if history_items:
+                for item in history_items:
+                    if isinstance(item, dict):
+                        if item.get('parts'):
+                            raw_contents.append(item)
+                        else:
+                            role = item.get('role', 'user')
+                            text = item.get('text') or item.get('message') or ''
+                            if text:
+                                raw_contents.append({
+                                    'role': role,
+                                    'parts': [{'text': text}]
+                                })
+            elif data.get('message'):
+                raw_contents = [{
+                    'role': 'user',
+                    'parts': [{'text': data.get('message', '').strip()}]
+                }]
+
         # Pull profile data for personalization
         profile = _get_user_profile_data(request.user)
         
@@ -425,7 +446,7 @@ def gemini_proxy(request):
                     contents=history
                 )
                 if response.text:
-                    return JsonResponse({"text": response.text, "model_used": model_id})
+                    return JsonResponse({"status": "success", "text": response.text, "model_used": model_id})
             except Exception as e:
                 last_err = str(e)
                 continue

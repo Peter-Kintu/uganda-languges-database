@@ -583,22 +583,22 @@
                     'X-CSRFToken': getCookie('csrftoken')
                 },
                 body: JSON.stringify({
-                    message: text,
-                    history: getSessionHistory(currentSessionId).map(m => ({
-                        role: m.role === 'user' ? 'user' : 'model',
-                        parts: [m.text]
+                    contents: getSessionHistory(currentSessionId).map(m => ({
+                        role: m.role === 'user' ? 'user' : 'assistant',
+                        parts: [{ text: m.text }]
                     }))
                 })
             });
 
             const data = await response.json();
-            if (data.status === 'success' || data.reply) {
-                const reply = data.reply || data.response;
+            const reply = data.text || data.reply || data.response;
+            if (data.status === 'success' || reply) {
                 removeLoadingMessage();
                 appendMessage('ai', reply);
                 saveMessage(currentSessionId, 'ai', reply);
             } else {
                 removeLoadingMessage();
+                console.error('AI proxy failed', data);
                 appendMessage('ai', "Service temporarily unavailable try again later.");
             }
         } catch(err) {
