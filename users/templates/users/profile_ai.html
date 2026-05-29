@@ -493,7 +493,7 @@
             }
 
             if (data.text) {
-                appendMessage('ai', data.text);
+                appendTypingMessage('ai', data.text);
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
@@ -554,6 +554,30 @@
         requestAnimationFrame(() => {
             scrollToBottom();
         });
+    }
+
+    function appendTypingMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = `chat-message ${role}`;
+        const labelColor = role === 'user' ? '#e9edef' : 'var(--accent-green)';
+        const placeholder = `<div class="text-[10px] font-bold opacity-50 mb-1 uppercase" style="color: ${labelColor};">${role === 'user' ? 'You' : 'Africana'}</div><div class="message-content" style="min-height: 1.2rem; opacity: 0.75;">&nbsp;</div>`;
+        div.innerHTML = placeholder;
+        chatLog.appendChild(div);
+
+        const contentDiv = div.querySelector('.message-content');
+        let index = 0;
+        const speed = 16;
+
+        const typeNextChar = () => {
+            index += 1;
+            contentDiv.innerHTML = formatMessageText(text.slice(0, index));
+            scrollToBottom();
+            if (index < text.length) {
+                setTimeout(typeNextChar, speed);
+            }
+        };
+
+        setTimeout(typeNextChar, speed);
     }
 
     function scrollToBottom() {
