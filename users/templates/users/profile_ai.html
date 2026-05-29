@@ -545,66 +545,50 @@
         const wantsImage = imageKeywords.some(keyword => text.toLowerCase().includes(keyword));
 
         if (wantsImage) {
-            chatInput.disabled = true;
-            const sendButton = document.querySelector('.btn-send');
-            if (sendButton) sendButton.disabled = true;
-
+            // Sunbird image generation is not available in this deployment.
+            // Provide a helpful fallback: craft a concise prompt the user can copy
+            // and use with an external image-generation service.
             appendMessage('user', text);
             chatInput.value = '';
             chatInput.style.height = 'auto';
             scrollToBottom();
 
-            // Append loading state visual card
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'chat-message ai';
-            loadingDiv.innerHTML = `<div class="text-[10px] font-bold opacity-50 mb-1 uppercase" style="color: var(--accent-green);">Africana</div>🎨 Rendering your Sunbird AI advert creative... Please wait a brief moment.`;
-            chatLog.appendChild(loadingDiv);
+            const promptText = `Professional product marketing photograph, studio lighting, crisp clean focus, vibrant modern aesthetic tailored for African digital business: ${text}`;
+
+            const card = document.createElement('div');
+            card.className = 'chat-message ai';
+            card.style.maxWidth = '640px';
+            card.innerHTML = `
+                <div class="text-[10px] font-bold opacity-50 mb-2 uppercase" style="color: var(--accent-green);">Image Generation Unavailable</div>
+                <p class="text-sm text-slate-700 mb-2">I can't generate images from here. I prepared a ready-to-use prompt you can paste into any image generator.</p>
+                <pre id="generated-prompt" style="white-space:pre-wrap;background:#f8fafc;padding:0.6rem;border-radius:0.5rem;border:1px solid rgba(15,23,42,0.04);">${escapeHtml(promptText)}</pre>
+                <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+                    <button id="copyPromptBtn" class="mt-0 text-xs font-bold text-white px-3 py-1.5 rounded" style="background: var(--accent-green); border:none; cursor:pointer;">Copy Prompt</button>
+                    <a id="searchGenerators" class="mt-0 text-xs font-bold text-slate-700 px-3 py-1.5 rounded border" style="background:transparent; border:1px solid rgba(15,23,42,0.06); text-decoration:none;" target="_blank">Find Generators</a>
+                </div>
+            `;
+
+            chatLog.appendChild(card);
             scrollToBottom();
 
-            try {
-                const response = await fetch("{% url 'users:generate_advert_image' %}", {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': CSRF_TOKEN
-                    },
-                    body: JSON.stringify({ prompt: text })
+            document.getElementById('copyPromptBtn').onclick = () => {
+                navigator.clipboard.writeText(promptText).then(() => {
+                    appendMessage('ai', 'Prompt copied to clipboard. Paste it into any image generator.');
+                }).catch(() => {
+                    appendMessage('ai', 'Unable to copy prompt—please select and copy it manually.');
                 });
+            };
 
-                const data = await response.json();
-                chatLog.removeChild(loadingDiv);
-
-                if (response.ok && data.success) {
-                    const imgDiv = document.createElement('div');
-                    imgDiv.className = 'chat-message ai';
-                    imgDiv.style.maxWidth = '400px'; 
-                    
-                    imgDiv.innerHTML = `
-                        <div class="text-[10px] font-bold opacity-50 mb-2 uppercase" style="color: var(--accent-green);">Africana Studio</div>
-                        <img src="${data.image_url}" alt="Sunbird AI Advert" style="width:100%; border-radius:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.15); margin-bottom:0.75rem;" />
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span class="text-xs text-slate-500">Powered by Sunbird AI</span>
-                            <a href="${data.image_url}" download="africana_advert.jpg" class="text-xs font-bold" style="background:var(--accent-green); color:white; padding:4px 10px; border-radius:6px; text-decoration:none;" target="_blank">Save Creative</a>
-                        </div>
-                    `;
-                    chatLog.appendChild(imgDiv);
-                    
-                    saveMessage(currentSessionId, 'user', text);
-                    saveMessage(currentSessionId, 'ai', `[Generated Advert: ${text}]`);
-                    updateHistorySidebar();
-                    scrollToBottom();
-                } else {
-                    appendMessage('ai', data.error || "I could not complete the graphic generation. Please tweak your request description.");
-                }
-            } catch (imageErr) {
-                console.error(imageErr);
-                if (loadingDiv.parentNode) chatLog.removeChild(loadingDiv);
-                appendMessage('ai', "System Connection Error: Unable to contact Sunbird imaging server.");
-            } finally {
-                chatInput.disabled = false;
-                if (sendButton) sendButton.disabled = false;
-                chatInput.focus();
+            const searchLink = document.getElementById('searchGenerators');
+            if (searchLink) {
+                // Generic search for image generators so we don't hardcode any provider.
+                searchLink.href = `https://www.google.com/search?q=${encodeURIComponent('AI image generator ' + text)}`;
             }
+
+            saveMessage(currentSessionId, 'user', text);
+            saveMessage(currentSessionId, 'ai', `[Image prompt prepared]`);
+            updateHistorySidebar();
+
             return; // Exit out of text generation pipeline
         }
 

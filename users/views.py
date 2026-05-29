@@ -577,8 +577,33 @@ def generate_advert_image(request):
             "prompt": enhanced_prompt
         }
 
-        response = requests.post(sunbird_url, headers=headers, json=payload, timeout=30)
-        
+        try:
+            response = requests.post(sunbird_url, headers=headers, json=payload, timeout=30)
+        except requests.exceptions.RequestException as req_err:
+            logging.exception("Sunbird request failed")
+            user_msg = "Unable to contact the image generation service right now. Please try again later."
+            details = str(req_err)
+            payload = {'error': 'Network error', 'user_error': user_msg}
+            if settings.DEBUG:
+                payload['details'] = details
+            return JsonResponse(payload, status=502)
+
+        # If Sunbird rejects the HTTP method, try a commonly used alternate path
+        if response.status_code == 405:
+            alt_url = "https://api.sunbird.ai/tasks/text-to-image"
+            logging.info("Sunbird returned 405; retrying with alternate endpoint %s", alt_url)
+            try:
+                alt_resp = requests.post(alt_url, headers=headers, json=payload, timeout=30)
+                response = alt_resp
+            except requests.exceptions.RequestException as alt_err:
+                logging.exception("Sunbird alternate endpoint request failed")
+                user_msg = "Image service appears misconfigured. Please try again later."
+                payload = {'error': 'Network error', 'user_error': user_msg}
+                if settings.DEBUG:
+                    payload['details'] = str(alt_err)
+                return JsonResponse(payload, status=502)
+
+        # Parse response and provide user-friendly error messages
         if response.status_code == 200:
             response_data = response.json()
             # Sunbird provides a hosted URL or a base64 string depending on their task configuration. 
@@ -596,9 +621,33 @@ def generate_advert_image(request):
                     "prompt_used": user_prompt
                 })
             
-            return JsonResponse({"error": "Sunbird processed the request but did not return a valid graphic string."}, status=502)
+            logging.warning("Sunbird returned 200 but no image data: %s", response.text)
+            user_msg = "Image service processed your request but did not return a usable image. Try simplifying the description."
+            payload = {'error': 'No image returned', 'user_error': user_msg}
+            if settings.DEBUG:
+                payload['details'] = response.text
+            return JsonResponse(payload, status=502)
         else:
-            return JsonResponse({"error": f"Sunbird Image API error: {response.text}"}, status=response.status_code)
+            # Map common HTTP errors to friendly messages
+            raw_text = (response.text or '').strip()
+            if response.status_code == 400:
+                user_msg = "Couldn't understand the image request. Try a shorter, simpler description."
+            elif response.status_code == 401 or response.status_code == 403:
+                user_msg = "Authorization failed for image generation. Site configuration may be missing or invalid."
+            elif response.status_code == 405:
+                user_msg = "Image generation is not enabled on this server. Please try a different request or contact support."
+            elif response.status_code == 429:
+                user_msg = "Image service is busy (rate limit). Please wait a moment and try again."
+            elif 500 <= response.status_code < 600:
+                user_msg = "Image service is temporarily unavailable. Please try again later."
+            else:
+                user_msg = "Image generation failed. Please try again or simplify your prompt."
+
+            logging.error("Sunbird Image API error %s: %s", response.status_code, raw_text)
+            payload = {'error': f'Sunbird Image API error', 'user_error': user_msg}
+            if settings.DEBUG:
+                payload['details'] = raw_text
+            return JsonResponse(payload, status=response.status_code)
 
     except Exception as e:
         logging.error(f"Sunbird Image Generation Exception: {str(e)}", exc_info=True)

@@ -67,21 +67,60 @@
 
                 <div class="px-6 pb-8 sm:px-10 sm:pb-10">
                     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm text-center">
-                            <p class="text-sm text-slate-500">Posts</p>
-                            <p class="mt-3 text-2xl font-bold text-slate-900">{{ posts_count|default:0 }}</p>
+                        <!-- Card: Posts -->
+                        <div class="relative rounded-2xl overflow-hidden border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 sm:p-5 shadow-lg text-center hover:shadow-xl transform hover:-translate-y-1 transition">
+                            <div class="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-indigo-500 via-emerald-400 to-pink-500"></div>
+                            <div class="flex items-center justify-center gap-3">
+                                <div class="p-3 rounded-lg bg-indigo-50 text-indigo-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V7a2 2 0 00-2-2h-3m-4 0H7a2 2 0 00-2 2v4"/></svg>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-sm text-slate-500">Posts</p>
+                                    <p class="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900" data-count>{{ posts_count|default:0 }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm text-center">
-                            <p class="text-sm text-slate-500">Followers</p>
-                            <p class="mt-3 text-2xl font-bold text-slate-900">{{ followers_count|default:0 }}</p>
+
+                        <!-- Card: Followers -->
+                        <div class="relative rounded-2xl overflow-hidden border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 sm:p-5 shadow-lg text-center hover:shadow-xl transform hover:-translate-y-1 transition">
+                            <div class="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400"></div>
+                            <div class="flex items-center justify-center gap-3">
+                                <div class="p-3 rounded-lg bg-emerald-50 text-emerald-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A11.955 11.955 0 0112 15c2.21 0 4.27.59 6 1.604M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-sm text-slate-500">Followers</p>
+                                    <p class="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900" data-count>{{ followers_count|default:0 }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm text-center">
-                            <p class="text-sm text-slate-500">Following</p>
-                            <p class="mt-3 text-2xl font-bold text-slate-900">{{ following_count|default:0 }}</p>
+
+                        <!-- Card: Following -->
+                        <div class="relative rounded-2xl overflow-hidden border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 sm:p-5 shadow-lg text-center hover:shadow-xl transform hover:-translate-y-1 transition">
+                            <div class="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-yellow-300 via-orange-300 to-rose-400"></div>
+                            <div class="flex items-center justify-center gap-3">
+                                <div class="p-3 rounded-lg bg-yellow-50 text-yellow-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V8a2 2 0 00-2-2h-3m-4 0H7a2 2 0 00-2 2v12h12M12 7v6M8 11h8"/></svg>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-sm text-slate-500">Following</p>
+                                    <p class="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900" data-count>{{ following_count|default:0 }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm text-center">
-                            <p class="text-sm text-slate-500">Impressions</p>
-                            <p class="mt-3 text-2xl font-bold text-slate-900">{{ impressions|default:'N/A' }}</p>
+
+                        <!-- Card: Impressions -->
+                        <div class="relative rounded-2xl overflow-hidden border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 sm:p-5 shadow-lg text-center hover:shadow-xl transform hover:-translate-y-1 transition">
+                            <div class="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-pink-500"></div>
+                            <div class="flex items-center justify-center gap-3">
+                                <div class="p-3 rounded-lg bg-violet-50 text-violet-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A2 2 0 0122 9.618v4.764a2 2 0 01-1.447 1.894L15 18M4 6v12a2 2 0 002 2h6m6-14V6a2 2 0 00-2-2h-2"/></svg>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-sm text-slate-500">Impressions</p>
+                                    <p class="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900" data-count>{{ impressions|default:'N/A' }}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -232,6 +271,31 @@
             copyBtn.innerHTML = originalSvg;
         }, 2000);
     }
+</script>
+
+<script>
+// Simple count-up animation for stat cards
+document.addEventListener('DOMContentLoaded', function() {
+    const nodes = document.querySelectorAll('[data-count]');
+    nodes.forEach(node => {
+        const text = node.textContent.trim();
+        if (!text || isNaN(parseFloat(text.replace(/,/g, '')))) return;
+        const target = parseInt(text.replace(/,/g, ''), 10);
+        let current = 0;
+        const duration = 900;
+        const stepTime = Math.max(15, Math.floor(duration / Math.max(target, 60)));
+        const step = () => {
+            current += Math.max(1, Math.floor(target / (duration / stepTime)));
+            if (current >= target) {
+                node.textContent = target.toLocaleString();
+            } else {
+                node.textContent = current.toLocaleString();
+                setTimeout(step, stepTime);
+            }
+        };
+        step();
+    });
+});
 </script>
 
 <script type="application/ld+json">
