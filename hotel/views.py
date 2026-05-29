@@ -976,8 +976,21 @@ def join_community(request, invite_link):
 def community_conversation(request, community_id):
     community = get_object_or_404(Community, id=community_id, members=request.user)
     if request.method == 'POST':
-        content = request.POST.get('content', '').strip()
-        attachment = request.FILES.get('attachment')
+        content = ''
+        attachment = None
+        content_type = request.headers.get('Content-Type', '')
+
+        if content_type.startswith('application/json'):
+            import json
+            try:
+                data = json.loads(request.body)
+                content = data.get('content', '') or ''
+            except json.JSONDecodeError:
+                content = ''
+        else:
+            content = request.POST.get('content', '') or ''
+            attachment = request.FILES.get('attachment')
+
         if content or attachment:
             CommunityMessage.objects.create(
                 community=community,
@@ -985,6 +998,14 @@ def community_conversation(request, community_id):
                 content=content,
                 attachment=attachment
             )
+
+        is_ajax = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+            'application/json' in request.headers.get('Content-Type', '')
+        )
+        if is_ajax:
+            return JsonResponse({'success': True})
+
         return redirect('hotel:community_conversation', community_id=community_id)
     
     messages = community.messages.all().order_by('created_at')

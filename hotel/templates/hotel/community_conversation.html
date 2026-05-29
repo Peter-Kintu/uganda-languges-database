@@ -140,7 +140,7 @@
 
         <!-- Message Input -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-            <form method="post" enctype="multipart/form-data" class="flex flex-col gap-4">
+            <form id="communityChatForm" method="post" enctype="multipart/form-data" class="flex flex-col gap-4">
                 {% csrf_token %}
                 <!-- Action Buttons Bar - Responsive Layout -->
                 <div class="flex flex-wrap gap-2 md:gap-3">
@@ -315,5 +315,100 @@
             nameElement.textContent = '';
         }
     }
+
+    function createLocalCommunityMessageBubble(text) {
+        const container = document.getElementById('messages-container');
+        if (!container || !text) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex justify-end';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'max-w-xs lg:max-w-md px-4 py-3 rounded-lg bg-indigo-600 text-white';
+        bubble.style.wordBreak = 'break-word';
+        bubble.style.whiteSpace = 'pre-wrap';
+
+        const content = document.createElement('div');
+        content.textContent = text;
+        bubble.appendChild(content);
+
+        const time = document.createElement('p');
+        time.className = 'text-xs mt-1 opacity-70';
+        const now = new Date();
+        time.textContent = now.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        bubble.appendChild(time);
+
+        wrapper.appendChild(bubble);
+        container.appendChild(wrapper);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function getCsrfToken() {
+        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        return input ? input.value : '';
+    }
+
+    function sendCommunityMessage(event) {
+        event.preventDefault();
+        const form = document.getElementById('communityChatForm');
+        const input = document.getElementById('message-input');
+        const content = input.value.trim();
+        const photoInput = document.getElementById('photo-input');
+        const videoInput = document.getElementById('video-input');
+        const attachmentInput = document.getElementById('attachment-input');
+        const hasAttachment = (photoInput && photoInput.files.length) || (videoInput && videoInput.files.length) || (attachmentInput && attachmentInput.files.length);
+
+        if (!content && !hasAttachment) {
+            return;
+        }
+
+        if (hasAttachment) {
+            form.submit();
+            return;
+        }
+
+        const button = form.querySelector('button[type="submit"]');
+        if (button) {
+            button.disabled = true;
+            button.classList.add('opacity-70', 'cursor-not-allowed');
+        }
+
+        createLocalCommunityMessageBubble(content);
+        input.value = '';
+        input.focus();
+        document.getElementById('attachment-name').textContent = '';
+
+        fetch(form.action || window.location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ content })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data || !data.success) {
+                console.error('Community message send failed', data);
+            }
+        })
+        .catch(error => {
+            console.error('Community message send error', error);
+        })
+        .finally(() => {
+            if (button) {
+                button.disabled = false;
+                button.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const communityForm = document.getElementById('communityChatForm');
+        if (communityForm) {
+            communityForm.addEventListener('submit', sendCommunityMessage);
+        }
+    });
 </script>
 {% endblock %}
