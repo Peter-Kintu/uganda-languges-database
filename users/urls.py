@@ -30,6 +30,8 @@ urlpatterns = [
     # --- AI Services & Career Tools ---
     path("api/v1/gemini_proxy/", views.gemini_proxy, name="gemini_proxy"),
     path("api/v1/cerebras_proxy/", views.cerebras_proxy, name="cerebras_proxy"),
+    path("api/v1/generate_image/", views.generate_advert_image, name="generate_advert_image"), # <-- Sunbird image generation endpoint
+    path("profile/ai-companion/export-pdf/", views.generate_document_pdf, name="generate_document_pdf"),
     path('profile/ai-companion/', views.profile_ai, name='profile_ai'),
     path('api/v1/tts/', views.tts_proxy, name='tts_proxy'),
 ]

@@ -430,7 +430,75 @@
         const text = chatInput.value.trim();
         if (!text) return;
 
-        // Check client-side cache first
+        // --- INTERCEPT SUNBIRD IMAGE REQUESTS ---
+        const imageKeywords = ['generate image', 'create image', 'make an image', 'generate an image', 'make an advert', 'generate advert', 'create a poster', 'design a poster', 'generate a banner'];
+        const wantsImage = imageKeywords.some(keyword => text.toLowerCase().includes(keyword));
+
+        if (wantsImage) {
+            chatInput.disabled = true;
+            const sendButton = document.querySelector('.btn-send');
+            if (sendButton) sendButton.disabled = true;
+
+            appendMessage('user', text);
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            scrollToBottom();
+
+            // Append loading state visual card
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'chat-message ai';
+            loadingDiv.innerHTML = `<div class="text-[10px] font-bold opacity-50 mb-1 uppercase" style="color: var(--accent-green);">Africana</div>🎨 Rendering your Sunbird AI advert creative... Please wait a brief moment.`;
+            chatLog.appendChild(loadingDiv);
+            scrollToBottom();
+
+            try {
+                const response = await fetch("{% url 'users:generate_advert_image' %}", {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF_TOKEN
+                    },
+                    body: JSON.stringify({ prompt: text })
+                });
+
+                const data = await response.json();
+                chatLog.removeChild(loadingDiv);
+
+                if (response.ok && data.success) {
+                    const imgDiv = document.createElement('div');
+                    imgDiv.className = 'chat-message ai';
+                    imgDiv.style.maxWidth = '400px'; 
+                    
+                    imgDiv.innerHTML = `
+                        <div class="text-[10px] font-bold opacity-50 mb-2 uppercase" style="color: var(--accent-green);">Africana Studio</div>
+                        <img src="${data.image_url}" alt="Sunbird AI Advert" style="width:100%; border-radius:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.15); margin-bottom:0.75rem;" />
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="text-xs text-slate-500">Powered by Sunbird AI</span>
+                            <a href="${data.image_url}" download="africana_advert.jpg" class="text-xs font-bold" style="background:var(--accent-green); color:white; padding:4px 10px; border-radius:6px; text-decoration:none;" target="_blank">Save Creative</a>
+                        </div>
+                    `;
+                    chatLog.appendChild(imgDiv);
+                    
+                    saveMessage(currentSessionId, 'user', text);
+                    saveMessage(currentSessionId, 'ai', `[Generated Advert: ${text}]`);
+                    updateHistorySidebar();
+                    scrollToBottom();
+                } else {
+                    appendMessage('ai', data.error || "I could not complete the graphic generation. Please tweak your request description.");
+                }
+            } catch (imageErr) {
+                console.error(imageErr);
+                if (loadingDiv.parentNode) chatLog.removeChild(loadingDiv);
+                appendMessage('ai', "System Connection Error: Unable to contact Sunbird imaging server.");
+            } finally {
+                chatInput.disabled = false;
+                if (sendButton) sendButton.disabled = false;
+                chatInput.focus();
+            }
+            return; // Exit out of text generation pipeline
+        }
+
+        // --- EXTANT SPEEDY CEREBRAS / SUNBIRD TEXT INFERENCE ROUTING ---
         const cacheKey = `ai_cache_${text.toLowerCase().replace(/\s+/g, '_')}`;
         const cachedResponse = localStorage.getItem(cacheKey);
         if (cachedResponse) {
@@ -445,7 +513,6 @@
             return;
         }
 
-        // Disable input and button to prevent spamming
         chatInput.disabled = true;
         const sendButton = document.querySelector('.btn-send');
         if (sendButton) sendButton.disabled = true;
@@ -467,7 +534,6 @@
                 })
             });
 
-            // Fallback to Gemini if Cerebras fails with rate limit or service unavailable
             if (!response.ok && (response.status === 429 || response.status === 503)) {
                 console.log('Cerebras rate limited, trying Gemini fallback...');
                 response = await fetch("{% url 'users:gemini_proxy' %}", {
@@ -493,12 +559,64 @@
             }
 
             if (data.text) {
+                // 1. First print the text response using the beautiful typing effect animation
                 appendTypingMessage('ai', data.text);
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', data.text);
                 updateHistorySidebar();
-                // Cache the response
                 localStorage.setItem(cacheKey, data.text);
+
+                // 2. NEW: CHECK IF THE CONTEXT DESERVES AN OFFICIAL PDF EXPORT CARD
+                const lowerText = text.toLowerCase();
+                let docType = null;
+                if (lowerText.includes('resume') || lowerText.includes('cv ') || lowerText.includes('curriculum vitae')) {
+                    docType = 'resume';
+                } else if (lowerText.includes('business plan') || lowerText.includes('company profile')) {
+                    docType = 'business_plan';
+                }
+
+                if (docType) {
+                    setTimeout(() => {
+                        const exportCard = document.createElement('div');
+                        exportCard.className = 'chat-message ai';
+                        exportCard.style.borderLeft = '4px solid var(--accent-green)';
+                        exportCard.innerHTML = `
+                            <div class="text-[10px] font-bold opacity-50 mb-1 uppercase" style="color: var(--accent-green);">Africana Document Engine</div>
+                            <p class="text-xs">I have organized your professional text data structure. Would you like to compile this document into a formatted, print-ready PDF portfolio file?</p>
+                            <button id="pdfExportBtn" class="mt-2 text-xs font-bold text-white px-3 py-1.5 rounded" style="background: var(--accent-green); border:none; cursor:pointer;">
+                                📄 Export Document as Official PDF
+                            </button>
+                        `;
+                        chatLog.appendChild(exportCard);
+                        scrollToBottom();
+
+                        // Attach immediate click handler tracking to export endpoint execution
+                        exportCard.querySelector('#pdfExportBtn').onclick = async () => {
+                            exportCard.querySelector('#pdfExportBtn').innerText = "⏳ Packaging Document...";
+                            try {
+                                const res = await fetch("{% url 'users:generate_document_pdf' %}", {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': CSRF_TOKEN
+                                    },
+                                    body: JSON.stringify({ text: data.text, doc_type: docType })
+                                });
+                                const exportData = await res.json();
+                                if (res.ok && exportData.redirect_url) {
+                                    window.open(exportData.redirect_url, '_blank'); // Open download pipeline in secondary safe browser tab
+                                    exportCard.querySelector('#pdfExportBtn').innerText = "✅ Export Completed";
+                                } else {
+                                    alert("Export issue: " + exportData.error);
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                alert("Document processing endpoint failed to engage.");
+                            }
+                        };
+                    }, (data.text.length * 16) + 500); // Trigger seamlessly right after typing animation wraps up
+                }
+
             } else {
                 const errorMessage = data.error || "No response from Africana AI.";
                 appendMessage('ai', errorMessage);
@@ -510,7 +628,6 @@
             console.error(e);
             appendMessage('ai', "System Error: Connection failed.");
         } finally {
-            // Re-enable input and button
             chatInput.disabled = false;
             const sendButton = document.querySelector('.btn-send');
             if (sendButton) sendButton.disabled = false;
@@ -537,10 +654,27 @@
     }
 
     function formatMessageText(text) {
-        const escaped = escapeHtml(text);
-        const bolded = escaped.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-        const linked = linkify(bolded);
-        return linked.replace(/\n/g, '<br>');
+        if (!text) return '';
+
+        const processInline = (value) => {
+            const escaped = escapeHtml(value.trim());
+            const bolded = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            const italic = bolded.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            return linkify(italic);
+        };
+
+        const blocks = text.trim().split(/\n\s*\n+/);
+        return blocks.map(block => {
+            const trimmed = block.trim();
+            if (/^(?:\*|-|\+)\s+/m.test(trimmed) || /^\d+\.\s+/m.test(trimmed)) {
+                const isOrdered = /^\d+\.\s+/m.test(trimmed);
+                const items = trimmed.split(/\n+/).map(line => line.replace(/^(?:\*|-|\+|\d+\.)\s+/, ''));
+                const listItems = items.map(item => `<li>${processInline(item)}</li>`).join('');
+                return isOrdered ? `<ol>${listItems}</ol>` : `<ul>${listItems}</ul>`;
+            }
+            const paragraph = trimmed.split(/\n/).map(line => processInline(line)).join('<br>');
+            return `<p>${paragraph}</p>`;
+        }).join('');
     }
 
     function appendMessage(role, text) {
@@ -570,7 +704,11 @@
 
         const typeNextChar = () => {
             index += 1;
-            contentDiv.innerHTML = formatMessageText(text.slice(0, index));
+            if (index < text.length) {
+                contentDiv.innerHTML = escapeHtml(text.slice(0, index)).replace(/\n/g, '<br>');
+            } else {
+                contentDiv.innerHTML = formatMessageText(text);
+            }
             scrollToBottom();
             if (index < text.length) {
                 setTimeout(typeNextChar, speed);

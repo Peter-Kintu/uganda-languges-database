@@ -3,6 +3,9 @@ import json
 import logging
 import requests
 import time
+import base64
+from django.template.loader import render_to_string
+from weasyprint import HTML
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
@@ -529,3 +532,207 @@ def cerebras_proxy(request):
         return JsonResponse({"error": "An unexpected server error occurred."}, status=500)
 
 ai_quiz_generator = profile_ai
+
+
+@csrf_exempt
+@login_required
+def generate_advert_image(request):
+    """Generates an advertisement graphic using Sunbird AI's Image Generation API."""
+    if request.method != 'POST':
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    sunbird_token = os.environ.get("SUNBIRD_API_KEY", "").strip().replace('"', '').replace("'", "")
+    if not sunbird_token:
+        return JsonResponse({"error": "Sunbird API key configuration missing."}, status=500)
+
+    try:
+        data = json.loads(request.body)
+        user_prompt = data.get('prompt', '').strip()
+
+        if not user_prompt:
+            return JsonResponse({"error": "Please provide a description for the advertisement image."}, status=400)
+
+        # Optimize prompt styling automatically for sleek African e-commerce/tech products
+        enhanced_prompt = (
+            f"Professional product marketing commercial photograph, studio lighting, crisp clean focus, "
+            f"vibrant modern aesthetic, tailored for an African digital business landscape: {user_prompt}"
+        )
+
+        # Target Sunbird's text-to-image pipeline
+        sunbird_url = "https://api.sunbird.ai/tasks/text_to_image"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {sunbird_token}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "prompt": enhanced_prompt
+        }
+
+        response = requests.post(sunbird_url, headers=headers, json=payload, timeout=30)
+        
+        if response.status_code == 200:
+            response_data = response.json()
+            # Sunbird provides a hosted URL or a base64 string depending on their task configuration. 
+            # If they return a direct image URL under 'image_url' or 'url':
+            image_url = response_data.get("image_url") or response_data.get("url")
+            
+            # Fallback check if it returns raw base64 data instead
+            if not image_url and "base64" in response_data:
+                image_url = f"data:image/jpeg;base64,{response_data['base64']}"
+
+            if image_url:
+                return JsonResponse({
+                    "success": True,
+                    "image_url": image_url,
+                    "prompt_used": user_prompt
+                })
+            
+            return JsonResponse({"error": "Sunbird processed the request but did not return a valid graphic string."}, status=502)
+        else:
+            return JsonResponse({"error": f"Sunbird Image API error: {response.text}"}, status=response.status_code)
+
+    except Exception as e:
+        logging.error(f"Sunbird Image Generation Exception: {str(e)}", exc_info=True)
+        return JsonResponse({"error": f"Internal image pipeline error: {str(e)}"}, status=500)
+
+
+
+@csrf_exempt
+@login_required
+def generate_document_pdf(request):
+    """
+    Accepts text markdown or raw data from Africana AI, transforms it into an 
+    excellently styled document structure, and renders it directly into a PDF download.
+    """
+    if request.method == 'POST':
+        # Step A: Capture data from the AI chat session
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid request content format."}, status=400)
+            
+        text_content = data.get('text', '').strip()
+        doc_type = data.get('doc_type', 'document') # 'resume' or 'business_plan'
+        
+        if not text_content:
+            return JsonResponse({"error": "No document data provided to compile."}, status=400)
+            
+        # Temporarily cache data in the user's session to allow immediate safe retrieval via GET download
+        request.session['pending_pdf_text'] = text_content
+        request.session['pending_pdf_type'] = doc_type
+        
+        # Return link routing target
+        return JsonResponse({
+            "success": True, 
+            "redirect_url": reverse('users:generate_document_pdf')
+        })
+
+    # Step B: When the download route is requested via a GET request
+    text_content = request.session.get('pending_pdf_text', '')
+    doc_type = request.session.get('pending_pdf_type', 'document')
+
+    if not text_content:
+        return redirect('users:profile_ai')
+
+    # If the user clicks the final download action link
+    if request.GET.get('download') == '1':
+        # Convert plain line-breaks to printable semantic elements safely
+        formatted_html_content = text_content.replace('\n', '<br>').replace('**', '<b>').replace('</b><b>', '')
+        
+        # Apply strict professional CSS design guidelines tailored strictly for paper margins
+        accent_color = "#16a34a" if doc_type == "resume" else "#0f172a" # Green for resumes, deep corporate blue for plans
+        
+        html_string = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @page {{
+                    size: A4;
+                    margin: 20mm 15mm;
+                    @bottom-right {{
+                        content: "Page " counter(page) " of " counter(pages);
+                        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                        font-size: 8pt;
+                        color: #94a3b8;
+                    }}
+                }}
+                body {{
+                    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                    color: #1e293b;
+                    line-height: 1.6;
+                    font-size: 10.5pt;
+                    margin: 0;
+                    padding: 0;
+                }}
+                h1 {{
+                    font-size: 22pt;
+                    color: {accent_color};
+                    margin-top: 0;
+                    margin-bottom: 5px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    letter-spacing: -0.5px;
+                }}
+                h2 {{
+                    font-size: 14pt;
+                    color: {accent_color};
+                    border-bottom: 2px solid #e2e8f0;
+                    padding-bottom: 4px;
+                    margin-top: 25px;
+                    margin-bottom: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }}
+                h3 {{
+                    font-size: 11pt;
+                    color: #0f172a;
+                    margin-top: 15px;
+                    margin-bottom: 5px;
+                }}
+                p {{
+                    margin: 0 0 10px 0;
+                }}
+                br {{
+                    content: "";
+                    margin: 2em;
+                    display: block;
+                }}
+                ul {{
+                    margin: 0 0 15px 0;
+                    padding-left: 20px;
+                }}
+                li {{
+                    margin-bottom: 4px;
+                }}
+                .meta-header {{
+                    margin-bottom: 30px;
+                    padding-bottom: 15px;
+                    border-bottom: 3px solid {accent_color};
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="content-wrapper">
+                {formatted_html_content}
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Use WeasyPrint to natively compile structural document objects into an standard PDF
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="africana_{doc_type}_{int(time.time())}.pdf"'
+        
+        HTML(string=html_string).write_pdf(response)
+        
+        # Clean up session space safely after download
+        del request.session['pending_pdf_text']
+        del request.session['pending_pdf_type']
+        
+        return response
+
+    # Render intermediate loading display before auto-download execution sets up
+    return render(request, 'users/download_pdf.html', {'doc_type': doc_type})

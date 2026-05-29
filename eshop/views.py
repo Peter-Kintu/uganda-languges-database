@@ -130,7 +130,13 @@ def sync_aliexpress_products(request):
             {'query': 'smart ring nfc payment sleep tracker fitness tracker', 'count': 12},
             {'query': 'smart bangle fitness tracker waterproof health monitor', 'count': 12},
             {'query': 'smart padlock bluetooth fingerprint wifi outdoor security lock', 'count': 12},
+            {'query': 'fingerprint thumb padlock bluetooth compact security lock', 'count': 12},
             {'query': 'smart necklace pendant wearable nfc gps sos personal tracker', 'count': 10},
+            {'query': 'smart necklace bluetooth fashion wearable pendant smart jewelry', 'count': 12},
+            {'query': 'mini smart camera 1080p wireless ai tracking night vision', 'count': 14},
+            {'query': '4k smart security camera ai detection wired wireless', 'count': 12},
+            {'query': 'emo robot plush emotional robot companion toy smart robot', 'count': 10},
+            {'query': 'programmable robot kit wifi bluetooth coding obstacle avoidance', 'count': 14},
 
             # NEXT: Programmable Robots & STEAM (education, hobby, AI companions)
             {'query': 'programmable robot kit wifi bluetooth coding obstacle avoidance', 'count': 14},
