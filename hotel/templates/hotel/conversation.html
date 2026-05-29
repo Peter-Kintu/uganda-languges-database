@@ -30,45 +30,66 @@
             {% for message in messages %}
             <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
                 <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-lg {% if message.sender == request.user %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-900{% endif %}">
-                    {% with lower=message.content|lower %}
-                        {% if "data:image" in lower %}
-                            <img src="{{ message.content }}" alt="Photo" class="max-w-xs rounded-xl" />
-                        {% elif "data:video" in lower %}
-                            <video controls class="max-w-xs rounded-xl" style="max-height: 300px;">
-                                <source src="{{ message.content }}">
-                                Your browser does not support the video tag.
-                            </video>
-                        {% elif "data:application/pdf" in lower %}
-                            <div class="bg-red-50 border border-red-200 rounded-lg p-3 inline-block">
-                                <a href="{{ message.content }}" download="document.pdf" class="inline-flex items-center gap-2 text-red-700 hover:text-red-900 font-semibold">
-                                    <span>📄 PDF Document</span>
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                </a>
-                            </div>
-                        {% elif "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document" in lower or "data:application/msword" in lower %}
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 inline-block">
-                                <a href="{{ message.content }}" download="document.docx" class="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold">
-                                    <span>📋 Word Document</span>
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                </a>
-                            </div>
-                        {% elif "http" in lower %}
-                            {% if "gif" in lower or "png" in lower or "jpg" in lower or "jpeg" in lower or "mp4" in lower or "webm" in lower %}
-                                {% if "mp4" in lower or "webm" in lower or "video" in lower %}
-                                    <video controls class="max-w-xs rounded-xl" style="max-height: 300px;">
-                                        <source src="{{ message.content }}">
-                                        Your browser does not support the video tag.
-                                    </video>
+                    {% if message.attachment %}
+                        {% with filename=message.attachment.name|lower %}
+                            {% if filename|slice:"-4:" == ".png" or filename|slice:"-4:" == ".jpg" or filename|slice:"-5:" == ".jpeg" or filename|slice:"-4:" == ".gif" %}
+                                <img src="{{ message.attachment.url }}" alt="Photo" class="max-w-full rounded-xl border border-slate-200" />
+                            {% elif filename|slice:"-4:" == ".mp4" or filename|slice:"-5:" == ".webm" or filename|slice:"-4:" == ".mov" %}
+                                <video controls class="max-w-full rounded-xl border border-slate-200" style="max-height: 300px;">
+                                    <source src="{{ message.attachment.url }}">
+                                    Your browser does not support the video tag.
+                                </video>
+                            {% else %}
+                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 inline-flex items-center gap-2 text-slate-700">
+                                    <span class="text-xl">📎</span>
+                                    <a href="{{ message.attachment.url }}" download class="font-semibold text-indigo-700 hover:text-indigo-900">{{ message.attachment.name|slice:"-50:" }}</a>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                        {% if message.content %}
+                            <p class="text-sm mt-2">{{ message.content }}</p>
+                        {% endif %}
+                    {% else %}
+                        {% with lower=message.content|lower %}
+                            {% if "data:image" in lower %}
+                                <img src="{{ message.content }}" alt="Photo" class="max-w-xs rounded-xl" />
+                            {% elif "data:video" in lower %}
+                                <video controls class="max-w-xs rounded-xl" style="max-height: 300px;">
+                                    <source src="{{ message.content }}">
+                                    Your browser does not support the video tag.
+                                </video>
+                            {% elif "data:application/pdf" in lower %}
+                                <div class="bg-red-50 border border-red-200 rounded-lg p-3 inline-block">
+                                    <a href="{{ message.content }}" download="document.pdf" class="inline-flex items-center gap-2 text-red-700 hover:text-red-900 font-semibold">
+                                        <span>📄 PDF Document</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    </a>
+                                </div>
+                            {% elif "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document" in lower or "data:application/msword" in lower %}
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 inline-block">
+                                    <a href="{{ message.content }}" download="document.docx" class="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold">
+                                        <span>📋 Word Document</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    </a>
+                                </div>
+                            {% elif "http" in lower %}
+                                {% if "gif" in lower or "png" in lower or "jpg" in lower or "jpeg" in lower or "mp4" in lower or "webm" in lower %}
+                                    {% if "mp4" in lower or "webm" in lower or "video" in lower %}
+                                        <video controls class="max-w-xs rounded-xl" style="max-height: 300px;">
+                                            <source src="{{ message.content }}">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    {% else %}
+                                        <img src="{{ message.content }}" alt="GIF" class="max-w-full rounded-xl" />
+                                    {% endif %}
                                 {% else %}
-                                    <img src="{{ message.content }}" alt="GIF" class="max-w-full rounded-xl" />
+                                    <p class="text-sm">{{ message.content }}</p>
                                 {% endif %}
                             {% else %}
                                 <p class="text-sm">{{ message.content }}</p>
                             {% endif %}
-                        {% else %}
-                            <p class="text-sm">{{ message.content }}</p>
-                        {% endif %}
-                    {% endwith %}
+                        {% endwith %}
+                    {% endif %}
                     <p class="text-xs mt-1 opacity-70">{{ message.created_at|date:"M j, H:i" }}</p>
                 </div>
             </div>
@@ -76,7 +97,7 @@
         </div>
 
         <div class="bg-white p-3 md:p-4 border border-gray-200 rounded-lg shadow-sm">
-            <form method="post" class="flex flex-col gap-4">
+            <form method="post" enctype="multipart/form-data" class="flex flex-col gap-4">
                 {% csrf_token %}
                 <!-- Action Buttons Bar - Responsive Layout -->
                 <div class="flex flex-wrap gap-2 md:gap-3">
@@ -93,27 +114,22 @@
                     <label title="Photo" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
                         <span class="text-lg">📷</span>
                         <span class="hidden sm:inline">Photo</span>
-                        <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="uploadPhoto()">
+                        <input type="file" id="photo-input" name="attachment" accept="image/*" class="hidden" onchange="showAttachmentName()">
                     </label>
                     <!-- Video: Full text on sm+, icon only on mobile -->
                     <label title="Video" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
                         <span class="text-lg">🎥</span>
                         <span class="hidden sm:inline">Video</span>
-                        <input type="file" id="video-input" accept="video/*" class="hidden" onchange="uploadVideo()">
+                        <input type="file" id="video-input" name="attachment" accept="video/*" class="hidden" onchange="showAttachmentName()">
                     </label>
-                    <!-- PDF: Hidden on mobile, full on md+ -->
-                    <label title="PDF" class="hidden md:inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
-                        <span class="text-lg">📄</span>
-                        <span class="hidden md:inline">PDF</span>
-                        <input type="file" id="pdf-input" accept=".pdf" class="hidden" onchange="uploadPDF()">
-                    </label>
-                    <!-- Word: Hidden on mobile, full on md+ -->
-                    <label title="Word" class="hidden md:inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
-                        <span class="text-lg">📋</span>
-                        <span class="hidden md:inline">Word</span>
-                        <input type="file" id="word-input" accept=".doc,.docx,.DOC,.DOCX" class="hidden" onchange="uploadWord()">
+                    <!-- Attach: PDF, Word, Excel, APK, code and more -->
+                    <label title="Attach File" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
+                        <span class="text-lg">📎</span>
+                        <span class="hidden sm:inline">Attach</span>
+                        <input type="file" id="attachment-input" name="attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.apk,.zip,.txt,.py,.js,.java,.kt,.xml,.json,image/*,video/*" class="hidden" onchange="showAttachmentName()">
                     </label>
                 </div>
+                <p id="attachment-name" class="text-slate-500 text-xs sm:text-sm"></p>
                 <div id="emoji-picker" class="hidden flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-32 overflow-y-auto">
                     <button type="button" onclick="insertEmoji('😀')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😀</button>
                     <button type="button" onclick="insertEmoji('😍')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😍</button>
@@ -208,60 +224,17 @@
         input.focus();
     }
 
-    function uploadPhoto() {
-        const input = document.getElementById('photo-input');
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const messageInput = document.getElementById('message-input');
-            messageInput.value = e.target.result;
-            messageInput.focus();
-            input.value = '';
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function uploadVideo() {
-        const input = document.getElementById('video-input');
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const messageInput = document.getElementById('message-input');
-            messageInput.value = e.target.result;
-            messageInput.focus();
-            input.value = '';
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function uploadPDF() {
-        const input = document.getElementById('pdf-input');
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const messageInput = document.getElementById('message-input');
-            messageInput.value = e.target.result;
-            messageInput.focus();
-            input.value = '';
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function uploadWord() {
-        const input = document.getElementById('word-input');
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const messageInput = document.getElementById('message-input');
-            messageInput.value = e.target.result;
-            messageInput.focus();
-            input.value = '';
-        };
-        reader.readAsDataURL(file);
+    function showAttachmentName() {
+        const fileInput = document.getElementById('attachment-input');
+        const photoInput = document.getElementById('photo-input');
+        const videoInput = document.getElementById('video-input');
+        const nameElement = document.getElementById('attachment-name');
+        const selected = photoInput.files[0] || videoInput.files[0] || fileInput.files[0];
+        if (selected) {
+            nameElement.textContent = `Selected file: ${selected.name}`;
+        } else {
+            nameElement.textContent = '';
+        }
     }
 </script>
 {% endblock %}

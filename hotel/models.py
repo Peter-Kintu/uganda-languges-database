@@ -48,7 +48,8 @@ class Connection(models.Model):
 class Message(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hotel_sent_messages')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hotel_received_messages')
-    content = models.TextField()
+    content = models.TextField(blank=True)
+    attachment = models.FileField(upload_to='message_attachments/', blank=True, null=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -89,7 +90,8 @@ class Community(models.Model):
 class CommunityMessage(models.Model):
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    content = models.TextField()
+    content = models.TextField(blank=True)
+    attachment = models.FileField(upload_to='message_attachments/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

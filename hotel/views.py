@@ -910,8 +910,14 @@ def conversation(request, user_id):
     other_user = get_object_or_404(CustomUser, id=user_id)
     if request.method == 'POST':
         content = request.POST.get('content', '').strip()
-        if content:
-            Message.objects.create(sender=request.user, receiver=other_user, content=content)
+        attachment = request.FILES.get('attachment')
+        if content or attachment:
+            Message.objects.create(
+                sender=request.user,
+                receiver=other_user,
+                content=content,
+                attachment=attachment
+            )
             # Mark messages as read when replying
             Message.objects.filter(sender=other_user, receiver=request.user, is_read=False).update(is_read=True)
         return redirect('hotel:conversation', user_id=user_id)
@@ -957,8 +963,14 @@ def community_conversation(request, community_id):
     community = get_object_or_404(Community, id=community_id, members=request.user)
     if request.method == 'POST':
         content = request.POST.get('content', '').strip()
-        if content:
-            CommunityMessage.objects.create(community=community, sender=request.user, content=content)
+        attachment = request.FILES.get('attachment')
+        if content or attachment:
+            CommunityMessage.objects.create(
+                community=community,
+                sender=request.user,
+                content=content,
+                attachment=attachment
+            )
         return redirect('hotel:community_conversation', community_id=community_id)
     
     messages = community.messages.all().order_by('created_at')
