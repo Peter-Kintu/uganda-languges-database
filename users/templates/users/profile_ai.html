@@ -611,6 +611,12 @@
                 })
             });
 
+            if (!response.ok) {
+                removeLoadingMessage();
+                appendMessage('ai', 'Service is temporarily unavailable. Please try again in a few minutes.');
+                return;
+            }
+
             const data = await response.json();
             const reply = data.text || data.reply || data.response || data.choices?.[0]?.message?.content;
             
@@ -635,12 +641,12 @@
                 }
                 saveMessage(currentSessionId, 'ai', reply);
             } else {
-                appendMessage('ai', data.error || "I'm experiencing a technical issue. Please try again.");
+                appendMessage('ai', 'Service is temporarily unavailable. Please try again in a few minutes.');
             }
         } catch(err) {
             console.error(err);
             removeLoadingMessage();
-            appendMessage('ai', "I apologize, the service encountered an issue. Please try your question again.");
+            appendMessage('ai', 'Service is temporarily unavailable. Please try again in a few minutes.');
         }
     }
 

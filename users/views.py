@@ -28,11 +28,6 @@ logger = logging.getLogger(__name__)
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
-
-from google import genai
-from google.genai import types
-from google.genai.types import Content, GenerateContentConfig, Part
-
 # Cerebras SDK imports
 from cerebras.cloud.sdk import Cerebras
 
@@ -421,90 +416,6 @@ def _extract_gemini_text(response):
     return ""
 
 
-@csrf_exempt
-@login_required
-def gemini_proxy(request):
-    """Proxies requests to Google Gemini for Africana AI with Search integration."""
-    if request.method != 'POST':
-        return JsonResponse({"error": "POST only"}, status=405)
-
-    api_key = (getattr(settings, 'GEMINI_API_KEY', None) or os.environ.get("GEMINI_API_KEY", ""))
-    api_key = api_key.strip().replace('"', '').replace("'", "") if api_key else api_key
-    if not api_key:
-        logger.warning('Gemini proxy request failed: GEMINI_API_KEY is not configured.')
-        return JsonResponse({"error": "API Key missing"}, status=503)
-
-    try:
-        client = genai.Client(api_key=api_key)
-        data = json.loads(request.body)
-        raw_contents = data.get('contents', []) or []
-        
-        if not raw_contents:
-            history_items = data.get('history') or []
-            if history_items:
-                for item in history_items:
-                    if isinstance(item, dict):
-                        if item.get('parts'):
-                            raw_contents.append(item)
-                        else:
-                            role = item.get('role', 'user')
-                            text = item.get('text') or item.get('message') or ''
-                            if text:
-                                raw_contents.append({
-                                    'role': role,
-                                    'parts': [{'text': text}]
-                                })
-            elif data.get('message'):
-                raw_contents = [{
-                    'role': 'user',
-                    'parts': [{'text': data.get('message', '').strip()}]
-                }]
-
-        # Pull profile data for personalization
-        profile = _get_user_profile_data(request.user)
-        
-        # SYSTEM INSTRUCTION: Branding and Personalized context (Shortened for token efficiency)
-        system_instruction = (
-            f"You are Africana AI, career companion by Mwene Groups. "
-            f"User: {profile['full_name']}, {profile['headline']}. Skills: {', '.join(profile['skills'][:5])}. "
-            "Provide highly actionable career and business advice for African professionals and entrepreneurs. Include specific next steps, resume tips, job search strategies, networking guidance, interview prep, and entrepreneurship planning. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
-        )
-        
-        history = _format_history_for_sdk(raw_contents[-6:])  # Limit to last 3 exchanges for token efficiency
-
-        models_to_try = [
-            "gemini-2.0-flash", 
-            "gemini-1.5-flash",
-        ]
-        
-        last_err = ""
-        for model_id in models_to_try:
-            try:
-                response = client.models.generate_content(
-                    model=model_id,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        temperature=0.7,
-                        max_output_tokens=1000,
-                    ),
-                    contents=history,
-                )
-                response_text = _extract_gemini_text(response)
-                if response_text:
-                    return JsonResponse({"status": "success", "text": response_text, "model_used": model_id})
-                last_err = f"Empty Gemini response from {model_id}."
-                logger.warning("Gemini proxy empty text from %s response: %s", model_id, response)
-            except Exception as e:
-                last_err = str(e)
-                logger.warning("Gemini proxy request failed for %s: %s", model_id, last_err)
-                continue
-
-        logger.error("Gemini proxy unavailable after trying models, last error: %s", last_err)
-        return JsonResponse({"error": f"AI unavailable. Last error: {last_err}"}, status=503)
-
-    except Exception as global_e:
-        return JsonResponse({"error": str(global_e)}, status=400)
-
 @login_required
 def profile_ai(request):
     try:
@@ -605,7 +516,7 @@ Experience: {', '.join(profile['experiences'][:5]) if profile['experiences'] els
             """Try Cerebras (primary) - excellent for business & job context"""
             api_key = os.environ.get("CEREBRAS_API_KEY", "").strip().replace('"', '').replace("'", "")
             if not api_key:
-                return None, "Cerebras API key not configured"
+                return None, "Cerebras service unavailable"
             try:
                 client = Cerebras(api_key=api_key)
                 completion = client.chat.completions.create(
@@ -619,15 +530,16 @@ Experience: {', '.join(profile['experiences'][:5]) if profile['experiences'] els
                 response_text = completion.choices[0].message.content if completion.choices else ""
                 if response_text and response_text.strip():
                     return response_text.strip(), None
-                return None, "Empty response from Cerebras"
+                return None, "Cerebras service unavailable"
             except Exception as e:
-                return None, f"Cerebras error: {str(e)}"
+                logging.warning("Cerebras request failed: %s", str(e), exc_info=True)
+                return None, "Cerebras service unavailable"
 
         def try_sunbird():
             """Try Sunbird (fallback) - excellent for African languages"""
             sunbird_token = os.environ.get("SUNBIRD_API_KEY", "").strip().replace('"', '').replace("'", "")
             if not sunbird_token:
-                return None, "Sunbird API key not configured"
+                return None, "Sunbird service unavailable"
             sunbird_url = "https://api.sunbird.ai/tasks/sunflower_inference"
             headers = {
                 "accept": "application/json",
@@ -639,13 +551,25 @@ Experience: {', '.join(profile['experiences'][:5]) if profile['experiences'] els
                 sunbird_response = requests.post(sunbird_url, headers=headers, json=payload, timeout=20)
                 if sunbird_response.status_code == 200:
                     sunbird_data = sunbird_response.json()
-                    response_text = sunbird_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                    response_text = ""
+                    choices = sunbird_data.get("choices") or []
+                    if choices:
+                        response_text = choices[0].get("message", {}).get("content", "") or choices[0].get("content", "")
+                    if not response_text:
+                        response_text = sunbird_data.get("text") or sunbird_data.get("output_text") or sunbird_data.get("content") or ""
+                    response_text = str(response_text).strip()
                     if response_text:
                         return response_text, None
-                    return None, "Sunbird returned empty content"
-                return None, f"Sunbird HTTP {sunbird_response.status_code}"
+                    logging.warning("Sunbird returned no usable content: %s", sunbird_data)
+                    return None, "Sunbird service unavailable"
+                logging.warning("Sunbird HTTP error %s: %s", sunbird_response.status_code, sunbird_response.text)
+                return None, "Sunbird service unavailable"
+            except requests.exceptions.RequestException as e:
+                logging.warning("Sunbird request exception: %s", str(e), exc_info=True)
+                return None, "Sunbird service unavailable"
             except Exception as e:
-                return None, f"Sunbird error: {str(e)}"
+                logging.exception("Sunbird unexpected error")
+                return None, "Sunbird service unavailable"
 
         response_text, error1 = try_cerebras()
         if response_text:
