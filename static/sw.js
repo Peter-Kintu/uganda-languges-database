@@ -8,7 +8,7 @@ const CORE_ASSETS = [
   '/hotel/',
   '/movie/',
   '/static/manifest.webmanifest',
-  '/static/images/africana-ai-logo.png',
+  '/static/images/africana-ai-logo.svg',
   '/static/robots.txt'
 ];
 

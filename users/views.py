@@ -452,6 +452,8 @@ def cerebras_proxy(request):
     try:
         body = json.loads(request.body)
         raw_contents = body.get('contents', [])
+        preferred_api = body.get('preferred_api', 'cerebras').lower()
+        use_sunbird_first = preferred_api == 'sunbird'
 
         profile = _get_user_profile_data(request.user)
         default_instruction = (
@@ -468,40 +470,31 @@ def cerebras_proxy(request):
             if text:
                 messages.append({"role": role, "content": text})
 
-        # --- ATTEMPT PRIMARY CALL (Cerebras - gpt-oss-120b) ---
-        try:
+        def try_cerebras():
             api_key = os.environ.get("CEREBRAS_API_KEY", "").strip().replace('"', '').replace("'", "")
             if not api_key:
-                raise ValueError("Cerebras API key is missing.")
+                return None, "Cerebras API key is missing."
+            try:
+                client = Cerebras(api_key=api_key)
+                completion = client.chat.completions.create(
+                    messages=messages,
+                    model="gpt-oss-120b",
+                    max_completion_tokens=1024,
+                    temperature=0.7,
+                    top_p=1,
+                    stream=False,
+                )
+                response_text = completion.choices[0].message.content if completion.choices else ""
+                if response_text:
+                    return response_text, None
+                return None, "Empty response received from Cerebras endpoint."
+            except Exception as e:
+                return None, str(e)
 
-            client = Cerebras(api_key=api_key)
-            completion = client.chat.completions.create(
-                messages=messages,
-                model="gpt-oss-120b",
-                max_completion_tokens=1024,
-                temperature=0.7,
-                top_p=1,
-                stream=False,
-            )
-
-            response_text = completion.choices[0].message.content if completion.choices else ""
-            if response_text:
-                return JsonResponse({
-                    "text": response_text,
-                    "model_used": "gpt-oss-120b (Primary)"
-                })
-
-            raise Exception("Empty response received from Cerebras endpoint.")
-
-        except Exception as primary_error:
-            logging.warning(f"Primary AI model failed/limited: {str(primary_error)}. Attempting Sunbird AI fallback...")
-
+        def try_sunbird():
             sunbird_token = os.environ.get("SUNBIRD_API_KEY", "").strip().replace('"', '').replace("'", "")
             if not sunbird_token:
-                return JsonResponse({
-                    "error": "Primary API failed and Sunbird AI fallback credentials are not configured."
-                }, status=503)
-
+                return None, "Sunbird API key is missing."
             sunbird_url = "https://api.sunbird.ai/tasks/sunflower_inference"
             headers = {
                 "accept": "application/json",
@@ -509,21 +502,36 @@ def cerebras_proxy(request):
                 "Content-Type": "application/json",
             }
             payload = {"messages": messages}
+            try:
+                sunbird_response = requests.post(sunbird_url, headers=headers, json=payload, timeout=15)
+                if sunbird_response.status_code == 200:
+                    sunbird_data = sunbird_response.json()
+                    fallback_text = sunbird_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if fallback_text:
+                        return fallback_text, None
+                    return None, "Sunbird returned empty content."
+                return None, f"Sunbird error {sunbird_response.status_code}: {sunbird_response.text}"
+            except Exception as e:
+                return None, str(e)
 
-            sunbird_response = requests.post(sunbird_url, headers=headers, json=payload, timeout=15)
-            if sunbird_response.status_code == 200:
-                sunbird_data = sunbird_response.json()
-                fallback_text = sunbird_data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                if fallback_text:
-                    return JsonResponse({
-                        "text": fallback_text,
-                        "model_used": "Sunbird AI (Fallback)"
-                    })
+        primary_order = ["sunbird", "cerebras"] if use_sunbird_first else ["cerebras", "sunbird"]
+        last_error = None
+        for provider in primary_order:
+            if provider == "cerebras":
+                text, error = try_cerebras()
+                if text:
+                    return JsonResponse({"text": text, "model_used": "gpt-oss-120b (Primary)"})
+                last_error = error
+            else:
+                text, error = try_sunbird()
+                if text:
+                    return JsonResponse({"text": text, "model_used": "Sunbird AI (Primary)"})
+                last_error = error
 
-            return JsonResponse({
-                "error": "Service temporarily unavailable. Both primary and fallback endpoints failed.",
-                "details": sunbird_response.text if 'sunbird_response' in locals() else str(primary_error)
-            }, status=503)
+        return JsonResponse({
+            "error": "Service temporarily unavailable try again later.",
+            "details": last_error or "Unknown failure."
+        }, status=503)
 
     except json.JSONDecodeError as e:
         return JsonResponse({"error": f"Invalid JSON format: {str(e)}"}, status=400)

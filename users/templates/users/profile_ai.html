@@ -4,7 +4,7 @@
 
 {% block content %}
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js" integrity="sha512-GjU2WDNlctH9wB2ai0gvW2ij1mhTNE3LulLkzPmQfJh5A6S8H6PG08v4wmXW/664sVshn5d4O7h6Rq4Uj7RPkA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
 <style>
     :root {
         --bg-main: #ffffff;
@@ -180,9 +180,10 @@
 
     textarea {
         flex: 1;
-        background: transparent;
+        background: transparent !important;
         border: none;
-        color: white;
+        color: white !important;
+        caret-color: white !important;
         outline: none;
         resize: none;
         padding: 0.5rem;
@@ -404,7 +405,7 @@
         <div class="chat-input-area">
             <div class="input-glass-wrapper">
                 <textarea id="chatInput" placeholder="Message your career AI..." rows="1"></textarea>
-                <button onclick="typeQuery()" id="sendChatButton" class="btn-send">
+                <button type="button" onclick="typeQuery()" id="sendChatButton" class="btn-send">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                 </button>
             </div>
@@ -414,12 +415,16 @@
 
 <script>
     let currentSessionId = localStorage.getItem('lastSessionId') || 'sess_' + Date.now();
-    const chatInput = document.getElementById('chatInput');
-    const chatLog = document.getElementById('chatLog');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
+    let chatInput = null;
+    let chatLog = null;
+    let sidebar = null;
+    let sidebarToggle = null;
+    let overlay = null;
+    let sendChatButton = null;
     const WELCOME_MESSAGE = "Hello! How can I assist with your career goals today?";
     const CSRF_TOKEN = getCookie('csrftoken');
+
+    console.log('Africana AI chat script loaded.');
 
     function getCookie(name) {
         const value = `; ${document.cookie}`;
@@ -428,27 +433,110 @@
         return '';
     }
 
-    document.getElementById('sidebarToggle').onclick = () => {
-        sidebar.classList.add('active');
-        overlay.classList.add('active');
-    };
+    function prefersSunbirdLanguage(text) {
+        const normalized = text.toLowerCase();
+        const localKeywords = [
+            'luganda', 'kiganda', 'ganda', 'kiswahili', 'swahili',
+            'runyankole', 'runyarwanda', 'acholi', 'runyoro', 'rutooro',
+            'lugbara', 'lusoga', 'lumasaaba', 'kinyarwanda', 'hausa',
+            'yoruba', 'igbo', 'amharic', 'somali', 'afrikaans', 'shona',
+            'xhosa', 'zulu'
+        ];
+        if (localKeywords.some(keyword => normalized.includes(keyword))) {
+            return true;
+        }
+        const translationHint = /(translate|interpret|meaning|in)\s+(luganda|kiganda|ganda|kiswahili|swahili|runyankole|runyarwanda|acholi|runyoro|rutooro|lugbara|lusoga|lumasaaba|kinyarwanda|hausa|yoruba|igbo|amharic|somali|afrikaans|shona|xhosa|zulu)/i;
+        return translationHint.test(text);
+    }
 
-    overlay.onclick = () => {
-        sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-    };
+    async function fetchChatResponse(url, body) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify(body)
+            });
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (parseErr) {
+                console.error('Failed to parse AI response JSON:', parseErr);
+                data = { error: 'Invalid response from the AI service.' };
+            }
+            return { response, data };
+        } catch (networkErr) {
+            console.error('Network error contacting AI service:', networkErr);
+            return { response: null, data: { error: 'Connection error while contacting the AI service.' } };
+        }
+    }
 
-    chatInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 150) + 'px';
-    });
+    function initializeChatUI() {
+        chatInput = document.getElementById('chatInput');
+        chatLog = document.getElementById('chatLog');
+        sidebar = document.getElementById('sidebar');
+        sidebarToggle = document.getElementById('sidebarToggle');
+        overlay = document.getElementById('sidebarOverlay');
+        sendChatButton = document.getElementById('sendChatButton');
 
-    window.onload = () => {
+        if (!chatInput || !chatLog) {
+            console.error('Chat UI initialization failed: missing chatInput and/or chatLog. Chat events will not attach.');
+            return;
+        }
+        if (!sidebar || !sidebarToggle || !overlay) {
+            console.warn('Sidebar controls are missing: UI overlay/sidebar events may not work.');
+        }
+
+        if (sidebarToggle && sidebar && overlay) {
+            sidebarToggle.onclick = () => {
+                sidebar.classList.add('active');
+                overlay.classList.add('active');
+            };
+            overlay.onclick = () => {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            };
+        }
+
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                console.log('Enter pressed, sending chat');
+                typeQuery();
+            }
+        });
+
+        if (sendChatButton) {
+            sendChatButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Send button clicked');
+                typeQuery();
+            });
+        }
+
         switchSession(currentSessionId);
         updateHistorySidebar();
-    };
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeChatUI);
+    } else {
+        initializeChatUI();
+    }
 
     async function typeQuery() {
+        if (!chatInput || !chatLog) {
+            console.error('typeQuery called but chatInput/chatLog are not available.');
+            return;
+        }
+        console.log('typeQuery triggered');
         const text = chatInput.value.trim();
         if (!text) return;
 
@@ -545,34 +633,37 @@
         scrollToBottom();
 
         try {
-            let response = await fetch("{% url 'users:cerebras_proxy' %}", {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN
-                },
-                body: JSON.stringify({ 
-                    contents: [...getSessionHistory(currentSessionId), { role: 'user', text: text }] 
-                })
-            });
+            const useSunbird = prefersSunbirdLanguage(text);
+            const sessionContents = [...getSessionHistory(currentSessionId), { role: 'user', text: text }];
+            const primaryBody = {
+                contents: sessionContents,
+                preferred_api: useSunbird ? 'sunbird' : 'cerebras'
+            };
+            const secondaryBody = {
+                contents: sessionContents,
+                preferred_api: useSunbird ? 'cerebras' : 'cerebras'
+            };
 
-            if (!response.ok && (response.status === 429 || response.status === 503)) {
-                console.log('Cerebras rate limited, trying Gemini fallback...');
-                response = await fetch("{% url 'users:gemini_proxy' %}", {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': CSRF_TOKEN
-                    },
-                    body: JSON.stringify({ 
-                        contents: [...getSessionHistory(currentSessionId), { role: 'user', text: text }] 
-                    })
-                });
+            let primaryResult = await fetchChatResponse("{% url 'users:cerebras_proxy' %}", primaryBody);
+            let response = primaryResult.response;
+            let data = primaryResult.data;
+
+            const shouldTrySecondary = !response || !response.ok || !data.text;
+            if (shouldTrySecondary) {
+                console.log('Primary AI route failed; attempting fallback. Preferred API:', primaryBody.preferred_api);
+                const fallbackUrl = useSunbird ? "{% url 'users:cerebras_proxy' %}" : "{% url 'users:gemini_proxy' %}";
+                const fallbackBody = useSunbird ? { ...secondaryBody } : { contents: sessionContents };
+                const secondaryResult = await fetchChatResponse(fallbackUrl, fallbackBody);
+                if (secondaryResult.response && secondaryResult.response.ok && secondaryResult.data.text) {
+                    response = secondaryResult.response;
+                    data = secondaryResult.data;
+                } else if (!data.text) {
+                    data = data.error ? data : secondaryResult.data;
+                }
             }
 
-            const data = await response.json();
-            if (!response.ok) {
-                const errorMessage = data.error || `Server error (${response.status})`;
+            if (!data.text) {
+                const errorMessage = data.error || (response ? `Server error (${response.status})` : 'AI service unavailable at the moment.');
                 appendMessage('ai', errorMessage);
                 saveMessage(currentSessionId, 'user', text);
                 saveMessage(currentSessionId, 'ai', errorMessage);
@@ -580,71 +671,59 @@
                 return;
             }
 
-            if (data.text) {
-                // 1. First print the text response using the beautiful typing effect animation
-                appendTypingMessage('ai', data.text);
-                saveMessage(currentSessionId, 'user', text);
-                saveMessage(currentSessionId, 'ai', data.text);
-                updateHistorySidebar();
-                localStorage.setItem(cacheKey, data.text);
+            appendTypingMessage('ai', data.text);
+            saveMessage(currentSessionId, 'user', text);
+            saveMessage(currentSessionId, 'ai', data.text);
+            updateHistorySidebar();
+            localStorage.setItem(cacheKey, data.text);
 
-                // 2. NEW: CHECK IF THE CONTEXT DESERVES AN OFFICIAL PDF EXPORT CARD
-                const lowerText = text.toLowerCase();
-                let docType = null;
-                if (lowerText.includes('resume') || lowerText.includes('cv ') || lowerText.includes('curriculum vitae')) {
-                    docType = 'resume';
-                } else if (lowerText.includes('business plan') || lowerText.includes('company profile')) {
-                    docType = 'business_plan';
-                }
+            const lowerText = text.toLowerCase();
+            let docType = null;
+            if (lowerText.includes('resume') || lowerText.includes('cv ') || lowerText.includes('curriculum vitae')) {
+                docType = 'resume';
+            } else if (lowerText.includes('business plan') || lowerText.includes('company profile')) {
+                docType = 'business_plan';
+            }
 
-                if (docType) {
-                    setTimeout(() => {
-                        const exportCard = document.createElement('div');
-                        exportCard.className = 'chat-message ai';
-                        exportCard.style.borderLeft = '4px solid var(--accent-green)';
-                        exportCard.innerHTML = `
-                            <div class="text-[10px] font-bold opacity-50 mb-1 uppercase" style="color: var(--accent-green);">Africana Document Engine</div>
-                            <p class="text-xs">I have organized your professional text data structure. Would you like to compile this document into a formatted, print-ready PDF portfolio file?</p>
-                            <button id="pdfExportBtn" class="mt-2 text-xs font-bold text-white px-3 py-1.5 rounded" style="background: var(--accent-green); border:none; cursor:pointer;">
-                                📄 Export Document as Official PDF
-                            </button>
-                        `;
-                        chatLog.appendChild(exportCard);
-                        scrollToBottom();
+            if (docType) {
+                setTimeout(() => {
+                    const exportCard = document.createElement('div');
+                    exportCard.className = 'chat-message ai';
+                    exportCard.style.borderLeft = '4px solid var(--accent-green)';
+                    exportCard.innerHTML = `
+                        <div class="text-[10px] font-bold opacity-50 mb-1 uppercase" style="color: var(--accent-green);">Africana Document Engine</div>
+                        <p class="text-xs">I have organized your professional text data structure. Would you like to compile this into a formatted, print-ready PDF portfolio file?</p>
+                        <button id="pdfExportBtn" class="mt-2 text-xs font-bold text-white px-3 py-1.5 rounded" style="background: var(--accent-green); border:none; cursor:pointer;">
+                            📄 Export Document as Official PDF
+                        </button>
+                    `;
+                    chatLog.appendChild(exportCard);
+                    scrollToBottom();
 
-                        // Attach immediate click handler tracking to export endpoint execution
-                        exportCard.querySelector('#pdfExportBtn').onclick = async () => {
-                            exportCard.querySelector('#pdfExportBtn').innerText = "⏳ Packaging Document...";
-                            try {
-                                const res = await fetch("{% url 'users:generate_document_pdf' %}", {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRFToken': CSRF_TOKEN
-                                    },
-                                    body: JSON.stringify({ text: data.text, doc_type: docType })
-                                });
-                                const exportData = await res.json();
-                                if (res.ok && exportData.redirect_url) {
-                                    window.open(exportData.redirect_url, '_blank'); // Open download pipeline in secondary safe browser tab
-                                    exportCard.querySelector('#pdfExportBtn').innerText = "✅ Export Completed";
-                                } else {
-                                    alert("Export issue: " + exportData.error);
-                                }
-                            } catch (err) {
-                                console.error(err);
-                                alert("Document processing endpoint failed to engage.");
+                    exportCard.querySelector('#pdfExportBtn').onclick = async () => {
+                        exportCard.querySelector('#pdfExportBtn').innerText = "⏳ Packaging Document...";
+                        try {
+                            const res = await fetch("{% url 'users:generate_document_pdf' %}", {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': CSRF_TOKEN
+                                },
+                                body: JSON.stringify({ text: data.text, doc_type: docType })
+                            });
+                            const exportData = await res.json();
+                            if (res.ok && exportData.redirect_url) {
+                                window.open(exportData.redirect_url, '_blank');
+                                exportCard.querySelector('#pdfExportBtn').innerText = "✅ Export Completed";
+                            } else {
+                                alert("Export issue: " + (exportData.error || 'Unknown export failure.'));
                             }
-                        };
-                    }, (data.text.length * 16) + 500); // Trigger seamlessly right after typing animation wraps up
-                }
-
-            } else {
-                const errorMessage = data.error || "No response from Africana AI.";
-                appendMessage('ai', errorMessage);
-                saveMessage(currentSessionId, 'user', text);
-                saveMessage(currentSessionId, 'ai', errorMessage);
-                updateHistorySidebar();
+                        } catch (err) {
+                            console.error(err);
+                            alert("Document processing endpoint failed to engage.");
+                        }
+                    };
+                }, (data.text.length * 16) + 500);
             }
         } catch (e) {
             console.error(e);
@@ -677,7 +756,11 @@
 
     function formatMessageText(text) {
         if (!text) return '';
-        return marked.parse(escapeHtml(text.trim()));
+        const trimmed = text.trim();
+        if (window.marked && typeof window.marked.parse === 'function') {
+            return marked.parse(trimmed);
+        }
+        return linkify(escapeHtml(trimmed)).replace(/\n/g, '<br>');
     }
 
     function appendMessage(role, text) {
@@ -794,12 +877,5 @@
             location.reload();
         }
     }
-
-    chatInput.onkeydown = (e) => {
-        if(e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            typeQuery();
-        }
-    };
 </script>
 {% endblock %}

@@ -7,15 +7,14 @@
 {% block title %}{{ user.get_full_name|default:user.username }}'s Profile | Africana AI{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-5xl mx-auto">
-        <!-- Profile Header Card -->
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden mb-8">
+<div class="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto space-y-8">
+        <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_35px_80px_-30px_rgba(15,23,42,0.24)]">
             <div class="relative">
-                <div class="bg-gradient-to-r from-indigo-700 via-blue-600 to-purple-600 h-36 sm:h-44 lg:h-48"></div>
-                <div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-10">
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 -mt-20 lg:-mt-24">
-                        <div class="col-span-1 lg:col-span-3 flex justify-center lg:justify-start">
+                <div class="absolute inset-x-0 top-0 h-44 bg-gradient-to-r from-indigo-700 via-blue-600 to-purple-600"></div>
+                <div class="relative px-6 py-8 sm:px-10 sm:py-10">
+                    <div class="grid gap-6 lg:grid-cols-12 lg:items-end">
+                        <div class="lg:col-span-3 flex justify-center lg:justify-start">
                             <div class="relative">
                                 {% if user.profile_image %}
                                     <img src="{{ user.profile_image.url }}" alt="{{ user.username }}" class="w-36 h-36 sm:w-44 sm:h-44 lg:w-48 lg:h-48 rounded-full object-cover border-4 border-white shadow-2xl">
@@ -27,208 +26,177 @@
                             </div>
                         </div>
 
-                        <div class="col-span-1 lg:col-span-9 bg-white/60 rounded-xl p-6 lg:p-8 shadow-sm">
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="lg:col-span-6 bg-white/80 rounded-3xl p-6 shadow-sm ring-1 ring-white/60 backdrop-blur-sm">
+                            <div class="space-y-4">
                                 <div>
-                                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900">{{ user.get_full_name|default:user.username }}</h1>
+                                    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">{{ user.get_full_name|default:user.username }}</h1>
                                     {% if user.headline %}
-                                        <p class="mt-1 text-indigo-600 font-medium">{{ user.headline }}</p>
-                                    {% endif %}
-                                    {% if user.location %}
-                                        <p class="mt-2 text-sm text-slate-600 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>{{ user.location }}</p>
+                                        <p class="mt-2 text-indigo-600 font-semibold">{{ user.headline }}</p>
                                     {% endif %}
                                 </div>
-
-                                <div class="flex items-center gap-3">
-                                    {% if user != request.user %}
-                                        <a href="{% url 'hotel:send_message' user.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md text-sm font-semibold">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                                            Message
-                                        </a>
-                                    {% endif %}
-                                    <a href="{% url 'users:profile_edit' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md text-sm font-semibold">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        Edit Profile
-                                    </a>
-                                    <a href="{% url 'users:profile_ai' %}" class="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-md text-sm font-semibold">
-                                        🤖 AI
-                                    </a>
-                                </div>
+                                {% if user.location %}
+                                    <p class="inline-flex items-center gap-2 text-sm text-slate-600">
+                                        <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                                        </span>
+                                        {{ user.location }}
+                                    </p>
+                                {% endif %}
                             </div>
+                        </div>
 
-                            <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <div class="bg-slate-50 rounded-lg p-3 text-center">
-                                    <div class="text-sm text-slate-500">Posts</div>
-                                    <div class="text-lg font-bold text-slate-900">{{ posts_count|default:0 }}</div>
-                                </div>
-                                <div class="bg-slate-50 rounded-lg p-3 text-center">
-                                    <div class="text-sm text-slate-500">Followers</div>
-                                    <div class="text-lg font-bold text-slate-900">{{ followers_count|default:0 }}</div>
-                                </div>
-                                <div class="bg-slate-50 rounded-lg p-3 text-center">
-                                    <div class="text-sm text-slate-500">Following</div>
-                                    <div class="text-lg font-bold text-slate-900">{{ following_count|default:0 }}</div>
-                                </div>
-                                <div class="bg-slate-50 rounded-lg p-3 text-center">
-                                    <div class="text-sm text-slate-500">Impressions</div>
-                                    <div class="text-lg font-bold text-slate-900">{{ impressions|default:'N/A' }}</div>
-                                </div>
+                        <div class="lg:col-span-3 flex flex-col items-center gap-3 sm:items-end">
+                            <div class="flex flex-wrap justify-center gap-3">
+                                {% if user != request.user %}
+                                    <a href="{% url 'hotel:send_message' user.id %}" class="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-700">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                        Message
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'users:profile_edit' %}" class="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    Edit Profile
+                                </a>
+                                <a href="{% url 'users:profile_ai' %}" class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:brightness-110">
+                                    🤖 AI
+                                </a>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            {% if user.about %}
-                                <p class="mt-4 text-slate-700">{{ user.about|truncatechars:220 }}</p>
-                            {% endif %}
+                <div class="px-6 pb-8 sm:px-10 sm:pb-10">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm text-center">
+                            <p class="text-sm text-slate-500">Posts</p>
+                            <p class="mt-3 text-2xl font-bold text-slate-900">{{ posts_count|default:0 }}</p>
+                        </div>
+                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm text-center">
+                            <p class="text-sm text-slate-500">Followers</p>
+                            <p class="mt-3 text-2xl font-bold text-slate-900">{{ followers_count|default:0 }}</p>
+                        </div>
+                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm text-center">
+                            <p class="text-sm text-slate-500">Following</p>
+                            <p class="mt-3 text-2xl font-bold text-slate-900">{{ following_count|default:0 }}</p>
+                        </div>
+                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm text-center">
+                            <p class="text-sm text-slate-500">Impressions</p>
+                            <p class="mt-3 text-2xl font-bold text-slate-900">{{ impressions|default:'N/A' }}</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Ambassador Status Card -->
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8 mb-8">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-slate-900 flex items-center">
-                    <span class="mr-3">🌍</span> Ambassador Status
-                </h2>
-                <span class="bg-emerald-100 text-emerald-800 text-sm font-bold px-4 py-2 rounded-full border border-emerald-200">
-                    Active Earner
-                </span>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-xl border border-slate-200">
-                    <div class="flex items-center justify-between mb-4">
-                        <p class="text-slate-600 text-sm font-semibold uppercase tracking-wide">Referral Link</p>
-                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                        </svg>
+        <div class="grid gap-8 xl:grid-cols-[1.4fr_0.9fr]">
+            <div class="space-y-8">
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.18)]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-slate-900">About</h2>
+                        <span class="text-sm font-semibold text-indigo-600">Professional summary</span>
                     </div>
-                    <div class="flex items-center space-x-3">
-                        <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}?ref={{ user.username }}" id="refLink" class="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                        <button onclick="copyRefLink()" id="copyBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-lg transition-all duration-200 active:scale-95 shadow-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                            </svg>
-                        </button>
+                    <div class="prose prose-slate max-w-none">
+                        <p class="text-slate-700 leading-relaxed text-lg">{{ user.about|default:"Professional journey details not yet shared." }}</p>
                     </div>
-                    <p class="text-xs text-slate-500 mt-3 italic">Earn commissions on vendor sales via your link.</p>
                 </div>
 
-                <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl border border-emerald-200 flex flex-col justify-center">
-                    <div class="flex items-center justify-between mb-2">
-                        <p class="text-slate-600 text-sm font-semibold uppercase tracking-wide">Total Earnings</p>
-                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                        </svg>
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.18)]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-slate-900">Work Experience</h2>
+                        <span class="text-sm text-slate-500">Career highlights</span>
                     </div>
-                    <h3 class="text-3xl font-bold text-emerald-700 mb-1">
-                        UGX {{ user.total_referral_earnings|default:"0"|floatformat:0 }}
-                    </h3>
-                    <p class="text-xs text-slate-500 italic">Confirmed upon successful delivery.</p>
-                </div>
-            </div>
-        </div>
-
-        {% if user.profile_notifications.exists %}
-        <!-- Recent Activity Card -->
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8 mb-8">
-            <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center">
-                <span class="mr-3">🔔</span> Recent Activity
-            </h2>
-            <div class="space-y-4">
-                {% for alert in user.profile_notifications.all|slice:":3" %}
-                <div class="p-5 rounded-xl bg-gradient-to-r {% if not alert.is_read %}from-blue-50 to-indigo-50 border-blue-200 shadow-md{% else %}from-slate-50 to-slate-100 border-slate-200{% endif %} border flex justify-between items-center hover:shadow-lg transition-shadow duration-200">
-                    <div class="flex-1 pr-4">
-                        <p class="text-slate-900 font-semibold text-base mb-1">{{ alert.title }}</p>
-                        <p class="text-slate-600 text-sm">{{ alert.message }}</p>
-                    </div>
-                    <div class="flex flex-col items-end">
-                        <span class="text-xs text-slate-500 font-medium whitespace-nowrap">{{ alert.created_at|timesince }} ago</span>
-                        {% if not alert.is_read %}
-                        <span class="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
+                    <div class="space-y-8">
+                        {% if user.experiences.all %}
+                            {% for exp in user.experiences.all %}
+                                <div class="relative rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                                    <div class="absolute -left-3 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm">
+                                        <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                                    </div>
+                                    <div class="space-y-4 pl-3">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <h3 class="text-xl font-semibold text-slate-900">{{ exp.title }}</h3>
+                                                <p class="mt-1 text-indigo-600 font-semibold">{{ exp.company_name }}</p>
+                                            </div>
+                                            <p class="text-sm uppercase tracking-[0.18em] text-slate-500">{{ exp.start_date|date:"M Y" }} — {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}</p>
+                                        </div>
+                                        <p class="text-slate-700 leading-relaxed">{{ exp.description }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-12 text-center">
+                                <svg class="mx-auto h-16 w-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                <p class="text-slate-500 text-lg font-semibold">No work experience yet.</p>
+                                <p class="mt-2 text-sm text-slate-400">Add your experience to showcase your career journey.</p>
+                            </div>
                         {% endif %}
                     </div>
                 </div>
-                {% endfor %}
             </div>
-        </div>
-        {% endif %}
 
-        <!-- About Section -->
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8 mb-8">
-            <h2 class="text-2xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">About</h2>
-            <div class="prose prose-slate max-w-none">
-                <p class="text-slate-700 leading-relaxed text-lg">{{ user.about|default:"Professional journey details not yet shared." }}</p>
-            </div>
-        </div>
-
-        <!-- Work Experience Section -->
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8 mb-8">
-            <h2 class="text-2xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">Work Experience</h2>
             <div class="space-y-8">
-                {% if user.experiences.all %}
-                    {% for exp in user.experiences.all %}
-                        <div class="relative pl-8 border-l-4 border-indigo-500">
-                            <div class="absolute -left-3 top-2 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.18)]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-slate-900">Ambassador Status</h2>
+                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-800 border border-emerald-200">Active Earner</span>
+                    </div>
+                    <div class="grid gap-6">
+                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <p class="text-sm uppercase tracking-[0.18em] text-slate-500">Referral Link</p>
+                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                             </div>
-                            <div class="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-xl border border-slate-200">
-                                <h3 class="text-xl font-bold text-slate-900 mb-1">{{ exp.title }}</h3>
-                                <p class="text-indigo-600 font-semibold text-lg mb-2">{{ exp.company_name }}</p>
-                                <p class="text-sm text-slate-500 mb-4 uppercase tracking-wide font-medium">
-                                    {{ exp.start_date|date:"M Y" }} — {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
-                                </p>
-                                <p class="text-slate-700 leading-relaxed">{{ exp.description }}</p>
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}?ref={{ user.username }}" id="refLink" class="flex-1 rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+                                <button onclick="copyRefLink()" id="copyBtn" class="inline-flex items-center justify-center rounded-3xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                </button>
                             </div>
+                            <p class="mt-3 text-xs text-slate-500 italic">Earn commissions on vendor sales via your link.</p>
                         </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-16 w-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                        </svg>
-                        <p class="text-slate-500 text-lg">No work experience entries listed.</p>
-                        <p class="text-slate-400 text-sm mt-2">Add your professional experience to showcase your career journey.</p>
+                        <div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <p class="text-sm uppercase tracking-[0.18em] text-emerald-700">Total Earnings</p>
+                                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg>
+                            </div>
+                            <h3 class="text-3xl font-bold text-emerald-700">UGX {{ user.total_referral_earnings|default:"0"|floatformat:0 }}</h3>
+                            <p class="mt-2 text-sm text-slate-500 italic">Confirmed upon successful delivery.</p>
+                        </div>
                     </div>
-                {% endif %}
+                </div>
+
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.18)]">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-6">Technical Skills</h2>
+                    <div class="flex flex-wrap gap-3">
+                        {% if user.skills.all %}
+                            {% for skill in user.skills.all %}
+                                <span class="rounded-full border border-indigo-200 bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-800 shadow-sm">{{ skill.name|upper }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <div class="w-full rounded-3xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
+                                <p class="text-lg font-semibold">No skills listed yet.</p>
+                                <p class="mt-2 text-sm text-slate-400">Add your technical skills to highlight your expertise.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Technical Skills Section -->
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8">
-            <h2 class="text-2xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">Technical Skills</h2>
-            <div class="flex flex-wrap gap-3">
-                {% if user.skills.all %}
-                    {% for skill in user.skills.all %}
-                        <span class="px-4 py-2 bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 text-sm font-semibold rounded-full border border-indigo-200 hover:from-indigo-200 hover:to-blue-200 hover:shadow-md transition-all duration-200 cursor-default">
-                            {{ skill.name|upper }}
-                        </span>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-12 w-full">
-                        <svg class="mx-auto h-16 w-16 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                        </svg>
-                        <p class="text-slate-500 text-lg">No skills listed yet.</p>
-                        <p class="text-slate-400 text-sm mt-2">Add your technical skills to highlight your expertise.</p>
-                    </div>
-                {% endif %}
+        <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.18)]">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">Featured Posts</h2>
+                <span class="text-sm text-slate-500">Recent highlights</span>
             </div>
-        </div>
-
-        <!-- Featured Posts -->
-        <div class="mt-8">
-            <h2 class="text-2xl font-bold text-slate-900 mb-4">Featured Posts</h2>
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {% if user_posts %}
                     {% for post in user_posts|slice:":6" %}
-                        <article class="bg-white rounded-2xl shadow-md border border-slate-200 p-4 hover:shadow-lg transition-shadow duration-200">
+                        <article class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
                             {% if post.image %}
-                                <img src="{{ post.image.url }}" alt="Post image" class="w-full h-40 object-cover rounded-md mb-3">
+                                <img src="{{ post.image.url }}" alt="Post image" class="mb-4 h-40 w-full rounded-2xl object-cover" />
                             {% endif %}
-                            <p class="text-slate-700 text-sm mb-3">{{ post.content|striptags|truncatewords:28 }}</p>
+                            <p class="text-slate-700 text-sm mb-4">{{ post.content|striptags|truncatewords:28 }}</p>
                             <div class="flex items-center justify-between text-xs text-slate-500">
                                 <div class="flex items-center gap-3">
                                     <span>👍 {{ post.likes.count }}</span>
@@ -239,10 +207,14 @@
                         </article>
                     {% endfor %}
                 {% else %}
-                    <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-6 text-center text-slate-600">No posts yet — start sharing your work.</div>
+                    <div class="col-span-full rounded-3xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
+                        No posts yet — start sharing your work.
+                    </div>
                 {% endif %}
             </div>
         </div>
+    </div>
+</div>
 
 <script>
     function copyRefLink() {

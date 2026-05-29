@@ -698,15 +698,28 @@ def translate_text(request):
 def send_message(request, user_id):
     receiver = get_object_or_404(CustomUser, id=user_id)
     if request.method == 'POST':
-        import json
-        try:
-            data = json.loads(request.body)
-            content = data.get('content', '')
-        except json.JSONDecodeError:
-            content = request.POST.get('content', '')
-        
-        if content:
-            Message.objects.create(sender=request.user, receiver=receiver, content=content)
+        content = ''
+        attachment = None
+        content_type = request.headers.get('Content-Type', '')
+
+        if content_type.startswith('application/json'):
+            import json
+            try:
+                data = json.loads(request.body)
+                content = data.get('content', '') or ''
+            except json.JSONDecodeError:
+                content = ''
+        else:
+            content = request.POST.get('content', '') or ''
+            attachment = request.FILES.get('attachment')
+
+        if content or attachment:
+            Message.objects.create(
+                sender=request.user,
+                receiver=receiver,
+                content=content,
+                attachment=attachment
+            )
             is_ajax = (
                 request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
                 'application/json' in request.headers.get('Content-Type', '')
@@ -724,7 +737,8 @@ def inbox(request):
 
 @login_required
 def inbox_messages(request):
-    messages_list = Message.objects.filter(
+    # Defer `attachment` to avoid database errors if migrations haven't been applied yet
+    messages_list = Message.objects.defer('attachment').filter(
         Q(sender=request.user) | Q(receiver=request.user)
     ).order_by('-created_at')
 
@@ -755,7 +769,7 @@ def inbox_messages(request):
 
 @login_required
 def inbox_communities(request):
-    messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')
+    messages_list = Message.objects.defer('attachment').filter(receiver=request.user).order_by('-created_at')
     communities = Community.objects.filter(members=request.user).order_by('-created_at')
     unread_messages = messages_list.filter(is_read=False)[:5]
     unread_count = messages_list.filter(is_read=False).count()
@@ -768,7 +782,7 @@ def inbox_communities(request):
 
 @login_required
 def inbox_notifications(request):
-    messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')
+    messages_list = Message.objects.defer('attachment').filter(receiver=request.user).order_by('-created_at')
     communities = Community.objects.filter(members=request.user).order_by('-created_at')
     unread_messages = messages_list.filter(is_read=False)[:5]
     unread_count = messages_list.filter(is_read=False).count()
@@ -817,7 +831,7 @@ def share_post(request, post_id):
 
 @login_required
 def get_recent_messages(request):
-    messages_list = Message.objects.filter(receiver=request.user).order_by('-created_at')[:5]
+    messages_list = Message.objects.defer('attachment').filter(receiver=request.user).order_by('-created_at')[:5]
     messages_data = []
     for msg in messages_list:
         messages_data.append({
@@ -923,7 +937,7 @@ def conversation(request, user_id):
         return redirect('hotel:conversation', user_id=user_id)
     
     # Get messages between the two users
-    messages = Message.objects.filter(
+    messages = Message.objects.defer('attachment').filter(
         (Q(sender=request.user) & Q(receiver=other_user)) |
         (Q(sender=other_user) & Q(receiver=request.user))
     ).order_by('created_at')
