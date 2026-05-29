@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import requests
 import time
 from django.shortcuts import render, redirect, get_object_or_404
@@ -441,30 +442,22 @@ def profile_ai(request):
 @csrf_exempt
 @login_required
 def cerebras_proxy(request):
-    """Proxies requests to Cerebras AI for Africana AI Career Companion."""
+    """Proxies chat requests to Cerebras using gpt-oss-120b and falls back to Sunbird AI on failure."""
     if request.method != 'POST':
-        return JsonResponse({"error": "POST only"}, status=405)
-
-    api_key = os.environ.get("CEREBRAS_API_KEY", "").strip().replace('"', '').replace("'", "")
-    if not api_key:
-        return JsonResponse({"error": "Cerebras API key is missing. Please configure CEREBRAS_API_KEY in your environment."}, status=500)
+        return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
 
     try:
-        client = Cerebras(api_key=api_key)
-        data = json.loads(request.body)
-        raw_contents = data.get('contents', [])
+        body = json.loads(request.body)
+        raw_contents = body.get('contents', [])
 
-        # Pull profile data for personalization
         profile = _get_user_profile_data(request.user)
-
-        # SYSTEM INSTRUCTION: Branding and Personalized context (Shortened for token efficiency)
-        system_instruction = (
+        default_instruction = (
             f"You are Africana AI, career companion by Mwene Groups. "
             f"User: {profile['full_name']}, {profile['headline']}. Skills: {', '.join(profile['skills'][:5])}. "
             "Provide personalized career/business advice. For searches: use Markdown links like [🔍 Search Jobs](https://google.com/search?q=jobs+QUERY)."
         )
+        system_instruction = body.get('system_instruction') or default_instruction
 
-        # Convert chat history to Cerebras format (trim to last 3 exchanges)
         messages = [{"role": "system", "content": system_instruction}]
         for msg in raw_contents[-6:]:
             role = "assistant" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
@@ -472,28 +465,67 @@ def cerebras_proxy(request):
             if text:
                 messages.append({"role": role, "content": text})
 
-        # Use llama3.1-8b for fast inference (optimal for real-time chat)
-        completion = client.chat.completions.create(
-            messages=messages,
-            model="llama3.1-8b",
-            max_completion_tokens=1024,
-            temperature=0.7,
-            top_p=1,
-            stream=False,
-        )
+        # --- ATTEMPT PRIMARY CALL (Cerebras - gpt-oss-120b) ---
+        try:
+            api_key = os.environ.get("CEREBRAS_API_KEY", "").strip().replace('"', '').replace("'", "")
+            if not api_key:
+                raise ValueError("Cerebras API key is missing.")
 
-        response_text = completion.choices[0].message.content if completion.choices else ""
-        if response_text:
-            return JsonResponse({"text": response_text, "model_used": "llama3.1-8b"})
-        else:
-            return JsonResponse({"error": "Empty response from Cerebras"}, status=503)
+            client = Cerebras(api_key=api_key)
+            completion = client.chat.completions.create(
+                messages=messages,
+                model="gpt-oss-120b",
+                max_completion_tokens=1024,
+                temperature=0.7,
+                top_p=1,
+                stream=False,
+            )
+
+            response_text = completion.choices[0].message.content if completion.choices else ""
+            if response_text:
+                return JsonResponse({
+                    "text": response_text,
+                    "model_used": "gpt-oss-120b (Primary)"
+                })
+
+            raise Exception("Empty response received from Cerebras endpoint.")
+
+        except Exception as primary_error:
+            logging.warning(f"Primary AI model failed/limited: {str(primary_error)}. Attempting Sunbird AI fallback...")
+
+            sunbird_token = os.environ.get("SUNBIRD_API_KEY", "").strip().replace('"', '').replace("'", "")
+            if not sunbird_token:
+                return JsonResponse({
+                    "error": "Primary API failed and Sunbird AI fallback credentials are not configured."
+                }, status=503)
+
+            sunbird_url = "https://api.sunbird.ai/tasks/sunflower_inference"
+            headers = {
+                "accept": "application/json",
+                "Authorization": f"Bearer {sunbird_token}",
+                "Content-Type": "application/json",
+            }
+            payload = {"messages": messages}
+
+            sunbird_response = requests.post(sunbird_url, headers=headers, json=payload, timeout=15)
+            if sunbird_response.status_code == 200:
+                sunbird_data = sunbird_response.json()
+                fallback_text = sunbird_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if fallback_text:
+                    return JsonResponse({
+                        "text": fallback_text,
+                        "model_used": "Sunbird AI (Fallback)"
+                    })
+
+            return JsonResponse({
+                "error": "Service temporarily unavailable. Both primary and fallback endpoints failed.",
+                "details": sunbird_response.text if 'sunbird_response' in locals() else str(primary_error)
+            }, status=503)
 
     except json.JSONDecodeError as e:
-        return JsonResponse({"error": f"Invalid JSON: {str(e)}"}, status=400)
+        return JsonResponse({"error": f"Invalid JSON format: {str(e)}"}, status=400)
     except Exception as e:
-        # Log the error for debugging
-        import logging
-        logging.error(f"Cerebras proxy error: {str(e)}", exc_info=True)
-        return JsonResponse({"error": f"Cerebras error: {str(e)}"}, status=400)
+        logging.error(f"Unexpected proxy view exception: {str(e)}", exc_info=True)
+        return JsonResponse({"error": "An unexpected server error occurred."}, status=500)
 
 ai_quiz_generator = profile_ai

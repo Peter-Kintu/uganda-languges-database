@@ -43,7 +43,7 @@ class ProfileEditForm(forms.ModelForm):
     """
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'headline', 'about', 'location', 'language', 'profile_image')
+        fields = ('first_name', 'last_name', 'headline', 'about', 'location', 'profile_image')
         widgets = {
             'about': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Tell us about your professional journey...'}),
         }
