@@ -4,31 +4,29 @@
 {% block title %}{{ community.name }} | MyUganda{% endblock %}
 
 {% block content %}
-<div class="bg-gray-50 min-h-screen py-16 px-4">
+<div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen py-8 md:py-16 px-3 md:px-4">
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center space-x-4">
-                <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800">
+        <div class="flex items-center justify-between mb-6 gap-3 md:gap-4">
+            <div class="flex items-center space-x-3 md:space-x-4 min-w-0 flex-1">
+                <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800 flex-shrink-0 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                 </a>
-                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">{{ community.name }}</h1>
-                    <p class="text-gray-500 text-sm">{{ community.members.count }} members</p>
+                <div class="min-w-0">
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-900 truncate">{{ community.name }}</h1>
+                    <p class="text-gray-500 text-xs md:text-sm">{{ community.members.count }} members</p>
                 </div>
             </div>
-            <div class="flex space-x-2">
-                <button onclick="copyInviteLink()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
-                    Share Link
-                </button>
-            </div>
+            <button onclick="copyInviteLink()" class="bg-green-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-green-700 text-sm md:text-base font-medium transition-colors flex-shrink-0 whitespace-nowrap">
+                Share
+            </button>
         </div>
 
         <!-- Community Info -->
@@ -63,7 +61,7 @@
 
         <!-- Messages Container -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div id="messages-container" class="h-96 overflow-y-auto p-6 space-y-4">
+            <div id="messages-container" class="h-80 md:h-96 overflow-y-auto p-4 md:p-6 space-y-4">
                 {% for message in messages %}
                 <div class="flex items-start space-x-3">
                     <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
@@ -120,30 +118,47 @@
         </div>
 
         <!-- Message Input -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
             <form method="post" class="flex flex-col gap-4">
                 {% csrf_token %}
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" onclick="toggleEmojiPicker()" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100">😀 Emoji</button>
-                    <button type="button" onclick="toggleGifPanel()" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100">GIF</button>
-                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
-                        <span>📷 Photo</span>
+                <!-- Action Buttons Bar - Responsive Layout -->
+                <div class="flex flex-wrap gap-2 md:gap-3">
+                    <!-- Emoji: Full text on md+, icon only on mobile -->
+                    <button type="button" onclick="toggleEmojiPicker()" title="Emoji" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-sm md:text-base">
+                        <span class="text-lg">😀</span>
+                        <span class="hidden md:inline">Emoji</span>
+                    </button>
+                    <!-- GIF: Full text on md+, icon only on mobile -->
+                    <button type="button" onclick="toggleGifPanel()" title="GIF" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-sm md:text-base font-medium">
+                        <span>GIF</span>
+                        <span class="hidden md:inline"></span>
+                    </button>
+                    <!-- Photo: Full text on sm+, icon only on mobile -->
+                    <label title="Photo" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
+                        <span class="text-lg">📷</span>
+                        <span class="hidden sm:inline">Photo</span>
                         <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="uploadPhoto()">
                     </label>
-                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
-                        <span>🎥 Video</span>
+                    <!-- Video: Full text on sm+, icon only on mobile -->
+                    <label title="Video" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
+                        <span class="text-lg">🎥</span>
+                        <span class="hidden sm:inline">Video</span>
                         <input type="file" id="video-input" accept="video/*" class="hidden" onchange="uploadVideo()">
                     </label>
-                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
-                        <span>📄 PDF</span>
+                    <!-- PDF: Hidden on mobile, full on md+ -->
+                    <label title="PDF" class="hidden md:inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
+                        <span class="text-lg">📄</span>
+                        <span class="hidden md:inline">PDF</span>
                         <input type="file" id="pdf-input" accept=".pdf" class="hidden" onchange="uploadPDF()">
                     </label>
-                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer">
-                        <span>📋 Word</span>
+                    <!-- Word: Hidden on mobile, full on md+ -->
+                    <label title="Word" class="hidden md:inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
+                        <span class="text-lg">📋</span>
+                        <span class="hidden md:inline">Word</span>
                         <input type="file" id="word-input" accept=".doc,.docx,.DOC,.DOCX" class="hidden" onchange="uploadWord()">
                     </label>
                 </div>
-                <div id="emoji-picker" class="hidden flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div id="emoji-picker" class="hidden flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-32 overflow-y-auto">
                     <button type="button" onclick="insertEmoji('😀')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😀</button>
                     <button type="button" onclick="insertEmoji('😍')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😍</button>
                     <button type="button" onclick="insertEmoji('😂')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😂</button>
@@ -155,16 +170,16 @@
                     <button type="button" onclick="insertEmoji('❤️')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">❤️</button>
                     <button type="button" onclick="insertEmoji('🔥')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🔥</button>
                 </div>
-                <div id="gif-panel" class="hidden flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div class="flex gap-2">
-                        <input id="gif-search" type="text" placeholder="Search GIFs" class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button type="button" onclick="searchGif()" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Search</button>
+                <div id="gif-panel" class="hidden flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:p-4">
+                    <div class="flex gap-2 flex-col sm:flex-row">
+                        <input id="gif-search" type="text" placeholder="Search GIFs..." class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" onclick="searchGif()" class="rounded-lg bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap">Search</button>
                     </div>
-                    <div id="gif-results" class="grid grid-cols-2 gap-2"></div>
+                    <div id="gif-results" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto"></div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <input id="message-input" type="text" name="content" placeholder="Type a message or paste gif URL..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Send</button>
+                <div class="flex items-center gap-2 md:gap-4">
+                    <input id="message-input" type="text" name="content" placeholder="Type a message..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-10" required>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm md:text-base font-medium transition-colors whitespace-nowrap">Send</button>
                 </div>
             </form>
         </div>

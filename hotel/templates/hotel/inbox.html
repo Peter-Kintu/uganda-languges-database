@@ -7,10 +7,16 @@
 <style>
     /* Premium Container Styling */
     .inbox-wrapper {
-        background-color: #f8fafc;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         min-height: 100vh;
-        padding: 1.5rem;
+        padding: 1rem;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    @media (min-width: 640px) {
+        .inbox-wrapper {
+            padding: 1.5rem;
+        }
     }
 
     /* Main Card Layout */
@@ -18,10 +24,17 @@
         max-width: 900px;
         margin: 0 auto;
         background: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         border: 1px solid #e2e8f0;
         overflow: hidden;
+    }
+
+    @media (min-width: 640px) {
+        .inbox-card {
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
     }
 
     /* Tab Navigation Style */
@@ -41,15 +54,20 @@
 
     .tab-btn {
         flex: 1;
-        min-width: 100px;
-        padding: 1rem 1.25rem;
+        min-width: auto;
+        padding: 1rem 0.75rem;
         text-align: center;
         font-weight: 600;
+        font-size: 0.875rem;
         color: #64748b;
         cursor: pointer;
         transition: all 0.2s ease;
         border-bottom: 2px solid transparent;
         margin-bottom: -2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
 
     .tab-btn:hover {
@@ -60,6 +78,20 @@
     .tab-btn.active {
         color: #4f46e5;
         border-bottom-color: #4f46e5;
+    }
+
+    .tab-label {
+        display: none;
+    }
+
+    @media (min-width: 640px) {
+        .tab-btn {
+            padding: 1rem 1.25rem;
+            font-size: 0.9375rem;
+        }
+        .tab-label {
+            display: inline;
+        }
     }
 
     /* Content Panes */
@@ -80,27 +112,33 @@
     .unread-badge {
         background: #ef4444;
         color: white;
-        font-size: 0.7rem;
-        padding: 2px 6px;
+        font-size: 0.65rem;
+        padding: 2px 5px;
         border-radius: 99px;
-        margin-left: 4px;
+        min-width: fit-content;
+        flex-shrink-0;
     }
 </style>
 
 <div class="inbox-wrapper">
     <div class="inbox-card">
         <div class="inbox-tabs flex overflow-x-auto whitespace-nowrap scrollbar-hide border-b-2 border-f1f5f9">
-            <div class="tab-btn active flex-1 min-w-[100px]" onclick="switchPane(event, 'messages')">
-                Messages
+            <div class="tab-btn active flex-1" onclick="switchPane(event, 'messages')">
+                <span title="Messages">💬</span>
+                <span class="tab-label">Messages</span>
                 {% if unread_messages_count > 0 %}
                     <span class="unread-badge">{{ unread_messages_count }}</span>
                 {% endif %}
             </div>
-            <div class="tab-btn flex-1 min-w-[100px]" onclick="switchPane(event, 'communities')">Communities</div>
-            <div class="tab-btn flex-1 min-w-[100px] relative" onclick="switchPane(event, 'notifications')">
-                Notifications
+            <div class="tab-btn flex-1" onclick="switchPane(event, 'communities')">
+                <span title="Communities">👥</span>
+                <span class="tab-label">Communities</span>
+            </div>
+            <div class="tab-btn flex-1 relative" onclick="switchPane(event, 'notifications')">
+                <span title="Notifications">🔔</span>
+                <span class="tab-label">Notifications</span>
                 {% if notifications.count > 0 %}
-                    <span class="absolute top-2 right-2 bg-red-500 text-white text-[10px] px-1.5 rounded-full">
+                    <span class="absolute top-2 right-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">
                         {{ notifications.count }}
                     </span>
                 {% endif %}
@@ -112,48 +150,49 @@
                 <div class="divide-y divide-slate-100">
                     {% for group in message_groups %}
                         {% with message=group.list.0 %}
-                        <a href="{% url 'hotel:conversation' group.grouper.id %}" class="flex items-center p-4 hover:bg-slate-50 transition-colors">
-                            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold mr-4">
+                        <a href="{% url 'hotel:conversation' group.grouper.id %}" class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-slate-50 transition-colors min-w-0">
+                            <div class="w-10 sm:w-12 h-10 sm:h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold flex-shrink-0 text-sm sm:text-base">
                                 {{ group.grouper.username|first|upper }}
                             </div>
                             <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-baseline">
-                                    <h3 class="font-semibold text-slate-900 truncate">{{ group.grouper.username }}</h3>
-                                    <span class="text-xs text-slate-400">{{ message.created_at|timesince }} ago</span>
+                                <div class="flex justify-between items-baseline gap-2">
+                                    <h3 class="font-semibold text-slate-900 truncate text-sm sm:text-base">{{ group.grouper.username }}</h3>
+                                    <span class="text-xs text-slate-400 flex-shrink-0">{{ message.created_at|timesince }} ago</span>
                                 </div>
-                                <p class="text-sm text-slate-500 truncate">{{ message.content }}</p>
+                                <p class="text-xs sm:text-sm text-slate-500 truncate">{{ message.content }}</p>
                             </div>
                         </a>
                         {% endwith %}
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="py-20 text-center">
-                    <p class="text-slate-400">No conversations yet.</p>
-                    <a href="{% url 'hotel:social_feed' %}" class="text-indigo-600 font-medium mt-2 inline-block">Find people to message</a>
+                <div class="py-16 sm:py-20 text-center px-4">
+                    <p class="text-slate-400 text-sm sm:text-base">No conversations yet.</p>
+                    <a href="{% url 'hotel:social_feed' %}" class="text-indigo-600 font-medium mt-2 inline-block text-sm sm:text-base hover:text-indigo-700">Find people to message</a>
                 </div>
             {% endif %}
         </div>
 
-        <div id="communities" class="tab-pane p-4">
+        <div id="communities" class="tab-pane p-3 sm:p-4">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
                 <h2 class="text-lg font-bold text-slate-800">Your Communities</h2>
-                <a href="{% url 'hotel:create_community' %}" class="relative z-10 flex items-center justify-center p-4 h-12 bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl text-indigo-600 font-medium hover:border-indigo-400 transition-all">
-                    + Create New Community
+                <a href="{% url 'hotel:create_community' %}" title="Create New Community" class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 h-10 sm:h-auto bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-lg sm:rounded-xl text-indigo-600 font-medium hover:border-indigo-400 transition-all text-sm sm:text-base whitespace-nowrap">
+                    <span class="text-lg sm:text-base">➕</span>
+                    <span class="hidden sm:inline">Create Community</span>
                 </a>
             </div>
             {% if communities %}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {% for community in communities %}
-                    <a href="{% url 'hotel:community_conversation' community.id %}" class="block p-4 border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-sm transition-all">
-                        <h3 class="font-bold text-indigo-600">{{ community.name }}</h3>
+                    <a href="{% url 'hotel:community_conversation' community.id %}" class="block p-3 sm:p-4 border border-slate-200 rounded-lg sm:rounded-xl hover:border-indigo-300 hover:shadow-sm transition-all">
+                        <h3 class="font-bold text-indigo-600 text-sm sm:text-base truncate">{{ community.name }}</h3>
                         <p class="text-xs text-slate-500 mt-1">{{ community.members.count }} members</p>
                     </a>
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="py-12 text-center border-2 border-dashed border-slate-200 rounded-xl">
-                    <p class="text-slate-400">You haven't joined any communities.</p>
+                <div class="py-12 text-center border-2 border-dashed border-slate-200 rounded-xl px-4">
+                    <p class="text-slate-400 text-sm sm:text-base">You haven't joined any communities.</p>
                 </div>
             {% endif %}
         </div>
@@ -162,12 +201,12 @@
             {% if notifications %}
                 <div class="divide-y divide-slate-100">
                     {% for n in notifications %}
-                    <div id="notif-{{ n.id }}" class="p-4 flex justify-between items-start hover:bg-slate-50 transition-all">
-                        <div class="flex-1">
-                            <p class="text-sm text-slate-800">{{ n.content }}</p>
+                    <div id="notif-{{ n.id }}" class="p-3 sm:p-4 flex justify-between items-start gap-3 hover:bg-slate-50 transition-all">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm text-slate-800">{{ n.content }}</p>
                             <span class="text-xs text-slate-400">{{ n.created_at|timesince }} ago</span>
                         </div>
-                        <button onclick="dismissNotification({{ n.id }})" class="ml-4 text-slate-400 hover:text-red-500">
+                        <button onclick="dismissNotification({{ n.id }})" title="Dismiss" class="text-slate-400 hover:text-red-500 flex-shrink-0 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -176,7 +215,7 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="py-20 text-center text-slate-400">No new notifications.</div>
+                <div class="py-16 sm:py-20 text-center text-slate-400 text-sm sm:text-base">No new notifications.</div>
             {% endif %}
         </div>
     </div>

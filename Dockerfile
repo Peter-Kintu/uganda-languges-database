@@ -27,6 +27,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     nodejs \
     npm \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libgbm1 \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -34,6 +46,9 @@ WORKDIR /app
 # 2. Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
 COPY . /app
+
+# Install Playwright browsers (Chromium) with dependencies
+RUN playwright install --with-deps chromium
 
 # 3. Production environment variables
 ENV PYTHONDONTWRITEBYTECODE=1

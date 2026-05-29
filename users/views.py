@@ -5,7 +5,7 @@ import requests
 import time
 import base64
 from django.template.loader import render_to_string
-from weasyprint import HTML
+from playwright.sync_api import sync_playwright
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
@@ -639,79 +639,26 @@ def generate_document_pdf(request):
     if request.GET.get('download') == '1':
         # Convert plain line-breaks to printable semantic elements safely
         formatted_html_content = text_content.replace('\n', '<br>').replace('**', '<b>').replace('</b><b>', '')
-        
+
         # Apply strict professional CSS design guidelines tailored strictly for paper margins
         accent_color = "#16a34a" if doc_type == "resume" else "#0f172a" # Green for resumes, deep corporate blue for plans
-        
+
         html_string = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
             <style>
-                @page {{
-                    size: A4;
-                    margin: 20mm 15mm;
-                    @bottom-right {{
-                        content: "Page " counter(page) " of " counter(pages);
-                        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-                        font-size: 8pt;
-                        color: #94a3b8;
-                    }}
-                }}
                 body {{
                     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
                     color: #1e293b;
                     line-height: 1.6;
                     font-size: 10.5pt;
                     margin: 0;
-                    padding: 0;
+                    padding: 20mm 15mm;
                 }}
-                h1 {{
-                    font-size: 22pt;
-                    color: {accent_color};
-                    margin-top: 0;
-                    margin-bottom: 5px;
-                    font-weight: bold;
-                    text-transform: uppercase;
-                    letter-spacing: -0.5px;
-                }}
-                h2 {{
-                    font-size: 14pt;
-                    color: {accent_color};
-                    border-bottom: 2px solid #e2e8f0;
-                    padding-bottom: 4px;
-                    margin-top: 25px;
-                    margin-bottom: 12px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }}
-                h3 {{
-                    font-size: 11pt;
-                    color: #0f172a;
-                    margin-top: 15px;
-                    margin-bottom: 5px;
-                }}
-                p {{
-                    margin: 0 0 10px 0;
-                }}
-                br {{
-                    content: "";
-                    margin: 2em;
-                    display: block;
-                }}
-                ul {{
-                    margin: 0 0 15px 0;
-                    padding-left: 20px;
-                }}
-                li {{
-                    margin-bottom: 4px;
-                }}
-                .meta-header {{
-                    margin-bottom: 30px;
-                    padding-bottom: 15px;
-                    border-bottom: 3px solid {accent_color};
-                }}
+                h1 {{ color: {accent_color}; }}
+                .content-wrapper {{ max-width: 800px; margin: 0 auto; }}
             </style>
         </head>
         <body>
@@ -721,18 +668,27 @@ def generate_document_pdf(request):
         </body>
         </html>
         """
-        
-        # Use WeasyPrint to natively compile structural document objects into an standard PDF
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="africana_{doc_type}_{int(time.time())}.pdf"'
-        
-        HTML(string=html_string).write_pdf(response)
-        
-        # Clean up session space safely after download
-        del request.session['pending_pdf_text']
-        del request.session['pending_pdf_type']
-        
-        return response
+
+        # Use Playwright (Chromium) to render HTML to PDF for robust cloud builds
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch()
+                page = browser.new_page()
+                page.set_content(html_string, wait_until='networkidle')
+                pdf_bytes = page.pdf(format='A4', margin={'top':'20mm','bottom':'20mm','left':'15mm','right':'15mm'})
+                browser.close()
+
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="africana_{doc_type}_{int(time.time())}.pdf"'
+
+            # Clean up session space safely after download
+            del request.session['pending_pdf_text']
+            del request.session['pending_pdf_type']
+
+            return response
+        except Exception as e:
+            logging.error(f"Playwright PDF generation failed: {str(e)}", exc_info=True)
+            return HttpResponse("PDF rendering failed on server.", status=500)
 
     # Render intermediate loading display before auto-download execution sets up
     return render(request, 'users/download_pdf.html', {'doc_type': doc_type})
