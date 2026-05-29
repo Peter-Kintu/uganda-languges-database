@@ -21,6 +21,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.template import TemplateDoesNotExist
 from datetime import datetime
 
+logger = logging.getLogger(__name__)
+
 
 # Google auth token verification
 from google.oauth2 import id_token
@@ -372,12 +374,52 @@ def _format_history_for_sdk(messages):
     for msg in messages:
         role = "model" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
         text = msg.get("text", "").strip()
-        if not text: continue
+        if not text:
+            continue
         if formatted and formatted[-1]["role"] == role:
             formatted[-1]["parts"][0]["text"] += f"\n{text}"
         else:
             formatted.append({"role": role, "parts": [{"text": text}]})
     return formatted
+
+
+def _extract_gemini_text(response):
+    if not response:
+        return ""
+
+    text = getattr(response, "text", None)
+    if text:
+        return text
+
+    parts = getattr(response, "parts", None)
+    if parts:
+        joined = "".join([getattr(p, "text", "") or "" for p in parts])
+        if joined.strip():
+            return joined
+
+    candidates = getattr(response, "candidates", None) or []
+    for candidate in candidates:
+        content = getattr(candidate, "content", None)
+        if content is None:
+            continue
+        if getattr(content, "text", None):
+            return content.text
+        content_parts = getattr(content, "parts", None)
+        if content_parts:
+            joined = "".join([getattr(p, "text", "") or "" for p in content_parts])
+            if joined.strip():
+                return joined
+
+    parsed = getattr(response, "parsed", None)
+    if isinstance(parsed, dict):
+        if parsed.get("text"):
+            return parsed.get("text")
+        output = parsed.get("output") or {}
+        if isinstance(output, dict) and output.get("text"):
+            return output.get("text")
+
+    return ""
+
 
 @csrf_exempt
 @login_required
@@ -386,9 +428,11 @@ def gemini_proxy(request):
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip().replace('"', '').replace("'", "")
+    api_key = (getattr(settings, 'GEMINI_API_KEY', None) or os.environ.get("GEMINI_API_KEY", ""))
+    api_key = api_key.strip().replace('"', '').replace("'", "") if api_key else api_key
     if not api_key:
-        return JsonResponse({"error": "API Key missing"}, status=500)
+        logger.warning('Gemini proxy request failed: GEMINI_API_KEY is not configured.')
+        return JsonResponse({"error": "API Key missing"}, status=503)
 
     try:
         client = genai.Client(api_key=api_key)
@@ -437,20 +481,25 @@ def gemini_proxy(request):
         for model_id in models_to_try:
             try:
                 response = client.models.generate_content(
-                    model=model_id, 
+                    model=model_id,
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.7,
                         max_output_tokens=1000,
                     ),
-                    contents=history
+                    contents=history,
                 )
-                if response.text:
-                    return JsonResponse({"status": "success", "text": response.text, "model_used": model_id})
+                response_text = _extract_gemini_text(response)
+                if response_text:
+                    return JsonResponse({"status": "success", "text": response_text, "model_used": model_id})
+                last_err = f"Empty Gemini response from {model_id}."
+                logger.warning("Gemini proxy empty text from %s response: %s", model_id, response)
             except Exception as e:
                 last_err = str(e)
+                logger.warning("Gemini proxy request failed for %s: %s", model_id, last_err)
                 continue
 
+        logger.error("Gemini proxy unavailable after trying models, last error: %s", last_err)
         return JsonResponse({"error": f"AI unavailable. Last error: {last_err}"}, status=503)
 
     except Exception as global_e:
