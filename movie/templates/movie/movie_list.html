@@ -3,14 +3,14 @@
 <div class="bg-slate-900 min-h-screen text-white p-4 md:p-8">
     
     <div class="mb-12">
-        <h2 class="text-2xl font-bold mb-6 text-indigo-400 flex items-center gap-2">
-            <span>🔥 AI Top Picks For You</span>
-            <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded uppercase tracking-tighter">Recommended</span>
+        <h2 class="text-2xl font-bold mb-6 text-emerald-400 flex items-center gap-2">
+            <span>🌍 Featured African Hits & Top Picks</span>
+            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded uppercase tracking-tighter">Spotlight</span>
         </h2>
         <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
             {% for trend in trending %}
-            <a href="#" class="min-w-[180px] md:min-w-[240px] group">
-                <div class="relative overflow-hidden rounded-lg aspect-video border border-indigo-500/30">
+            <a href="{% url 'movie:movie_detail' trend.slug %}" class="min-w-[180px] md:min-w-[240px] group">
+                <div class="relative overflow-hidden rounded-lg aspect-video border border-emerald-500/30">
                     <img src="{{ trend.image_url }}" class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80"></div>
                     <p class="absolute bottom-2 left-2 text-xs font-bold truncate pr-2">{{ trend.name }}</p>
@@ -21,8 +21,8 @@
     </div>
 
     <div class="flex justify-between items-end mb-8">
-        <h1 class="text-4xl font-extrabold tracking-tight">Browse Movies</h1>
-        <p class="text-slate-400 text-sm hidden md:block">{{ movies.count }} Titles Available</p>
+        <h1 class="text-4xl font-extrabold tracking-tight">Explore African Cinema & Beyond</h1>
+        <p class="text-slate-400 text-sm hidden md:block">{{ movies.count }} Titles Loaded</p>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
@@ -45,15 +45,15 @@
                 </p>
                 
                 <div class="mt-auto flex flex-col gap-2">
-                    <a href="{% url 'movie:watch_now' movie.id %}" target="_blank" rel="nofollow sponsored"
-                       class="bg-indigo-600 text-white text-center py-2.5 rounded-lg font-bold text-sm hover:bg-indigo-500 transition shadow-lg shadow-indigo-900/20">
+                          <a href="{% url 'movie:watch_now' movie.id %}" target="_blank" rel="nofollow sponsored"
+                              class="bg-emerald-600 text-white text-center py-2.5 rounded-lg font-bold text-sm hover:bg-emerald-500 transition shadow-lg shadow-emerald-900/20">
                         Watch Now
                     </a>
                     
-                    <a href="{% url 'movie:watch_now' movie.id %}" 
-                       class="border border-slate-600 text-slate-300 text-center py-2 rounded-lg text-xs hover:bg-slate-700 hover:text-white transition">
-                        Details & Similar
-                    </a>
+                          <a href="{% url 'movie:movie_detail' movie.slug %}" 
+                              class="border border-slate-600 text-slate-300 text-center py-2 rounded-lg text-xs hover:bg-slate-700 hover:text-white transition">
+                                Details & Similar
+                          </a>
                 </div>
             </div>
         </div>

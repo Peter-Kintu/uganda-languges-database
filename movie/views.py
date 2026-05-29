@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Movie, Order
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, IntegerField
 from django.contrib.admin.views.decorators import staff_member_required
 from .sync_movies import fetch_and_store_movies   # ✅ corrected import
 from django.contrib import messages
@@ -13,11 +13,23 @@ def movie_list(request):
     The main catalog view. 
     Prioritizes 'AI Trending' movies to increase affiliate link visibility.
     """
-    # Fetch all movies, newest first for the main grid
-    movies = Movie.objects.all().order_by('-release_date')
-    
-    # AI Trending Logic: Pulls the most viewed movies for the top slider
-    trending = Movie.objects.all().order_by('-view_count')[:5]
+    # Prioritize African Cinema first, then recent releases
+    movies = Movie.objects.all().annotate(
+        origin_priority=Case(
+            When(genre='African Cinema', then=Value(1)),
+            default=Value(2),
+            output_field=IntegerField(),
+        )
+    ).order_by('origin_priority', '-release_date')
+
+    # Trending slider: prioritize African Cinema then view_count
+    trending = Movie.objects.all().annotate(
+        origin_priority=Case(
+            When(genre='African Cinema', then=Value(1)),
+            default=Value(2),
+            output_field=IntegerField(),
+        )
+    ).order_by('origin_priority', '-view_count')[:6]
     
     # Handle search queries
     query = request.GET.get('search')
