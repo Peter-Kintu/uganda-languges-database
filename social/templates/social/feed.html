@@ -169,12 +169,11 @@
         {% else %}
             <video 
                 class="w-full h-full object-cover" 
-                src="{{ reel.source_video_url }}" 
+                data-src="{{ reel.source_video_url }}" 
                 playsinline 
-                autoplay
                 muted
                 loop
-                preload="metadata"
+                preload="none"
                 crossorigin="anonymous"
                 type="video/mp4"
                 poster="{{ reel.source_thumbnail_url }}"
@@ -311,15 +310,19 @@
             
             if (entry.isIntersecting) {
                 if (video) {
+                    if (!video.src || video.src === '') {
+                        const source = video.getAttribute('data-src');
+                        if (source) {
+                            video.src = source;
+                        }
+                    }
                     pauseAllVideos(video);
                     activeReelVideo = video;
-                    // Show loading indicator
                     if (loadingDiv) loadingDiv.style.opacity = '1';
                     
-                    // Ensure video is loaded and ready to play
                     if (video.readyState >= 2) {
                         video.play().catch(e => {
-                            console.log('Autoplay failed, video will play on user interaction:', e);
+                            console.log('Autoplay deferred:', e);
                             if (loadingDiv) loadingDiv.style.opacity = '0';
                         });
                     } else {
@@ -337,7 +340,6 @@
                         if (next) next.scrollIntoView({ behavior: 'smooth' });
                     };
                 } else if (iframe) {
-                    // YouTube iframe is visible
                     if (loadingDiv) loadingDiv.style.opacity = '0';
                 }
             } else {
@@ -348,11 +350,15 @@
                     video.pause();
                     video.muted = true;
                     video.currentTime = 0;
+                    if (video.src && video.src !== '') {
+                        video.src = '';
+                        video.load();
+                    }
                 }
                 if (loadingDiv) loadingDiv.style.opacity = '0';
             }
         });
-    }, observerOptions);
+    }, { threshold: 0.6 });
 
     document.querySelectorAll('section').forEach(s => observer.observe(s));
 

@@ -26,7 +26,7 @@
                 <video id="preview" class="hidden w-full h-full object-cover z-10" loop muted autoplay playsinline></video>
                 
                 <div id="size-badge" class="hidden absolute top-4 right-4 z-30 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] font-bold">
-                    <span id="file-size" class="text-indigo-400">0MB</span> / 50MB
+                    <span id="file-size" class="text-indigo-400">0MB</span> / 10MB
                 </div>
             </div>
 
@@ -103,7 +103,11 @@
     </div>
 </div>
 
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
 <script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: false });
+
     // Elements
     const input = document.getElementById('video-upload');
     const preview = document.getElementById('preview');
@@ -121,27 +125,36 @@
     const priceInput = document.querySelector('input[name="price"]');
     const floorInput = document.querySelector('input[name="floor_price"]');
 
-    // 1. Handle Video Preview
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
-            fileSizeText.innerText = sizeInMB + "MB";
-            sizeBadge.classList.remove('hidden');
-            
-            if (sizeInMB > 50) {
-                alert("File too large. Please keep under 50MB.");
-                input.value = "";
-                sizeBadge.classList.add('hidden');
-                return;
-            }
-
-            const url = URL.createObjectURL(file);
-            preview.src = url;
-            preview.classList.remove('hidden');
-            prompt.classList.add('hidden');
-        }
+    function updatePreview(file) {
+        const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
+        fileSizeText.innerText = sizeInMB + "MB";
+        sizeBadge.classList.remove('hidden');
+        const url = URL.createObjectURL(file);
+        preview.src = url;
+        preview.classList.remove('hidden');
+        prompt.classList.add('hidden');
     }
+
+    input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const sizeInMB = file.size / (1024 * 1024);
+
+        if (sizeInMB > 80) {
+            alert("File too large. Please keep your source video under 80MB for browser compression.");
+            input.value = "";
+            preview.classList.add('hidden');
+            sizeBadge.classList.add('hidden');
+            return;
+        }
+
+        if (sizeInMB > 10) {
+            alert("This file will be compressed before upload. Larger files may take longer to process.");
+        }
+
+        updatePreview(file);
+    });
 
     // 2. Dynamic Intent Logic (Merchant vs Professional Showcase)
     const validatePricingAndIntent = () => {
@@ -178,18 +191,111 @@
     };
 
     // Attach Listeners
-    if(priceInput) priceInput.addEventListener('input', validatePricingAndIntent);
-    if(floorInput) floorInput.addEventListener('input', validatePricingAndIntent);
+    if (priceInput) priceInput.addEventListener('input', validatePricingAndIntent);
+    if (floorInput) floorInput.addEventListener('input', validatePricingAndIntent);
     
-    // Initial check on load
-    validatePricingAndIntent();
+    function resetUploadButton() {
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'animate-pulse');
+        btnSpinner.classList.add('hidden');
+        validatePricingAndIntent();
+    }
 
-    // 3. Loading State on Submit
-    form.onsubmit = () => {
+    async function compressVideo(file) {
+        try {
+            if (!ffmpeg.isLoaded()) {
+                await ffmpeg.load();
+            }
+            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+            await ffmpeg.run(
+                '-i', 'input.mp4',
+                '-vf', 'scale=-2:480',
+                '-vcodec', 'libx264',
+                '-crf', '28',
+                '-b:v', '500k',
+                'output.mp4'
+            );
+            const compressedData = ffmpeg.FS('readFile', 'output.mp4');
+            return new Blob([compressedData.buffer], { type: 'video/mp4' });
+        } catch (error) {
+            console.error('FFmpeg compression failed:', error);
+            return null;
+        } finally {
+            try {
+                ffmpeg.FS('unlink', 'input.mp4');
+                ffmpeg.FS('unlink', 'output.mp4');
+            } catch (e) {
+                // ignore cleanup failures
+            }
+        }
+    }
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const file = input.files[0];
+        if (!file) {
+            alert('Please select a video before publishing.');
+            return;
+        }
+
+        const sizeInMB = file.size / (1024 * 1024);
+        if (sizeInMB > 10) {
+            alert('File too large. Please keep under 10MB for upload.');
+            return;
+        }
+
         btn.disabled = true;
         btn.classList.add('opacity-70', 'animate-pulse');
         btnSpinner.classList.remove('hidden');
-        btnText.innerText = "PUBLISHING...";
-    }
+        btnText.innerText = "COMPRESSING VIDEO (0$ STORAGE OPTIMIZATION)...";
+
+        const compressedBlob = await compressVideo(file);
+        if (!compressedBlob) {
+            alert('Video compression failed. Please try again or use a smaller file.');
+            resetUploadButton();
+            return;
+        }
+
+        if (compressedBlob.size > 10 * 1024 * 1024) {
+            alert('Optimized file is still larger than 10MB. Please choose a smaller video.');
+            resetUploadButton();
+            return;
+        }
+
+        btnText.innerText = "PUBLISHING OPTIMIZED REEL...";
+
+        const uploadUrl = "{% url 'social:upload_reel' %}";
+        const feedUrl = "{% url 'social:social_feed' %}";
+        const formData = new FormData(form);
+        formData.set('video', compressedBlob, 'compressed_reel.mp4');
+
+        try {
+            const response = await fetch(uploadUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+
+            if (response.ok) {
+                window.location.href = feedUrl;
+                return;
+            }
+
+            const data = await response.text();
+            console.error('Upload failed:', response.status, data);
+            alert('Upload optimization failed. Please try again.');
+        } catch (error) {
+            console.error('Upload request failed:', error);
+            alert('Upload failed due to a network error. Please try again.');
+        } finally {
+            resetUploadButton();
+        }
+    });
+
+    // Initial check on load
+    validatePricingAndIntent();
 </script>
 {% endblock %}

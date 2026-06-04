@@ -161,10 +161,10 @@ class BusinessReelUploadForm(forms.ModelForm):
         """
         video = self.cleaned_data.get('video')
         if video:
-            # 1. Size Validation (Keep under 100MB for stability while allowing quality)
-            if video.size > 100 * 1024 * 1024:
+            # 1. Size Validation (Keep under 10MB to match Cloudinary upload limits)
+            if video.size > 10 * 1024 * 1024:
                 raise forms.ValidationError(
-                    "Video file is too large. Please keep under 100MB for high-quality delivery."
+                    "Video file is too large. Please keep under 10MB for upload stability."
                 )
             
             # 2. Duration Validation (Enforce 5-minute / 300-second limit)
