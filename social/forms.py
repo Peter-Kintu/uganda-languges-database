@@ -157,14 +157,14 @@ class BusinessReelUploadForm(forms.ModelForm):
         """
         Pillar 2 Optimization: 
         Enforces 5-minute length limit and file size stability.
-        Note: Compression is handled by Cloudinary via the Model definition.
+        Note: Compression is handled by the browser before local staging.
         """
         video = self.cleaned_data.get('video')
         if video:
-            # 1. Size Validation (Keep under 10MB to match Cloudinary upload limits)
-            if video.size > 10 * 1024 * 1024:
+            # 1. Size Validation (Keep under 80MB for local server staging)
+            if video.size > 80 * 1024 * 1024:
                 raise forms.ValidationError(
-                    "Video file is too large. Please keep under 10MB for upload stability."
+                    "Video file is too large. Please keep under 80MB for upload stability."
                 )
             
             # 2. Duration Validation (Enforce 5-minute / 300-second limit)

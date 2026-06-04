@@ -26,7 +26,7 @@
                 <video id="preview" class="hidden w-full h-full object-cover z-10" loop muted autoplay playsinline></video>
                 
                 <div id="size-badge" class="hidden absolute top-4 right-4 z-30 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] font-bold">
-                    <span id="file-size" class="text-indigo-400">0MB</span> / 10MB
+                    <span id="file-size" class="text-indigo-400">0MB</span> / 80MB
                 </div>
             </div>
 
@@ -107,6 +107,9 @@
 <script>
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: false });
+    const MAX_RAW_MB = 80;
+    const MAX_UPLOAD_MB = 80;
+    const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
     // Test FFmpeg availability on page load
     document.addEventListener('DOMContentLoaded', async () => {
@@ -205,8 +208,8 @@
 
         const sizeInMB = file.size / (1024 * 1024);
 
-        if (sizeInMB > 80) {
-            alert("File too large. Please keep your source video under 80MB for browser compression.");
+        if (sizeInMB > MAX_RAW_MB) {
+            alert(`File too large. Please keep your source video under ${MAX_RAW_MB}MB for browser compression.`);
             input.value = "";
             preview.classList.add('hidden');
             sizeBadge.classList.add('hidden');
@@ -350,8 +353,8 @@
         }
 
         const sizeInMB = file.size / (1024 * 1024);
-        if (sizeInMB > 80) {
-            alert('File too large. Please keep under 80MB for compression.');
+        if (sizeInMB > MAX_RAW_MB) {
+            alert(`File too large. Please keep under ${MAX_RAW_MB}MB for compression.`);
             return;
         }
 
@@ -376,25 +379,17 @@
             const compressedSize = (compressedBlob.size / 1024 / 1024).toFixed(2);
             console.log(`✅ Using compressed file: ${originalSize}MB → ${compressedSize}MB`);
         } else {
-            // Compression failed - check if file is under 10MB to upload as-is
-            if (sizeInMB > 10) {
-                console.warn('⚠️ Compression failed and file is larger than 10MB');
-                const userChoice = confirm(
-                    `Compression failed. Your file is ${sizeInMB.toFixed(1)}MB (limit is 10MB).\n\n` +
-                    `Try uploading anyway? (May fail on the server)\n\n` +
-                    `Tip: Try a shorter video, lower quality source, or wait - compression often works on second try.`
-                );
-                if (!userChoice) {
-                    resetUploadButton();
-                    return;
-                }
-            } else {
-                console.log(`✅ Compression failed but file is under 10MB (${sizeInMB.toFixed(1)}MB), uploading original`);
+            // Compression failed - fallback to original file if it is within the local upload cap
+            if (sizeInMB > MAX_UPLOAD_MB) {
+                alert(`Compression failed and the original file is too large (${sizeInMB.toFixed(1)}MB). Please use a smaller or lower-quality video.`);
+                resetUploadButton();
+                return;
             }
+            console.log(`✅ Compression failed but file is under ${MAX_UPLOAD_MB}MB (${sizeInMB.toFixed(1)}MB), uploading original`);
         }
 
-        if (uploadBlob.size > 10 * 1024 * 1024) {
-            alert(`Upload file is ${(uploadBlob.size / 1024 / 1024).toFixed(1)}MB, but limit is 10MB. Try a shorter/lower quality video.`);
+        if (uploadBlob.size > MAX_UPLOAD_BYTES) {
+            alert(`Upload file is ${(uploadBlob.size / 1024 / 1024).toFixed(1)}MB, but limit is ${MAX_UPLOAD_MB}MB. Try a shorter/lower quality video.`);
             resetUploadButton();
             return;
         }
