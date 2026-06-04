@@ -101,16 +101,47 @@ class BusinessReel(models.Model):
     """
     Shoppable Reel / Professional Portfolio: 
     High-speed video gateway with optional Agentic Pricing.
-    UPDATED: Now using Cloudflare R2 for heavy video storage.
+    UPDATED: Three-tier hybrid storage (IndexedDB → Local Server → Cloudinary CDN).
     """
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reels')
     
-    # VIDEO STORAGE: Stored on Cloudinary with high-performance delivery
+    # --- THREE-TIER STORAGE SYSTEM ---
+    STORAGE_TIERS = [
+        ('LOCAL', 'Django Server Hard Drive'),
+        ('CLOUDINARY', 'Cloudinary Global CDN')
+    ]
+    storage_tier = models.CharField(
+        max_length=15,
+        choices=STORAGE_TIERS,
+        default='LOCAL',
+        help_text="Where this video is currently stored."
+    )
+    
+    # Tier 1: Local disk (Choice B - Initial staging)
+    local_video = models.FileField(
+        upload_to='reels/staging/',
+        blank=True,
+        null=True,
+        help_text="Video stored on server disk (low-cost, handles initial uploads)."
+    )
+    
+    # Tier 3: Cloudinary CDN (Choice C - High-traffic promotion)
+    cloudinary_public_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Cloudinary public ID for promoted viral content."
+    )
+    
+    # Legacy field - kept for backward compatibility
     video = CloudinaryField(
         'video',
         folder='africana_reels/',
+        blank=True,
+        null=True,
         help_text="Optimized for low-bandwidth delivery across Africa."
     )
+    
     external_video_url = models.URLField(
         blank=True,
         null=True,
@@ -147,10 +178,14 @@ class BusinessReel(models.Model):
         help_text="Absolute minimum the AI Agent can accept. (Secret)"
     )
 
-    # --- ENGAGEMENT TRACKING ---
+    # --- ENGAGEMENT TRACKING & VIRALITY METRICS ---
     likes = models.ManyToManyField(User, related_name='liked_reels', blank=True)
     share_count = models.PositiveIntegerField(default=0)
     download_count = models.PositiveIntegerField(default=0)
+    views_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Track views to trigger tier promotion to Cloudinary."
+    )
     
     share_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     is_low_bandwidth_optimized = models.BooleanField(default=True)
@@ -180,11 +215,27 @@ class BusinessReel(models.Model):
 
     @property
     def source_video_url(self):
-        """Return the active video source URL for this reel."""
+        """
+        Tier-based video URL routing: Dynamically returns the correct resource link.
+        If video was promoted to Cloudinary, use that. Otherwise, use local server disk.
+        Feed.html uses this property transparently without changes.
+        """
         if self.external_video_url:
+            # YouTube shorts or external sources always use the external link
             return self.external_video_url
+        
+        if self.storage_tier == 'CLOUDINARY' and self.cloudinary_public_id:
+            # High-traffic video promoted to Cloudinary CDN
+            return f"https://res.cloudinary.com/{settings.CLOUDINARY_STORAGE.get('CLOUD_NAME')}/video/upload/{self.cloudinary_public_id}.mp4"
+        
+        if self.local_video:
+            # New or low-traffic video stored on local server disk
+            return self.local_video.url
+        
+        # Fallback to legacy Cloudinary field if it exists
         if self.video and hasattr(self.video, 'url'):
             return self.video.url
+        
         return ''
 
     @property

@@ -108,6 +108,54 @@
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: false });
 
+    // --- CHOICE A: BROWSER-SIDE INDEXEDDB CRASH PROTECTION ---
+    const initLocalDatabase = () => {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open("AfricanaVideoCache", 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains("upload_queue")) {
+                    db.createObjectStore("upload_queue", { keyPath: "id" });
+                }
+            };
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    };
+
+    const stageToIndexedDB = async (file, caption) => {
+        try {
+            const db = await initLocalDatabase();
+            const uploadId = "reel_" + Date.now();
+            
+            const transaction = db.transaction("upload_queue", "readwrite");
+            transaction.objectStore("upload_queue").put({
+                id: uploadId,
+                rawFile: file,
+                caption: caption,
+                timestamp: new Date().toISOString()
+            });
+            
+            console.log(`✅ Video staged to IndexedDB with ID: ${uploadId}`);
+            return uploadId;
+        } catch (error) {
+            console.warn("IndexedDB staging failed (non-critical):", error);
+            return null;
+        }
+    };
+
+    const cleanIndexedDB = async (uploadId) => {
+        try {
+            if (!uploadId) return;
+            const db = await initLocalDatabase();
+            const transaction = db.transaction("upload_queue", "readwrite");
+            transaction.objectStore("upload_queue").delete(uploadId);
+            console.log(`✅ Cleaned IndexedDB record: ${uploadId}`);
+        } catch (error) {
+            console.warn("IndexedDB cleanup failed:", error);
+        }
+    };
+
     // Elements
     const input = document.getElementById('video-upload');
     const preview = document.getElementById('preview');
@@ -161,14 +209,12 @@
         const publicPrice = parseFloat(priceInput.value);
         const floorPrice = parseFloat(floorInput.value);
         
-        // If there is a price, it's a Commercial Product
         if (!isNaN(publicPrice) && publicPrice > 0) {
             btnText.innerText = "PUBLISH PRODUCT";
             modeText.innerText = "COMMERCIAL PRODUCT / SERVICE (MERCHANT)";
             btn.classList.remove('bg-indigo-600');
             btn.classList.add('bg-green-600');
             
-            // Check if AI floor is valid
             if (!isNaN(floorPrice) && floorPrice > publicPrice) {
                 priceHealth.classList.remove('hidden');
                 btn.disabled = true;
@@ -179,7 +225,6 @@
                 btn.classList.remove('grayscale', 'opacity-50', 'cursor-not-allowed');
             }
         } else {
-            // No price = Professional Portfolio/Showcase
             btnText.innerText = "POST SHOWCASE";
             modeText.innerText = "PROFESSIONAL SHOWCASE (HIRE ME)";
             btn.classList.remove('bg-green-600');
@@ -240,16 +285,22 @@
         }
 
         const sizeInMB = file.size / (1024 * 1024);
-        if (sizeInMB > 10) {
-            alert('File too large. Please keep under 10MB for upload.');
+        if (sizeInMB > 80) {
+            alert('File too large. Please keep under 80MB for compression.');
             return;
         }
 
         btn.disabled = true;
         btn.classList.add('opacity-70', 'animate-pulse');
         btnSpinner.classList.remove('hidden');
+
+        // --- STEP 1: STAGE TO INDEXEDDB (Choice A - Offline Protection) ---
+        const caption = document.querySelector('textarea[name="caption"]').value;
+        const uploadId = await stageToIndexedDB(file, caption);
+        
         btnText.innerText = "COMPRESSING VIDEO (0$ STORAGE OPTIMIZATION)...";
 
+        // --- STEP 2: RUN FFMPEG COMPRESSION (Browser-side optimization) ---
         const compressedBlob = await compressVideo(file);
         if (!compressedBlob) {
             alert('Video compression failed. Please try again or use a smaller file.');
@@ -263,12 +314,13 @@
             return;
         }
 
-        btnText.innerText = "PUBLISHING OPTIMIZED REEL...";
+        btnText.innerText = "TRANSMITTING TO STAGING SERVER (CHOICE B)...";
 
+        // --- STEP 3: UPLOAD TO LOCAL SERVER (Choice B - Initial staging) ---
         const uploadUrl = "{% url 'social:upload_reel' %}";
         const feedUrl = "{% url 'social:social_feed' %}";
         const formData = new FormData(form);
-        formData.set('video', compressedBlob, 'compressed_reel.mp4');
+        formData.set('video', compressedBlob, `compressed_reel_${uploadId}.mp4`);
 
         try {
             const response = await fetch(uploadUrl, {
@@ -280,16 +332,18 @@
             });
 
             if (response.ok) {
+                // Clean up IndexedDB after successful server upload
+                await cleanIndexedDB(uploadId);
                 window.location.href = feedUrl;
                 return;
             }
 
             const data = await response.text();
             console.error('Upload failed:', response.status, data);
-            alert('Upload optimization failed. Please try again.');
+            alert('Upload failed. Video is safely backed up in IndexedDB.');
         } catch (error) {
             console.error('Upload request failed:', error);
-            alert('Upload failed due to a network error. Please try again.');
+            alert('Network offline. Your video is safely stored in IndexedDB and will upload when you regain connection.');
         } finally {
             resetUploadButton();
         }

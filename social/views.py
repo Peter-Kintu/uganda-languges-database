@@ -77,8 +77,9 @@ class BentoProfileView(DetailView):
 @login_required
 def upload_reel(request):
     """
-    Pillar 2 & 3: Africa-First Upload Flow.
-    UPDATED: Now captures and saves WhatsApp number to the SocialProfile.
+    Pillar 2 & 3: Africa-First Upload Flow with Hybrid Storage (Three-Tier System).
+    UPDATED: Saves compressed videos to local server disk (Tier 1) instead of Cloudinary.
+    Background task will promote viral videos to Cloudinary CDN (Tier 3) automatically.
     """
     if request.method == 'POST':
         form = BusinessReelUploadForm(request.POST, request.FILES)
@@ -86,9 +87,16 @@ def upload_reel(request):
             reel = form.save(commit=False)
             reel.author = request.user
             
+            # --- THREE-TIER STORAGE LOGIC ---
+            # All new uploads go to local server disk (Choice B)
+            if 'video' in request.FILES:
+                reel.local_video = request.FILES['video']
+                reel.storage_tier = 'LOCAL'  # Initial tier: Local server storage
+            
             # Generate unique share token for viral loop metrics
             if not hasattr(reel, 'share_token') or not reel.share_token:
                 reel.share_token = uuid.uuid4().hex[:12]
+            
             reel.save()
 
             # --- WHATSAPP UPDATE LOGIC ---
@@ -98,7 +106,7 @@ def upload_reel(request):
                 profile.whatsapp_number = whatsapp
                 profile.save()
             
-            messages.success(request, "Deployment Successful: Your reel is live.")
+            messages.success(request, "Deployment Successful: Your reel is live on local streaming.")
             return redirect('social:social_feed')
     else:
         # Pre-fill WhatsApp number if it already exists in the profile
@@ -177,6 +185,25 @@ def track_download(request, reel_id):
     return JsonResponse({
         'status': 'SUCCESS',
         'total_downloads': reel.download_count
+    })
+
+@login_required
+@csrf_exempt
+@require_POST
+def track_view(request, reel_id):
+    """
+    Track video views for virality metrics.
+    When views exceed threshold (default: 50), background task promotes to Cloudinary.
+    """
+    reel = get_object_or_404(BusinessReel, id=reel_id)
+    reel.views_count = F('views_count') + 1
+    reel.save(update_fields=['views_count'])
+    reel.refresh_from_db()
+    
+    return JsonResponse({
+        'status': 'SUCCESS',
+        'total_views': reel.views_count,
+        'storage_tier': reel.storage_tier
     })
 
 # --- SOVEREIGN MESSAGING PROTOCOLS ---

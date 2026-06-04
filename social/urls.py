@@ -24,6 +24,7 @@ urlpatterns = [
     # Analytics for Share & Download (Africana AI Branding)
     path('reel/<int:reel_id>/track-share/', views.track_share, name='track_share'),
     path('reel/<int:reel_id>/track-download/', views.track_download, name='track_download'),
+    path('reel/<int:reel_id>/track-view/', views.track_view, name='track_view'),
     
     # --- PILLAR 3: AGENTIC COMMERCE & NEGOTIATION ---
     # The 'Haggle' Protocol: Real-time AI price negotiation endpoint
