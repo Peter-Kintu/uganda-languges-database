@@ -169,14 +169,14 @@
         {% else %}
             <video 
                 class="w-full h-full object-cover" 
-                data-src="{{ reel.source_video_url }}" 
+                data-src="{{ reel.source_video_url|replace:'http://':'https://' }}" 
                 playsinline 
                 muted
                 loop
                 preload="none"
                 crossorigin="anonymous"
                 type="video/mp4"
-                poster="{{ reel.source_thumbnail_url }}"
+                poster="{{ reel.source_thumbnail_url|replace:'http://':'https://' }}"
                 onerror="handleVideoError(this)"
                 onloadstart="handleVideoLoadStart(this)"
                 oncanplay="handleVideoCanPlay(this)"

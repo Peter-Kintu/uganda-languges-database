@@ -40,7 +40,8 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     
     # 2. Strict Transport Security (HSTS) - Essential for the "Secure" padlock
-    SECURE_HSTS_SECONDS = 15768000  # 6 months - Reduced from 1 year for faster testing of HTTPS enforcement
+    # 31536000 seconds = 1 year (production standard)
+    SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     
@@ -48,14 +49,57 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript from accessing cookies
+    SESSION_COOKIE_SAMESITE = 'Strict'  # CSRF protection via SameSite cookies
     
     # 4. Modern Browser Protections
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
+    X_FRAME_OPTIONS = 'SAMEORIGIN'  # Prevent clickjacking (stricter than default)
     SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
     # IMPORTANT: Careerjet tracking requires referrer to be sent to external domains
     SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
+    
+    # 5. Content Security Policy (CSP) - Critical defense against XSS
+    # Restricts script sources to self and trusted CDNs
+    SECURE_CSP_DEFAULT_SRC = ("'self'",)
+    SECURE_CSP_SCRIPT_SRC = (
+        "'self'",
+        "https://unpkg.com",  # FFmpeg.wasm
+        "https://cdn.jsdelivr.net",  # Optional: alternative CDN
+        "https://trusted-domain.com",  # Replace with your trusted domains
+    )
+    SECURE_CSP_STYLE_SRC = (
+        "'self'",
+        "'unsafe-inline'",  # Required for Tailwind CSS
+        "https://fonts.googleapis.com",
+        "https://cdnjs.cloudflare.com",  # Bootstrap icons, etc.
+    )
+    SECURE_CSP_IMG_SRC = (
+        "'self'",
+        "data:",
+        "https:",  # Allow all HTTPS images (Cloudinary, etc.)
+    )
+    SECURE_CSP_FONT_SRC = (
+        "'self'",
+        "https://fonts.gstatic.com",
+        "https://cdnjs.cloudflare.com",
+    )
+    SECURE_CSP_CONNECT_SRC = (
+        "'self'",
+        "https://api.cloudinary.com",  # Cloudinary uploads
+        "https://res.cloudinary.com",   # Cloudinary delivery
+        "https://wa.me",  # WhatsApp integration
+    )
+    SECURE_CSP_MEDIA_SRC = (
+        "'self'",
+        "https:",  # Allow all HTTPS videos (local storage, Cloudinary)
+    )
+    SECURE_CSP_FRAME_SRC = (
+        "'self'",
+        "https://www.youtube.com",  # YouTube embeds
+        "https://youtube.com",
+    )
+    SECURE_CSP_REPORT_URI = '/admin/csp-report/'  # Optional: CSP violation reporting
 
 # --- CSRF TRUSTED ORIGINS ---
 CSRF_TRUSTED_ORIGINS = [
@@ -125,6 +169,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'myuganda.middleware.HTTPMethodSecurityMiddleware',  # NEW: Restrict HTTP methods
+    'myuganda.middleware.SecurityHeadersMiddleware',  # NEW: Add additional security headers
 ]
 
 ROOT_URLCONF = 'myuganda.urls'

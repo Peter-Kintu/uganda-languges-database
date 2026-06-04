@@ -4,6 +4,7 @@ import random
 import uuid
 import urllib.parse
 import logging
+import cloudinary
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
@@ -28,6 +29,15 @@ from .forms import (
 from users.models import CustomUser
 
 logger = logging.getLogger(__name__)
+
+# --- SECURITY: Initialize Cloudinary with secure=True for HTTPS delivery ---
+if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+    cloudinary.config(
+        cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.environ.get('CLOUDINARY_API_KEY'),
+        api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
+        secure=True  # Force all Cloudinary URLs to use HTTPS
+    )
 
 
 class FeedView(ListView):
