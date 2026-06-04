@@ -419,11 +419,23 @@
             }
 
             const data = await response.text();
-            console.error('Upload failed:', response.status, data);
-            alert('Upload failed. Video is safely backed up in IndexedDB.');
+            console.error('Upload failed:', response.status, response.statusText, data);
+
+            if (response.status === 413) {
+                alert('Upload failed: server rejected the payload as too large (413).\n' +
+                    'This means your web server/proxy needs a larger request body limit, e.g. Nginx client_max_body_size or Apache LimitRequestBody.');
+            } else if (response.status >= 500) {
+                alert('Upload failed due to a server error. Video is safe in IndexedDB. Try again in a few minutes.');
+            } else {
+                alert(`Upload failed (${response.status}). Video is safely backed up in IndexedDB.`);
+            }
         } catch (error) {
             console.error('Upload request failed:', error);
-            alert('Network offline. Your video is safely stored in IndexedDB and will upload when you regain connection.');
+            if (error.message && error.message.includes('Failed to fetch')) {
+                alert('Upload failed because the browser could not reach the server. This may be due to a network or proxy issue. Your video is safe in IndexedDB.');
+            } else {
+                alert('Unexpected upload error. Your video is safely stored in IndexedDB.');
+            }
         } finally {
             resetUploadButton();
         }

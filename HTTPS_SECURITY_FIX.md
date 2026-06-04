@@ -251,13 +251,17 @@ If using Nginx/Apache, ensure reverse proxy config:
 proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header X-Forwarded-Host $host;
 proxy_set_header X-Forwarded-Port $server_port;
+client_max_body_size 85M;
 ```
 
 **Apache**:
 ```apache
 RequestHeader set X-Forwarded-Proto "https"
 RequestHeader set X-Forwarded-Host "%{HTTP_HOST}s"
+LimitRequestBody 89128960
 ```
+
+> Note: `413 Payload Too Large` errors are often caused by proxy/ web-server limits, not Django form validation. If uploads still fail after raising Django limits, increase your proxy body size settings and restart the server.
 
 ---
 

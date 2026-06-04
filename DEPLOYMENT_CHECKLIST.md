@@ -172,6 +172,29 @@ openssl x509 -in /etc/letsencrypt/live/africanaai.info/fullchain.pem -text -noou
 sudo systemctl status certbot.timer
 ```
 
+**Issue**: Large file uploads fail with `413 Payload Too Large`
+```bash
+# Check if Apache is rejecting uploads before Django sees them
+sudo grep -R "LimitRequestBody" /etc/apache2
+# Or if using Nginx in front of Apache:
+grep -R "client_max_body_size" /etc/nginx
+```
+
+**Fix**: Raise the proxy/web-server upload limit
+```apache
+# Apache
+LimitRequestBody 89128960
+
+# Nginx
+client_max_body_size 85M;
+```
+
+Restart the web server after changing the limit:
+```bash
+sudo apache2ctl graceful
+sudo systemctl reload nginx
+```
+
 ---
 
 ## 📋 Before & After Comparison

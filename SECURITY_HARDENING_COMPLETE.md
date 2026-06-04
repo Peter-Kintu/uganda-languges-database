@@ -410,6 +410,23 @@ On your production server (`172.66.172.174`):
    # Add TLS restrictions and cipher configuration
    ```
 
+4.1 **Allow larger upload payloads**:
+   ```apache
+   # Apache upload limit for direct uploads
+   LimitRequestBody 89128960
+   ```
+
+   ```nginx
+   # If Nginx is used as a reverse proxy in front of Apache
+   client_max_body_size 85M;
+   ```
+
+   Restart the relevant service after changing the limit:
+   ```bash
+   sudo apache2ctl graceful
+   sudo systemctl reload nginx
+   ```
+
 5. **Test syntax**:
    ```bash
    sudo apache2ctl configtest
