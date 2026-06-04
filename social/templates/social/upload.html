@@ -108,6 +108,22 @@
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: false });
 
+    // Test FFmpeg availability on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+        console.log('🔍 Checking FFmpeg availability...');
+        try {
+            // Pre-load FFmpeg to catch errors early
+            if (!ffmpeg.isLoaded()) {
+                console.log('⏳ Pre-loading FFmpeg for faster compression...');
+                await ffmpeg.load();
+                console.log('✅ FFmpeg ready for compression');
+            }
+        } catch (error) {
+            console.warn('⚠️ FFmpeg pre-load failed (will retry on upload):', error);
+            // Don't fail the page - we can try again during upload
+        }
+    });
+
     // --- CHOICE A: BROWSER-SIDE INDEXEDDB CRASH PROTECTION ---
     const initLocalDatabase = () => {
         return new Promise((resolve, reject) => {
@@ -247,30 +263,79 @@
     }
 
     async function compressVideo(file) {
+        const startTime = Date.now();
         try {
+            console.log('📹 Starting FFmpeg compression...');
+            
+            // Load FFmpeg if not already loaded
             if (!ffmpeg.isLoaded()) {
+                console.log('⏳ Loading FFmpeg library...');
                 await ffmpeg.load();
+                console.log('✅ FFmpeg loaded successfully');
             }
-            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+
+            // Get input file info
+            const inputFileData = await fetchFile(file);
+            console.log(`📂 Input file size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+
+            // Write file to FFmpeg virtual filesystem
+            ffmpeg.FS('writeFile', 'input.mp4', inputFileData);
+            console.log('✅ File written to FFmpeg filesystem');
+
+            // Run compression with H.264 codec (more compatible)
+            console.log('⚙️ Running compression: scale=480, H.264, bitrate=500k...');
             await ffmpeg.run(
                 '-i', 'input.mp4',
-                '-vf', 'scale=-2:480',
-                '-vcodec', 'libx264',
-                '-crf', '28',
-                '-b:v', '500k',
+                '-vf', 'scale=trunc(iw/2)*2:480',  // Ensure width is even for H.264
+                '-c:v', 'libx264',                  // H.264 video codec
+                '-preset', 'medium',                // Balance speed/compression
+                '-crf', '28',                       // Quality level (0-51, lower=better)
+                '-b:v', '500k',                     // Bitrate limit
+                '-c:a', 'aac',                      // Audio codec
+                '-b:a', '64k',                      // Audio bitrate
                 'output.mp4'
             );
+
+            const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1);
+            console.log(`✅ Compression complete (${elapsedSeconds}s)`);
+
+            // Read compressed file
             const compressedData = ffmpeg.FS('readFile', 'output.mp4');
+            const compressedSize = (compressedData.buffer.byteLength / 1024 / 1024).toFixed(2);
+            const originalSize = (file.size / 1024 / 1024).toFixed(2);
+            const reduction = (100 - (compressedData.buffer.byteLength / file.size) * 100).toFixed(0);
+
+            console.log(`📊 Compression result: ${originalSize}MB → ${compressedSize}MB (${reduction}% reduction)`);
+
             return new Blob([compressedData.buffer], { type: 'video/mp4' });
         } catch (error) {
-            console.error('FFmpeg compression failed:', error);
+            const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1);
+            console.error(`❌ FFmpeg compression failed after ${elapsedSeconds}s:`, error);
+            console.error('Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+            
+            // Log more debugging info
+            try {
+                const files = ffmpeg.FS('readdir', '/');
+                console.log('Files in FFmpeg filesystem:', files);
+            } catch (e) {
+                console.log('Could not list FFmpeg filesystem');
+            }
+
             return null;
         } finally {
             try {
                 ffmpeg.FS('unlink', 'input.mp4');
+            } catch (e) {
+                console.warn('Could not delete input.mp4');
+            }
+            try {
                 ffmpeg.FS('unlink', 'output.mp4');
             } catch (e) {
-                // ignore cleanup failures
+                console.warn('Could not delete output.mp4');
             }
         }
     }
@@ -301,15 +366,35 @@
         btnText.innerText = "COMPRESSING VIDEO (0$ STORAGE OPTIMIZATION)...";
 
         // --- STEP 2: RUN FFMPEG COMPRESSION (Browser-side optimization) ---
+        let uploadBlob = file;  // Fallback to original file
         const compressedBlob = await compressVideo(file);
-        if (!compressedBlob) {
-            alert('Video compression failed. Please try again or use a smaller file.');
-            resetUploadButton();
-            return;
+        
+        if (compressedBlob) {
+            // Compression succeeded
+            uploadBlob = compressedBlob;
+            const originalSize = (file.size / 1024 / 1024).toFixed(2);
+            const compressedSize = (compressedBlob.size / 1024 / 1024).toFixed(2);
+            console.log(`✅ Using compressed file: ${originalSize}MB → ${compressedSize}MB`);
+        } else {
+            // Compression failed - check if file is under 10MB to upload as-is
+            if (sizeInMB > 10) {
+                console.warn('⚠️ Compression failed and file is larger than 10MB');
+                const userChoice = confirm(
+                    `Compression failed. Your file is ${sizeInMB.toFixed(1)}MB (limit is 10MB).\n\n` +
+                    `Try uploading anyway? (May fail on the server)\n\n` +
+                    `Tip: Try a shorter video, lower quality source, or wait - compression often works on second try.`
+                );
+                if (!userChoice) {
+                    resetUploadButton();
+                    return;
+                }
+            } else {
+                console.log(`✅ Compression failed but file is under 10MB (${sizeInMB.toFixed(1)}MB), uploading original`);
+            }
         }
 
-        if (compressedBlob.size > 10 * 1024 * 1024) {
-            alert('Optimized file is still larger than 10MB. Please choose a smaller video.');
+        if (uploadBlob.size > 10 * 1024 * 1024) {
+            alert(`Upload file is ${(uploadBlob.size / 1024 / 1024).toFixed(1)}MB, but limit is 10MB. Try a shorter/lower quality video.`);
             resetUploadButton();
             return;
         }
@@ -320,7 +405,7 @@
         const uploadUrl = "{% url 'social:upload_reel' %}";
         const feedUrl = "{% url 'social:social_feed' %}";
         const formData = new FormData(form);
-        formData.set('video', compressedBlob, `compressed_reel_${uploadId}.mp4`);
+        formData.set('video', uploadBlob, `reel_${uploadId}.mp4`);
 
         try {
             const response = await fetch(uploadUrl, {
