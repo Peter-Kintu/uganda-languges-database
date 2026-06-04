@@ -5,6 +5,7 @@ from django.dispatch import receiver
 from django.db.models import Count
 from django.core.files.storage import storages # Import storage routing
 from cloudinary.models import CloudinaryField
+import cloudinary
 import uuid
 import hashlib
 import hmac
@@ -226,7 +227,8 @@ class BusinessReel(models.Model):
         
         if self.storage_tier == 'CLOUDINARY' and self.cloudinary_public_id:
             # High-traffic video promoted to Cloudinary CDN
-            return f"https://res.cloudinary.com/{settings.CLOUDINARY_STORAGE.get('CLOUD_NAME')}/video/upload/{self.cloudinary_public_id}.mp4"
+            cloud_name = cloudinary.config().cloud_name
+            return f"https://res.cloudinary.com/{cloud_name}/video/upload/{self.cloudinary_public_id}.mp4"
         
         if self.local_video:
             # New or low-traffic video stored on local server disk

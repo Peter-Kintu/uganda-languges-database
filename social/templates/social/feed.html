@@ -289,6 +289,7 @@
 <script>
     const observerOptions = { threshold: 0.8 };
     let activeReelVideo = null;
+    let viewedReels = new Set(); // Track which reels we've already counted as viewed
 
     function pauseAllVideos(exceptVideo = null) {
         document.querySelectorAll('video').forEach(v => {
@@ -299,6 +300,22 @@
                 v.muted = true;
             }
         });
+    }
+
+    function trackView(reelId) {
+        // Only track once per session per reel
+        if (viewedReels.has(reelId)) return;
+        viewedReels.add(reelId);
+        
+        // Send view tracking request to server
+        fetch(`/social/reel/${reelId}/track-view/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ timestamp: new Date().toISOString() })
+        }).catch(e => console.warn('View tracking failed:', e));
     }
 
     const observer = new IntersectionObserver((entries) => {
@@ -319,6 +336,9 @@
                     pauseAllVideos(video);
                     activeReelVideo = video;
                     if (loadingDiv) loadingDiv.style.opacity = '1';
+                    
+                    // Track view when video is about to play
+                    trackView(reelId);
                     
                     if (video.readyState >= 2) {
                         video.play().catch(e => {
