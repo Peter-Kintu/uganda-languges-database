@@ -175,10 +175,11 @@ class YouTubeSyncService:
         
         try:
             # Determine sync window
-            published_after = youtube_channel.last_synced_at
-            if not published_after:
-                # First sync: get last 7 days
-                published_after = timezone.now() - timedelta(days=7)
+            if youtube_channel.last_synced_at:
+                published_after = youtube_channel.last_synced_at
+            else:
+                # First sync: fetch the latest channel videos without a strict 7-day cutoff
+                published_after = None
             
             # Fetch videos from YouTube
             videos = self.youtube_service.get_latest_videos(

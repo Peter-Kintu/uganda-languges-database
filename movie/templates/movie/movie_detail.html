@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ movie.name }} | Africana AI Movies{% endblock %}
+
+{% block meta_description %}Watch {{ movie.name }} on Africana AI. Explore African cinema, ratings, synopsis, and recommended movies in our affiliate catalog.{% endblock %}
+
+{% block content %}
+<div class="bg-slate-900 min-h-screen text-white pb-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
+            <div class="lg:w-7/12 space-y-6">
+                <div class="rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-slate-950">
+                    <img src="{{ movie.image_url }}" alt="{{ movie.name }}" class="w-full h-auto object-cover">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-slate-800 rounded-3xl p-6 border border-white/10 shadow-lg">
+                        <h1 class="text-4xl font-black tracking-tight leading-tight">{{ movie.name }}</h1>
+                        <p class="text-slate-400 mt-3 text-sm uppercase tracking-[0.24em] font-semibold">{{ movie.genre }} • {{ movie.category|title }}</p>
+                        <div class="mt-4 flex flex-wrap gap-3 text-sm text-slate-300">
+                            <span class="px-3 py-2 bg-emerald-500/10 text-emerald-300 rounded-full border border-emerald-400/20">Rating: {{ movie.rating }}</span>
+                            {% if movie.release_date %}
+                            <span class="px-3 py-2 bg-slate-800/80 rounded-full border border-white/10">Released: {{ movie.release_date }}</span>
+                            {% endif %}
+                            <span class="px-3 py-2 bg-slate-800/80 rounded-full border border-white/10">Views: {{ movie.view_count }}</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800 rounded-3xl p-6 border border-white/10 shadow-lg space-y-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Synopsis</h2>
+                            <p class="mt-3 text-slate-300 leading-relaxed text-sm">{{ movie.ai_summary|default:movie.description }}</p>
+                        </div>
+
+                        <div class="space-y-3">
+                            {% if movie.affiliate_url %}
+                            <a href="{% url 'movie:watch_now' movie.id %}" rel="nofollow sponsored" target="_blank" class="block w-full text-center bg-emerald-500 hover:bg-emerald-400 transition rounded-2xl py-4 text-sm font-extrabold text-slate-950 shadow-xl shadow-emerald-500/20">Watch Now</a>
+                            {% endif %}
+
+                            {% if movie.trailer_url %}
+                            <a href="{{ movie.trailer_url }}" target="_blank" class="block w-full text-center border border-white/10 hover:bg-white/5 transition rounded-2xl py-4 text-sm font-bold text-white">Watch Trailer</a>
+                            {% endif %}
+                        </div>
+
+                        <div class="rounded-3xl bg-slate-900/90 border border-white/10 p-4">
+                            <p class="text-xs uppercase tracking-[0.3em] text-slate-500 mb-3">Affiliate details</p>
+                            <p class="text-slate-300 text-sm">Affiliate revenue is tracked when users click through from this page. Your click supports film discovery and platform growth.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if recommendations %}
+                <div class="bg-slate-800 rounded-3xl p-6 border border-white/10 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold">More like this</h2>
+                        <span class="text-slate-400 text-sm">Recommended</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for rec in recommendations %}
+                        <a href="{% url 'movie:movie_detail' rec.slug %}" class="group block rounded-3xl overflow-hidden border border-white/10 bg-slate-950 hover:border-emerald-500 transition">
+                            <div class="relative h-44 overflow-hidden">
+                                <img src="{{ rec.image_url }}" alt="{{ rec.name }}" class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-lg font-semibold text-white truncate">{{ rec.name }}</h3>
+                                <p class="mt-2 text-slate-400 text-sm line-clamp-2">{{ rec.ai_summary|default:rec.description|truncatewords:15 }}</p>
+                                <div class="mt-3 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-500">
+                                    <span>{{ rec.genre }}</span>
+                                    <span>⭐ {{ rec.rating }}</span>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <aside class="lg:w-5/12 space-y-6">
+                <div class="bg-slate-800 rounded-3xl border border-white/10 p-6 shadow-2xl">
+                    <h2 class="text-xl font-bold mb-4">Movie Details</h2>
+                    <dl class="space-y-4 text-sm text-slate-300">
+                        <div>
+                            <dt class="font-semibold text-slate-100">Title</dt>
+                            <dd class="mt-1">{{ movie.name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-semibold text-slate-100">Genre</dt>
+                            <dd class="mt-1">{{ movie.genre }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-semibold text-slate-100">Category</dt>
+                            <dd class="mt-1">{{ movie.category|title }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-semibold text-slate-100">Rating</dt>
+                            <dd class="mt-1">{{ movie.rating }}</dd>
+                        </div>
+                        {% if movie.release_date %}
+                        <div>
+                            <dt class="font-semibold text-slate-100">Release Date</dt>
+                            <dd class="mt-1">{{ movie.release_date }}</dd>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <dt class="font-semibold text-slate-100">Price</dt>
+                            <dd class="mt-1">${{ movie.price|floatformat:2 }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="bg-emerald-500/10 border border-emerald-400/20 rounded-3xl p-6 shadow-2xl">
+                    <p class="text-emerald-200 uppercase text-xs font-bold tracking-[0.28em] mb-3">Affiliate benefits</p>
+                    <ul class="space-y-3 text-slate-200 text-sm leading-relaxed">
+                        <li>• Secure partner redirect tracking</li>
+                        <li>• AI-powered recommendations</li>
+                        <li>• African cinema spotlight</li>
+                        <li>• Fully responsive viewing experience</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+{% endblock %}

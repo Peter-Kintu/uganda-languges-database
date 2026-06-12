@@ -436,7 +436,7 @@ def youtube_partnership_dashboard(request):
             "You'll be able to add channels once approved."
         )
     
-    channels = partnership.channels.all()
+    channels = partnership.channels.prefetch_related('videos')
     total_videos = sum(channel.videos.count() for channel in channels)
     context = {
         'partnership': partnership,
