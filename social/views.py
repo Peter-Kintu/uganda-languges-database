@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 from django.contrib import messages
 from django.db.models import F, Q
 from django.urls import reverse
@@ -402,15 +403,35 @@ def apply_youtube_partnership(request):
     """
     Partnership Application: Users submit their intent to sync YouTube content.
     """
-    partnership, created = YouTubePartnership.objects.get_or_create(user=request.user)
+    partnership, created = YouTubePartnership.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'status': 'approved',
+            'is_active': True,
+            'approved_at': timezone.now(),
+        }
+    )
     
+    if not partnership.is_active or partnership.status != 'approved':
+        partnership.status = 'approved'
+        partnership.is_active = True
+        if not partnership.approved_at:
+            partnership.approved_at = timezone.now()
+        partnership.save(update_fields=['status', 'is_active', 'approved_at'])
+        messages.success(request, "✅ YouTube partnership is now active. You can add channels immediately.")
+
     if request.method == 'POST':
         form = YouTubePartnershipForm(request.POST, instance=partnership)
         if form.is_valid():
-            form.save()
+            partnership = form.save(commit=False)
+            partnership.status = 'approved'
+            partnership.is_active = True
+            if not partnership.approved_at:
+                partnership.approved_at = timezone.now()
+            partnership.save()
             messages.success(
-                request, 
-                "✅ Application submitted! Our team will review it within 24 hours."
+                request,
+                "✅ YouTube partnership is now active. You can add channels immediately."
             )
             return redirect('social:youtube_partnership_dashboard')
     else:
@@ -425,23 +446,27 @@ def apply_youtube_partnership(request):
 @login_required
 def youtube_partnership_dashboard(request):
     """
-    Dashboard: Users can manage their approved channels and sync status.
+    Dashboard: Users can manage their YouTube channels and sync status.
     """
-    partnership = get_object_or_404(YouTubePartnership, user=request.user)
+    partnership, created = YouTubePartnership.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'status': 'approved',
+            'is_active': True,
+            'approved_at': timezone.now(),
+        }
+    )
     
-    if partnership.status != 'approved':
-        messages.info(
-            request,
-            f"Your partnership status: {partnership.get_status_display()}. "
-            "You'll be able to add channels once approved."
-        )
+    if not partnership.is_active:
+        partnership.is_active = True
+        partnership.save(update_fields=['is_active'])
     
     channels = partnership.channels.prefetch_related('videos')
     total_videos = sum(channel.videos.count() for channel in channels)
     context = {
         'partnership': partnership,
         'channels': channels,
-        'can_add_channels': partnership.is_active and partnership.status == 'approved',
+        'can_add_channels': partnership.is_active,
         'total_videos': total_videos,
     }
     
@@ -452,13 +477,19 @@ def youtube_partnership_dashboard(request):
 def add_youtube_channel(request):
     """
     Add a new YouTube channel to sync from.
-    Only available for approved partners.
     """
-    partnership = get_object_or_404(YouTubePartnership, user=request.user)
+    partnership, created = YouTubePartnership.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'status': 'approved',
+            'is_active': True,
+            'approved_at': timezone.now(),
+        }
+    )
     
-    if not partnership.is_active or partnership.status != 'approved':
-        messages.error(request, "You don't have permission to add channels.")
-        return redirect('social:youtube_partnership_dashboard')
+    if not partnership.is_active:
+        partnership.is_active = True
+        partnership.save(update_fields=['is_active'])
     
     if request.method == 'POST':
         form = YouTubeChannelForm(request.POST)

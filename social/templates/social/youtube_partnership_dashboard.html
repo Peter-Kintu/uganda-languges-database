@@ -71,7 +71,7 @@
                         </form>
                     </div>
 
-                    {% if channel.videos.exists %}
+                    {% if channel.videos.all %}
                     <div class="mt-8 border-t border-white/10 pt-6">
                         <div class="flex items-center justify-between mb-4">
                             <div>
@@ -83,23 +83,24 @@
                         <div class="overflow-x-auto no-scrollbar pb-2">
                             <div class="flex gap-4 min-w-max">
                                 {% for video in channel.videos.all|slice:":8" %}
-                                <article class="min-w-[320px] w-[320px] bg-slate-950 rounded-3xl border border-white/10 shadow-xl overflow-hidden">
-                                    <div class="relative aspect-video bg-black">
-                                        <iframe
-                                            class="w-full h-full"
-                                            src="https://www.youtube.com/embed/{{ video.youtube_id }}?controls=1&rel=0&modestbranding=1"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowfullscreen
-                                            title="{{ video.title }}"
-                                        ></iframe>
-                                    </div>
-                                    <div class="p-4">
-                                        <h4 class="text-sm font-bold text-white line-clamp-2">{{ video.title }}</h4>
-                                        <p class="text-slate-400 text-[11px] mt-2">{{ video.youtube_views }} views • {{ video.published_at|date:'M d, Y' }}</p>
-                                        <div class="mt-4 flex flex-wrap gap-2">
-                                            <a href="{{ video.youtube_url }}" target="_blank" rel="nofollow noopener" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-black text-center uppercase text-[10px] font-black py-2 rounded-2xl">Open</a>
-                                            <a href="{{ channel.channel_url }}" target="_blank" rel="nofollow noopener" class="inline-flex items-center justify-center px-3 py-2 bg-white/5 border border-white/10 rounded-2xl text-[10px] uppercase tracking-[0.24em] text-slate-300 hover:text-white">Channel</a>
+                                <article class="min-w-[320px] w-[320px] bg-slate-950 rounded-3xl border border-white/10 shadow-xl overflow-hidden relative">
+                                    <div class="youtube-card cursor-pointer" onclick="loadYouTubeCard(this)">
+                                        <div class="youtube-card-media relative aspect-video bg-black overflow-hidden">
+                                            <img src="{{ video.thumbnail_url }}" alt="{{ video.title }}" class="w-full h-full object-cover transition duration-500 hover:scale-105">
+                                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <span class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-black/70 text-white text-3xl">▶</span>
+                                            </div>
                                         </div>
+                                        <div class="p-4 space-y-3">
+                                            <h4 class="text-sm font-bold text-white line-clamp-2">{{ video.title }}</h4>
+                                            <p class="text-slate-400 text-[11px] mt-2">{{ video.youtube_views }} views • {{ video.published_at|date:'M d, Y' }}</p>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <span class="block bg-slate-800 text-slate-300 text-center uppercase text-[10px] font-black py-2 rounded-2xl">Tap to play</span>
+                                                <a href="{{ channel.channel_url }}" target="_blank" rel="nofollow noopener" class="block bg-white/5 hover:bg-white/10 text-slate-300 text-center uppercase text-[10px] font-black py-2 rounded-2xl">Channel</a>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" class="youtube-video-id" value="{{ video.youtube_id }}">
                                     </div>
                                 </article>
                                 {% endfor %}
@@ -117,4 +118,27 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    function loadYouTubeCard(element) {
+        const article = element.closest('article');
+        if (!article || article.dataset.loaded === 'true') return;
+
+        const videoIdInput = article.querySelector('.youtube-video-id');
+        const mediaContainer = article.querySelector('.youtube-card-media');
+        const videoId = videoIdInput ? videoIdInput.value : null;
+        if (!videoId || !mediaContainer) return;
+
+        const iframe = document.createElement('iframe');
+        iframe.className = 'w-full h-full object-cover';
+        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.frameBorder = '0';
+
+        mediaContainer.innerHTML = '';
+        mediaContainer.appendChild(iframe);
+        article.dataset.loaded = 'true';
+    }
+</script>
 {% endblock %}
