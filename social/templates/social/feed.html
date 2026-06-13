@@ -159,14 +159,18 @@
     {% for reel in reels %}
     <section data-reel-id="{{ reel.id }}" data-author-id="{{ reel.author.id }}">
         {% if reel.is_external_video %}
-            <iframe
-                class="w-full h-full object-cover"
-                src="{{ reel.video_embed_url }}"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowfullscreen
-                frameborder="0"
-                onerror="handleVideoError(this)">
-            </iframe>
+            <div class="relative w-full h-full overflow-hidden bg-black">
+                <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ reel.source_thumbnail_url|replace:'http://|https://' }}');"></div>
+                <iframe
+                    class="absolute inset-0 w-full h-full object-cover"
+                    data-src="{{ reel.video_embed_url }}"
+                    src=""
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowfullscreen
+                    frameborder="0"
+                    onerror="handleVideoError(this)">
+                </iframe>
+            </div>
         {% else %}
             <video 
                 class="w-full h-full object-cover" 
@@ -361,7 +365,14 @@
                         if (next) next.scrollIntoView({ behavior: 'smooth' });
                     };
                 } else if (iframe) {
-                    if (loadingDiv) loadingDiv.style.opacity = '0';
+                    if ((!iframe.src || iframe.src === '') && iframe.dataset.src) {
+                        iframe.src = iframe.dataset.src;
+                    }
+                    if (loadingDiv) loadingDiv.style.opacity = '1';
+                    iframe.onload = () => {
+                        if (loadingDiv) loadingDiv.style.opacity = '0';
+                    };
+                    trackView(reelId);
                 }
             } else {
                 if (video) {
@@ -374,6 +385,11 @@
                     if (video.src && video.src !== '') {
                         video.src = '';
                         video.load();
+                    }
+                }
+                if (iframe) {
+                    if (iframe.src && iframe.src !== '') {
+                        iframe.src = '';
                     }
                 }
                 if (loadingDiv) loadingDiv.style.opacity = '0';
@@ -548,6 +564,7 @@
 
     async function downloadWithBranding(btn, reelId, url) {
         const secureUrl = url.replace('http://', 'https://');
+        const isExternal = /(?:youtube\.com|youtu\.be)/i.test(secureUrl);
         try {
             const response = await fetch(`/social/reel/${reelId}/track-download/`, { 
                 method: 'POST', 
@@ -557,13 +574,20 @@
             const downElem = document.getElementById(`download-count-${reelId}`);
             if (downElem) downElem.innerText = data.total_downloads;
 
+            if (isExternal) {
+                window.open(secureUrl, '_blank');
+                return;
+            }
+
             const link = document.createElement('a');
             link.href = secureUrl;
             link.download = `Africana_Elite_${reelId}.mp4`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        } catch (e) { console.error("Download failed."); }
+        } catch (e) {
+            console.error("Download failed.", e);
+        }
     }
 
     async function triggerHaggle(reelId, whatsapp, caption, price, currency) {

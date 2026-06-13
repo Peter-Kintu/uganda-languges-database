@@ -256,27 +256,33 @@ class BusinessReel(models.Model):
 
     @property
     def video_embed_url(self):
-        """Return an embed URL for supported external sources."""
+        """Return an iframe-friendly embed URL for supported external sources."""
         if not self.external_video_url:
             return ''
-        if 'youtube.com/watch' in self.external_video_url or 'youtu.be/' in self.external_video_url:
-            video_id = self.extract_youtube_id(self.external_video_url)
-            if video_id:
-                return f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=1&controls=0&rel=0&playsinline=1"
+
+        video_id = self.extract_youtube_id(self.external_video_url)
+        if video_id:
+            return (
+                f"https://www.youtube-nocookie.com/embed/{video_id}"
+                "?autoplay=1&mute=1&controls=0&rel=0&playsinline=1"
+            )
+
         return self.external_video_url
 
     def extract_youtube_id(self, url):
-        """Extract YouTube video ID from a URL."""
+        """Extract a YouTube video ID from watch, short, embed, or shorts URLs."""
         import re
+
         patterns = [
-            r'youtube\.com/watch\?v=([^&]+)',
-            r'youtu\.be/([^?&#]+)',
-            r'youtube\.com/embed/([^?&#]+)',
+            r'(?:youtube\.com/(?:watch\?v=|embed/|shorts/|v/)|youtu\.be/)([A-Za-z0-9_-]{11})',
+            r'[?&]v=([A-Za-z0-9_-]{11})',
         ]
+
         for pattern in patterns:
             match = re.search(pattern, url)
             if match:
                 return match.group(1)
+
         return None
 
     def __str__(self):
