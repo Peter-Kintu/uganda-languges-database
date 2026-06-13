@@ -4,6 +4,7 @@ Manages video fetching, channel discovery, and content syndication.
 """
 
 import os
+import json
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.utils import timezone
@@ -140,8 +141,12 @@ class YouTubeService:
             
             return videos
         except HttpError as e:
-            logger.error(f"Error fetching videos from channel {channel_id}: {e}")
-            return []
+            error_code, error_reason, error_message = self._parse_http_error(e)
+            logger.error(
+                f"Error fetching videos from channel {channel_id}: "
+                f"code={error_code} reason={error_reason} message={error_message}"
+            )
+            raise
     
     def _parse_duration(self, iso_duration):
         """Convert ISO 8601 duration to seconds."""
@@ -161,6 +166,33 @@ class YouTubeService:
         """Check if a channel ID is valid and accessible."""
         channel_info = self.get_channel_info(channel_id)
         return channel_info is not None
+
+    def _parse_http_error(self, error):
+        """Parse a Google API HttpError for structured code/reason/message."""
+        error_code = None
+        error_reason = None
+        error_message = str(error)
+
+        try:
+            content = getattr(error, 'content', None)
+            if isinstance(content, bytes):
+                content = content.decode('utf-8', errors='ignore')
+
+            if content:
+                payload = json.loads(content)
+                error_body = payload.get('error', {})
+                if isinstance(error_body, dict):
+                    error_code = error_body.get('code') or error_body.get('status')
+                    if 'errors' in error_body and error_body['errors']:
+                        first_error = error_body['errors'][0]
+                        error_reason = first_error.get('reason')
+                        error_message = first_error.get('message') or error_body.get('message') or error_message
+                    else:
+                        error_message = error_body.get('message', error_message)
+        except Exception:
+            pass
+
+        return error_code, error_reason, error_message
 
 
 class YouTubeSyncService:
@@ -250,9 +282,33 @@ class YouTubeSyncService:
             youtube_channel.total_videos_synced += result['synced']
             youtube_channel.save()
             
+        except HttpError as e:
+            error_code, error_reason, error_message = self.youtube_service._parse_http_error(e)
+            warning_text = (
+                f"YouTube sync failed for channel {youtube_channel.channel_id}: "
+                f"code={error_code} reason={error_reason} message={error_message}"
+            )
+            logger.error(warning_text)
+
+            youtube_channel.last_sync_error = error_message[:1000]
+            youtube_channel.sync_error_code = str(error_reason or error_code or '')
+            if error_reason == 'accountDelegationForbidden':
+                youtube_channel.is_syncing = False
+                youtube_channel.requires_reauth = True
+            youtube_channel.save(update_fields=[
+                'last_sync_error',
+                'sync_error_code',
+                'is_syncing',
+                'requires_reauth',
+            ])
+
+            result['errors'].append(error_message)
         except Exception as e:
             error_msg = f"Error syncing channel {youtube_channel.channel_id}: {str(e)}"
             logger.error(error_msg)
+            youtube_channel.last_sync_error = str(e)[:1000]
+            youtube_channel.sync_error_code = ''
+            youtube_channel.save(update_fields=['last_sync_error', 'sync_error_code'])
             result['errors'].append(error_msg)
         
         return result

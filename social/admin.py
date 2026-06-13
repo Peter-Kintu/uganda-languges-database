@@ -273,14 +273,18 @@ class YouTubeChannelAdmin(admin.ModelAdmin):
         'channel_name',
         'partnership_user',
         'is_syncing',
+        'requires_reauth',
         'sync_frequency_hours',
         'total_videos_synced',
         'last_synced_at',
         'video_count'
     )
-    list_filter = ('is_syncing', 'sync_frequency_hours', 'last_synced_at')
+    list_filter = ('is_syncing', 'requires_reauth', 'sync_frequency_hours', 'last_synced_at')
     search_fields = ('channel_id', 'channel_name', 'partnership__user__username')
-    readonly_fields = ('last_synced_at', 'total_videos_synced', 'added_at', 'channel_id')
+    readonly_fields = (
+        'last_synced_at', 'total_videos_synced', 'added_at', 'channel_id',
+        'requires_reauth', 'sync_error_code', 'last_sync_error'
+    )
     actions = ['force_sync_channel', 'disable_channel', 'enable_channel']
     
     fieldsets = (
@@ -288,7 +292,11 @@ class YouTubeChannelAdmin(admin.ModelAdmin):
             'fields': ('partnership', 'channel_id', 'channel_name', 'channel_url', 'channel_thumbnail')
         }),
         ('Sync Settings', {
-            'fields': ('is_syncing', 'sync_frequency_hours', 'last_synced_at', 'total_videos_synced')
+            'fields': (
+                'is_syncing', 'requires_reauth', 'sync_frequency_hours',
+                'last_synced_at', 'total_videos_synced', 'sync_error_code',
+                'last_sync_error'
+            )
         }),
         ('Metadata', {
             'fields': ('added_at',)

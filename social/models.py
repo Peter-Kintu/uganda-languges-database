@@ -396,6 +396,21 @@ class YouTubeChannel(models.Model):
         default=24,
         help_text="How often to check for new videos (in hours)"
     )
+    last_sync_error = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Stores the last YouTube sync error message for this channel."
+    )
+    sync_error_code = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="YouTube API error code or reason from the last sync attempt."
+    )
+    requires_reauth = models.BooleanField(
+        default=False,
+        help_text="Set when this channel needs authorization or access revalidation."
+    )
     
     # Metadata
     total_videos_synced = models.PositiveIntegerField(default=0)

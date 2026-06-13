@@ -596,18 +596,24 @@ def sync_youtube_channel_now(request, channel_id):
         partnership=partnership
     )
     
-    try:
-        from .youtube_service import YouTubeSyncService
-        sync_service = YouTubeSyncService()
-        result = sync_service.sync_channel_videos(youtube_channel)
-        
+    from .youtube_service import YouTubeSyncService
+    sync_service = YouTubeSyncService()
+    result = sync_service.sync_channel_videos(youtube_channel)
+    
+    if result['errors']:
+        error_message = result['errors'][-1] if result['errors'] else 'An unknown error occurred.'
+        if youtube_channel.requires_reauth:
+            messages.error(
+                request,
+                "⚠️ Sync failed because YouTube access needs to be revalidated. "
+                "This channel has been paused until authorization is refreshed."
+            )
+        else:
+            messages.error(request, f"⚠️ Sync failed: {error_message}")
+    else:
         message = f"✅ Synced {result['synced']} videos"
         if result['skipped'] > 0:
             message += f" ({result['skipped']} already existed)"
-        
         messages.success(request, message)
-    except Exception as e:
-        logger.error(f"Error syncing channel: {str(e)}")
-        messages.error(request, "Error syncing channel. Please try again later.")
     
     return redirect('social:youtube_partnership_dashboard')
