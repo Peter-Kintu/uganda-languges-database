@@ -22,6 +22,7 @@ urlpatterns = [
     
     # --- Profile Management ---
     path('profile/', views.user_profile, name='profile'),
+    path('profile/request-payout/', views.profile_payout_request, name='profile_payout_request'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
 
     # --- Language Settings ---

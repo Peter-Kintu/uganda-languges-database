@@ -32,6 +32,12 @@ class CustomUser(AbstractUser):
     is_approved = models.BooleanField(_("Is Approved"), default=False, 
                                       help_text=_("Whether this investor account is approved to post partner content."))
 
+    post_ad_watch_count = models.PositiveIntegerField(
+        _("Job ad watch count"),
+        default=0,
+        help_text=_("Tracks how many times this user has viewed the job ad flow for post payout eligibility.")
+    )
+
     # --- REFERRAL LOGIC PROPERTY ---
     @property
     def total_referral_earnings(self):
@@ -164,6 +170,33 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Alert for {self.user.username}: {self.title}"
+
+
+class PayoutRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('declined', 'Declined'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='payout_requests'
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    card_type = models.CharField(max_length=50, blank=True, null=True)
+    card_last4 = models.CharField(max_length=4, blank=True, null=True)
+    bank_name = models.CharField(max_length=150, blank=True, null=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} payout request ${self.amount} ({self.status})"
 
 
 # --- Signals ---

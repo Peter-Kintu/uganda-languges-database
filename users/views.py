@@ -31,7 +31,7 @@ from google.auth.transport import requests as google_requests
 from cerebras.cloud.sdk import Cerebras
 
 # Custom Forms and Models
-from .models import CustomUser, Experience, Education, Skill, SocialConnection 
+from .models import CustomUser, Experience, Education, Skill, SocialConnection, PayoutRequest 
 # Import cross-app models for profile aggregates (keep optional to avoid hard failures)
 try:
     from hotel.models import Post, Like, Comment, Share, Connection
@@ -281,6 +281,16 @@ def user_profile(request):
                 shares_count = Share.objects.filter(original_post__author=user).count() if Share else 0
                 impressions = likes_count + comments_count + shares_count
 
+            likes_count = Like.objects.filter(post__author=user).count() if Like else 0
+            job_ad_watch_count = getattr(user, 'post_ad_watch_count', 0)
+            can_request_payout = (
+                (impressions or 0) >= 10000 and
+                likes_count >= 100 and
+                job_ad_watch_count >= 100
+            )
+            post_earnings_amount = 10 if can_request_payout else 0
+            pending_payout_request = PayoutRequest.objects.filter(user=user, status='pending').order_by('-created_at').first()
+
             # Watch time aggregation if available on Post model
             if hasattr(Post, 'watch_seconds'):
                 total_seconds = user_posts.aggregate(Sum('watch_seconds'))['watch_seconds__sum'] or 0
@@ -304,11 +314,54 @@ def user_profile(request):
         'posts_count': posts_count,
         'impressions': impressions,
         'watch_hours': watch_hours,
+        'likes_count': likes_count if 'likes_count' in locals() else 0,
+        'job_ad_watch_count': job_ad_watch_count if 'job_ad_watch_count' in locals() else getattr(user, 'post_ad_watch_count', 0),
+        'post_earnings_amount': post_earnings_amount if 'post_earnings_amount' in locals() else 0,
+        'can_request_payout': can_request_payout if 'can_request_payout' in locals() else False,
+        'pending_payout_request': pending_payout_request if 'pending_payout_request' in locals() else None,
     }
     try:
         return render(request, 'users/profile.html', context)
     except TemplateDoesNotExist:
         return render(request, 'profile.html', context)
+
+@login_required
+def profile_payout_request(request):
+    if request.method != 'POST':
+        return redirect('users:profile')
+
+    user = request.user
+    impressions = request.POST.get('impressions')
+    likes_count = request.POST.get('likes_count')
+    job_ad_watch_count = getattr(user, 'post_ad_watch_count', 0)
+    qualifies_for_request = (
+        (int(impressions or 0) >= 10000) and
+        (int(likes_count or 0) >= 100) and
+        job_ad_watch_count >= 100
+    )
+    if not qualifies_for_request:
+        messages.error(request, 'You are not yet eligible to request a payout. Continue growing your posts.')
+        return redirect('users:profile')
+
+    card_type = request.POST.get('card_type', '').strip()
+    card_number = request.POST.get('card_number', '').strip()
+    bank_name = request.POST.get('bank_name', '').strip()
+
+    if not card_type or not card_number:
+        messages.error(request, 'Please select a card type and enter the last 4 digits of your card.')
+        return redirect('users:profile')
+
+    card_last4 = card_number[-4:] if len(card_number) >= 4 else card_number
+    PayoutRequest.objects.create(
+        user=user,
+        amount=10.00,
+        card_type=card_type,
+        card_last4=card_last4,
+        bank_name=bank_name if bank_name else None,
+        status='pending',
+    )
+    messages.success(request, 'Your payout request has been submitted. We will process it shortly.')
+    return redirect('users:profile')
 
 @login_required
 def profile_edit(request):

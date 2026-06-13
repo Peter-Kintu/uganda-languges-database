@@ -237,6 +237,18 @@ def social_feed(request):
     return render(request, 'hotel/social_feed_new.html', context)
 
 @login_required
+def job_ad_viewed(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=400)
+    user = request.user
+    try:
+        user.post_ad_watch_count = (user.post_ad_watch_count or 0) + 1
+        user.save(update_fields=['post_ad_watch_count'])
+        return JsonResponse({'success': True, 'job_ad_watch_count': user.post_ad_watch_count})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
 def create_post(request):
     can_create_direct = request.user.user_type == 'investor' and request.user.is_approved
     passcode_valid = request.session.get('investor_post_access', False)

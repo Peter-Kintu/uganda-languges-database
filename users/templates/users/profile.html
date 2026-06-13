@@ -202,6 +202,56 @@
                             <h3 class="text-3xl font-bold text-emerald-700">UGX {{ user.total_referral_earnings|default:"0"|floatformat:0 }}</h3>
                             <p class="mt-2 text-sm text-slate-500 italic">Confirmed upon successful delivery.</p>
                         </div>
+                        <div class="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <p class="text-sm uppercase tracking-[0.18em] text-slate-500">Post Performance</p>
+                                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 10-4 0v6m8 0v-3a2 2 0 10-4 0v3m8 0V9a2 2 0 10-4 0v8"/></svg>
+                            </div>
+                            <div class="grid gap-3">
+                                <div class="rounded-2xl bg-white border border-slate-200 p-4">
+                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Impressions</p>
+                                    <p class="mt-2 text-xl font-semibold text-slate-900">{{ impressions|default:0 }}</p>
+                                </div>
+                                <div class="rounded-2xl bg-white border border-slate-200 p-4">
+                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Likes</p>
+                                    <p class="mt-2 text-xl font-semibold text-slate-900">{{ likes_count|default:0 }}</p>
+                                </div>
+                                <div class="rounded-2xl bg-white border border-slate-200 p-4">
+                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Post Earnings</p>
+                                    <p class="mt-2 text-2xl font-bold text-slate-900">UGX {{ post_earnings_amount|default:0|floatformat:0 }}</p>
+                                </div>
+                                {% if can_request_payout and not pending_payout_request %}
+                                    <form method="POST" action="{% url 'users:profile_payout_request' %}" class="mt-4 space-y-3">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="impressions" value="{{ impressions|default:0 }}" />
+                                        <input type="hidden" name="likes_count" value="{{ likes_count|default:0 }}" />
+                                        <div class="grid gap-3 sm:grid-cols-2">
+                                            <label class="block text-sm font-semibold text-slate-700">
+                                                <span class="text-xs text-slate-500">Card Type</span>
+                                                <select name="card_type" class="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                                                    <option value="Visa">Visa</option>
+                                                    <option value="Mastercard">Mastercard</option>
+                                                    <option value="Debit Card">Debit Card</option>
+                                                </select>
+                                            </label>
+                                            <label class="block text-sm font-semibold text-slate-700">
+                                                <span class="text-xs text-slate-500">Card Last 4</span>
+                                                <input name="card_number" maxlength="4" placeholder="1234" class="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+                                            </label>
+                                        </div>
+                                        <label class="block text-sm font-semibold text-slate-700">
+                                            <span class="text-xs text-slate-500">Bank / Issuer</span>
+                                            <input name="bank_name" placeholder="Bank name (optional)" class="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+                                        </label>
+                                        <button type="submit" class="w-full rounded-3xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-700">Request payout</button>
+                                    </form>
+                                {% elif pending_payout_request %}
+                                    <div class="rounded-3xl bg-slate-100 border border-slate-200 p-4 text-sm text-slate-700">
+                                        A payout request of UGX {{ pending_payout_request.amount|floatformat:0 }} is currently <strong>{{ pending_payout_request.status|capfirst }}</strong>.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

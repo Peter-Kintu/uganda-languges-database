@@ -2908,6 +2908,22 @@
         }, 3800);
     }
 
+    async function recordJobAdView() {
+        try {
+            await fetch('{% url "hotel:job_ad_viewed" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ viewed: true })
+            });
+        } catch (error) {
+            console.error('Job ad view record failed:', error);
+        }
+    }
+
     function showJobAdModal() {
         const modal = document.getElementById('job-ad-modal');
         const container = document.getElementById('job-ad-container');
@@ -2922,6 +2938,7 @@
         script.src = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
         script.async = true;
         container.appendChild(script);
+        recordJobAdView();
     }
 
     function closeJobAdModal() {

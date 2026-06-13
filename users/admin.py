@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .forms import CustomUserCreationForm, CustomUserChangeForm
-from .models import CustomUser, Experience, Education, Skill
+from .models import CustomUser, Experience, Education, Skill, PayoutRequest
 
 # --- Inline Admin for Profile Sections ---
 
@@ -43,6 +43,12 @@ class CustomUserAdmin(UserAdmin):
         EducationInline, 
         SkillInline
     ]
+
+@admin.register(PayoutRequest)
+class PayoutRequestAdmin(admin.ModelAdmin):
+    list_display = ['user', 'amount', 'status', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['user__username', 'card_last4', 'bank_name']
 
 # --- Register Other Models (Optional, since they are inlines, but good practice) ---
 # Note: Since they are managed via inlines on CustomUser, explicit registration 
