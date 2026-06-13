@@ -499,6 +499,11 @@ def add_youtube_channel(request):
                 
                 youtube_service = YouTubeService()
                 channel_id = form.cleaned_data['channel_id']
+                whatsapp = form.cleaned_data.get('whatsapp_number')
+                if whatsapp:
+                    profile, _ = SocialProfile.objects.get_or_create(user=request.user)
+                    profile.whatsapp_number = whatsapp
+                    profile.save()
                 
                 # Validate channel exists and fetch info
                 channel_info = youtube_service.get_channel_info(channel_id)
@@ -547,7 +552,10 @@ def add_youtube_channel(request):
                     "⚠️ Error connecting to YouTube. Please check your Channel ID and try again."
                 )
     else:
-        form = YouTubeChannelForm()
+        initial_data = {}
+        if hasattr(request.user, 'social_profile'):
+            initial_data['whatsapp_number'] = request.user.social_profile.whatsapp_number
+        form = YouTubeChannelForm(initial=initial_data)
     
     return render(request, 'social/add_youtube_channel.html', {'form': form})
 

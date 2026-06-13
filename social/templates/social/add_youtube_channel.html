@@ -23,6 +23,15 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-black mb-2 uppercase text-gray-300">WhatsApp Number</label>
+                    {{ form.whatsapp_number }}
+                    {% if form.whatsapp_number.errors %}
+                        <p class="text-red-400 text-xs mt-2">{{ form.whatsapp_number.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-gray-500 text-xs mt-2">Optional. Used for Hire Me / Buy Now contact.</p>
+                </div>
+
+                <div>
                     <label class="block text-sm font-black mb-2 uppercase text-gray-300">Sync Frequency</label>
                     {{ form.sync_frequency_hours }}
                     {% if form.sync_frequency_hours.errors %}

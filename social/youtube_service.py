@@ -26,7 +26,8 @@ class YouTubeService:
         if not self.api_key:
             raise ValueError("YOUTUBE_API_KEY not set in environment")
         
-        self.youtube = build('youtube', 'v3', developerKey=self.api_key)
+        # Use API key with discovery cache disabled to avoid oauth2client file_cache warnings
+        self.youtube = build('youtube', 'v3', developerKey=self.api_key, cache_discovery=False)
         self.quota_units_used = 0
     
     def get_channel_info(self, channel_id):
@@ -75,23 +76,38 @@ class YouTubeService:
             list: List of video metadata dicts
         """
         try:
-            # Search for videos from the channel
-            search_request = self.youtube.search().list(
-                part='snippet',
-                channelId=channel_id,
-                order='date',
-                type='video',
-                maxResults=min(max_results, 50),
-                publishedAfter=published_after.isoformat() if published_after else None
-            )
+            # Format published_after for API Key usage (Z-normalized ISO) and keep query strictly public
+            formatted_date = None
+            if published_after:
+                if hasattr(published_after, 'isoformat'):
+                    # Strip fractional seconds and ensure trailing Z
+                    formatted_date = published_after.isoformat().split('.')[0] + 'Z'
+                else:
+                    formatted_date = str(published_after)
+
+            # Build public search parameters; omit publishedAfter when not provided
+            search_params = {
+                'part': 'snippet',
+                'channelId': channel_id,
+                'order': 'date',
+                'type': 'video',
+                'maxResults': min(max_results, 50),
+            }
+            if formatted_date:
+                search_params['publishedAfter'] = formatted_date
+
+            search_request = self.youtube.search().list(**search_params)
             search_response = search_request.execute()
             self.quota_units_used += 100
-            
-            if not search_response['items']:
+            if not search_response.get('items'):
                 return []
-            
-            # Extract video IDs
-            video_ids = [item['id']['videoId'] for item in search_response['items']]
+
+            # Extract video IDs safely
+            video_ids = [
+                item.get('id', {}).get('videoId')
+                for item in search_response.get('items', [])
+                if item.get('id', {}).get('videoId')
+            ]
             
             # Get detailed video stats
             videos_request = self.youtube.videos().list(
@@ -100,9 +116,8 @@ class YouTubeService:
             )
             videos_response = videos_request.execute()
             self.quota_units_used += 1
-            
             videos = []
-            for video in videos_response['items']:
+            for video in videos_response.get('items', []):
                 # Parse duration (ISO 8601 format)
                 duration = self._parse_duration(video['contentDetails']['duration'])
                 
@@ -178,8 +193,10 @@ class YouTubeSyncService:
             if youtube_channel.last_synced_at:
                 published_after = youtube_channel.last_synced_at
             else:
-                # First sync: fetch the latest channel videos without a strict 7-day cutoff
-                published_after = None
+                # First sync: limit to a safe historical window to conserve API quota
+                safe_days = getattr(settings, 'YOUTUBE_INITIAL_SYNC_DAYS', 90)
+                published_after = timezone.now() - timedelta(days=safe_days)
+                logger.info(f"Initial sync for channel {youtube_channel.channel_id}: using last {safe_days} days window")
             
             # Fetch videos from YouTube
             videos = self.youtube_service.get_latest_videos(

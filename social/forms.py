@@ -27,9 +27,18 @@ class YouTubeChannelForm(forms.ModelForm):
     Form for adding YouTube channels to sync.
     User specifies the channel ID to pull content from.
     """
+    whatsapp_number = forms.CharField(
+        required=False,
+        help_text="Optional: Enter a WhatsApp number that buyers can use for Hire Me / Buy Now contact.",
+        widget=forms.TextInput(attrs={
+            'placeholder': 'WhatsApp Number (e.g., 256700000000)',
+            'class': 'w-full bg-gray-900 border-gray-700 rounded-2xl text-white p-4 focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-600'
+        })
+    )
+
     class Meta:
         model = YouTubeChannel
-        fields = ['channel_id', 'sync_frequency_hours']
+        fields = ['channel_id', 'whatsapp_number', 'sync_frequency_hours']
         widgets = {
             'channel_id': forms.TextInput(attrs={
                 'placeholder': 'YouTube Channel ID (e.g., UCxxxxxx or channel URL)',
@@ -45,6 +54,7 @@ class YouTubeChannelForm(forms.ModelForm):
         }
         labels = {
             'channel_id': 'YouTube Channel ID',
+            'whatsapp_number': 'WhatsApp Number',
             'sync_frequency_hours': 'Sync Frequency (hours)'
         }
     
