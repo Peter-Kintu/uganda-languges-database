@@ -2054,6 +2054,19 @@
 
 <div id="job-access-toast" class="toast" role="status" aria-live="polite"></div>
 
+<!-- Job Ad Modal -->
+<div id="job-ad-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <button class="modal-close" onclick="closeJobAdModal()">×</button>
+        <div class="modal-header">
+            <h2 class="modal-title">Exclusive Opportunity</h2>
+        </div>
+        <div class="modal-body" id="job-ad-container" style="min-height: 200px; display: flex; align-items: center; justify-content: center; text-align: center; color: #666;">
+            <p>Loading exclusive offer...</p>
+        </div>
+    </div>
+</div>
+
 <!-- Main Container -->
 <div class="container">
     <!-- Feed -->
@@ -2895,18 +2908,74 @@
         }, 3800);
     }
 
+    function showJobAdModal() {
+        const modal = document.getElementById('job-ad-modal');
+        const container = document.getElementById('job-ad-container');
+        if (!modal || !container) return;
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Clear container and load ad script
+        container.innerHTML = '';
+        const script = document.createElement('script');
+        script.src = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
+        script.async = true;
+        container.appendChild(script);
+    }
+
+    function closeJobAdModal() {
+        const modal = document.getElementById('job-ad-modal');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    function getJobAdKey() {
+        return 'jobAdLastShownAt';
+    }
+
+    function isJobAdDue() {
+        const key = getJobAdKey();
+        const value = localStorage.getItem(key);
+        if (!value) {
+            return true;
+        }
+        const lastShown = Number(value);
+        if (!lastShown || Number.isNaN(lastShown)) {
+            return true;
+        }
+        const sixHours = 6 * 60 * 60 * 1000;
+        return Date.now() - lastShown >= sixHours;
+    }
+
+    function markJobAdShown() {
+        localStorage.setItem(getJobAdKey(), Date.now().toString());
+    }
+
     function handleJobButtonClick(event) {
         const button = event.currentTarget;
-        const postCount = Number(button.dataset.postCount || 0);
         const url = button.dataset.url;
 
-        if (postCount > 0) {
+        if (!url) {
+            return;
+        }
+
+        if (window.jobAdClickedOnce) {
             window.location.href = url;
             return;
         }
 
-        event.preventDefault();
-        showJobAccessToast('Tell us what excited you today — create your first post to access Jobs.');
+        if (isJobAdDue()) {
+            event.preventDefault();
+            window.jobAdClickedOnce = true;
+            markJobAdShown();
+            showJobAdModal();
+            return;
+        }
+
+        window.location.href = url;
     }
 
     function initPostVisibilityObserver() {

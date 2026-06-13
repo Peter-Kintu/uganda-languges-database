@@ -719,6 +719,18 @@
     </div>
 </div>
 
+<!-- Ad Modal -->
+<div id="adModal" class="fixed inset-0 z-[101] hidden bg-black/80 backdrop-blur-2xl flex items-center justify-center p-6">
+    <div class="bg-white w-full max-w-lg rounded-[40px] p-8 md:p-10 border border-gray-200 shadow-3xl relative max-h-[80vh] overflow-y-auto">
+        <button onclick="closeAdModal()" class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div id="adContainer" class="min-h-[200px] flex items-center justify-center">
+            <p class="text-gray-500 text-center">Loading exclusive offer...</p>
+        </div>
+    </div>
+</div>
+
 <script>
     // Logic to sync the mobile and desktop search inputs
     const desktopQ = document.getElementById('search-q-desktop');
@@ -816,6 +828,82 @@
             if (label) label.textContent = 'Crawling…';
         });
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Ad Management — Shows ad modal on job action button click
+    // ═══════════════════════════════════════════════════════════════
+    let adShownInSession = false;
+    const adScript = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
+
+    function showAdModal() {
+        if (adShownInSession) {
+            return false;
+        }
+        
+        const adModal = document.getElementById('adModal');
+        const adContainer = document.getElementById('adContainer');
+        
+        if (!adModal) return false;
+        
+        // Show modal
+        adModal.classList.remove('hidden');
+        
+        // Load ad script into container
+        adContainer.innerHTML = '';
+        const script = document.createElement('script');
+        script.src = adScript;
+        script.async = true;
+        adContainer.appendChild(script);
+        
+        adShownInSession = true;
+        return true;
+    }
+
+    function closeAdModal() {
+        const adModal = document.getElementById('adModal');
+        if (adModal) {
+            adModal.classList.add('hidden');
+        }
+    }
+
+    // Intercept all job action buttons to show ad first
+    document.addEventListener('DOMContentLoaded', function() {
+        // Hook into "Finalize Application" button
+        const easyApplyForm = document.getElementById('easyApplyForm');
+        if (easyApplyForm) {
+            easyApplyForm.addEventListener('submit', function(e) {
+                if (!adShownInSession) {
+                    e.preventDefault();
+                    showAdModal();
+                    // Resubmit after 2 seconds
+                    setTimeout(() => {
+                        easyApplyForm.submit();
+                    }, 2000);
+                    return false;
+                }
+            });
+        }
+
+        // Hook into all external job action buttons/links
+        const jobActionButtons = document.querySelectorAll('[data-action="apply"], [data-action="visit"], .job-apply-btn, a[href*="solidgigs"], a[href*="careerjet"], a[href*="jooble"]');
+        jobActionButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (!adShownInSession) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const targetUrl = btn.href || btn.dataset.url;
+                    showAdModal();
+                    // Navigate after 2 seconds
+                    setTimeout(() => {
+                        if (targetUrl) {
+                            window.open(targetUrl, btn.target || '_blank');
+                        }
+                    }, 2000);
+                    return false;
+                }
+            }, true);
+        });
+    });
 </script>
 
 <script type="application/ld+json">
