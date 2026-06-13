@@ -285,6 +285,13 @@ class BusinessReel(models.Model):
 
         return None
 
+    @property
+    def youtube_id(self):
+        """Return the 11-char YouTube ID when this reel references an external YouTube URL."""
+        if not self.external_video_url:
+            return None
+        return self.extract_youtube_id(self.external_video_url)
+
     def __str__(self):
         if self.price:
             return f"Business Reel by {self.author.username} - {self.currency} {self.price}"

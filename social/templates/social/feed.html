@@ -163,8 +163,8 @@
                 <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ reel.source_thumbnail_url|replace:'http://|https://' }}');"></div>
                 <iframe
                     class="absolute inset-0 w-full h-full object-cover"
-                    data-src="{{ reel.video_embed_url }}"
                     src=""
+                    data-src="{% if reel.youtube_id %}https://www.youtube-nocookie.com/embed/{{ reel.youtube_id }}?autoplay=1&mute=1&controls=0&rel=0&playsinline=1{% else %}{{ reel.video_embed_url }}{% endif %}"
                     allow="autoplay; encrypted-media; picture-in-picture"
                     allowfullscreen
                     frameborder="0"
