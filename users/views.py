@@ -5,7 +5,6 @@ import requests
 import time
 import base64
 from django.template.loader import render_to_string
-from playwright.sync_api import sync_playwright
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
@@ -804,6 +803,15 @@ def generate_document_pdf(request):
 
         # Use Playwright (Chromium) to render HTML to PDF for robust cloud builds
         try:
+            try:
+                from playwright.sync_api import sync_playwright
+            except ImportError as import_error:
+                logging.error('Playwright is not installed for PDF rendering: %s', import_error)
+                return HttpResponse(
+                    'PDF rendering is unavailable on this server. Please install playwright and its runtime dependencies.',
+                    status=503
+                )
+
             with sync_playwright() as p:
                 browser = p.chromium.launch()
                 page = browser.new_page()
