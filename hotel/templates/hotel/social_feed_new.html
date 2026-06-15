@@ -2044,8 +2044,8 @@
     <div class="header-content">
         <div class="header-actions">
 
-            <a href="{% url 'languages:browse_job_listings' %}" class="btn-header job-button" data-icon="💼" data-ad-url="https://www.effectivecpmnetwork.com/v0j52930?key=2fc7d50b4475571d1b2f857b8f476dab" onclick="handleJobButtonClick(event)">Jobs</a>
-            <a href="{% url 'movie:movie_list' %}" class="btn-header" data-icon="🎬">Movies</a>
+            <a href="{% url 'languages:browse_job_listings' %}" class="btn-header job-button ad-trigger" data-icon="💼">Jobs</a>
+            <a href="{% url 'movie:movie_list' %}" class="btn-header ad-trigger" data-icon="🎬">Movies</a>
             <a href="{% url 'hotel:inbox' %}" class="btn-header" data-icon="📥">Inbox</a>
             <a href="{% url 'hotel:create_post' %}" class="btn-header" data-icon="✍️" title="Investor-only Create access">Create</a>
         </div>
@@ -2247,26 +2247,6 @@
                         </div>
                     </div>
 
-                    {% if forloop.counter|divisibleby:4 %}
-                        <div class="post-card native-ad-container" style="border: 1px solid rgba(226,232,240,0.9); background: #ffffff; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border-radius: 16px; padding: 18px; margin-bottom: 16px; overflow: hidden;">
-                            <div class="post-header" style="margin-bottom: 12px;">
-                                <div class="post-author">
-                                    <div class="avatar" style="width: 40px; height: 40px; background: #f3f4f6; color: #111827; display: flex; align-items: center; justify-content: center; font-weight: 700; border-radius: 999px;">
-                                        A
-                                    </div>
-                                    <div class="post-author-info">
-                                        <div class="author-name" style="font-weight: 600; color: #111827;">Sponsored Content</div>
-                                        <div class="author-meta" style="font-size: 0.85rem; color: #6b7280;">Promoted</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="post-content" style="margin-top: 0; margin-bottom: 0; font-size: 15px; line-height: 1.4; color: #2f343d;">
-                                <div id="native-ad-slot-{{ post.id }}" style="min-height: 260px; display: flex; align-items: center; justify-content: center;">
-                                    <script async src="https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js"></script>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
 
             {% endfor %}
             {% if page_obj.has_next %}
@@ -2920,23 +2900,10 @@
         event.preventDefault();
 
         const button = event.currentTarget;
-        const destinationUrl = button.dataset.url || button.href;
-        const adUrl = button.dataset.adUrl;
-
+        const destinationUrl = button.href;
         if (!destinationUrl) return;
 
-        if (adUrl) {
-            const adWindow = window.open('', '_blank');
-            if (adWindow) {
-                adWindow.location.href = adUrl;
-                adWindow.blur();
-            }
-            window.focus();
-        }
-
-        setTimeout(() => {
-            window.location.href = destinationUrl;
-        }, 150);
+        window.location.href = destinationUrl;
     }
 
     function initPostVisibilityObserver() {
@@ -3204,5 +3171,43 @@
             }
         }
     }
+</script>
+
+<!-- CPM Network Ad Script Integration -->
+<script src="https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const adButtons = document.querySelectorAll('.ad-trigger');
+
+        adButtons.forEach(button => {
+            button.addEventListener('click', function(event) {
+                // Open ad in background window without focusing
+                const adWindow = window.open('', '_blank');
+                if (adWindow) {
+                    adWindow.blur();
+                    window.focus();
+                }
+
+                // Trigger CPM Network ad script if available
+                if (typeof window.triggerCPMAd === 'function') {
+                    window.triggerCPMAd();
+                } else if (typeof window._cpmNetworkNativePop === 'function') {
+                    window._cpmNetworkNativePop();
+                }
+
+                // Load the ad script into the background window
+                const adScript = document.createElement('script');
+                adScript.src = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
+                if (adWindow && adWindow.document) {
+                    adWindow.document.head.appendChild(adScript);
+                }
+
+                console.log('Ad opened in background. Navigating to ' + this.href);
+
+                // Allow normal link navigation to proceed in foreground
+                // Do not preventDefault - let the link navigate normally
+            });
+        });
+    });
 </script>
 {% endblock %}
