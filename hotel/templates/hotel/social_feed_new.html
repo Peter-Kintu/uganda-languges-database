@@ -3173,96 +3173,98 @@
     }
 </script>
 
-<!-- CPM Network Ad Script Integration -->
+<!-- CPM Network Ad Script Integration - 6-Hour Frequency Cap -->
 <script src="https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js"></script>
 <script>
+    const AD_COOLDOWN_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+    const AD_STORAGE_KEY = 'cpm_ad_last_shown_time';
+
+    function canShowAd() {
+        const lastShownTime = localStorage.getItem(AD_STORAGE_KEY);
+        if (!lastShownTime) {
+            return true; // First time ever
+        }
+        const now = Date.now();
+        const elapsed = now - parseInt(lastShownTime);
+        return elapsed >= AD_COOLDOWN_MS;
+    }
+
+    function recordAdShown() {
+        localStorage.setItem(AD_STORAGE_KEY, Date.now().toString());
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const adButtons = document.querySelectorAll('.ad-trigger');
         adButtons.forEach(button => {
             button.addEventListener('click', function(event) {
                 event.preventDefault();
                 const destination = this.href;
+                const shouldShowAd = canShowAd();
 
-                // Attempt: open ad in background window without focusing
-                let adWindow = null;
-                try {
-                    adWindow = window.open('about:blank', '_blank');
-                    if (adWindow) {
-                        adWindow.blur();
-                        window.focus();
-                    }
-                } catch (err) {
-                    adWindow = null;
-                }
+                if (shouldShowAd) {
+                    // FIRST CLICK: Show the ad in background, then redirect
+                    recordAdShown();
 
-                // Helper to send server-side fallback when third-party ad is blocked
-                const sendFallback = (reason) => {
-                    const payload = {
-                        source: this.classList.contains('job-button') ? 'jobs' : 'movies',
-                        href: this.href,
-                        reason: reason || 'blocked',
-                        ts: Date.now()
-                    };
-
-                    // Prefer sendBeacon for reliability, fall back to fetch keepalive
-                    const url = '/api/track_ad_attempt/';
-                    const data = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-                    if (navigator.sendBeacon) {
-                        try { navigator.sendBeacon(url, data); return; } catch (e) { /* fallthrough */ }
-                    }
-
+                    let adWindow = null;
                     try {
-                        fetch(url, {
-                            method: 'POST',
-                            body: JSON.stringify(payload),
-                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                            keepalive: true
-                        });
-                    } catch (e) { /* ignore */ }
-                };
-
-                // If provider exposes a trigger function, call it (may be blocked by adblockers)
-                let providerCalled = false;
-                try {
-                    if (typeof window.triggerCPMAd === 'function') { window.triggerCPMAd(); providerCalled = true; }
-                    else if (typeof window._cpmNetworkNativePop === 'function') { window._cpmNetworkNativePop(); providerCalled = true; }
-                } catch (e) {
-                    providerCalled = false;
-                }
-
-                // Load the ad script into the background window if possible
-                let scriptLoaded = false;
-                try {
-                    const adScript = document.createElement('script');
-                    adScript.src = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
-                    adScript.async = true;
-                    adScript.onload = () => { scriptLoaded = true; };
-                    adScript.onerror = () => { scriptLoaded = false; };
-
-                    if (adWindow && adWindow.document && adWindow.document.head) {
-                        adWindow.document.head.appendChild(adScript);
-                    } else {
-                        // If background window couldn't be created, try to inject locally (may be blocked)
-                        document.head.appendChild(adScript);
+                        adWindow = window.open('about:blank', '_blank');
+                        if (adWindow) {
+                            adWindow.blur();
+                            window.focus();
+                        }
+                    } catch (err) {
+                        adWindow = null;
                     }
-                } catch (e) {
-                    scriptLoaded = false;
-                }
 
-                // After a short delay, if nothing seems to have loaded, send fallback telemetry
-                setTimeout(() => {
-                    const blocked = (!adWindow && !providerCalled && !scriptLoaded) || (adWindow === null && !providerCalled);
-                    if (blocked) {
-                        console.warn('Ad appears to be blocked; sending fallback telemetry.');
-                        sendFallback('blocked_or_filtered');
-                    } else {
-                        sendFallback('loaded');
+                    // Load ad script
+                    try {
+                        const adScript = document.createElement('script');
+                        adScript.src = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
+                        adScript.async = true;
+
+                        if (adWindow && adWindow.document && adWindow.document.head) {
+                            adWindow.document.head.appendChild(adScript);
+                        } else {
+                            document.head.appendChild(adScript);
+                        }
+                    } catch (e) {
+                        /* ignore */
                     }
-                }, 800);
 
-                // Always navigate to the target page so users get Jobs/Movies
-                if (destination) {
-                    window.location.href = destination;
+                    // Trigger provider ad functions if available
+                    try {
+                        if (typeof window.triggerCPMAd === 'function') { window.triggerCPMAd(); }
+                        else if (typeof window._cpmNetworkNativePop === 'function') { window._cpmNetworkNativePop(); }
+                    } catch (e) {
+                        /* ignore */
+                    }
+
+                    // Send telemetry (optional)
+                    try {
+                        const payload = {
+                            source: this.classList.contains('job-button') ? 'jobs' : 'movies',
+                            action: 'ad_shown',
+                            ts: Date.now()
+                        };
+                        if (navigator.sendBeacon) {
+                            navigator.sendBeacon('/api/track_ad_attempt/', JSON.stringify(payload));
+                        }
+                    } catch (e) {
+                        /* ignore */
+                    }
+
+                    // Redirect after short delay to allow ad to load
+                    setTimeout(() => {
+                        if (destination) {
+                            window.location.href = destination;
+                        }
+                    }, 500);
+                } else {
+                    // SUBSEQUENT CLICKS (within 6 hours): Skip ad, go straight to destination
+                    console.log('Ad shown recently; skipping and redirecting to ' + destination);
+                    if (destination) {
+                        window.location.href = destination;
+                    }
                 }
             });
         });
