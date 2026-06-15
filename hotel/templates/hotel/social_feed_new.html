@@ -2752,9 +2752,16 @@
                 'X-CSRFToken': csrfToken
             }
         })
-        .then(r => {
+        .then(async r => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json();
+            const contentType = r.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                return r.json();
+            }
+            // Non-JSON response (likely HTML error page). Capture a short snippet for debugging.
+            const text = await r.text();
+            const snippet = text.replace(/\s+/g, ' ').slice(0, 240);
+            throw new Error('Unexpected non-JSON response: ' + snippet);
         })
         .then(data => {
             // Hide loading, show result
