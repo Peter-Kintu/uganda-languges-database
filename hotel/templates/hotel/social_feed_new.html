@@ -3178,34 +3178,92 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const adButtons = document.querySelectorAll('.ad-trigger');
-
         adButtons.forEach(button => {
             button.addEventListener('click', function(event) {
-                // Open ad in background window without focusing
-                const adWindow = window.open('', '_blank');
-                if (adWindow) {
-                    adWindow.blur();
-                    window.focus();
+                event.preventDefault();
+                const destination = this.href;
+
+                // Attempt: open ad in background window without focusing
+                let adWindow = null;
+                try {
+                    adWindow = window.open('about:blank', '_blank');
+                    if (adWindow) {
+                        adWindow.blur();
+                        window.focus();
+                    }
+                } catch (err) {
+                    adWindow = null;
                 }
 
-                // Trigger CPM Network ad script if available
-                if (typeof window.triggerCPMAd === 'function') {
-                    window.triggerCPMAd();
-                } else if (typeof window._cpmNetworkNativePop === 'function') {
-                    window._cpmNetworkNativePop();
+                // Helper to send server-side fallback when third-party ad is blocked
+                const sendFallback = (reason) => {
+                    const payload = {
+                        source: this.classList.contains('job-button') ? 'jobs' : 'movies',
+                        href: this.href,
+                        reason: reason || 'blocked',
+                        ts: Date.now()
+                    };
+
+                    // Prefer sendBeacon for reliability, fall back to fetch keepalive
+                    const url = '/api/track_ad_attempt/';
+                    const data = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                    if (navigator.sendBeacon) {
+                        try { navigator.sendBeacon(url, data); return; } catch (e) { /* fallthrough */ }
+                    }
+
+                    try {
+                        fetch(url, {
+                            method: 'POST',
+                            body: JSON.stringify(payload),
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                            keepalive: true
+                        });
+                    } catch (e) { /* ignore */ }
+                };
+
+                // If provider exposes a trigger function, call it (may be blocked by adblockers)
+                let providerCalled = false;
+                try {
+                    if (typeof window.triggerCPMAd === 'function') { window.triggerCPMAd(); providerCalled = true; }
+                    else if (typeof window._cpmNetworkNativePop === 'function') { window._cpmNetworkNativePop(); providerCalled = true; }
+                } catch (e) {
+                    providerCalled = false;
                 }
 
-                // Load the ad script into the background window
-                const adScript = document.createElement('script');
-                adScript.src = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
-                if (adWindow && adWindow.document) {
-                    adWindow.document.head.appendChild(adScript);
+                // Load the ad script into the background window if possible
+                let scriptLoaded = false;
+                try {
+                    const adScript = document.createElement('script');
+                    adScript.src = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
+                    adScript.async = true;
+                    adScript.onload = () => { scriptLoaded = true; };
+                    adScript.onerror = () => { scriptLoaded = false; };
+
+                    if (adWindow && adWindow.document && adWindow.document.head) {
+                        adWindow.document.head.appendChild(adScript);
+                    } else {
+                        // If background window couldn't be created, try to inject locally (may be blocked)
+                        document.head.appendChild(adScript);
+                    }
+                } catch (e) {
+                    scriptLoaded = false;
                 }
 
-                console.log('Ad opened in background. Navigating to ' + this.href);
+                // After a short delay, if nothing seems to have loaded, send fallback telemetry
+                setTimeout(() => {
+                    const blocked = (!adWindow && !providerCalled && !scriptLoaded) || (adWindow === null && !providerCalled);
+                    if (blocked) {
+                        console.warn('Ad appears to be blocked; sending fallback telemetry.');
+                        sendFallback('blocked_or_filtered');
+                    } else {
+                        sendFallback('loaded');
+                    }
+                }, 800);
 
-                // Allow normal link navigation to proceed in foreground
-                // Do not preventDefault - let the link navigate normally
+                // Always navigate to the target page so users get Jobs/Movies
+                if (destination) {
+                    window.location.href = destination;
+                }
             });
         });
     });
