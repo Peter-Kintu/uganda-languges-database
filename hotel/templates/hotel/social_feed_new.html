@@ -3174,10 +3174,21 @@
 </script>
 
 <!-- CPM Network Ad Script Integration - 6-Hour Frequency Cap -->
+<div id="ad-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; padding: 20px; max-width: 600px; width: 90%; position: relative; max-height: 80vh; overflow-y: auto;">
+        <button onclick="closeAdModal()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+        <div id="ad-container" style="margin-top: 30px; text-align: center; color: #666;">Loading advertisement...</div>
+        <div style="margin-top: 20px; text-align: center;">
+            <button onclick="proceedAfterAd()" style="background: #6366f1; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 600;">Continue</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js"></script>
 <script>
     const AD_COOLDOWN_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
     const AD_STORAGE_KEY = 'cpm_ad_last_shown_time';
+    let pendingAdDestination = null;
 
     function canShowAd() {
         const lastShownTime = localStorage.getItem(AD_STORAGE_KEY);
@@ -3193,6 +3204,27 @@
         localStorage.setItem(AD_STORAGE_KEY, Date.now().toString());
     }
 
+    function showAdModal() {
+        const modal = document.getElementById('ad-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+
+    function closeAdModal() {
+        const modal = document.getElementById('ad-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function proceedAfterAd() {
+        closeAdModal();
+        if (pendingAdDestination) {
+            window.location.href = pendingAdDestination;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const adButtons = document.querySelectorAll('.ad-trigger');
         adButtons.forEach(button => {
@@ -3202,44 +3234,29 @@
                 const shouldShowAd = canShowAd();
 
                 if (shouldShowAd) {
-                    // FIRST CLICK: Show the ad in background, then redirect
+                    // FIRST CLICK: Show ad modal, then redirect
                     recordAdShown();
-
-                    let adWindow = null;
-                    try {
-                        adWindow = window.open('about:blank', '_blank');
-                        if (adWindow) {
-                            adWindow.blur();
-                            window.focus();
-                        }
-                    } catch (err) {
-                        adWindow = null;
-                    }
-
-                    // Load ad script
-                    try {
-                        const adScript = document.createElement('script');
-                        adScript.src = 'https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js';
-                        adScript.async = true;
-
-                        if (adWindow && adWindow.document && adWindow.document.head) {
-                            adWindow.document.head.appendChild(adScript);
-                        } else {
-                            document.head.appendChild(adScript);
-                        }
-                    } catch (e) {
-                        /* ignore */
-                    }
+                    pendingAdDestination = destination;
+                    showAdModal();
 
                     // Trigger provider ad functions if available
                     try {
                         if (typeof window.triggerCPMAd === 'function') { window.triggerCPMAd(); }
                         else if (typeof window._cpmNetworkNativePop === 'function') { window._cpmNetworkNativePop(); }
                     } catch (e) {
-                        /* ignore */
+                        console.log('Ad provider not available');
                     }
 
-                    // Send telemetry (optional)
+                    // Try to trigger ads through the network
+                    try {
+                        if (window._pl29733509 && typeof window._pl29733509.renderAd === 'function') {
+                            window._pl29733509.renderAd('ad-container');
+                        }
+                    } catch (e) {
+                        console.log('Network ad rendering unavailable');
+                    }
+
+                    // Send telemetry
                     try {
                         const payload = {
                             source: this.classList.contains('job-button') ? 'jobs' : 'movies',
@@ -3253,12 +3270,12 @@
                         /* ignore */
                     }
 
-                    // Redirect after short delay to allow ad to load
+                    // Auto-proceed after 8 seconds
                     setTimeout(() => {
-                        if (destination) {
-                            window.location.href = destination;
+                        if (document.getElementById('ad-modal').style.display === 'flex') {
+                            proceedAfterAd();
                         }
-                    }, 500);
+                    }, 8000);
                 } else {
                     // SUBSEQUENT CLICKS (within 6 hours): Skip ad, go straight to destination
                     console.log('Ad shown recently; skipping and redirecting to ' + destination);
