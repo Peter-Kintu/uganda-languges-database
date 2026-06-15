@@ -2778,9 +2778,9 @@
         })
         .catch(e => {
             console.error('Translation error:', e);
-            // Hide loading, show error
+            // Hide loading, show original post content instead of error text
             loadingDiv.style.display = 'none';
-            resultDiv.innerHTML = `❌ Translation failed: ${e.message}. Showing original text.`;
+            resultDiv.innerHTML = `<strong>Original:</strong><br>${postContent}`;
             resultDiv.style.display = 'block';
         });
     }
