@@ -27,6 +27,20 @@ except ImportError:
     class Product:
         objects = None 
 
+from functools import wraps
+
+
+def allow_google_bot_or_login(view_func):
+    """Bypasses auth for Google crawlers (AdSense / Googlebot) but enforces login for regular visitors."""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
+        if 'mediapartners-google' in user_agent or 'googlebot' in user_agent:
+            return view_func(request, *args, **kwargs)
+        # enforce normal login for humans
+        return login_required(login_url='users:user_login')(view_func)(request, *args, **kwargs)
+    return _wrapped_view
+
 def google_verification(request):
     return HttpResponse("google-site-verification: googlec0826a61eabee54e.html")
 
@@ -656,6 +670,7 @@ def deduplicate_jobs(jobs_list):
     return unique_jobs
 
 
+@allow_google_bot_or_login
 def browse_job_listings(request):
     job_id = request.GET.get('job_id')
     selected_job = None
