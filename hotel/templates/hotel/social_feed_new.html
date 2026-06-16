@@ -2265,6 +2265,7 @@
                                 <button class="post-action" style="background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 9999px; font-weight: 600; cursor: pointer;">Learn More</button>
                                 <span style="font-size: 12px; color: #475569;">Ad content blends into the feed without changing layout.</span>
                             </div>
+                            <div id="sponsored-ad-{{ forloop.counter }}" class="sponsored-ad-container" data-ad-src="https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js" style="margin-top:12px;"></div>
                         </div>
                     {% endif %}
 
@@ -3123,6 +3124,7 @@
             attachElasticRefresh();
             applyAdaptiveTheme();
             initShowMoreButtons();
+            initSponsoredAds();
         });
     } else {
         removeSkeletonScreen();
@@ -3131,6 +3133,7 @@
         attachElasticRefresh();
         applyAdaptiveTheme();
         initShowMoreButtons();
+        initSponsoredAds();
     }
 
     // Infinite Scroll Implementation
@@ -3179,7 +3182,8 @@
                     feed.insertBefore(tempDiv.firstChild, sentinelContainer);
                 }
                 // Reinitialize functionality for newly inserted posts, including Show More.
-                initShowMoreButtons();
+                    initShowMoreButtons();
+                    initSponsoredAds();
                 currentPage = nextPage;
                 if (!data.has_next) {
                     hasNextPage = false;
@@ -3197,6 +3201,24 @@
                 updateLoadMoreIndicator(true);
             }
         }
+    }
+
+    // Find sponsored ad containers and inject external scripts (safe for dynamic insertion)
+    function initSponsoredAds() {
+        document.querySelectorAll('.sponsored-ad-container').forEach(container => {
+            try {
+                if (container.dataset.injected === 'true') return;
+                const src = container.dataset.adSrc || container.getAttribute('data-ad-src');
+                if (!src) return;
+                const s = document.createElement('script');
+                s.src = src;
+                s.async = true;
+                container.appendChild(s);
+                container.dataset.injected = 'true';
+            } catch (e) {
+                console.error('Sponsored ad init failed:', e);
+            }
+        });
     }
 </script>
 
