@@ -2044,8 +2044,8 @@
     <div class="header-content">
         <div class="header-actions">
 
-            <a href="{% url 'languages:browse_job_listings' %}" class="btn-header job-button ad-trigger" data-icon="💼">Jobs</a>
-            <a href="{% url 'movie:movie_list' %}" class="btn-header ad-trigger" data-icon="🎬">Movies</a>
+            <a href="{% url 'languages:browse_job_listings' %}" class="btn-header job-button" data-icon="💼">Jobs</a>
+            <a href="{% url 'movie:movie_list' %}" class="btn-header" data-icon="🎬">Movies</a>
             <a href="{% url 'hotel:inbox' %}" class="btn-header" data-icon="📥">Inbox</a>
             <a href="{% url 'hotel:create_post' %}" class="btn-header" data-icon="✍️" title="Investor-only Create access">Create</a>
         </div>
@@ -2247,6 +2247,26 @@
                         </div>
                     </div>
 
+                    {% if forloop.counter|divisibleby:3 and not forloop.last %}
+                        <div class="post-card sponsored-card" style="border: 1px solid rgba(148,163,184,0.25); background: #f8fafc; margin-top: 20px;">
+                            <div class="post-header">
+                                <div class="post-author">
+                                    <div class="avatar" style="width: 40px; height: 40px; background: linear-gradient(135deg, #2563eb, #0ea5e9); color: white; display: flex; align-items: center; justify-content: center; font-size: 18px;">💡</div>
+                                    <div class="post-author-info">
+                                        <div class="author-name">Sponsored</div>
+                                        <div class="author-meta">Sponsored · Promoted content</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="post-content" style="color: #0f172a;">
+                                Discover curated hotel deals and local travel stories from Africana AI. Tap to explore more and support local businesses.
+                            </div>
+                            <div class="post-footer" style="display: flex; justify-content: flex-start; gap: 10px; flex-wrap: wrap;">
+                                <button class="post-action" style="background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 9999px; font-weight: 600; cursor: pointer;">Learn More</button>
+                                <span style="font-size: 12px; color: #475569;">Ad content blends into the feed without changing layout.</span>
+                            </div>
+                        </div>
+                    {% endif %}
 
             {% endfor %}
             {% if page_obj.has_next %}
@@ -3180,118 +3200,4 @@
     }
 </script>
 
-<!-- CPM Network Ad Script Integration - 6-Hour Frequency Cap -->
-<div id="ad-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
-    <div style="background: white; border-radius: 12px; padding: 20px; max-width: 600px; width: 90%; position: relative; max-height: 80vh; overflow-y: auto;">
-        <button onclick="closeAdModal()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
-        <div id="ad-container" style="margin-top: 30px; text-align: center; color: #666;">Loading advertisement...</div>
-        <div style="margin-top: 20px; text-align: center;">
-            <button onclick="proceedAfterAd()" style="background: #6366f1; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 600;">Continue</button>
-        </div>
-    </div>
-</div>
-
-<script src="https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js"></script>
-<script>
-    const AD_COOLDOWN_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-    const AD_STORAGE_KEY = 'cpm_ad_last_shown_time';
-    let pendingAdDestination = null;
-
-    function canShowAd() {
-        const lastShownTime = localStorage.getItem(AD_STORAGE_KEY);
-        if (!lastShownTime) {
-            return true; // First time ever
-        }
-        const now = Date.now();
-        const elapsed = now - parseInt(lastShownTime);
-        return elapsed >= AD_COOLDOWN_MS;
-    }
-
-    function recordAdShown() {
-        localStorage.setItem(AD_STORAGE_KEY, Date.now().toString());
-    }
-
-    function showAdModal() {
-        const modal = document.getElementById('ad-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-        }
-    }
-
-    function closeAdModal() {
-        const modal = document.getElementById('ad-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    function proceedAfterAd() {
-        closeAdModal();
-        if (pendingAdDestination) {
-            window.location.href = pendingAdDestination;
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const adButtons = document.querySelectorAll('.ad-trigger');
-        adButtons.forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                const destination = this.href;
-                const shouldShowAd = canShowAd();
-
-                if (shouldShowAd) {
-                    // FIRST CLICK: Show ad modal, then redirect
-                    recordAdShown();
-                    pendingAdDestination = destination;
-                    showAdModal();
-
-                    // Trigger provider ad functions if available
-                    try {
-                        if (typeof window.triggerCPMAd === 'function') { window.triggerCPMAd(); }
-                        else if (typeof window._cpmNetworkNativePop === 'function') { window._cpmNetworkNativePop(); }
-                    } catch (e) {
-                        console.log('Ad provider not available');
-                    }
-
-                    // Try to trigger ads through the network
-                    try {
-                        if (window._pl29733509 && typeof window._pl29733509.renderAd === 'function') {
-                            window._pl29733509.renderAd('ad-container');
-                        }
-                    } catch (e) {
-                        console.log('Network ad rendering unavailable');
-                    }
-
-                    // Send telemetry
-                    try {
-                        const payload = {
-                            source: this.classList.contains('job-button') ? 'jobs' : 'movies',
-                            action: 'ad_shown',
-                            ts: Date.now()
-                        };
-                        if (navigator.sendBeacon) {
-                            navigator.sendBeacon('/api/track_ad_attempt/', JSON.stringify(payload));
-                        }
-                    } catch (e) {
-                        /* ignore */
-                    }
-
-                    // Auto-proceed after 8 seconds
-                    setTimeout(() => {
-                        if (document.getElementById('ad-modal').style.display === 'flex') {
-                            proceedAfterAd();
-                        }
-                    }, 8000);
-                } else {
-                    // SUBSEQUENT CLICKS (within 6 hours): Skip ad, go straight to destination
-                    console.log('Ad shown recently; skipping and redirecting to ' + destination);
-                    if (destination) {
-                        window.location.href = destination;
-                    }
-                }
-            });
-        });
-    });
-</script>
 {% endblock %}
