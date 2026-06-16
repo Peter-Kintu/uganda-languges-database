@@ -2054,29 +2054,37 @@
 
 <div id="job-access-toast" class="toast" role="status" aria-live="polite"></div>
 
+{% if is_crawler %}
+    <div class="crawler-banner" style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:12px 16px; border-radius:12px; margin-bottom:16px; font-size:0.95rem;">
+        AdSense crawler path active — this view is served for Mediapatners-Google user agents.
+    </div>
+{% endif %}
+
 <!-- Main Container -->
 <div class="container">
     <!-- Feed -->
     <div class="feed real-feed">
-        <!-- Create Post Card -->
-        <div class="create-post-card">
-            <div class="create-post-header">
-                <div class="avatar">{{ request.user.first_name|slice:':1'|upper }}</div>
-                <div class="create-post-input">
-                    <a href="{% url 'hotel:post' %}" style="text-decoration: none; width: 100%;">
-                        <input type="text" placeholder="What's on your mind, {{ request.user.first_name }}?" readonly style="cursor: pointer;">
-                    </a>
+        {% if request.user.is_authenticated and not is_crawler %}
+            <!-- Create Post Card -->
+            <div class="create-post-card">
+                <div class="create-post-header">
+                    <div class="avatar">{{ request.user.first_name|slice:':1'|upper }}</div>
+                    <div class="create-post-input">
+                        <a href="{% url 'hotel:post' %}" style="text-decoration: none; width: 100%;">
+                            <input type="text" placeholder="What's on your mind, {{ request.user.first_name }}?" readonly style="cursor: pointer;">
+                        </a>
+                    </div>
+                </div>
+                <div class="create-post-footer">
+                    <div class="post-actions">
+                        <button class="action-btn" title="Add Image">🖼️</button>
+                        <button class="action-btn" title="Add Link">🔗</button>
+                        <button class="action-btn" title="Add Emoji">😊</button>
+                    </div>
+                    <a href="{% url 'hotel:post' %}" class="btn-primary">Post</a>
                 </div>
             </div>
-            <div class="create-post-footer">
-                <div class="post-actions">
-                    <button class="action-btn" title="Add Image">🖼️</button>
-                    <button class="action-btn" title="Add Link">🔗</button>
-                    <button class="action-btn" title="Add Emoji">😊</button>
-                </div>
-                <a href="{% url 'hotel:post' %}" class="btn-primary">Post</a>
-            </div>
-        </div>
+        {% endif %}
 
         <div id="skeleton-feed" class="skeleton-feed" aria-hidden="true">
             <div class="post-card skeleton-card">
@@ -2158,18 +2166,20 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 flex-wrap">
-                                {% if post.author != request.user %}
-                                    {% if post.author.is_following %}
-                                        <button onclick="toggleFollow({{ post.author.id }}, this)" class="follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors" data-following="true">
-                                            Following
-                                        </button>
-                                    {% else %}
-                                        <button onclick="toggleFollow({{ post.author.id }}, this)" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors" data-following="false">
-                                            Follow
-                                        </button>
+                                {% if request.user.is_authenticated and not is_crawler %}
+                                    {% if post.author != request.user %}
+                                        {% if post.author.is_following %}
+                                            <button onclick="toggleFollow({{ post.author.id }}, this)" class="follow-btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors" data-following="true">
+                                                Following
+                                            </button>
+                                        {% else %}
+                                            <button onclick="toggleFollow({{ post.author.id }}, this)" class="follow-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-colors" data-following="false">
+                                                Follow
+                                            </button>
+                                        {% endif %}
                                     {% endif %}
-                                    <span class="text-xs text-gray-500 follower-count-{{ post.author.id }}">{{ post.author.follower_count }} followers</span>
                                 {% endif %}
+                                <span class="text-xs text-gray-500 follower-count-{{ post.author.id }}">{{ post.author.follower_count }} followers</span>
                                 <button class="post-menu" title="More options">⋯</button>
                             </div>
                         </div>
@@ -2193,28 +2203,34 @@
                         {% endif %}
 
                         <!-- Footer Actions -->
-                        <div class="post-footer">
-                            <button class="post-action" onclick="openReactionPicker({{ post.id }}, this)" data-post-id="{{ post.id }}" title="React to this post">
-                                <span id="like-icon-{{ post.id }}">👍</span>
-                                <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
-                            </button>
-                            <button class="post-action" onclick="toggleComments({{ post.id }}, this)" title="View comments">
-                                <span>💬</span>
-                                <span id="comment-count-{{ post.id }}">{{ post.comments.count }}</span>
-                            </button>
-                            <button class="post-action" onclick="openTranslateModal({{ post.id }})" title="Translate post">
-                                <span>🌐</span>
-                                <span>Translate</span>
-                            </button>
-                            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')" title="Send a message">
-                                <span>✉️</span>
-                                <span>Message</span>
-                            </button>
-                            <button class="post-action" onclick="sharePost({{ post.id }})" title="Share post">
-                                <span>🔗</span>
-                                <span>Share</span>
-                            </button>
-                        </div>
+                        {% if request.user.is_authenticated and not is_crawler %}
+                            <div class="post-footer">
+                                <button class="post-action" onclick="openReactionPicker({{ post.id }}, this)" data-post-id="{{ post.id }}" title="React to this post">
+                                    <span id="like-icon-{{ post.id }}">👍</span>
+                                    <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
+                                </button>
+                                <button class="post-action" onclick="toggleComments({{ post.id }}, this)" title="View comments">
+                                    <span>💬</span>
+                                    <span id="comment-count-{{ post.id }}">{{ post.comments.count }}</span>
+                                </button>
+                                <button class="post-action" onclick="openTranslateModal({{ post.id }})" title="Translate post">
+                                    <span>🌐</span>
+                                    <span>Translate</span>
+                                </button>
+                                <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')" title="Send a message">
+                                    <span>✉️</span>
+                                    <span>Message</span>
+                                </button>
+                                <button class="post-action" onclick="sharePost({{ post.id }})" title="Share post">
+                                    <span>🔗</span>
+                                    <span>Share</span>
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="post-footer" style="padding: 14px 16px; color: #64748b; font-size: 13px;">
+                                Sign in to react, comment, translate, and message from this feed.
+                            </div>
+                        {% endif %}
 
                         <!-- Comments Section -->
                         <div id="comments-{{ post.id }}" class="comments-section" style="display: none;">
@@ -2230,20 +2246,28 @@
                                         <span class="comment-meta">{{ comment.created_at|timesince }} ago</span>
                                     </div>
                                     <div class="comment-text">{{ comment.content }}</div>
-                                    <div class="comment-actions">
-                                        <button class="comment-action-btn" onclick="likeComment(this)" title="Like comment"><span>♡</span> Like</button>
-                                        <button class="comment-action-btn" onclick="replyToComment(this)" title="Reply to comment"><span>↩️</span> Reply</button>
-                                    </div>
+                                    {% if request.user.is_authenticated and not is_crawler %}
+                                        <div class="comment-actions">
+                                            <button class="comment-action-btn" onclick="likeComment(this)" title="Like comment"><span>♡</span> Like</button>
+                                            <button class="comment-action-btn" onclick="replyToComment(this)" title="Reply to comment"><span>↩️</span> Reply</button>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endfor %}
 
-                            <!-- Comment Input -->
-                            <form onsubmit="addComment({{ post.id }}, this); return false;" class="comment-input-wrapper">
-                                {% csrf_token %}
-                                <input type="text" class="comment-input" name="content" placeholder="Write a comment..." maxlength="500" required>
-                                <button type="submit" class="btn-primary" style="padding: 10px 20px; border-radius: 20px; font-weight: 600;">Reply</button>
-                            </form>
+                            {% if request.user.is_authenticated and not is_crawler %}
+                                <!-- Comment Input -->
+                                <form onsubmit="addComment({{ post.id }}, this); return false;" class="comment-input-wrapper">
+                                    {% csrf_token %}
+                                    <input type="text" class="comment-input" name="content" placeholder="Write a comment..." maxlength="500" required>
+                                    <button type="submit" class="btn-primary" style="padding: 10px 20px; border-radius: 20px; font-weight: 600;">Reply</button>
+                                </form>
+                            {% else %}
+                                <div class="comment-input-wrapper" style="padding: 16px; color: #64748b; font-size: 13px;">
+                                    Sign in to comment on posts.
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -2276,6 +2300,31 @@
                             </div>
                             <iframe id="sponsored-ad-{{ forloop.counter }}" class="sponsored-ad-iframe" style="width:100%; height:250px; border:none; margin-top:12px;" sandbox="allow-scripts allow-same-origin" srcdoc="<html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='margin:0;padding:0;'><script src='https://pl29733509.effectivecpmnetwork.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js'></script></body></html>"></iframe>
                         </div>
+                    {% elif forloop.counter|divisibleby:5 and not forloop.last %}
+                        <div class="post-card sponsored-card" style="border: 1px solid rgba(148,163,184,0.25); background: #f8fafc; margin-top: 20px;">
+                            <div class="post-header">
+                                <div class="post-author">
+                                    <div class="avatar" style="width: 40px; height: 40px; background: linear-gradient(135deg, #f59e0b, #ec4899); color: white; display: flex; align-items: center; justify-content: center; font-size: 18px;">📢</div>
+                                    <div class="post-author-info">
+                                        <div class="author-name">Promoted</div>
+                                        <div class="author-meta">Google Ads · Personalized content</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="post-content" style="color: #0f172a;">
+                                Explore ads tailored for you. Click to learn more about products and services.
+                            </div>
+                            <div class="post-footer" style="display: flex; justify-content: flex-start; gap: 10px; flex-wrap: wrap;">
+                                <span style="font-size: 12px; color: #475569;">Google Ads powered by AdSense</span>
+                            </div>
+                            <div id="google-ad-{{ forloop.counter }}" class="google-ad-container" style="width:100%; background:#eef2ff; padding:12px; border-radius:8px; margin-top:12px; min-height: 250px; display: flex; align-items: center; justify-content: center;">
+                                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=pub-9564790727166506" crossorigin="anonymous"></script>
+                                <ins class="adsbygoogle" style="display:block" data-ad-client="pub-9564790727166506" data-ad-slot="9649739487" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                                <script>
+                                    (adsbygoogle = window.adsbygoogle || []).push({});
+                                </script>
+                            </div>
+                        </div>
                     {% endif %}
 
             {% endfor %}
@@ -2293,38 +2342,42 @@
                 <div style="font-size: 48px; margin-bottom: 16px;">🎬</div>
                 <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--gray-900);">No posts yet</h2>
                 <p style="color: var(--gray-600); margin-bottom: 20px;">Be the first to share something with the community</p>
-                <a href="{% url 'hotel:create_post' %}" class="btn-primary">Create First Post</a>
+                {% if request.user.is_authenticated and not is_crawler %}
+                    <a href="{% url 'hotel:create_post' %}" class="btn-primary">Create First Post</a>
+                {% endif %}
             </div>
         {% endif %}
     </div>
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <!-- Suggested Users -->
-        <div class="sidebar-card">
-            <div class="sidebar-title">👥 Suggested Friends</div>
-            {% for user in all_users|slice:':5' %}
-            <a href="#" class="sidebar-item">
-                <div style="font-weight: 600;">{{ user.get_full_name }}</div>
-                <div style="font-size: 12px; color: var(--gray-600);">@{{ user.username }}</div>
-            </a>
-            {% endfor %}
-        </div>
+    {% if request.user.is_authenticated and not is_crawler %}
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Suggested Users -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">👥 Suggested Friends</div>
+                {% for user in all_users|slice:':5' %}
+                <a href="#" class="sidebar-item">
+                    <div style="font-weight: 600;">{{ user.get_full_name }}</div>
+                    <div style="font-size: 12px; color: var(--gray-600);">@{{ user.username }}</div>
+                </a>
+                {% endfor %}
+            </div>
 
-        <!-- Quick Stats -->
-        <div class="sidebar-card">
-            <div class="sidebar-title">📊 Your Stats</div>
-            <div class="sidebar-item">
-                <span style="font-weight: 600;">Posts:</span> {{ request.user.post_set.count }}
+            <!-- Quick Stats -->
+            <div class="sidebar-card">
+                <div class="sidebar-title">📊 Your Stats</div>
+                <div class="sidebar-item">
+                    <span style="font-weight: 600;">Posts:</span> {{ request.user.post_set.count }}
+                </div>
+                <div class="sidebar-item">
+                    <span style="font-weight: 600;">Connections:</span> {{ connections.count }}
+                </div>
+                <div class="sidebar-item">
+                    <span style="font-weight: 600;">Following:</span> {{ following_count }}
+                </div>
             </div>
-            <div class="sidebar-item">
-                <span style="font-weight: 600;">Connections:</span> {{ connections.count }}
-            </div>
-            <div class="sidebar-item">
-                <span style="font-weight: 600;">Following:</span> {{ following_count }}
-            </div>
-        </div>
-    </aside>
+        </aside>
+    {% endif %}
 </div>
 
 <!-- Translate Modal -->

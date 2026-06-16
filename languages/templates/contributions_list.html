@@ -627,6 +627,26 @@
                     </a>
                     {% endif %}
                 </div>
+                {% if forloop.counter|divisibleby:6 %}
+                <div class="bg-white border border-gray-200 rounded-2xl p-7 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                        <span class="text-xs font-semibold tracking-widest uppercase text-gray-500">Advertisement</span>
+                        <span class="text-xs text-gray-400">Sponsored</span>
+                    </div>
+                    <div class="w-full min-h-[250px] flex items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=pub-9564790727166506" crossorigin="anonymous"></script>
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="pub-9564790727166506"
+                             data-ad-slot="9649739487"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                        <script>
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                    </div>
+                </div>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 

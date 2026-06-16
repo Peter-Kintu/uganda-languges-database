@@ -100,14 +100,24 @@ def _google_translate(text, source_lang, target_lang):
     return None
 
 
-@login_required
 def social_feed(request):
+    # 0. Check User Agent for Google AdSense Crawler Bypass
+    user_agent = request.META.get('HTTP_USER_AGENT', '') or ''
+    is_adsense_crawler = 'mediapartners-google' in user_agent.lower()
+
+    # Standard security rule for regular users
+    if not request.user.is_authenticated and not is_adsense_crawler:
+        return redirect('users:user_login')
+
     # 1. Get the Filter Type from URL parameters (e.g., ?type=images)
     feed_type = request.GET.get('type', 'all')
     
     # Translation parameters
     translate_feed = request.GET.get('translate', 'false').lower() == 'true'
-    target_lang = request.GET.get('lang', getattr(request.user, 'language', 'en'))
+    if is_adsense_crawler:
+        target_lang = 'en'
+    else:
+        target_lang = request.GET.get('lang', getattr(request.user, 'language', 'en'))
     if isinstance(target_lang, str):
         target_lang = target_lang.lower()
     
@@ -197,12 +207,17 @@ def social_feed(request):
             'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
         })
 
-    connections = Connection.objects.filter(
-        Q(sender=request.user) | Q(receiver=request.user),
-        status='accepted'
-    )
-    following_count = Connection.objects.filter(sender=request.user, status='accepted').count()
-    all_users = CustomUser.objects.exclude(id=request.user.id)
+    if is_adsense_crawler:
+        connections = []
+        following_count = 0
+        all_users = []
+    else:
+        connections = Connection.objects.filter(
+            Q(sender=request.user) | Q(receiver=request.user),
+            status='accepted'
+        )
+        following_count = Connection.objects.filter(sender=request.user, status='accepted').count()
+        all_users = CustomUser.objects.exclude(id=request.user.id)
     
     # Add follower count and following status to each post author
     author_ids = set(post.author.id for post in posts)
@@ -211,14 +226,17 @@ def social_feed(request):
     
     for author_id in author_ids:
         follower_counts[author_id] = Connection.objects.filter(
-            receiver_id=author_id, 
-            status='accepted'
-        ).count()
-        following_status[author_id] = Connection.objects.filter(
-            sender=request.user,
             receiver_id=author_id,
             status='accepted'
-        ).exists()
+        ).count()
+        if is_adsense_crawler:
+            following_status[author_id] = False
+        else:
+            following_status[author_id] = Connection.objects.filter(
+                sender=request.user,
+                receiver_id=author_id,
+                status='accepted'
+            ).exists()
     
     for post in posts:
         post.author.follower_count = follower_counts.get(post.author.id, 0)
@@ -233,6 +251,7 @@ def social_feed(request):
         'current_filter': feed_type,
         'translate_feed': translate_feed,
         'current_lang': target_lang,
+        'is_crawler': is_adsense_crawler,
     }
     return render(request, 'hotel/social_feed_new.html', context)
 
