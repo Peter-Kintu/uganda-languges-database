@@ -131,6 +131,8 @@ def sync_aliexpress_products(request):
             {'query': 'smart bangle fitness tracker waterproof health monitor', 'count': 12},
             {'query': 'smart padlock bluetooth fingerprint wifi outdoor security lock', 'count': 12},
             {'query': 'fingerprint thumb padlock bluetooth compact security lock', 'count': 12},
+            {'query': 'smart padlock keyless digital lock weatherproof outdoor security', 'count': 10},
+            {'query': 'smart padlock bluetooth fingerprint lock security for bike gate', 'count': 10},
             {'query': 'smart necklace pendant wearable nfc gps sos personal tracker', 'count': 10},
             {'query': 'smart necklace bluetooth fashion wearable pendant smart jewelry', 'count': 12},
             {'query': 'mini smart camera 1080p wireless ai tracking night vision', 'count': 14},
