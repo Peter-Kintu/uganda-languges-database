@@ -11,6 +11,31 @@ import requests
 from django.http import HttpResponse
 
 
+def robots_txt(request):
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Allow: /go/",
+        "Allow: /profile/",
+        "Allow: /social/",
+        "Allow: /social/reel/",
+        "Allow: /jobs/",
+        "Allow: /languages/",
+        "Allow: /eshop/",
+        "# Disallow admin and sensitive areas",
+        "Disallow: /admin/",
+        "Disallow: /accounts/",
+        "Disallow: /api/",
+        "Disallow: /cart/",
+        "Disallow: /checkout/",
+        f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap.xml",
+        f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap-jobs.xml",
+        f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap-profiles.xml",
+        f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap-feeds.xml",
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
+
+
 def show_ip(request):
     ip = requests.get("https://api.ipify.org").text
     return HttpResponse(f"My public IP is: {ip}")
@@ -33,6 +58,9 @@ urlpatterns = [
     # Google verification file
     path("googled5b56ec94e5b9cb2.html",
          TemplateView.as_view(template_name="googled5b56ec94e5b9cb2.html")),
+
+    # Root robots.txt should always be served from the canonical site entrypoint.
+    path("robots.txt", robots_txt),
 
     # 1. Admin
     path("admin/", admin.site.urls),

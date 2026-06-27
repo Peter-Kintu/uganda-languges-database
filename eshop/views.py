@@ -241,8 +241,20 @@ def robots_txt(request):
     """Generates robots.txt for search engine crawlers."""
     lines = [
         "User-agent: *",
-        "Disallow:",
         "Allow: /",
+        "Allow: /go/",
+        "Allow: /profile/",
+        "Allow: /social/",
+        "Allow: /social/reel/",
+        "Allow: /jobs/",
+        "Allow: /languages/",
+        "Allow: /eshop/",
+        "# Disallow admin and sensitive areas",
+        "Disallow: /admin/",
+        "Disallow: /accounts/",
+        "Disallow: /api/",
+        "Disallow: /cart/",
+        "Disallow: /checkout/",
         f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap.xml"
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
