@@ -72,6 +72,7 @@ def robots_txt(request):
         "User-agent: *",
         "Disallow:",
         "Allow: /",
+        "Allow: /go",
         "Allow: /go/",
         f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap.xml"
     ]

@@ -65,6 +65,7 @@ def robots_txt(request):
     lines = [
         "User-agent: *",
         "Allow: /",
+        "Allow: /go",
         "Allow: /go/",
         "Allow: /profile/",
         "Allow: /social/",
