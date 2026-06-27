@@ -102,8 +102,17 @@ def _google_translate(text, source_lang, target_lang):
 
 def social_feed(request):
     # 0. Check User Agent for Google AdSense Crawler Bypass
-    user_agent = request.META.get('HTTP_USER_AGENT', '') or ''
-    is_adsense_crawler = 'mediapartners-google' in user_agent.lower()
+    user_agent = (request.META.get('HTTP_USER_AGENT', '') or '').lower()
+    
+    # Detect all Google crawlers for ad verification
+    google_crawlers = [
+        'mediapartners-google',  # AdSense crawler
+        'googlebot',              # Main Google crawler
+        'adsbot-google',          # Google Ads crawler
+        'google-site-verification',  # Google verification
+    ]
+    
+    is_adsense_crawler = any(crawler in user_agent for crawler in google_crawlers)
 
     # Standard security rule for regular users
     if not request.user.is_authenticated and not is_adsense_crawler:
@@ -253,7 +262,14 @@ def social_feed(request):
         'current_lang': target_lang,
         'is_crawler': is_adsense_crawler,
     }
-    return render(request, 'hotel/social_feed_new.html', context)
+    response = render(request, 'hotel/social_feed_new.html', context)
+    
+    # For Google crawlers, set cache headers to allow AdSense scanning
+    if is_adsense_crawler or 'googlebot' in user_agent.lower() or 'adsbot-google' in user_agent.lower():
+        response['Cache-Control'] = 'public, max-age=3600'
+        response['X-Robots-Tag'] = 'index, follow'
+    
+    return response
 
 @login_required
 def job_ad_viewed(request):

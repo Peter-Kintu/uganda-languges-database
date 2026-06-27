@@ -28,6 +28,8 @@ except ImportError:
         objects = None 
 
 from functools import wraps
+from django.views.decorators.http import condition
+from django.utils.decorators import decorator_from_middleware_with_args
 
 
 def allow_google_bot_or_login(view_func):
@@ -35,10 +37,31 @@ def allow_google_bot_or_login(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
-        if 'mediapartners-google' in user_agent or 'googlebot' in user_agent:
-            return view_func(request, *args, **kwargs)
+        
+        # Google crawlers that need access to see ads
+        google_crawlers = [
+            'mediapartners-google',  # AdSense crawler
+            'googlebot',              # Main Google crawler
+            'google-site-verification',  # Google verification
+            'adsbot-google',          # Google Ads crawler
+            'bingbot',                # Bing crawler (also crawls for ads)
+        ]
+        
+        is_google_crawler = any(crawler in user_agent for crawler in google_crawlers)
+        
+        # For Google crawlers, set cache headers to allow AdSense scanning
+        if is_google_crawler:
+            response = view_func(request, *args, **kwargs)
+            # Allow crawlers to cache and re-crawl for ad verification
+            response['Cache-Control'] = 'public, max-age=3600'
+            response['X-Robots-Tag'] = 'index, follow'
+            return response
+        
         # enforce normal login for humans
-        return login_required(login_url='users:user_login')(view_func)(request, *args, **kwargs)
+        if not request.user.is_authenticated:
+            return redirect('users:user_login')
+        
+        return view_func(request, *args, **kwargs)
     return _wrapped_view
 
 def google_verification(request):
@@ -255,7 +278,7 @@ def fetch_jooble_data(keywords, location=""):
     api_key = JOOBLE_API_KEY
     url = f"https://jooble.org/api/{api_key}"
 
-    # Simple API headers - avoid triggering Cloudflare bot detection
+    # Simple API headers for third-party search requests
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "AfricanaAI-JobSearch/1.0",
@@ -409,7 +432,7 @@ def job_redirect(request):
     if not job_url or not job_url.startswith('http'):
         return redirect('/')
 
-    # Simple redirect without Cloudflare bypass attempts
+    # Simple redirect for external job links
     return redirect(job_url)
 
 
@@ -436,13 +459,14 @@ def fetch_careerjet_data(request, keywords, location=""):
 
     url = "https://search.api.careerjet.net/v4/query"
 
-    # Get real user data for better API compliance
-    user_ip = get_client_ip(request) or '127.0.0.1'
+    # Get real user data for CareerJet required request metadata
+    user_ip = get_client_ip(request) or request.META.get('REMOTE_ADDR', '127.0.0.1') or '127.0.0.1'
     user_agent = request.META.get('HTTP_USER_AGENT', '') or 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    referer = request.build_absolute_uri()
 
     normalized_location = normalize_search_location(location)
 
-    # Simplified parameters for global coverage
+    # CareerJet requires user_ip and user_agent as query params
     params = {
         'locale_code': 'en_GB',
         'keywords': search_keywords,
@@ -455,13 +479,12 @@ def fetch_careerjet_data(request, keywords, location=""):
 
     credentials = base64.b64encode(f"{CAREERJET_API_KEY}:".encode()).decode()
 
-    # Simple API headers - avoid triggering Cloudflare bot detection
     headers = {
         'Authorization': f'Basic {credentials}',
         'Content-Type': 'application/json',
-        'User-Agent': 'AfricanaAI-JobSearch/1.0',
+        'User-Agent': user_agent,
         'Accept': 'application/json',
-        'Referer': 'https://www.africanaai.info',
+        'Referer': referer,
     }
 
     display_location = normalized_location if normalized_location else 'Worldwide'
@@ -524,9 +547,18 @@ def fetch_careerjet_data(request, keywords, location=""):
                 return processed_jobs
 
             elif response_type == 'LOCATIONS':
-                # Location not found - try global search
-                print(f"CareerJet: Location '{normalized_location}' not found - trying global search")
-                params['location'] = ''
+                # Location not found - try first matched CareerJet location then global search
+                print(f"CareerJet: Location '{normalized_location}' not found - checking location suggestions")
+                location_suggestions = data.get('locations') or data.get('results') or []
+                if location_suggestions:
+                    first_location = location_suggestions[0]
+                    if isinstance(first_location, dict):
+                        first_location = first_location.get('name') or first_location.get('location') or first_location.get('city') or ''
+                    params['location'] = str(first_location).strip() if first_location else ''
+                    print(f"CareerJet: Retrying using matched location '{params['location'] or 'Worldwide'}'")
+                else:
+                    params['location'] = ''
+
                 time.sleep(0.5)
                 response = session.get(url, params=params, timeout=20)
 

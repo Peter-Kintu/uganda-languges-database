@@ -15,6 +15,11 @@ def show_ip(request):
     ip = requests.get("https://api.ipify.org").text
     return HttpResponse(f"My public IP is: {ip}")
 
+
+def ads_txt(request):
+    content = "google.com, pub-9564790727166506, DIRECT, f08c47fec0942fa0\n"
+    return HttpResponse(content, content_type="text/plain")
+
 sitemaps_dict = {
     'static': StaticViewSitemap,
     'products': ProductSitemap,
@@ -71,9 +76,7 @@ urlpatterns = [
     path("sitemap-<section>.xml", custom_sitemap_view, {"sitemaps": sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap"),
 
     path("show-ip/", show_ip),
-
-    
-   
+    path("ads.txt", ads_txt),
 ]
 
 # Static & media serving in development
