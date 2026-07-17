@@ -34,6 +34,15 @@ def _safe_cache_set(key, value, timeout=None):
         print(f"Cache set failed: {e}")
 
 
+def _translation_cache_key(text, source_lang, target_lang):
+    if not isinstance(text, str):
+        text = str(text or '')
+    source = (source_lang or 'en').lower().strip()
+    target = (target_lang or 'en').lower().strip()
+    digest = hashlib.md5(text.encode('utf-8')).hexdigest()[:8]
+    return f"trans_{digest}_{source}_{target}"
+
+
 def _is_suspicious_text(t, original_len):
     if not t or not isinstance(t, str):
         return True
@@ -455,9 +464,8 @@ def translate_smart(text, target_lang, source_lang='en'):
     if isinstance(source_lang, str):
         source_lang = source_lang.lower().strip()
 
-    # Use stable cache key (hash can vary between runs)
-    text_hash = hashlib.md5(text.encode()).hexdigest()[:8]
-    cache_key = f"trans_{text_hash}_{source_lang}_{target_lang}"
+    # Use stable cache key for all translation entry points
+    cache_key = _translation_cache_key(text, source_lang, target_lang)
     cached = _safe_cache_get(cache_key)
     if cached is not None and isinstance(cached, str) and len(cached) > 0:
         return cached
@@ -675,12 +683,11 @@ def translate_smart(text, target_lang, source_lang='en'):
             print(f"Google translate fallback error for {target_lang}: {e}")
             return None
 
-    if target_code in SUNBIRD_LANGS or target_lang in SUNBIRD_LANGS:
+    target_in_sunbird = target_code in SUNBIRD_LANGS or target_lang in SUNBIRD_LANGS
+    target_in_nllb = target_code in NLLB_LANGS or target_lang in NLLB_LANGS
+
+    if target_in_sunbird:
         translated_text = _try_sunbird()
-        if translated_text:
-            _safe_cache_set(cache_key, translated_text, 604800)
-            return translated_text
-        translated_text = _try_mymemory()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
@@ -696,8 +703,12 @@ def translate_smart(text, target_lang, source_lang='en'):
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
-    else:
         translated_text = _try_mymemory()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+    elif target_in_nllb:
+        translated_text = _try_nllb()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
@@ -706,6 +717,23 @@ def translate_smart(text, target_lang, source_lang='en'):
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
         translated_text = _try_google()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_mymemory()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+    else:
+        translated_text = _try_libre()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_google()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_mymemory()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
@@ -917,7 +945,7 @@ def gemini_translate(request):
             })
         
         # Check cache first
-        cache_key = f"trans_{hash(text)}_{source_language}_{target_language}"
+        cache_key = _translation_cache_key(text, source_language, target_language)
         cached = _safe_cache_get(cache_key)
         if cached:
             return JsonResponse({
