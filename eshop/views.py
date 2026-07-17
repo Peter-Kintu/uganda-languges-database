@@ -131,8 +131,12 @@ def sync_aliexpress_products(request):
             {'query': 'smart bangle fitness tracker waterproof health monitor', 'count': 12},
             {'query': 'smart padlock bluetooth fingerprint wifi outdoor security lock', 'count': 12},
             {'query': 'fingerprint thumb padlock bluetooth compact security lock', 'count': 12},
+            {'query': 'biometric fingerprint padlock bluetooth rechargeable', 'count': 12},
+            {'query': 'fingerprint padlock keyless smart portable outdoor security', 'count': 12},
             {'query': 'smart padlock keyless digital lock weatherproof outdoor security', 'count': 10},
             {'query': 'smart padlock bluetooth fingerprint lock security for bike gate', 'count': 10},
+            {'query': 'usb rechargeable fingerprint padlock bluetooth anti-theft', 'count': 10},
+            {'query': 'portable biometric padlock fingerprint keyless locker lock', 'count': 10},
             {'query': 'smart necklace pendant wearable nfc gps sos personal tracker', 'count': 10},
             {'query': 'smart necklace bluetooth fashion wearable pendant smart jewelry', 'count': 12},
             {'query': 'mini smart camera 1080p wireless ai tracking night vision', 'count': 14},
@@ -167,9 +171,9 @@ def sync_aliexpress_products(request):
         updated_count = 0
 
         adult_blacklist = [
-            'vibrator', 'sex toy', 'clitoris', 'clit', 'dildo', 'anal', 'nipple', 'masturbator',
-            'porn', 'adult', 'erotic', 'sucking', 'thrusting', 'dirty', 'bondage',
-            'orgasm', 'sexy toy', 'sex supplies', 'sensual', 'g spot', 'g-spot'
+            # 'vibrator', 'sex toy', 'clitoris', 'clit', 'dildo', 'anal', 'nipple', 'masturbator',
+            # 'porn', 'adult', 'erotic', 'sucking', 'thrusting', 'dirty', 'bondage',
+            # 'orgasm', 'sexy toy', 'sex supplies', 'sensual', 'g spot', 'g-spot'
         ]
 
         for group in search_groups:
