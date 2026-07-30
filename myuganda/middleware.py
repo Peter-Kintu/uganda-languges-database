@@ -6,7 +6,7 @@ and blocks potentially dangerous methods (PUT, DELETE, TRACE, CONNECT) that coul
 be exploited for unauthorized resource modification or reconnaissance.
 """
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
 import logging
 
@@ -17,6 +17,18 @@ ALLOWED_METHODS = {'GET', 'HEAD', 'POST', 'OPTIONS'}
 
 # Dangerous methods that should be blocked
 DANGEROUS_METHODS = {'PUT', 'DELETE', 'TRACE', 'CONNECT', 'PATCH'}
+
+
+class CanonicalDomainMiddleware(MiddlewareMixin):
+    """Redirect apex domain traffic to the canonical www host while preserving path/query strings."""
+
+    def process_request(self, request):
+        host = request.get_host().split(':')[0]
+        if host == 'africanaai.info' and request.path not in ['/ads.txt', '/robots.txt']:
+            return HttpResponsePermanentRedirect(
+                f'https://www.africanaai.info{request.get_full_path()}'
+            )
+        return None
 
 
 class HTTPMethodSecurityMiddleware(MiddlewareMixin):

@@ -22,6 +22,7 @@ SECRET_KEY = os.environ.get(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+PREPEND_WWW = False  # Prevent CommonMiddleware from redirecting apex domain requests to www
 
 # --- ALLOWED HOSTS ---
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
@@ -161,6 +162,7 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'myuganda.middleware.CanonicalDomainMiddleware',  # Preserve canonical host while excluding crawler files
     'whitenoise.middleware.WhiteNoiseMiddleware', # High-performance static serving
     'django.middleware.gzip.GZipMiddleware',  # Compress responses for faster loading
     'django.contrib.sessions.middleware.SessionMiddleware',
