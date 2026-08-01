@@ -70,15 +70,22 @@ RUN python manage.py collectstatic --noinput
 RUN DATABASE_URL=sqlite:///:memory: python manage.py collectstatic --noinput
 
 # --- FINAL EXECUTION COMMAND ---
+ENV GUNICORN_WORKERS=2
+ENV GUNICORN_THREADS=2
+ENV GUNICORN_MAX_REQUESTS=250
+ENV GUNICORN_MAX_REQUESTS_JITTER=50
+ENV GUNICORN_TIMEOUT=30
+
 CMD ["bash", "-c", "\
     python manage.py migrate users --noinput && \
     python manage.py migrate --noinput && \
-    gunicorn myuganda.wsgi:application \
+    exec gunicorn myuganda.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --workers 2 \
-    --threads 4 \
-    --worker-class gthread \
-    --timeout 120 \
+    --workers ${GUNICORN_WORKERS:-2} \
+    --threads ${GUNICORN_THREADS:-2} \
+    --max-requests ${GUNICORN_MAX_REQUESTS:-250} \
+    --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-50} \
+    --timeout ${GUNICORN_TIMEOUT:-30} \
     --access-logfile - \
     --error-logfile - \
 "]

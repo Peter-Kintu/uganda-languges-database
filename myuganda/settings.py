@@ -197,15 +197,19 @@ WSGI_APPLICATION = 'myuganda.wsgi.application'
 
 # --- DATABASE ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
+try:
+    DB_CONN_MAX_AGE = int(os.environ.get("DB_CONN_MAX_AGE", "0"))
+except (TypeError, ValueError):
+    DB_CONN_MAX_AGE = 0
+
 if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.config(
-            default=DATABASE_URL, 
-            conn_max_age=60,  # Reduced to 1 minute for faster recycling
-            ssl_require=True 
+            default=DATABASE_URL,
+            conn_max_age=DB_CONN_MAX_AGE,
+            ssl_require=True,
         )
     }
-    # Add keepalive options to prevent SSL connection drops
     DATABASES['default']['OPTIONS'] = {
         'keepalives': 1,
         'keepalives_idle': 30,
@@ -308,6 +312,11 @@ else:
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get('FILE_UPLOAD_MAX_MEMORY_SIZE', str(10 * 1024 * 1024)))
+DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
+
+# --- SITEMAP SETTINGS ---
+SITEMAP_MAX_ITEMS = int(os.environ.get('SITEMAP_MAX_ITEMS', '1000'))
 
 # --- JAZZMIN SETTINGS ---
 JAZZMIN_SETTINGS = {
@@ -386,8 +395,7 @@ LOGGING = {
 }
 
 # --- CACHING CONFIGURATION ---
-# Required for LibreTranslate caching to avoid repeated API calls.
-# Use database cache only when explicitly enabled and the cache table exists.
+# Keep production memory usage low by avoiding local in-process caches.
 if DATABASE_URL and not DEBUG and USE_DATABASE_CACHE:
     CACHES = {
         'default': {
@@ -395,8 +403,13 @@ if DATABASE_URL and not DEBUG and USE_DATABASE_CACHE:
             'LOCATION': DJANGO_CACHE_TABLE,
         }
     }
+elif not DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    }
 else:
-    # Use local memory cache by default to avoid startup failures from missing DB cache tables.
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',

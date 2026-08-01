@@ -47,11 +47,11 @@ class StaticViewSitemap(Sitemap):
 class ProductSitemap(Sitemap):
     priority = 0.6
     changefreq = 'daily'
+    limit = getattr(settings, 'SITEMAP_MAX_ITEMS', 1000)
     
     def items(self):
-        # Returns all Product objects to generate URLs for each detail page
         try:
-            return Product.objects.all()
+            return Product.objects.only('slug', 'id').order_by('-id')[:self.limit]
         except Exception:
             return []
 
@@ -66,11 +66,11 @@ class ProductSitemap(Sitemap):
 class JobPostSitemap(Sitemap):
     priority = 0.7
     changefreq = 'weekly'
+    limit = getattr(settings, 'SITEMAP_MAX_ITEMS', 1000)
     
     def items(self):
-        # Returns all validated JobPost objects
         try:
-            return JobPost.objects.filter(is_validated=True).order_by('-timestamp')
+            return JobPost.objects.filter(is_validated=True).only('pk', 'timestamp').order_by('-timestamp')[:self.limit]
         except Exception:
             return []
 
@@ -93,11 +93,11 @@ class JobPostSitemap(Sitemap):
 class UserProfileSitemap(Sitemap):
     priority = 0.5
     changefreq = 'monthly'
+    limit = getattr(settings, 'SITEMAP_MAX_ITEMS', 1000)
     
     def items(self):
-        # Returns all active users to make their profiles discoverable
         try:
-            return User.objects.filter(is_active=True).order_by('-date_joined')
+            return User.objects.filter(is_active=True).only('username', 'date_joined', 'last_login').order_by('-date_joined')[:self.limit]
         except Exception:
             return []
 
@@ -120,11 +120,11 @@ class UserProfileSitemap(Sitemap):
 class BusinessReelSitemap(Sitemap):
     priority = 0.6
     changefreq = 'daily'
+    limit = getattr(settings, 'SITEMAP_MAX_ITEMS', 1000)
     
     def items(self):
-        # Returns active, visible business reels for content discovery
         try:
-            return BusinessReel.objects.filter(is_active=True).order_by('-created_at')
+            return BusinessReel.objects.filter(is_active=True).only('id', 'created_at').order_by('-created_at')[:self.limit]
         except Exception:
             return []
 
@@ -166,6 +166,9 @@ def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.
     # Ensure the sitemap response is rendered before reading content
     if hasattr(response, 'render') and not getattr(response, 'is_rendered', False):
         response = response.render()
+
+    if not settings.DEBUG:
+        response['Cache-Control'] = 'public, max-age=3600, s-maxage=86400'
 
     # Replace the current request host with the canonical domain
     if hasattr(response, 'content'):
