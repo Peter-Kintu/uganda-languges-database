@@ -13,7 +13,7 @@
             {% csrf_token %}
             
             <div class="relative w-full aspect-[9/16] bg-gray-900 rounded-3xl border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden transition-all hover:border-indigo-500/50 group" id="dropzone">
-                <input type="file" name="video" id="video-upload" class="absolute inset-0 opacity-0 cursor-pointer z-20" accept="video/*" required>
+                <input type="file" name="local_video" id="video-upload" class="absolute inset-0 opacity-0 cursor-pointer z-20" accept="video/*" required>
                 
                 <div id="upload-prompt" class="text-center p-4 transition-transform group-hover:scale-110">
                     <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
@@ -400,7 +400,7 @@
         const uploadUrl = "{% url 'social:upload_reel' %}";
         const feedUrl = "{% url 'social:social_feed' %}";
         const formData = new FormData(form);
-        formData.set('video', uploadBlob, `reel_${uploadId}.mp4`);
+        formData.set('local_video', uploadBlob, `reel_${uploadId}.mp4`);
 
         try {
             const response = await fetch(uploadUrl, {

@@ -101,10 +101,6 @@
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .plus-btn.youtube {
-        background: rgba(255, 69, 58, 0.88);
-    }
-
     .agent-pulse {
         box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
         animation: pulse-green 2s infinite;
@@ -148,11 +144,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
         </svg>
     </a>
-    {% if user.is_authenticated %}
-    <a href="{% url 'social:youtube_apply' %}" class="plus-btn youtube" title="YouTube Partnership">
-        <span class="text-lg">📺</span>
-    </a>
-    {% endif %}
 </div>
 
 <div id="reel-container" class="no-scrollbar">
@@ -160,7 +151,7 @@
     <section data-reel-id="{{ reel.id }}" data-author-id="{{ reel.author.id }}">
         {% if reel.is_external_video %}
             <div class="relative w-full h-full overflow-hidden bg-black">
-                <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ reel.source_thumbnail_url|replace:'http://|https://' }}');"></div>
+                <img src="{{ reel.source_thumbnail_url|replace:'http://','https://' }}" alt="Reel thumbnail" class="absolute inset-0 w-full h-full object-cover" />
                 <iframe
                     class="absolute inset-0 w-full h-full object-cover"
                     src=""
@@ -174,14 +165,14 @@
         {% else %}
             <video 
                 class="w-full h-full object-cover" 
-                data-src="{{ reel.source_video_url|replace:'http://|https://' }}" 
+                data-src="{{ reel.source_video_url|replace:"http://","https://" }}" 
                 playsinline 
                 muted
                 loop
                 preload="none"
                 crossorigin="anonymous"
                 type="video/mp4"
-                poster="{{ reel.source_thumbnail_url|replace:'http://|https://' }}"
+                poster="{{ reel.source_thumbnail_url|replace:"http://","https://" }}"
                 onerror="handleVideoError(this)"
                 onloadstart="handleVideoLoadStart(this)"
                 oncanplay="handleVideoCanPlay(this)"
@@ -382,15 +373,11 @@
                     video.pause();
                     video.muted = true;
                     video.currentTime = 0;
-                    if (video.src && video.src !== '') {
-                        video.src = '';
-                        video.load();
-                    }
+                    // Keep the source loaded so the video can resume cleanly when scrolled back.
                 }
                 if (iframe) {
-                    if (iframe.src && iframe.src !== '') {
-                        iframe.src = '';
-                    }
+                    // Preserve iframe src so external content does not break when returning to view.
+                    iframe.onload = null;
                 }
                 if (loadingDiv) loadingDiv.style.opacity = '0';
             }

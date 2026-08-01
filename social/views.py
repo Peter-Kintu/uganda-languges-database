@@ -94,8 +94,9 @@ def upload_reel(request):
             
             # --- THREE-TIER STORAGE LOGIC ---
             # All new uploads go to local server disk (Choice B)
-            if 'video' in request.FILES:
-                reel.local_video = request.FILES['video']
+            if 'local_video' in request.FILES:
+                reel.local_video = request.FILES['local_video']
+                reel.video = None
                 reel.storage_tier = 'LOCAL'  # Initial tier: Local server storage
             
             # Generate unique share token for viral loop metrics

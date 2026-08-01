@@ -23,7 +23,7 @@ class BusinessReelUploadForm(forms.ModelForm):
         model = BusinessReel
         # Explicitly defining fields to ensure security of the AI Floor Price (Pillar 3)
         fields = [
-            'video', 
+            'local_video', 
             'caption', 
             'price', 
             'currency', 
@@ -69,13 +69,13 @@ class BusinessReelUploadForm(forms.ModelForm):
         # Setting default currency for the local market context
         self.fields['currency'].initial = 'UGX'
 
-    def clean_video(self):
+    def clean_local_video(self):
         """
         Pillar 2 Optimization: 
         Enforces 5-minute length limit and file size stability.
         Note: Compression is handled by the browser before local staging.
         """
-        video = self.cleaned_data.get('video')
+        video = self.cleaned_data.get('local_video')
         if video:
             # 1. Size Validation (Keep under 80MB for local server staging)
             if video.size > 80 * 1024 * 1024:
@@ -104,7 +104,7 @@ class BusinessReelUploadForm(forms.ModelForm):
                 if duration > 300:
                     raise forms.ValidationError("Video duration exceeds the 5-minute limit.")
             except ImportError:
-                # Fallback if moviepy isn't available: rely on client-side JS and Cloudinary auto-trim
+                # Fallback if moviepy isn't available: rely on client-side JS and browser-side validation
                 pass
             except Exception:
                 # Basic error handling for file reading
