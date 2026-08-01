@@ -151,7 +151,7 @@
     <section data-reel-id="{{ reel.id }}" data-author-id="{{ reel.author.id }}">
         {% if reel.is_external_video %}
             <div class="relative w-full h-full overflow-hidden bg-black">
-                <img src="{{ reel.source_thumbnail_url|replace:'http://','https://' }}" alt="Reel thumbnail" class="absolute inset-0 w-full h-full object-cover" />
+                <img src="{{ reel.source_thumbnail_url|replace:"http://","https://" }}" alt="Reel thumbnail" class="absolute inset-0 w-full h-full object-cover" />
                 <iframe
                     class="absolute inset-0 w-full h-full object-cover"
                     src=""
