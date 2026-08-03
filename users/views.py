@@ -4,6 +4,8 @@ import logging
 import requests
 import time
 import base64
+from decimal import Decimal
+from datetime import datetime, timedelta
 from django.template.loader import render_to_string
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
@@ -23,6 +25,41 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+def _get_pesapal_config():
+    return {
+        'base_url': os.getenv('PESAPAL_BASE_URL', 'https://cyb3r.pesapal.com/pesapalv3/api/').rstrip('/'),
+        'consumer_key': os.getenv('PESAPAL_CONSUMER_KEY', ''),
+        'consumer_secret': os.getenv('PESAPAL_CONSUMER_SECRET', ''),
+    }
+
+
+def _pesapal_auth_header():
+    config = _get_pesapal_config()
+    credentials = f"{config['consumer_key']}:{config['consumer_secret']}".encode('utf-8')
+    token = base64.b64encode(credentials).decode('utf-8')
+    return {'Authorization': f'Basic {token}'}
+
+
+def _pesapal_request(method, path, json_data=None, timeout=20):
+    config = _get_pesapal_config()
+    url = f"{config['base_url']}/{path.lstrip('/')}"
+    headers = {'Content-Type': 'application/json'}
+    headers.update(_pesapal_auth_header())
+    method = method.lower()
+    if method == 'post':
+        response = requests.post(url, headers=headers, json=json_data, timeout=timeout)
+    else:
+        response = requests.get(url, headers=headers, params=json_data, timeout=timeout)
+
+    if not getattr(response, 'ok', response.status_code < 400):
+        response.raise_for_status()
+
+    try:
+        return response.json()
+    except ValueError:
+        return {'status': 'ok'}
+
+
 # Google auth token verification
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -31,7 +68,7 @@ from google.auth.transport import requests as google_requests
 from cerebras.cloud.sdk import Cerebras
 
 # Custom Forms and Models
-from .models import CustomUser, Experience, Education, Skill, SocialConnection, PayoutRequest 
+from .models import CustomUser, Experience, Education, Skill, SocialConnection, PayoutRequest, UserSubscription, PesapalPayment 
 # Import cross-app models for profile aggregates (keep optional to avoid hard failures)
 try:
     from hotel.models import Post, Like, Comment, Share, Connection
@@ -247,6 +284,124 @@ def user_logout(request):
     logout(request)
     messages.info(request, "You have been logged out.")
     return redirect('users:user_login')
+
+
+@login_required
+@csrf_exempt
+def pesapal_start_checkout(request):
+    if request.method not in {'POST', 'GET'}:
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
+
+    subscription, _ = UserSubscription.objects.get_or_create(
+        user=request.user,
+        defaults={'status': 'pending', 'plan_name': 'pro_business'},
+    )
+    if not subscription.is_active:
+        subscription.status = 'pending'
+        subscription.is_active = False
+        subscription.save(update_fields=['status', 'is_active'])
+
+    amount = Decimal(getattr(settings, 'PESAPAL_PRO_AMOUNT', '30000.00'))
+    order_id = f"pro-{request.user.id}-{int(time.time())}"
+    callback_url = getattr(settings, 'PESAPAL_CALLBACK_URL', request.build_absolute_uri(reverse('users:pesapal_callback')))
+    notification_url = getattr(settings, 'PESAPAL_IPN_URL', request.build_absolute_uri(reverse('users:pesapal_ipn')))
+
+    payment = PesapalPayment.objects.create(
+        user=request.user,
+        subscription=subscription,
+        order_id=order_id,
+        amount=amount,
+        currency=getattr(settings, 'PESAPAL_CURRENCY', 'UGX'),
+        description='30-Day Pro Business Pass',
+        redirect_url=callback_url,
+        status='PENDING',
+    )
+
+    try:
+        auth_payload = _pesapal_request('post', 'Auth/RequestToken')
+        token = auth_payload.get('token') if isinstance(auth_payload, dict) else None
+        if not token:
+            raise ValueError('Pesapal authentication did not return a bearer token.')
+
+        submit_payload = {
+            'id': order_id,
+            'currency': payment.currency,
+            'amount': f"{payment.amount:.2f}",
+            'description': payment.description,
+            'callback_url': callback_url,
+            'notification_id': notification_url,
+            'billing_address': {
+                'email_address': request.user.email or f"{request.user.username}@example.com",
+                'phone_number': '',
+                'country_code': 'UG',
+                'first_name': request.user.first_name or request.user.username,
+                'last_name': request.user.last_name or 'User',
+            },
+        }
+        order_payload = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data=submit_payload)
+    except Exception as exc:
+        payment.status = 'FAILED'
+        payment.save(update_fields=['status'])
+        subscription.status = 'failed'
+        subscription.is_active = False
+        subscription.save(update_fields=['status', 'is_active'])
+        logger.exception('Pesapal checkout creation failed: %s', exc)
+        messages.error(request, 'Unable to start Pesapal checkout right now.')
+        return redirect('users:profile')
+
+    payment.tracking_id = order_payload.get('order_tracking_id') or order_payload.get('OrderTrackingId')
+    payment.redirect_url = order_payload.get('redirect_url') or order_payload.get('RedirectUrl') or callback_url
+    payment.save(update_fields=['tracking_id', 'redirect_url'])
+
+    return redirect(payment.redirect_url or reverse('users:profile'))
+
+
+@csrf_exempt
+def pesapal_ipn(request):
+    tracking_id = request.POST.get('OrderTrackingId') or request.POST.get('order_tracking_id')
+    if not tracking_id:
+        return JsonResponse({'status': 'error', 'message': 'Missing tracking id.'}, status=400)
+
+    payment = get_object_or_404(PesapalPayment, tracking_id=tracking_id)
+
+    try:
+        auth_payload = _pesapal_request('post', 'Auth/RequestToken')
+        token = auth_payload.get('token') if isinstance(auth_payload, dict) else None
+        if not token:
+            raise ValueError('Pesapal authentication did not return a bearer token.')
+
+        transaction_payload = _pesapal_request('post', 'Transactions/GetTransactionStatus', json_data={'orderTrackingId': tracking_id})
+    except Exception as exc:
+        logger.exception('Pesapal IPN verification failed: %s', exc)
+        return JsonResponse({'status': 'error', 'message': 'Unable to verify payment status.'}, status=502)
+
+    status = str(transaction_payload.get('status') or transaction_payload.get('Status') or '').upper()
+    if status in {'COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL'}:
+        payment.status = 'PAID'
+        payment.subscription.status = 'active'
+        payment.subscription.is_active = True
+        payment.subscription.start_date = datetime.now()
+        payment.subscription.end_date = datetime.now() + timedelta(days=30)
+        payment.subscription.save(update_fields=['status', 'is_active', 'start_date', 'end_date'])
+    else:
+        payment.status = 'FAILED' if status in {'FAILED', 'CANCELLED', 'CANCELED'} else payment.status
+        payment.subscription.status = 'failed' if payment.status == 'FAILED' else payment.subscription.status
+        payment.subscription.is_active = False
+        payment.subscription.save(update_fields=['status', 'is_active'])
+    payment.save(update_fields=['status'])
+
+    return JsonResponse({'status': 'OK', 'message': 'Pesapal notification processed.'})
+
+
+@login_required
+def pesapal_callback(request):
+    tracking_id = request.GET.get('OrderTrackingId') or request.GET.get('orderTrackingId')
+    if tracking_id:
+        payment = PesapalPayment.objects.filter(tracking_id=tracking_id).first()
+        if payment:
+            context = {'payment': payment, 'is_success': payment.status == 'PAID'}
+            return render(request, 'users/pesapal_callback.html', context)
+    return render(request, 'users/pesapal_callback.html', {'payment': None, 'is_success': False})
 
 # ==============================================================================
 # PROFILE & REFERRAL DASHBOARD

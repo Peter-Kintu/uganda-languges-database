@@ -25,6 +25,11 @@ urlpatterns = [
     path('profile/request-payout/', views.profile_payout_request, name='profile_payout_request'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
 
+    # --- Pesapal Payments ---
+    path('payments/pesapal/start/', views.pesapal_start_checkout, name='pesapal_start_checkout'),
+    path('api/payments/pesapal/ipn/', views.pesapal_ipn, name='pesapal_ipn'),
+    path('payments/pesapal/callback/', views.pesapal_callback, name='pesapal_callback'),
+
     # --- Language Settings ---
     path('update-language/', views.update_language, name='update_language'),
 

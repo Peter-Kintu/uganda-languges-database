@@ -199,6 +199,71 @@ class PayoutRequest(models.Model):
         return f"{self.user.username} payout request ${self.amount} ({self.status})"
 
 
+class UserSubscription(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('active', 'Active'),
+        ('expired', 'Expired'),
+        ('failed', 'Failed'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+    )
+    plan_name = models.CharField(max_length=100, default='pro_business')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    is_active = models.BooleanField(default=False)
+    start_date = models.DateTimeField(blank=True, null=True)
+    end_date = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.plan_name} ({self.status})"
+
+
+class PesapalPayment(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('PAID', 'Paid'),
+        ('FAILED', 'Failed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='pesapal_payments',
+    )
+    subscription = models.ForeignKey(
+        UserSubscription,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='payments',
+    )
+    order_id = models.CharField(max_length=100, unique=True)
+    tracking_id = models.CharField(max_length=255, blank=True, null=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    currency = models.CharField(max_length=10, default='UGX')
+    description = models.CharField(max_length=255, default='30-Day Pro Business Pass')
+    redirect_url = models.URLField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.order_id} ({self.status})"
+
+
 # --- Signals ---
 
 @receiver(post_save, sender='eshop.Order')

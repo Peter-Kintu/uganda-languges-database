@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Status | Africana AI{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 py-16 px-4">
+    <div class="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-10 shadow-xl">
+        <h1 class="text-3xl font-bold text-slate-900">
+            {% if is_success %}Welcome to Pro!{% else %}Payment update{% endif %}
+        </h1>
+        <p class="mt-4 text-lg text-slate-600">
+            {% if is_success %}
+                Your 30-day Pro Business Pass is now active.
+            {% else %}
+                Your payment is still being processed or could not be completed. Please return to your profile and try again.
+            {% endif %}
+        </p>
+        {% if payment %}
+            <div class="mt-8 rounded-2xl bg-slate-50 p-6 text-sm text-slate-700">
+                <p><strong>Order:</strong> {{ payment.order_id }}</p>
+                <p><strong>Status:</strong> {{ payment.status }}</p>
+                <p><strong>Amount:</strong> {{ payment.amount }} {{ payment.currency }}</p>
+            </div>
+        {% endif %}
+        <a href="{% url 'users:profile' %}" class="mt-8 inline-flex rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white">Return to profile</a>
+    </div>
+</div>
+{% endblock %}
