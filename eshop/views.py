@@ -305,6 +305,10 @@ def product_list(request):
     search_query = request.GET.get('search', '').strip()
     country_query = request.GET.get('country', '').strip()
     vendor_query = request.GET.get('vendor', '').strip()
+    category_query = request.GET.get('category', '').strip()
+    source_query = request.GET.get('source', '').strip()
+    min_price_query = request.GET.get('min_price', '').strip()
+    max_price_query = request.GET.get('max_price', '').strip()
 
     if search_query:
         products = products.filter(name__icontains=search_query)
@@ -312,6 +316,20 @@ def product_list(request):
         products = products.filter(country__icontains=country_query)
     if vendor_query:
         products = products.filter(vendor_name__icontains=vendor_query)
+    if category_query:
+        products = products.filter(category__iexact=category_query)
+    if source_query:
+        products = products.filter(source__iexact=source_query)
+    if min_price_query:
+        try:
+            products = products.filter(price__gte=Decimal(min_price_query))
+        except (InvalidOperation, ValueError):
+            pass
+    if max_price_query:
+        try:
+            products = products.filter(price__lte=Decimal(max_price_query))
+        except (InvalidOperation, ValueError):
+            pass
 
     cart = get_user_cart(request)
     cart_total = cart.cart_total if cart and cart.items.exists() else 0
@@ -323,6 +341,10 @@ def product_list(request):
         'search_query': search_query,
         'country_query': country_query,
         'vendor_query': vendor_query,
+        'category_query': category_query,
+        'source_query': source_query,
+        'min_price_query': min_price_query,
+        'max_price_query': max_price_query,
     })
 
 @login_required

@@ -86,6 +86,7 @@ class ProductForm(forms.ModelForm):
             'image',
             'video',  # Added video field
             'country',
+            'category',
             'slug'
         ]
         widgets = {
@@ -111,6 +112,9 @@ class ProductForm(forms.ModelForm):
             }),
             'country': forms.TextInput(attrs={
                 'placeholder': 'e.g., Uganda',
+                'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
+            }),
+            'category': forms.Select(attrs={
                 'class': 'w-full px-4 py-3 bg-gray-700 border-gray-600 rounded-lg text-gray-200 focus:ring-indigo-500'
             }),
             'vendor_name': forms.TextInput(attrs={

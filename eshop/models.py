@@ -82,6 +82,37 @@ class Product(models.Model):
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='UGX')
     country = models.CharField(max_length=50)
 
+    CATEGORY_CHOICES = [
+        ('vehicles', 'Vehicles'),
+        ('property', 'Property'),
+        ('phones-tablets', 'Phones & Tablets'),
+        ('electronics', 'Electronics'),
+        ('home-furniture', 'Home, Furniture & Appliances'),
+        ('fashion', 'Fashion'),
+        ('beauty-personal-care', 'Beauty & Personal Care'),
+        ('services', 'Services'),
+        ('repair-construction', 'Repair & Construction'),
+        ('commercial-tools', 'Commercial Equipment & Tools'),
+        ('leisure-activities', 'Leisure & Activities'),
+        ('babies-kids', 'Babies & Kids'),
+        ('food-agriculture', 'Food, Agriculture & Farming'),
+        ('hotel-budget', 'Simple Hotel Meals (3,000-10,000)'),
+        ('hotel-1star', '1-Star Hotel Dining'),
+        ('hotel-2star', '2-Star Hotel Dining'),
+        ('hotel-3star', '3-Star Hotel Dining'),
+        ('hotel-4star', '4-Star Hotel Dining'),
+        ('hotel-5star', '5-Star Hotel Dining'),
+        ('food-chips', 'Chips & Snacks'),
+        ('food-burger', 'Burger & Fast Food'),
+        ('food-pizza', 'Pizza & Oven Bakes'),
+        ('food-rolex', 'Rolex & Street Rolls'),
+        ('food-chicken', 'Chicken & Poultry'),
+        ('food-fried-fish', 'Fried Fish & Seafood'),
+        ('food-street-food', 'Street Food & Takeaway'),
+        ('animals-pets', 'Animals & Pets'),
+    ]
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, blank=True, default='', db_index=True)
+
     # Vendor Information
     vendor_name = models.CharField(max_length=100, default='Anonymous Seller')
     whatsapp_number = models.CharField(max_length=20, blank=True, null=True)
