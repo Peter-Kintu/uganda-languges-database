@@ -311,6 +311,18 @@
         .hero { padding: 120px 24px; }
         .hero-grid { gap: 80px; }
     }
+
+    .pdf-footer-link {
+        display: none;
+        text-align: center;
+        margin: 32px 0 16px;
+    }
+
+    @media (min-width: 1024px) {
+        .pdf-footer-link {
+            display: block;
+        }
+    }
 </style>
 
 <main>
@@ -585,6 +597,12 @@
             </div>
         </div>
     </section>
+
+    <div class="pdf-footer-link">
+        <a href="/static/africana_ai_executive_presentation.pdf" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none; font-size: 0.95rem; border-bottom: 1px solid rgba(56, 189, 248, 0.55); padding-bottom: 2px;">
+            View Executive Presentation PDF
+        </a>
+    </div>
 </main>
 
 <script>
