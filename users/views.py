@@ -26,8 +26,12 @@ logger = logging.getLogger(__name__)
 
 
 def _get_pesapal_config():
+    base_url = os.getenv('PESAPAL_BASE_URL', 'https://pay.pesapal.com/pesapalv3')
+    base_url = base_url.rstrip('/')
+    if base_url.endswith('/api'):
+        base_url = base_url[:-4]
     return {
-        'base_url': os.getenv('PESAPAL_BASE_URL', 'https://pay.pesapal.com/pesapalv3/api').rstrip('/'),
+        'base_url': base_url,
         'consumer_key': os.getenv('PESAPAL_CONSUMER_KEY', ''),
         'consumer_secret': os.getenv('PESAPAL_CONSUMER_SECRET', ''),
     }
@@ -42,7 +46,12 @@ def _pesapal_auth_header():
 
 def _pesapal_request(method, path, json_data=None, timeout=20):
     config = _get_pesapal_config()
-    url = f"{config['base_url']}/{path.lstrip('/')}"
+    base_url = config['base_url'].rstrip('/')
+    if base_url.endswith('/api'):
+        base_url = base_url[:-4]
+    if not base_url.endswith('/pesapalv3'):
+        base_url = base_url
+    url = f"{base_url}/api/{path.lstrip('/')}"
     headers = {'Content-Type': 'application/json'}
     headers.update(_pesapal_auth_header())
     method = method.lower()
