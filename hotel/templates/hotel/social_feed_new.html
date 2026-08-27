@@ -2285,56 +2285,12 @@
                         </div>
                     {% endif %}
 
-                    {% if forloop.counter == 3 and market_products %}
-                        <section class="post-card" aria-label="Featured products">
-                            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-                                <strong style="font-size:15px; color:#111827;">Featured marketplace picks</strong>
-                                <a href="{% url 'eshop:product_list' %}" style="font-size:12px; color:var(--primary); font-weight:700;">Explore all</a>
-                            </div>
-                            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:10px;">
-                                {% for product in market_products %}
-                                    <article style="border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; background:#fff;" data-impression-kind="product" data-impression-id="{{ product.id }}">
-                                        {% if product.source == 'aliexpress' and product.image_url %}
-                                            <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" style="width:100%; height:110px; object-fit:cover;">
-                                        {% elif product.image %}
-                                            <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy" style="width:100%; height:110px; object-fit:cover;">
-                                        {% else %}
-                                            <div style="height:110px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; color:#6b7280; font-size:12px;">Marketplace item</div>
-                                        {% endif %}
-                                        <div style="padding:9px;">
-                                            {% if product.source == 'aliexpress' %}
-                                                <span style="display:inline-block; margin-bottom:5px; padding:3px 6px; border-radius:5px; background:#fff1e8; color:#c2410c; font-size:10px; font-weight:800;">AliExpress deal</span>
-                                            {% else %}
-                                                <span style="display:inline-block; margin-bottom:5px; padding:3px 6px; border-radius:5px; background:#fef3c7; color:#92400e; font-size:10px; font-weight:800;">Featured vendor</span>
-                                            {% endif %}
-                                            <div style="font-size:12px; font-weight:700; line-height:1.3; color:#111827;">{{ product.name|truncatechars:38 }}</div>
-                                            <div style="font-size:12px; font-weight:800; color:#2563eb; margin:5px 0 8px;">{{ product.get_currency_code }} {{ product.price|floatformat:0 }}</div>
-                                            {% if product.source == 'aliexpress' and product.affiliate_url %}
-                                                <a href="{{ product.affiliate_url }}" target="_blank" rel="nofollow noopener" style="display:block; text-align:center; padding:6px; border-radius:6px; background:#ea580c; color:#fff; font-size:11px; font-weight:700;">Buy on AliExpress</a>
-                                            {% else %}
-                                                <a href="{% url 'eshop:product_detail' product.slug %}" style="display:block; text-align:center; padding:6px; border-radius:6px; background:#2563eb; color:#fff; font-size:11px; font-weight:700;">View product</a>
-                                            {% endif %}
-                                        </div>
-                                    </article>
-                                {% endfor %}
-                            </div>
-                        </section>
+                    {% if market_products and forloop.counter in market_positions %}
+                        {% include "hotel/marketplace_shelf.html" %}
                     {% endif %}
 
-                    {% if forloop.counter == 8 and recommended_jobs %}
-                        <section class="post-card" aria-label="Recommended jobs">
-                            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;">
-                                <strong style="font-size:15px; color:#111827;">Jobs picked for you</strong>
-                                <a href="{% url 'languages:browse_job_listings' %}" style="font-size:12px; color:var(--primary); font-weight:700;">Browse jobs</a>
-                            </div>
-                            {% for job in recommended_jobs|slice:':3' %}
-                                <a href="{% url 'languages:job_post_detail' job.id %}" style="display:block; padding:10px 0; border-top:1px solid #e5e7eb; text-decoration:none;" data-impression-kind="job" data-impression-id="{{ job.id }}">
-                                    <span style="display:inline-block; margin-bottom:4px; padding:3px 6px; border-radius:5px; background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:800;">Recommended job</span>
-                                    <div style="font-size:14px; font-weight:800; color:#111827;">{{ job.post_content|truncatechars:85 }}</div>
-                                    <div style="font-size:12px; color:#6b7280; margin-top:3px;">{{ job.recruiter_name|default:'Verified recruiter' }} · {{ job.recruiter_location|default:'Flexible location' }}</div>
-                                </a>
-                            {% endfor %}
-                        </section>
+                    {% if recommended_jobs and forloop.counter == job_position %}
+                        {% include "hotel/recommended_jobs.html" %}
                     {% endif %}
 
             {% endfor %}

@@ -223,9 +223,12 @@ def _build_market_feed_items(request):
     if Product is None or JobPost is None or not request.user.is_authenticated:
         return [], []
 
+    rotation = random.Random(str(request.GET.get('feed_seed') or 'default'))
     products = list(Product.objects.filter(
         Q(source='aliexpress') | Q(source='local', referral_commission__gt=0)
-    ).exclude(price__isnull=True).order_by('-last_synced')[:5])
+    ).exclude(price__isnull=True).order_by('-last_synced'))
+    rotation.shuffle(products)
+    products = products[:5]
 
     search_terms = []
     for value in (
@@ -258,8 +261,22 @@ def _build_market_feed_items(request):
                 Q(recruiter_location__icontains=term)
             )
         jobs = jobs.filter(relevance_query)
-    jobs = list(jobs.order_by('-upvotes', '-timestamp')[:5])
+    jobs = list(jobs.order_by('-upvotes', '-timestamp'))
+    rotation.shuffle(jobs)
+    jobs = jobs[:5]
     return products, jobs
+
+
+def _feed_insert_positions(post_count, seed):
+    if not post_count:
+        return [], 1
+    product_positions = sorted({
+        max(1, round(post_count * fraction))
+        for fraction in (0.25, 0.55, 0.85)
+    })
+    rotation = random.Random(f'{seed}:placements')
+    job_position = rotation.randint(1, post_count)
+    return product_positions, job_position
 
 
 @login_required
@@ -324,6 +341,7 @@ def social_feed(request):
     feed_seed = request.GET.get('feed_seed') or uuid.uuid4().hex
     posts = _build_hybrid_feed(request.user, feed_type, is_adsense_crawler, feed_seed)
     market_products, recommended_jobs = _build_market_feed_items(request)
+    market_positions, job_position = _feed_insert_positions(len(posts), feed_seed)
 
     # Paginate feed so we do not load every post at once
     page_number = request.GET.get('page', 1)
@@ -408,6 +426,8 @@ def social_feed(request):
         'feed_seed': feed_seed,
         'market_products': market_products,
         'recommended_jobs': recommended_jobs,
+        'market_positions': market_positions,
+        'job_position': job_position,
     }
     response = render(request, 'hotel/social_feed_new.html', context)
     

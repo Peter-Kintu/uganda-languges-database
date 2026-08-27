@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
 
 from .models import Connection, FeedImpression, Like, Post
-from .views import _build_hybrid_feed, _build_market_feed_items
+from .views import _build_hybrid_feed, _build_market_feed_items, _feed_insert_positions
 
 
 User = get_user_model()
@@ -89,5 +89,13 @@ class HybridFeedTests(TestCase):
 		self.assertFalse(second.json()['counted'])
 		self.assertEqual(post.impressions, 1)
 		self.assertEqual(FeedImpression.objects.count(), 1)
+
+	def test_market_and_job_positions_rotate_with_feed_seed(self):
+		first_products, first_job = _feed_insert_positions(20, 'first-seed')
+		second_products, second_job = _feed_insert_positions(20, 'second-seed')
+
+		self.assertEqual(len(first_products), 3)
+		self.assertEqual(len(second_products), 3)
+		self.assertNotEqual(first_job, second_job)
 
 # Create your tests here.
