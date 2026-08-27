@@ -3072,6 +3072,17 @@
         });
     }
 
+    function refreshFeedWithNewSeed() {
+        const refreshedUrl = new URL(window.location.href);
+        refreshedUrl.searchParams.delete('page');
+        refreshedUrl.searchParams.delete('format');
+        refreshedUrl.searchParams.set(
+            'feed_seed',
+            window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
+        );
+        window.location.replace(refreshedUrl.toString());
+    }
+
     function attachElasticRefresh() {
         let startY = 0;
         let currentY = 0;
@@ -3099,7 +3110,7 @@
             isPulling = false;
             document.documentElement.style.setProperty('--pull-translate', '0px');
             if (distance > threshold) {
-                window.location.reload();
+                refreshFeedWithNewSeed();
             }
         });
     }
@@ -3196,20 +3207,19 @@
     let isRefreshingFeed = false;
     const sentinel = document.getElementById('load-more-sentinel');
 
+    const cleanFeedUrl = new URL(window.location.href);
+    if (cleanFeedUrl.searchParams.has('feed_seed')) {
+        cleanFeedUrl.searchParams.delete('feed_seed');
+        window.history.replaceState({}, '', cleanFeedUrl.toString());
+    }
+
     window.addEventListener('scroll', () => {
         if (window.scrollY > window.innerHeight) {
             hasScrolledDown = true;
         }
-        if (hasScrolledDown && hasLoadedMorePosts && window.scrollY <= 8 && !isRefreshingFeed) {
+        if (hasScrolledDown && window.scrollY <= 8 && !isRefreshingFeed) {
             isRefreshingFeed = true;
-            const refreshedUrl = new URL(window.location.href);
-            refreshedUrl.searchParams.delete('page');
-            refreshedUrl.searchParams.delete('format');
-            refreshedUrl.searchParams.set(
-                'feed_seed',
-                window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
-            );
-            window.location.replace(refreshedUrl.toString());
+            refreshFeedWithNewSeed();
         }
     }, { passive: true });
 
