@@ -721,6 +721,21 @@ def browse_job_listings(request):
     category_filter = request.GET.get('category')
     search_query = request.GET.get('q') or ""
     location_query = request.GET.get('where', '').strip()
+    if search_query.strip() or location_query:
+        search_history = request.session.get('job_search_history', [])
+        if not isinstance(search_history, list):
+            search_history = []
+        search_entry = {
+            'query': search_query.strip(),
+            'location': location_query,
+        }
+        search_history = [
+            entry for entry in search_history
+            if entry != search_entry
+        ]
+        request.session['job_search_history'] = [search_entry] + search_history[:9]
+        request.session['last_job_search'] = search_query.strip()
+        request.session['job_search_term'] = search_query.strip()
     # Allow any location, default to empty for global search
     effective_location = location_query if location_query else ""
     search_type = request.GET.get('search_type', 'api')

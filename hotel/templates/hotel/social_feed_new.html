@@ -2312,6 +2312,12 @@
                     <a href="{% url 'hotel:create_post' %}" class="btn-primary">Create First Post</a>
                 {% endif %}
             </div>
+            {% if market_products %}
+                {% include "hotel/marketplace_shelf.html" %}
+            {% endif %}
+            {% if recommended_jobs %}
+                {% include "hotel/recommended_jobs.html" %}
+            {% endif %}
         {% endif %}
     </div>
 

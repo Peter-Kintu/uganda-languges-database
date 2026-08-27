@@ -114,3 +114,12 @@
         </div>
     </div>
 {% endfor %}
+
+{% if include_market_items %}
+    {% if market_products %}
+        {% include "hotel/marketplace_shelf.html" %}
+    {% endif %}
+    {% if recommended_jobs %}
+        {% include "hotel/recommended_jobs.html" %}
+    {% endif %}
+{% endif %}

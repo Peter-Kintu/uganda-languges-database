@@ -1,5 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
+from django.utils import timezone
+
+from languages.models import JobPost
 
 from .models import Connection, FeedImpression, Like, Post
 from .views import _build_hybrid_feed, _build_market_feed_items, _feed_insert_positions
@@ -72,6 +75,22 @@ class HybridFeedTests(TestCase):
 
 		self.assertIsInstance(products, list)
 		self.assertIsInstance(jobs, list)
+
+	def test_market_feed_falls_back_when_history_has_no_job_match(self):
+		job = JobPost.objects.create(
+			posted_by=self.popular_user,
+			post_content='Available opportunity',
+			required_skills='Communication',
+			timestamp=timezone.now(),
+			is_validated=True,
+		)
+		request = RequestFactory().get('/hotel/')
+		request.user = self.user
+		request.session = {'job_search_history': [{'query': 'nonexistent-role', 'location': ''}]}
+
+		_, jobs = _build_market_feed_items(request)
+
+		self.assertIn(job, jobs)
 
 	def test_feed_impression_counts_once_per_viewer_session_item(self):
 		post = Post.objects.create(author=self.popular_user, content='Visible update')

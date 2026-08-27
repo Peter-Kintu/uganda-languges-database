@@ -223,7 +223,7 @@ def _build_market_feed_items(request):
     if Product is None or JobPost is None or not request.user.is_authenticated:
         return [], []
 
-    rotation = random.Random(str(request.GET.get('feed_seed') or 'default'))
+    rotation = random.SystemRandom()
     products = list(Product.objects.filter(
         Q(source='aliexpress') | Q(source='local', referral_commission__gt=0)
     ).exclude(price__isnull=True).order_by('-last_synced'))
@@ -240,6 +240,14 @@ def _build_market_feed_items(request):
         if value and isinstance(value, str):
             search_terms.extend(value.lower().split())
 
+    for history_item in request.session.get('job_search_history', []):
+        if isinstance(history_item, str):
+            search_terms.extend(history_item.lower().split())
+        elif isinstance(history_item, dict):
+            for value in (history_item.get('query'), history_item.get('location')):
+                if value and isinstance(value, str):
+                    search_terms.extend(value.lower().split())
+
     profile_terms = [
         getattr(request.user, 'headline', '') or '',
         getattr(request.user, 'about', '') or '',
@@ -249,7 +257,8 @@ def _build_market_feed_items(request):
     search_terms.extend(' '.join(profile_terms).lower().split())
     search_terms = list(dict.fromkeys(term for term in search_terms if len(term) > 2))
 
-    jobs = JobPost.objects.filter(is_validated=True)
+    validated_jobs = JobPost.objects.filter(is_validated=True)
+    jobs = validated_jobs
     if search_terms:
         relevance_query = Q()
         for term in search_terms:
@@ -260,7 +269,9 @@ def _build_market_feed_items(request):
                 Q(recruiter_name__icontains=term) |
                 Q(recruiter_location__icontains=term)
             )
-        jobs = jobs.filter(relevance_query)
+        matching_jobs = jobs.filter(relevance_query)
+        if matching_jobs.exists():
+            jobs = matching_jobs
     jobs = list(jobs.order_by('-upvotes', '-timestamp'))
     rotation.shuffle(jobs)
     jobs = jobs[:5]
@@ -274,7 +285,7 @@ def _feed_insert_positions(post_count, seed):
         max(1, round(post_count * fraction))
         for fraction in (0.25, 0.55, 0.85)
     })
-    rotation = random.Random(f'{seed}:placements')
+    rotation = random.SystemRandom()
     job_position = rotation.randint(1, post_count)
     return product_positions, job_position
 
@@ -341,7 +352,6 @@ def social_feed(request):
     feed_seed = request.GET.get('feed_seed') or uuid.uuid4().hex
     posts = _build_hybrid_feed(request.user, feed_type, is_adsense_crawler, feed_seed)
     market_products, recommended_jobs = _build_market_feed_items(request)
-    market_positions, job_position = _feed_insert_positions(len(posts), feed_seed)
 
     # Paginate feed so we do not load every post at once
     page_number = request.GET.get('page', 1)
@@ -351,6 +361,7 @@ def social_feed(request):
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.page(1)
     posts = list(page_obj.object_list)
+    market_positions, job_position = _feed_insert_positions(len(posts), feed_seed)
 
     # Translate posts if requested
     if translate_feed and target_lang != 'en':
@@ -371,6 +382,9 @@ def social_feed(request):
             'posts': posts,
             'request': request,
             'current_lang': target_lang,
+            'market_products': market_products,
+            'recommended_jobs': recommended_jobs,
+            'include_market_items': page_obj.number == 1,
         })
         return JsonResponse({
             'html': html,
