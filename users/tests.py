@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from myuganda.middleware import WordPressProbeBlockMiddleware
 from users.models import PesapalPayment, UserSubscription
-from users.views import _get_pesapal_config
+from users.views import _get_pesapal_config, _pesapal_request
 
 
 User = get_user_model()
@@ -41,6 +41,33 @@ class PesapalConfigTests(TestCase):
             base_url = base_url[:-4]
         url = f"{base_url}/api/Auth/RequestToken"
         self.assertEqual(url, 'https://pay.pesapal.com/v3/api/Auth/RequestToken')
+
+    @patch.dict('os.environ', {
+        'PESAPAL_CONSUMER_KEY': 'live-key',
+        'PESAPAL_CONSUMER_SECRET': 'live-secret',
+    })
+    @patch('users.views.requests.post')
+    def test_auth_request_uses_json_credentials_and_required_headers(self, mock_post):
+        mock_post.return_value = SimpleNamespace(
+            status_code=200,
+            ok=True,
+            json=lambda: {'token': 'token-123'},
+        )
+
+        _pesapal_request('post', 'Auth/RequestToken')
+
+        mock_post.assert_called_once_with(
+            'https://pay.pesapal.com/v3/api/Auth/RequestToken',
+            headers={
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'consumer_key': 'live-key',
+                'consumer_secret': 'live-secret',
+            },
+            timeout=20,
+        )
 
 
 class PesapalIntegrationTests(TestCase):

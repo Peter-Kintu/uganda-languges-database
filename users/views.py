@@ -54,13 +54,21 @@ def _pesapal_request(method, path, json_data=None, timeout=20):
     if not base_url.endswith('/pesapalv3'):
         base_url = base_url
     url = f"{base_url}/api/{path.lstrip('/')}"
-    headers = {'Content-Type': 'application/json'}
-    headers.update(_pesapal_auth_header())
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    payload = json_data
+    if path.lstrip('/') == 'Auth/RequestToken':
+        payload = {
+            'consumer_key': config['consumer_key'],
+            'consumer_secret': config['consumer_secret'],
+        }
     method = method.lower()
 
     try:
         if method == 'post':
-            response = requests.post(url, headers=headers, json=json_data, timeout=timeout)
+            response = requests.post(url, headers=headers, json=payload, timeout=timeout)
         else:
             response = requests.get(url, headers=headers, params=json_data, timeout=timeout)
 
