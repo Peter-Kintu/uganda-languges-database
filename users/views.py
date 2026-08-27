@@ -559,7 +559,7 @@ def user_profile(request):
             'impressions': monthly_impressions.get(month_date, 0),
         })
 
-    graph_max = max([month['impressions'] for month in months] or [1])
+    graph_max = max(1, max(month['impressions'] for month in months))
     graph_points = []
     for index, month in enumerate(months):
         x = 10 if len(months) == 1 else 10 + (index * 180 / (len(months) - 1))
