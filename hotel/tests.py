@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
 
-from .models import Connection, Like, Post
+from .models import Connection, FeedImpression, Like, Post
 from .views import _build_hybrid_feed, _build_market_feed_items
 
 
@@ -72,5 +72,22 @@ class HybridFeedTests(TestCase):
 
 		self.assertIsInstance(products, list)
 		self.assertIsInstance(jobs, list)
+
+	def test_feed_impression_counts_once_per_viewer_session_item(self):
+		post = Post.objects.create(author=self.popular_user, content='Visible update')
+		self.client.force_login(self.user)
+
+		first = self.client.post('/hotel/record-impression/', {
+			'content_type': 'post', 'object_id': post.id,
+		})
+		second = self.client.post('/hotel/record-impression/', {
+			'content_type': 'post', 'object_id': post.id,
+		})
+
+		post.refresh_from_db()
+		self.assertTrue(first.json()['counted'])
+		self.assertFalse(second.json()['counted'])
+		self.assertEqual(post.impressions, 1)
+		self.assertEqual(FeedImpression.objects.count(), 1)
 
 # Create your tests here.

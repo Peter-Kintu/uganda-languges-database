@@ -14,6 +14,24 @@ class Post(models.Model):
     def __str__(self):
         return f"Post by {self.author.username}: {self.content[:50]}"
 
+
+class FeedImpression(models.Model):
+    CONTENT_TYPES = [('post', 'Post'), ('product', 'Product'), ('job', 'Job')]
+
+    viewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    session_key = models.CharField(max_length=40, blank=True)
+    content_type = models.CharField(max_length=10, choices=CONTENT_TYPES)
+    object_id = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['viewer', 'session_key', 'content_type', 'object_id'],
+                name='unique_feed_impression_per_session',
+            ),
+        ]
+
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

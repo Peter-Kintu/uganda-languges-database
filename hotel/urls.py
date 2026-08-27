@@ -24,6 +24,7 @@ urlpatterns = [
     path('unfollow/<int:user_id>/', views.unfollow_user, name='unfollow_user'),
     path('share-post/<int:post_id>/', views.share_post, name='share_post'),
     path('job-ad-viewed/', views.job_ad_viewed, name='job_ad_viewed'),
+    path('record-impression/', views.record_feed_impression, name='record_feed_impression'),
     path('get_recent_messages/', views.get_recent_messages, name='get_recent_messages'),
     path('gemini-translate/', views.gemini_translate, name='gemini_translate'),
     path('send_connection_request/<int:user_id>/', views.send_connection_request, name='send_connection_request'),

@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from urllib.parse import quote
-from .models import Post, Comment, Like, Connection, Message, Share, Community, CommunityMessage
+from .models import Post, Comment, Like, Connection, Message, Share, Community, CommunityMessage, FeedImpression
 from .forms import PostForm
 from users.models import CustomUser
 from django.conf import settings
@@ -262,14 +262,32 @@ def _build_market_feed_items(request):
     return products, jobs
 
 
-def _record_feed_impressions(posts, products, jobs):
-    """Count only content that was selected for rendering in the feed."""
-    if posts:
-        Post.objects.filter(id__in=[post.id for post in posts]).update(impressions=F('impressions') + 1)
-    if products:
-        Product.objects.filter(id__in=[product.id for product in products]).update(impressions=F('impressions') + 1)
-    if jobs:
-        JobPost.objects.filter(id__in=[job.id for job in jobs]).update(impressions=F('impressions') + 1)
+@login_required
+def record_feed_impression(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+
+    content_type = request.POST.get('content_type', '').strip().lower()
+    try:
+        object_id = int(request.POST.get('object_id', ''))
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False}, status=400)
+    if content_type not in {'post', 'product', 'job'} or object_id <= 0:
+        return JsonResponse({'success': False}, status=400)
+
+    model = {'post': Post, 'product': Product, 'job': JobPost}[content_type]
+    if not model.objects.filter(id=object_id).exists():
+        return JsonResponse({'success': False}, status=404)
+
+    impression, created = FeedImpression.objects.get_or_create(
+        viewer=request.user,
+        session_key=request.session.session_key or '',
+        content_type=content_type,
+        object_id=object_id,
+    )
+    if created:
+        model.objects.filter(id=object_id).update(impressions=F('impressions') + 1)
+    return JsonResponse({'success': True, 'counted': created})
 
 
 def social_feed(request):
@@ -331,7 +349,6 @@ def social_feed(request):
 
     # Handle AJAX requests for infinite scroll
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
-        _record_feed_impressions(posts, [], [])
         html = render_to_string('hotel/posts_partial.html', {
             'posts': posts,
             'request': request,
@@ -342,8 +359,6 @@ def social_feed(request):
             'has_next': page_obj.has_next(),
             'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
         })
-
-    _record_feed_impressions(posts, market_products, recommended_jobs)
 
     if is_adsense_crawler:
         connections = []
