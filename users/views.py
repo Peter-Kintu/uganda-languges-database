@@ -16,6 +16,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
 from django.db import IntegrityError, models
+from django.db.models import Q
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -465,14 +466,7 @@ def user_profile(request):
             user_posts = Post.objects.filter(author=user).order_by('-created_at')
             posts_count = user_posts.count()
 
-            # If posts have explicit impression/watch fields, aggregate them, else compute a simple proxy
-            if hasattr(Post, 'impressions'):
-                impressions = user_posts.aggregate(Sum('impressions'))['impressions__sum'] or 0
-            else:
-                likes_count = Like.objects.filter(post__author=user).count() if Like else 0
-                comments_count = Comment.objects.filter(post__author=user).count() if Comment else 0
-                shares_count = Share.objects.filter(original_post__author=user).count() if Share else 0
-                impressions = likes_count + comments_count + shares_count
+            impressions = user_posts.aggregate(Sum('impressions'))['impressions__sum'] or 0
 
             likes_count = Like.objects.filter(post__author=user).count() if Like else 0
             job_ad_watch_count = getattr(user, 'post_ad_watch_count', 0)
@@ -494,6 +488,43 @@ def user_profile(request):
         posts_count = 0
         impressions = None
         watch_hours = None
+
+    user_products = []
+    user_jobs = []
+    if Product:
+        user_products = list(Product.objects.filter(
+            Q(vendor_name__iexact=user.username) |
+            Q(vendor_name__iexact=user.get_full_name())
+        ).order_by('-impressions', '-last_synced')[:20])
+    try:
+        from languages.models import JobPost
+        user_jobs = list(JobPost.objects.filter(
+            Q(recruiter_name__iexact=user.username) |
+            Q(recruiter_name__iexact=user.get_full_name())
+        ).order_by('-impressions', '-timestamp')[:20])
+    except Exception:
+        user_jobs = []
+
+    analytics_items = [
+        {'label': f'Post {post.id}', 'type': 'Post', 'impressions': post.impressions}
+        for post in user_posts[:6]
+    ]
+    analytics_items.extend(
+        {'label': product.name[:24], 'type': 'Product', 'impressions': product.impressions}
+        for product in user_products[:6]
+    )
+    analytics_items.extend(
+        {'label': job.post_content[:24], 'type': 'Job', 'impressions': job.impressions}
+        for job in user_jobs[:6]
+    )
+    graph_max = max([item['impressions'] for item in analytics_items] or [1])
+    graph_points = []
+    for index, item in enumerate(analytics_items):
+        x = 10 if len(analytics_items) == 1 else 10 + (index * 180 / (len(analytics_items) - 1))
+        y = 90 - (item['impressions'] / graph_max * 75)
+        item['x'] = round(x, 2)
+        item['y'] = round(y, 2)
+        graph_points.append(f"{item['x']},{item['y']}")
     context = {
         'user': user, 'experiences': experiences, 'educations': educations,
         'skills': skills, 'social_connections': social_connections,
@@ -512,6 +543,11 @@ def user_profile(request):
         'post_earnings_amount': post_earnings_amount if 'post_earnings_amount' in locals() else 0,
         'can_request_payout': can_request_payout if 'can_request_payout' in locals() else False,
         'pending_payout_request': pending_payout_request if 'pending_payout_request' in locals() else None,
+        'user_products': user_products,
+        'user_jobs': user_jobs,
+        'analytics_items': analytics_items,
+        'graph_points': ' '.join(graph_points),
+        'graph_max': graph_max,
     }
     try:
         return render(request, 'users/profile.html', context)

@@ -7,6 +7,7 @@ class Post(models.Model):
     content = models.TextField()
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
+    impressions = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

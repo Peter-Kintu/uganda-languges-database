@@ -1,8 +1,8 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 
 from .models import Connection, Like, Post
-from .views import _build_hybrid_feed
+from .views import _build_hybrid_feed, _build_market_feed_items
 
 
 User = get_user_model()
@@ -62,5 +62,15 @@ class HybridFeedTests(TestCase):
 
 		self.assertEqual({post.id for post in first_feed}, {post.id for post in second_feed})
 		self.assertNotEqual([post.id for post in first_feed], [post.id for post in second_feed])
+
+	def test_market_feed_handles_missing_profile_fields(self):
+		request = RequestFactory().get('/hotel/')
+		request.user = self.user
+		request.session = {}
+
+		products, jobs = _build_market_feed_items(request)
+
+		self.assertIsInstance(products, list)
+		self.assertIsInstance(jobs, list)
 
 # Create your tests here.

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.utils import timezone
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -238,11 +238,11 @@ def _build_market_feed_items(request):
             search_terms.extend(value.lower().split())
 
     profile_terms = [
-        getattr(request.user, 'headline', ''),
-        getattr(request.user, 'about', ''),
-        getattr(request.user, 'location', ''),
+        getattr(request.user, 'headline', '') or '',
+        getattr(request.user, 'about', '') or '',
+        getattr(request.user, 'location', '') or '',
     ]
-    profile_terms.extend(request.user.skills.values_list('name', flat=True))
+    profile_terms.extend(str(skill or '') for skill in request.user.skills.values_list('name', flat=True))
     search_terms.extend(' '.join(profile_terms).lower().split())
     search_terms = list(dict.fromkeys(term for term in search_terms if len(term) > 2))
 
@@ -260,6 +260,16 @@ def _build_market_feed_items(request):
         jobs = jobs.filter(relevance_query)
     jobs = list(jobs.order_by('-upvotes', '-timestamp')[:5])
     return products, jobs
+
+
+def _record_feed_impressions(posts, products, jobs):
+    """Count only content that was selected for rendering in the feed."""
+    if posts:
+        Post.objects.filter(id__in=[post.id for post in posts]).update(impressions=F('impressions') + 1)
+    if products:
+        Product.objects.filter(id__in=[product.id for product in products]).update(impressions=F('impressions') + 1)
+    if jobs:
+        JobPost.objects.filter(id__in=[job.id for job in jobs]).update(impressions=F('impressions') + 1)
 
 
 def social_feed(request):
@@ -321,6 +331,7 @@ def social_feed(request):
 
     # Handle AJAX requests for infinite scroll
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        _record_feed_impressions(posts, [], [])
         html = render_to_string('hotel/posts_partial.html', {
             'posts': posts,
             'request': request,
@@ -331,6 +342,8 @@ def social_feed(request):
             'has_next': page_obj.has_next(),
             'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
         })
+
+    _record_feed_impressions(posts, market_products, recommended_jobs)
 
     if is_adsense_crawler:
         connections = []

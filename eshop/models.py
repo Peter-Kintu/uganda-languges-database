@@ -66,6 +66,7 @@ class Product(models.Model):
         default=0.00,
         help_text="The amount paid to the referrer upon a successful sale."
     )
+    impressions = models.PositiveIntegerField(default=0, db_index=True)
     
     # Currency Settings
     CURRENCY_CHOICES = [

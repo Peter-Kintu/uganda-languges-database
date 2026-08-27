@@ -191,6 +191,7 @@ class JobPost(models.Model):
         default=0,
         help_text=_("Tracks outbound clicks to monitor PPC revenue performance.")
     )
+    impressions = models.PositiveIntegerField(default=0, db_index=True)
 
     class Meta:
         verbose_name = _("Job Post")
