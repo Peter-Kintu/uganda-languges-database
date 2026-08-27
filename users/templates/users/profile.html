@@ -232,22 +232,24 @@
                                         <span class="text-xs text-slate-400">Impressions</span>
                                     </div>
                                     <div class="overflow-x-auto">
-                                        <svg viewBox="0 0 200 100" class="w-full min-w-[320px] h-40" role="img" aria-label="Impressions across posts, products, and jobs">
+                                        <svg viewBox="0 0 200 100" class="w-full min-w-[520px] h-40" role="img" aria-label="Monthly impressions across posts, products, and jobs">
                                             <line x1="10" y1="90" x2="190" y2="90" stroke="#cbd5e1" stroke-width="1" />
                                             <polyline points="{{ graph_points|default:'10,90' }}" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                                            {% for item in analytics_items %}
-                                                <circle cx="{{ item.x }}" cy="{{ item.y }}" r="3.5" fill="#4f46e5" />
+                                            {% for month in monthly_impressions %}
+                                                <circle cx="{{ month.x }}" cy="{{ month.y }}" r="3.5" fill="#4f46e5">
+                                                    <title>{{ month.label }}: {{ month.impressions }} impressions</title>
+                                                </circle>
                                             {% endfor %}
                                         </svg>
                                     </div>
                                     <div class="grid gap-2 mt-2">
-                                        {% for item in analytics_items %}
+                                        {% for month in monthly_impressions %}
                                             <div class="flex items-center justify-between text-xs">
-                                                <span class="truncate text-slate-600">{{ item.type }} · {{ item.label }}</span>
-                                                <strong class="ml-3 text-slate-900">{{ item.impressions }}</strong>
+                                                <span class="truncate text-slate-600">{{ month.label }}</span>
+                                                <strong class="ml-3 text-slate-900">{{ month.impressions }}</strong>
                                             </div>
                                         {% empty %}
-                                            <p class="text-xs text-slate-500">Your content impressions will appear here as it is shown in feeds.</p>
+                                            <p class="text-xs text-slate-500">Monthly impressions will appear here as your content is shown in feeds.</p>
                                         {% endfor %}
                                     </div>
                                 </div>

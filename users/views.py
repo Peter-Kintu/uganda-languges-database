@@ -5,10 +5,11 @@ import requests
 import time
 import base64
 from decimal import Decimal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.template.loader import render_to_string
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
+from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -16,7 +17,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
 from django.db import IntegrityError, models
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.db.models.functions import TruncMonth
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -96,13 +98,14 @@ from cerebras.cloud.sdk import Cerebras
 from .models import CustomUser, Experience, Education, Skill, SocialConnection, PayoutRequest, UserSubscription, PesapalPayment 
 # Import cross-app models for profile aggregates (keep optional to avoid hard failures)
 try:
-    from hotel.models import Post, Like, Comment, Share, Connection
+    from hotel.models import Post, Like, Comment, Share, Connection, FeedImpression
 except Exception:
     Post = None
     Like = None
     Comment = None
     Share = None
     Connection = None
+    FeedImpression = None
 from .forms import CustomUserCreationForm, ProfileEditForm
 from django.contrib.auth import get_user_model
 
@@ -466,7 +469,12 @@ def user_profile(request):
             user_posts = Post.objects.filter(author=user).order_by('-created_at')
             posts_count = user_posts.count()
 
-            impressions = user_posts.aggregate(Sum('impressions'))['impressions__sum'] or 0
+            if FeedImpression:
+                impressions = FeedImpression.objects.filter(
+                    content_type='post', object_id__in=user_posts.values('id')
+                ).count()
+            else:
+                impressions = user_posts.aggregate(Sum('impressions'))['impressions__sum'] or 0
 
             likes_count = Like.objects.filter(post__author=user).count() if Like else 0
             job_ad_watch_count = getattr(user, 'post_ad_watch_count', 0)
@@ -519,14 +527,46 @@ def user_profile(request):
         {'label': job.post_content[:24], 'type': 'Job', 'impressions': job.impressions}
         for job in user_jobs[:6]
     )
-    graph_max = max([item['impressions'] for item in analytics_items] or [1])
+
+    monthly_impressions = {}
+    if FeedImpression:
+        content_ids = {
+            'post': [post.id for post in user_posts],
+            'product': [product.id for product in user_products],
+            'job': [job.id for job in user_jobs],
+        }
+        impression_events = FeedImpression.objects.filter(
+            Q(content_type='post', object_id__in=content_ids['post']) |
+            Q(content_type='product', object_id__in=content_ids['product']) |
+            Q(content_type='job', object_id__in=content_ids['job'])
+        )
+        monthly_impressions = {
+            row['month'].date(): row['total']
+            for row in impression_events.annotate(month=TruncMonth('created_at')).values('month').annotate(
+                total=Count('id')
+            )
+        }
+
+    current_month = timezone.localdate().replace(day=1)
+    months = []
+    for offset in range(11, -1, -1):
+        month_number = current_month.month - offset
+        year = current_month.year + (month_number - 1) // 12
+        month = ((month_number - 1) % 12) + 1
+        month_date = date(year, month, 1)
+        months.append({
+            'label': month_date.strftime('%b %Y'),
+            'impressions': monthly_impressions.get(month_date, 0),
+        })
+
+    graph_max = max([month['impressions'] for month in months] or [1])
     graph_points = []
-    for index, item in enumerate(analytics_items):
-        x = 10 if len(analytics_items) == 1 else 10 + (index * 180 / (len(analytics_items) - 1))
-        y = 90 - (item['impressions'] / graph_max * 75)
-        item['x'] = round(x, 2)
-        item['y'] = round(y, 2)
-        graph_points.append(f"{item['x']},{item['y']}")
+    for index, month in enumerate(months):
+        x = 10 if len(months) == 1 else 10 + (index * 180 / (len(months) - 1))
+        y = 90 - (month['impressions'] / graph_max * 75)
+        month['x'] = round(x, 2)
+        month['y'] = round(y, 2)
+        graph_points.append(f"{month['x']},{month['y']}")
     context = {
         'user': user, 'experiences': experiences, 'educations': educations,
         'skills': skills, 'social_connections': social_connections,
@@ -550,6 +590,7 @@ def user_profile(request):
         'analytics_items': analytics_items,
         'graph_points': ' '.join(graph_points),
         'graph_max': graph_max,
+        'monthly_impressions': months,
     }
     try:
         return render(request, 'users/profile.html', context)
