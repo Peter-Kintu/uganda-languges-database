@@ -3158,7 +3158,27 @@
     let currentPage = {{ page_obj.number }};
     let isLoading = false;
     let hasNextPage = {{ page_obj.has_next|lower }};
+    let hasLoadedMorePosts = false;
+    let hasScrolledDown = false;
+    let isRefreshingFeed = false;
     const sentinel = document.getElementById('load-more-sentinel');
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > window.innerHeight) {
+            hasScrolledDown = true;
+        }
+        if (hasScrolledDown && hasLoadedMorePosts && window.scrollY <= 8 && !isRefreshingFeed) {
+            isRefreshingFeed = true;
+            const refreshedUrl = new URL(window.location.href);
+            refreshedUrl.searchParams.delete('page');
+            refreshedUrl.searchParams.delete('format');
+            refreshedUrl.searchParams.set(
+                'feed_seed',
+                window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
+            );
+            window.location.replace(refreshedUrl.toString());
+        }
+    }, { passive: true });
 
     if (sentinel) {
         const observer = new IntersectionObserver((entries) => {
@@ -3184,7 +3204,7 @@
         isLoading = true;
         updateLoadMoreIndicator(true);
         const nextPage = currentPage + 1;
-        const url = `?{% if current_filter != 'all' %}type={{ current_filter }}&{% endif %}{% if translate_feed %}translate=true&lang={{ current_lang }}&{% endif %}page=${nextPage}&format=json`;
+        const url = `?{% if current_filter != 'all' %}type={{ current_filter }}&{% endif %}{% if translate_feed %}translate=true&lang={{ current_lang }}&{% endif %}feed_seed={{ feed_seed }}&page=${nextPage}&format=json`;
 
         try {
             const response = await fetch(url, {
@@ -3201,6 +3221,7 @@
                 }
                 // Reinitialize functionality for newly inserted posts, including Show More.
                     initShowMoreButtons();
+                hasLoadedMorePosts = true;
                 currentPage = nextPage;
                 if (!data.has_next) {
                     hasNextPage = false;

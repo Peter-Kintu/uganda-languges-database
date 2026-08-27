@@ -30,7 +30,7 @@ class HybridFeedTests(TestCase):
 			Like(post=popular_post, user=liker) for liker in likers
 		])
 
-		feed = _build_hybrid_feed(self.user)
+		feed = _build_hybrid_feed(self.user, feed_seed='test-seed')
 
 		self.assertEqual(feed[0], followed_post)
 		self.assertIn(popular_post, feed)
@@ -45,10 +45,22 @@ class HybridFeedTests(TestCase):
 			Like(post=popular_post, user=liker) for liker in likers
 		])
 
-		feed = _build_hybrid_feed(self.user)
+		feed = _build_hybrid_feed(self.user, feed_seed='test-seed')
 
 		self.assertTrue(feed)
 		self.assertEqual(feed[0], popular_post)
 		self.assertIn(useful_post, feed)
+
+	def test_feed_seed_changes_order_without_changing_membership(self):
+		posts = [
+			Post.objects.create(author=self.popular_user, content=f'Post {index}')
+			for index in range(6)
+		]
+
+		first_feed = _build_hybrid_feed(self.user, feed_seed='first-seed')
+		second_feed = _build_hybrid_feed(self.user, feed_seed='second-seed')
+
+		self.assertEqual({post.id for post in first_feed}, {post.id for post in second_feed})
+		self.assertNotEqual([post.id for post in first_feed], [post.id for post in second_feed])
 
 # Create your tests here.

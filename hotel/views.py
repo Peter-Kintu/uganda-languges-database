@@ -16,6 +16,8 @@ import requests
 import json
 import os
 import hashlib
+import uuid
+import random
 from datetime import timedelta
 
 INVESTOR_CREATE_PASSCODE = getattr(settings, 'INVESTOR_CREATE_PASSCODE', '23882')
@@ -111,13 +113,12 @@ def _google_translate(text, source_lang, target_lang):
     return None
 
 
-def _build_hybrid_feed(user, feed_type='all', is_crawler=False):
+def _build_hybrid_feed(user, feed_type='all', is_crawler=False, feed_seed=None):
     """Compose followed, popular, useful, and recent posts without duplicates."""
     now = timezone.now()
-    discovery_start = now - timedelta(days=7)
     popular_start = now - timedelta(hours=48)
 
-    posts_query = Post.objects.filter(created_at__gte=discovery_start).select_related('author').prefetch_related(
+    posts_query = Post.objects.all().select_related('author').prefetch_related(
         'comments', 'likes'
     ).annotate(
         like_count=Count('likes', distinct=True),
@@ -161,11 +162,16 @@ def _build_hybrid_feed(user, feed_type='all', is_crawler=False):
     useful = [post for post in posts if post.id in useful_ids]
     recent = posts
 
+    # Keep pagination stable during one visit while varying the feed on refresh.
+    rotation = random.Random(str(feed_seed or 'default'))
+    bucket_order = {post.id: rotation.random() for post in posts}
+
     def ranked(bucket):
         return sorted(
             bucket,
             key=lambda post: (
                 post.like_count * 2 + post.comment_count * 3 + post.share_count * 4,
+                bucket_order[post.id],
                 post.created_at,
             ),
             reverse=True,
@@ -174,6 +180,7 @@ def _build_hybrid_feed(user, feed_type='all', is_crawler=False):
     followed = ranked(followed)
     popular = ranked(popular)
     useful = ranked(useful)
+    recent = sorted(recent, key=lambda post: bucket_order[post.id])
 
     selected = []
     selected_ids = set()
@@ -235,7 +242,8 @@ def social_feed(request):
         target_lang = target_lang.lower()
     
     # Compose one deduplicated feed from followed, popular, useful, and recent buckets.
-    posts = _build_hybrid_feed(request.user, feed_type, is_adsense_crawler)
+    feed_seed = request.GET.get('feed_seed') or uuid.uuid4().hex
+    posts = _build_hybrid_feed(request.user, feed_type, is_adsense_crawler, feed_seed)
 
     # Paginate feed so we do not load every post at once
     page_number = request.GET.get('page', 1)
@@ -317,6 +325,7 @@ def social_feed(request):
         'translate_feed': translate_feed,
         'current_lang': target_lang,
         'is_crawler': is_adsense_crawler,
+        'feed_seed': feed_seed,
     }
     response = render(request, 'hotel/social_feed_new.html', context)
     
