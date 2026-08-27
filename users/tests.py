@@ -32,7 +32,7 @@ class ExploitProbeDefenseTests(TestCase):
 class PesapalConfigTests(TestCase):
     def test_default_pesapal_base_url_uses_production_domain(self):
         config = _get_pesapal_config()
-        self.assertEqual(config['base_url'], 'https://pay.pesapal.com/pesapalv3')
+        self.assertEqual(config['base_url'], 'https://pay.pesapal.com/v3')
 
     def test_pesapal_request_path_is_joined_without_double_api_segment(self):
         config = _get_pesapal_config()
@@ -40,7 +40,7 @@ class PesapalConfigTests(TestCase):
         if base_url.endswith('/api'):
             base_url = base_url[:-4]
         url = f"{base_url}/api/Auth/RequestToken"
-        self.assertEqual(url, 'https://pay.pesapal.com/pesapalv3/api/Auth/RequestToken')
+        self.assertEqual(url, 'https://pay.pesapal.com/v3/api/Auth/RequestToken')
 
 
 class PesapalIntegrationTests(TestCase):

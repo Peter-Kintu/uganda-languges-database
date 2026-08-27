@@ -30,6 +30,8 @@ def _get_pesapal_config():
     base_url = base_url.rstrip('/')
     if base_url.endswith('/api'):
         base_url = base_url[:-4]
+    if base_url == 'https://pay.pesapal.com/pesapalv3':
+        base_url = 'https://pay.pesapal.com/v3'
     return {
         'base_url': base_url,
         'consumer_key': os.getenv('PESAPAL_CONSUMER_KEY', ''),
