@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 def _get_pesapal_config():
     return {
-        'base_url': os.getenv('PESAPAL_BASE_URL', 'https://cyb3r.pesapal.com/pesapalv3/api/').rstrip('/'),
+        'base_url': os.getenv('PESAPAL_BASE_URL', 'https://pay.pesapal.com/pesapalv3/api').rstrip('/'),
         'consumer_key': os.getenv('PESAPAL_CONSUMER_KEY', ''),
         'consumer_secret': os.getenv('PESAPAL_CONSUMER_SECRET', ''),
     }
@@ -46,18 +46,23 @@ def _pesapal_request(method, path, json_data=None, timeout=20):
     headers = {'Content-Type': 'application/json'}
     headers.update(_pesapal_auth_header())
     method = method.lower()
-    if method == 'post':
-        response = requests.post(url, headers=headers, json=json_data, timeout=timeout)
-    else:
-        response = requests.get(url, headers=headers, params=json_data, timeout=timeout)
-
-    if not getattr(response, 'ok', response.status_code < 400):
-        response.raise_for_status()
 
     try:
-        return response.json()
-    except ValueError:
-        return {'status': 'ok'}
+        if method == 'post':
+            response = requests.post(url, headers=headers, json=json_data, timeout=timeout)
+        else:
+            response = requests.get(url, headers=headers, params=json_data, timeout=timeout)
+
+        if not getattr(response, 'ok', response.status_code < 400):
+            response.raise_for_status()
+
+        try:
+            return response.json()
+        except ValueError:
+            return {'status': 'ok'}
+    except requests.exceptions.RequestException as exc:
+        logger.warning('Pesapal request failed for %s: %s', path, exc)
+        raise RuntimeError(f'Pesapal request failed for {path}: {exc}') from exc
 
 
 # Google auth token verification

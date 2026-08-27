@@ -2,13 +2,37 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
+from myuganda.middleware import WordPressProbeBlockMiddleware
 from users.models import PesapalPayment, UserSubscription
+from users.views import _get_pesapal_config
 
 
 User = get_user_model()
+
+
+class ExploitProbeDefenseTests(TestCase):
+    def test_rest_route_probe_is_denied_with_404(self):
+        request = RequestFactory().get('/', {'rest_route': '/wp/v2/users'})
+        middleware = WordPressProbeBlockMiddleware(lambda request: None)
+        response = middleware.process_request(request)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 404)
+
+    def test_wordpress_manifest_probe_is_denied_with_404(self):
+        request = RequestFactory().get('/wp-includes/wlwmanifest.xml')
+        middleware = WordPressProbeBlockMiddleware(lambda request: None)
+        response = middleware.process_request(request)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 404)
+
+
+class PesapalConfigTests(TestCase):
+    def test_default_pesapal_base_url_uses_production_domain(self):
+        config = _get_pesapal_config()
+        self.assertEqual(config['base_url'], 'https://pay.pesapal.com/pesapalv3/api')
 
 
 class PesapalIntegrationTests(TestCase):

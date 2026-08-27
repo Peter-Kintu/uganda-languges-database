@@ -4,11 +4,18 @@ Security Middleware for HTTP Method Restrictions and Additional Protections
 This middleware restricts HTTP methods to safe verbs (GET, HEAD, POST, OPTIONS)
 and blocks potentially dangerous methods (PUT, DELETE, TRACE, CONNECT) that could
 be exploited for unauthorized resource modification or reconnaissance.
+
+It also short-circuits obvious WordPress-style reconnaissance probes such as
+/wp-json, /wp-admin/install.php, /xmlrpc.php, /wp-includes/wlwmanifest.xml,
+and rest_route payloads, returning a clean 404 before the request reaches
+Django URL resolution.
 """
 
-from django.http import HttpResponse, HttpResponsePermanentRedirect
-from django.utils.deprecation import MiddlewareMixin
 import logging
+import re
+
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
+from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +35,48 @@ class CanonicalDomainMiddleware(MiddlewareMixin):
             return HttpResponsePermanentRedirect(
                 f'https://www.africanaai.info{request.get_full_path()}'
             )
+        return None
+
+
+class WordPressProbeBlockMiddleware(MiddlewareMixin):
+    """
+    Return a clean 404 for WordPress-style reconnaissance probes aimed at this
+    application. These requests are not part of the site API surface and should
+    never reach the normal Django URL machinery.
+    """
+
+    WP_PATH_PATTERN = re.compile(
+        r"(?:/wp-json/|/wp-json$|/wp-admin/|/wp-login\.php|/xmlrpc\.php|/wp-includes/|/wp-content/plugins/|/wlwmanifest\.xml|/wp-admin/install\.php)",
+        re.IGNORECASE,
+    )
+
+    REST_ROUTE_PATTERN = re.compile(
+        r"(?:\/wp\/v2|\/wp\/v2\/|\/batch\/v1|wp-json|wp\/v2|rest_route)",
+        re.IGNORECASE,
+    )
+
+    def process_request(self, request):
+        path = request.path.lower()
+        query = request.META.get('QUERY_STRING', '').lower()
+        decoded_rest_route = request.GET.get('rest_route', '') if hasattr(request, 'GET') else ''
+        decoded_rest_route = decoded_rest_route.lower()
+        full_probe = f"{path}?{query}".lower()
+
+        # Explicitly deny obvious WP API / XMLRPC / plugin / manifest style probes.
+        if (
+            self.WP_PATH_PATTERN.search(path)
+            or self.REST_ROUTE_PATTERN.search(query)
+            or self.REST_ROUTE_PATTERN.search(full_probe)
+            or self.REST_ROUTE_PATTERN.search(decoded_rest_route)
+        ):
+            logger.warning(
+                "Blocked WordPress probe from %s to %s%s",
+                request.META.get('REMOTE_ADDR'),
+                request.path,
+                ('?' + request.META.get('QUERY_STRING', '')) if request.META.get('QUERY_STRING') else '',
+            )
+            return HttpResponseNotFound("Not Found")
+
         return None
 
 

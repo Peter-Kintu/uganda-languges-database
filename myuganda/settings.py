@@ -163,6 +163,7 @@ SITE_ID = 1
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'myuganda.middleware.CanonicalDomainMiddleware',  # Preserve canonical host while excluding crawler files
+    'myuganda.middleware.WordPressProbeBlockMiddleware',  # Block wp-json, xmlrpc, wp-includes, and rest_route probes
     'whitenoise.middleware.WhiteNoiseMiddleware', # High-performance static serving
     'django.middleware.gzip.GZipMiddleware',  # Compress responses for faster loading
     'django.contrib.sessions.middleware.SessionMiddleware',
