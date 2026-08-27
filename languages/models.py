@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 from datetime import timedelta
@@ -79,6 +80,14 @@ class JobPost(models.Model):
     Represents a single job post.
     Supports local entries and external API backfilling.
     """
+    posted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='job_posts',
+        editable=False,
+    )
     job_category = models.CharField(
         max_length=20,
         choices=JOB_CATEGORIES,

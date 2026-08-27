@@ -9,6 +9,14 @@ from django.dispatch import receiver
 # --- Product Model ---
 
 class Product(models.Model):
+    vendor_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products',
+        editable=False,
+    )
     # Marketplace Source Fields
     SOURCE_CHOICES = [
         ('local', 'Local Marketplace'),

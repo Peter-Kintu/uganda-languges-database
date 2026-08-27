@@ -493,12 +493,14 @@ def user_profile(request):
     user_jobs = []
     if Product:
         user_products = list(Product.objects.filter(
+            Q(vendor_user=user) |
             Q(vendor_name__iexact=user.username) |
             Q(vendor_name__iexact=user.get_full_name())
         ).order_by('-impressions', '-last_synced')[:20])
     try:
         from languages.models import JobPost
         user_jobs = list(JobPost.objects.filter(
+            Q(posted_by=user) |
             Q(recruiter_name__iexact=user.username) |
             Q(recruiter_name__iexact=user.get_full_name())
         ).order_by('-impressions', '-timestamp')[:20])

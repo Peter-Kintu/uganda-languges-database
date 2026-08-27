@@ -353,7 +353,9 @@ def add_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
-            product = form.save()
+            product = form.save(commit=False)
+            product.vendor_user = request.user
+            product.save()
             messages.success(request, f"🎉 Product '{product.name}' is now live!")
             return redirect('eshop:product_list')
     else:

@@ -145,6 +145,7 @@ def post_job(request):
         form = JobPostForm(request.POST, request.FILES) 
         if form.is_valid():
             job_post = form.save(commit=False)
+            job_post.posted_by = request.user
             recruiter_name = job_post.recruiter_name
             applicant, created = Applicant.objects.get_or_create(
                 recruiter_name=recruiter_name,
