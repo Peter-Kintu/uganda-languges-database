@@ -20,6 +20,13 @@ import uuid
 import random
 from datetime import timedelta
 
+try:
+    from eshop.models import Product
+    from languages.models import JobPost
+except ImportError:
+    Product = None
+    JobPost = None
+
 INVESTOR_CREATE_PASSCODE = getattr(settings, 'INVESTOR_CREATE_PASSCODE', '23882')
 
 
@@ -211,6 +218,50 @@ def _build_hybrid_feed(user, feed_type='all', is_crawler=False, feed_seed=None):
     return [post_by_id[post.id] for post in selected]
 
 
+def _build_market_feed_items(request):
+    """Select monetized products and jobs relevant to this user's interests."""
+    if Product is None or JobPost is None or not request.user.is_authenticated:
+        return [], []
+
+    products = list(Product.objects.filter(
+        Q(source='aliexpress') | Q(source='local', referral_commission__gt=0)
+    ).exclude(price__isnull=True).order_by('-last_synced')[:5])
+
+    search_terms = []
+    for value in (
+        request.GET.get('q'),
+        request.GET.get('search'),
+        request.session.get('last_job_search'),
+        request.session.get('job_search_term'),
+    ):
+        if value and isinstance(value, str):
+            search_terms.extend(value.lower().split())
+
+    profile_terms = [
+        getattr(request.user, 'headline', ''),
+        getattr(request.user, 'about', ''),
+        getattr(request.user, 'location', ''),
+    ]
+    profile_terms.extend(request.user.skills.values_list('name', flat=True))
+    search_terms.extend(' '.join(profile_terms).lower().split())
+    search_terms = list(dict.fromkeys(term for term in search_terms if len(term) > 2))
+
+    jobs = JobPost.objects.filter(is_validated=True)
+    if search_terms:
+        relevance_query = Q()
+        for term in search_terms:
+            relevance_query |= (
+                Q(post_content__icontains=term) |
+                Q(required_skills__icontains=term) |
+                Q(job_category__icontains=term) |
+                Q(recruiter_name__icontains=term) |
+                Q(recruiter_location__icontains=term)
+            )
+        jobs = jobs.filter(relevance_query)
+    jobs = list(jobs.order_by('-upvotes', '-timestamp')[:5])
+    return products, jobs
+
+
 def social_feed(request):
     # 0. Check User Agent for Google AdSense Crawler Bypass
     user_agent = (request.META.get('HTTP_USER_AGENT', '') or '').lower()
@@ -244,6 +295,7 @@ def social_feed(request):
     # Compose one deduplicated feed from followed, popular, useful, and recent buckets.
     feed_seed = request.GET.get('feed_seed') or uuid.uuid4().hex
     posts = _build_hybrid_feed(request.user, feed_type, is_adsense_crawler, feed_seed)
+    market_products, recommended_jobs = _build_market_feed_items(request)
 
     # Paginate feed so we do not load every post at once
     page_number = request.GET.get('page', 1)
@@ -326,6 +378,8 @@ def social_feed(request):
         'current_lang': target_lang,
         'is_crawler': is_adsense_crawler,
         'feed_seed': feed_seed,
+        'market_products': market_products,
+        'recommended_jobs': recommended_jobs,
     }
     response = render(request, 'hotel/social_feed_new.html', context)
     
