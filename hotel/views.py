@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.utils import timezone
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from urllib.parse import quote
@@ -15,6 +16,7 @@ import requests
 import json
 import os
 import hashlib
+from datetime import timedelta
 
 INVESTOR_CREATE_PASSCODE = getattr(settings, 'INVESTOR_CREATE_PASSCODE', '23882')
 
@@ -109,6 +111,99 @@ def _google_translate(text, source_lang, target_lang):
     return None
 
 
+def _build_hybrid_feed(user, feed_type='all', is_crawler=False):
+    """Compose followed, popular, useful, and recent posts without duplicates."""
+    now = timezone.now()
+    discovery_start = now - timedelta(days=7)
+    popular_start = now - timedelta(hours=48)
+
+    posts_query = Post.objects.filter(created_at__gte=discovery_start).select_related('author').prefetch_related(
+        'comments', 'likes'
+    ).annotate(
+        like_count=Count('likes', distinct=True),
+        comment_count=Count('comments', distinct=True),
+        share_count=Count('shares', distinct=True),
+    )
+
+    if feed_type == 'text':
+        posts_query = posts_query.filter(image__isnull=True).filter(Q(location__isnull=True) | Q(location=''))
+    elif feed_type == 'images':
+        posts_query = posts_query.exclude(image__isnull=True)
+    elif feed_type == 'location':
+        posts_query = posts_query.exclude(location__isnull=True).exclude(location='')
+
+    posts = list(posts_query.order_by('-created_at'))
+    if not posts:
+        return []
+
+    post_by_id = {post.id: post for post in posts}
+    popular_ids = {
+        post.id for post in posts
+        if post.created_at >= popular_start and (
+            post.like_count >= 5 or
+            post.comment_count >= 3 or
+            post.share_count >= 2
+        )
+    }
+    useful_ids = {
+        post.id for post in posts
+        if post.author.user_type == 'investor' and post.author.is_approved
+    }
+
+    followed_ids = set()
+    if user.is_authenticated and not is_crawler:
+        followed_ids = set(Connection.objects.filter(
+            sender=user, status='accepted'
+        ).values_list('receiver_id', flat=True))
+
+    followed = [post for post in posts if post.author_id in followed_ids]
+    popular = [post for post in posts if post.id in popular_ids]
+    useful = [post for post in posts if post.id in useful_ids]
+    recent = posts
+
+    def ranked(bucket):
+        return sorted(
+            bucket,
+            key=lambda post: (
+                post.like_count * 2 + post.comment_count * 3 + post.share_count * 4,
+                post.created_at,
+            ),
+            reverse=True,
+        )
+
+    followed = ranked(followed)
+    popular = ranked(popular)
+    useful = ranked(useful)
+
+    selected = []
+    selected_ids = set()
+
+    def add_from(bucket, limit=None):
+        added = 0
+        for post in bucket:
+            if post.id in selected_ids:
+                continue
+            selected.append(post)
+            selected_ids.add(post.id)
+            added += 1
+            if limit is not None and added >= limit:
+                break
+
+    if followed_ids:
+        add_from(followed, 2)
+        add_from(useful, 1)
+        add_from(popular, 2)
+        add_from(useful, 1)
+        add_from(followed)
+    else:
+        # Discovery feed for new accounts: popular first, then useful and fresh posts.
+        add_from(popular, max(1, len(posts) // 2))
+        add_from(useful, max(1, len(posts) // 5))
+
+    add_from(recent)
+    return [post_by_id[post.id] for post in selected]
+
+
 def social_feed(request):
     # 0. Check User Agent for Google AdSense Crawler Bypass
     user_agent = (request.META.get('HTTP_USER_AGENT', '') or '').lower()
@@ -139,56 +234,8 @@ def social_feed(request):
     if isinstance(target_lang, str):
         target_lang = target_lang.lower()
     
-    # 2. Get Global Posts from approved investors that should appear for every user
-    global_posts_query = Post.objects.filter(
-        author__user_type='investor',
-        author__is_approved=True
-    ).select_related('author').prefetch_related('comments', 'likes').order_by('-created_at')[:10]
-    global_posts = list(global_posts_query)
-    global_post_ids = [post.id for post in global_posts]
-
-    # 3. Get ALL ACTIVE POSTS (visible to all logged-in users)
-    # Show posts from all users (not just connections) so everyone can see the feed
-    regular_posts_query = Post.objects.exclude(id__in=global_post_ids).select_related('author').prefetch_related('comments', 'likes').order_by('-created_at')
-    partner_posts_query = Post.objects.filter(author__user_type='investor', author__is_approved=True)\
-        .exclude(id__in=global_post_ids).select_related('author').prefetch_related('comments', 'likes').order_by('-created_at')
-
-    # 4. Apply Filtering Logic to BOTH querysets
-    if feed_type == 'text':
-        # Posts with no images and no location
-        filter_q = Q(image__isnull=True) & (Q(location__isnull=True) | Q(location=''))
-        regular_posts_query = regular_posts_query.filter(filter_q)
-        partner_posts_query = partner_posts_query.filter(filter_q)
-        
-    elif feed_type == 'images':
-        # Posts that HAVE images
-        regular_posts_query = regular_posts_query.exclude(image__isnull=True)
-        partner_posts_query = partner_posts_query.exclude(image__isnull=True)
-        
-    elif feed_type == 'location':
-        # Posts that HAVE location data
-        regular_posts_query = regular_posts_query.exclude(location__isnull=True).exclude(location='')
-        partner_posts_query = partner_posts_query.exclude(location__isnull=True).exclude(location='')
-
-    # 4. Interleave Logic (Invisible to user)
-    regular_posts = list(regular_posts_query)
-    partner_posts = list(partner_posts_query)
-    
-    final_feed = []
-    p_idx = 0  # Counter for partner posts
-    
-    for i, post in enumerate(regular_posts):
-        final_feed.append(post)
-        # Every 3 posts, inject 1 partner post if available
-        if (i + 1) % 3 == 0 and p_idx < len(partner_posts):
-            # Check to ensure we don't duplicate the same post if the partner 
-            # is also a connection of the user
-            if partner_posts[p_idx] not in final_feed:
-                final_feed.append(partner_posts[p_idx])
-            p_idx += 1
-
-    # 5. Put global/pattern posts at the top for every user
-    posts = list(global_posts) + final_feed
+    # Compose one deduplicated feed from followed, popular, useful, and recent buckets.
+    posts = _build_hybrid_feed(request.user, feed_type, is_adsense_crawler)
 
     # Paginate feed so we do not load every post at once
     page_number = request.GET.get('page', 1)
