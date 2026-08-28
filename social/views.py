@@ -103,17 +103,24 @@ def upload_reel(request):
             if not hasattr(reel, 'share_token') or not reel.share_token:
                 reel.share_token = uuid.uuid4().hex[:12]
             
-            reel.save()
+            try:
+                reel.save()
+            except Exception:
+                logger.exception("Reel upload storage failed for user %s", request.user.pk)
+                form.add_error(
+                    'local_video',
+                    'The video could not be saved right now. Your upload is still backed up in the browser. Please try again.'
+                )
+            else:
+                # --- WHATSAPP UPDATE LOGIC ---
+                whatsapp = form.cleaned_data.get('whatsapp_number')
+                if whatsapp:
+                    profile, created = SocialProfile.objects.get_or_create(user=request.user)
+                    profile.whatsapp_number = whatsapp
+                    profile.save()
 
-            # --- WHATSAPP UPDATE LOGIC ---
-            whatsapp = form.cleaned_data.get('whatsapp_number')
-            if whatsapp:
-                profile, created = SocialProfile.objects.get_or_create(user=request.user)
-                profile.whatsapp_number = whatsapp
-                profile.save()
-            
-            messages.success(request, "Deployment Successful: Your reel is live on local streaming.")
-            return redirect('social:social_feed')
+                messages.success(request, "Deployment Successful: Your reel is live on local streaming.")
+                return redirect('social:social_feed')
     else:
         # Pre-fill WhatsApp number if it already exists in the profile
         initial_data = {}
