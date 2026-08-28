@@ -141,7 +141,7 @@
     .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(79, 70, 229, 0.85); border-radius: 999px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(79, 70, 229, 1); }
 
-    #chat-window { background: #f8fafc; }
+    #chat-window { background: #f8fafc; overflow-anchor: none; scroll-behavior: auto; }
     .chat-bubble-user { background: #4338ca; color: #ffffff; }
     .chat-bubble-bot { background: #ffffff; color: #111827; }
     .chat-bubble-user p, .chat-bubble-bot p { margin: 0; }
@@ -212,7 +212,17 @@
         }
     }
 
-    window.addEventListener('load', scrollToBottom);
+    const negotiationForm = document.getElementById('negotiation-form');
+    const pagePositionKey = 'ai_negotiator_page_position';
+
+    window.addEventListener('load', () => {
+        const savedPagePosition = sessionStorage.getItem(pagePositionKey);
+        if (savedPagePosition !== null) {
+            sessionStorage.removeItem(pagePositionKey);
+            window.scrollTo(0, Number(savedPagePosition));
+        }
+        scrollToBottom();
+    });
 
     const observer = new MutationObserver(scrollToBottom);
     if (chatWindow) {
@@ -234,7 +244,13 @@
         });
 
         // Clear saved message on form submit
-        document.getElementById('negotiation-form').addEventListener('submit', () => {
+        negotiationForm.addEventListener('submit', () => {
+            if (chatWindow) {
+                sessionStorage.setItem(
+                    pagePositionKey,
+                    String(chatWindow.getBoundingClientRect().top + window.scrollY - 16)
+                );
+            }
             localStorage.removeItem('ai_negotiator_message');
         });
     }
