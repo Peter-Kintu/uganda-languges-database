@@ -570,6 +570,7 @@ def accept_connection(request, connection_id):
 
 SUNBIRD_URL = getattr(settings, 'SUNBIRD_API_URL', 'https://api.sunbird.ai')
 SUNBIRD_API_KEY = getattr(settings, 'SUNBIRD_API_KEY', None)
+SUNBIRD_TRANSLATION_TIMEOUT = getattr(settings, 'SUNBIRD_TRANSLATION_TIMEOUT', 10)
 NLLB_URL = getattr(settings, 'NLLB_API_URL', None) or 'https://sing-sjf2.onrender.com/translate'
 LIBRE_URL = "https://libretranslate.com/translate"
 LIBRE_ALT_URL = getattr(settings, 'LIBRE_ALT_URL', 'https://libretranslate.de/translate')
@@ -662,17 +663,24 @@ def translate_smart(text, target_lang, source_lang='en'):
             'text': text
         }
         request_url = SUNBIRD_URL.rstrip('/') + '/tasks/translate'
-        res = requests.post(
-            request_url,
-            json=payload,
-            timeout=30,
-            headers={
-                'Authorization': f'Bearer {SUNBIRD_API_KEY}',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        )
+        try:
+            res = requests.post(
+                request_url,
+                json=payload,
+                timeout=SUNBIRD_TRANSLATION_TIMEOUT,
+                headers={
+                    'Authorization': f'Bearer {SUNBIRD_API_KEY}',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            )
+        except requests.Timeout:
+            print(f"Sunbird timeout for {target_code}; trying translation fallbacks")
+            return None
+        except requests.RequestException as e:
+            print(f"Sunbird request error for {target_code}: {str(e)[:120]}")
+            return None
         if res.status_code != 200:
             if res.status_code == 422:
                 print(f"Sunbird validation error for {target_code}: {res.text[:300]}")
