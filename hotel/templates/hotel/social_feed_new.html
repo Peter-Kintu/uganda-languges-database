@@ -3076,6 +3076,7 @@
         const refreshedUrl = new URL(window.location.href);
         refreshedUrl.searchParams.delete('page');
         refreshedUrl.searchParams.delete('format');
+        refreshedUrl.searchParams.delete('new_post');
         refreshedUrl.searchParams.set(
             'feed_seed',
             window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
@@ -3210,8 +3211,11 @@
     const cleanFeedUrl = new URL(window.location.href);
     if (cleanFeedUrl.searchParams.has('feed_seed')) {
         cleanFeedUrl.searchParams.delete('feed_seed');
-        window.history.replaceState({}, '', cleanFeedUrl.toString());
     }
+    if (cleanFeedUrl.searchParams.has('new_post')) {
+        cleanFeedUrl.searchParams.delete('new_post');
+    }
+    window.history.replaceState({}, '', cleanFeedUrl.toString());
 
     window.addEventListener('scroll', () => {
         if (window.scrollY > window.innerHeight) {

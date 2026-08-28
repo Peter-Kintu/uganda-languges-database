@@ -7,7 +7,37 @@
 {% block title %}{{ user.get_full_name|default:user.username }}'s Profile | Africana AI{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+<style>
+    .profile-page {
+        overflow-x: hidden;
+    }
+
+    @media (max-width: 640px) {
+        .profile-page * {
+            min-width: 0;
+        }
+
+        .profile-page h1,
+        .profile-page h2,
+        .profile-page h3,
+        .profile-page p,
+        .profile-page span,
+        .profile-page a {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .profile-page .items-center.justify-between {
+            flex-wrap: wrap;
+        }
+
+        .profile-page input {
+            max-width: 100%;
+        }
+    }
+</style>
+
+<div class="profile-page min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
     <div class="max-w-6xl mx-auto space-y-8">
         <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_35px_80px_-30px_rgba(15,23,42,0.24)]">
             <div class="relative">

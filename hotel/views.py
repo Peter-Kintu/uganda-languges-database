@@ -120,10 +120,16 @@ def _google_translate(text, source_lang, target_lang):
     return None
 
 
-def _build_hybrid_feed(user, feed_type='all', is_crawler=False, feed_seed=None):
-    """Compose followed, popular, useful, and recent posts without duplicates."""
+def _build_hybrid_feed(
+    user,
+    feed_type='all',
+    is_crawler=False,
+    feed_seed=None,
+    session_key='',
+    priority_post_id=None,
+):
+    """Rank posts using relevance, freshness, novelty, and light exploration."""
     now = timezone.now()
-    popular_start = now - timedelta(hours=48)
 
     posts_query = Post.objects.all().select_related('author').prefetch_related(
         'comments', 'likes'
@@ -144,78 +150,54 @@ def _build_hybrid_feed(user, feed_type='all', is_crawler=False, feed_seed=None):
     if not posts:
         return []
 
-    post_by_id = {post.id: post for post in posts}
-    popular_ids = {
-        post.id for post in posts
-        if post.created_at >= popular_start and (
-            post.like_count >= 5 or
-            post.comment_count >= 3 or
-            post.share_count >= 2
-        )
-    }
-    useful_ids = {
-        post.id for post in posts
-        if post.author.user_type == 'investor' and post.author.is_approved
-    }
-
     followed_ids = set()
     if user.is_authenticated and not is_crawler:
         followed_ids = set(Connection.objects.filter(
             sender=user, status='accepted'
         ).values_list('receiver_id', flat=True))
 
-    followed = [post for post in posts if post.author_id in followed_ids]
-    popular = [post for post in posts if post.id in popular_ids]
-    useful = [post for post in posts if post.id in useful_ids]
-    recent = posts
-
-    # Keep pagination stable during one visit while varying the feed on refresh.
+    # The seed keeps pagination stable for one visit, while a new refresh seed
+    # changes exploration order instead of repeatedly pinning one post at top.
     rotation = random.Random(str(feed_seed or 'default'))
     bucket_order = {post.id: rotation.random() for post in posts}
 
-    def ranked(bucket):
-        return sorted(
-            bucket,
-            key=lambda post: (
-                post.like_count * 2 + post.comment_count * 3 + post.share_count * 4,
-                bucket_order[post.id],
-                post.created_at,
-            ),
-            reverse=True,
+    seen_ids = set()
+    if user.is_authenticated and not is_crawler:
+        seen_ids = set(FeedImpression.objects.filter(
+            viewer=user, session_key=session_key, content_type='post',
+            object_id__in=[post.id for post in posts],
+        ).values_list('object_id', flat=True))
+
+    def score(post):
+        age_hours = max(0, (now - post.created_at).total_seconds() / 3600)
+        freshness = max(0, 8 - (age_hours / 24))
+        engagement = (
+            post.like_count * 1.5 +
+            post.comment_count * 2.5 +
+            post.share_count * 3
+        )
+        relevance = 14 if post.author_id in followed_ids else 0
+        useful = 2 if post.author.user_type == 'investor' and post.author.is_approved else 0
+        popular = 3 if engagement >= 8 and age_hours <= 48 else 0
+        novelty = 7 if post.id not in seen_ids else 0
+        just_created = 1000 if post.id == priority_post_id else 0
+        return (
+            just_created + freshness + engagement + relevance + useful + popular + novelty +
+            bucket_order[post.id] * 6
         )
 
-    followed = ranked(followed)
-    popular = ranked(popular)
-    useful = ranked(useful)
-    recent = sorted(recent, key=lambda post: bucket_order[post.id])
-
+    ranked_posts = sorted(posts, key=score, reverse=True)
     selected = []
-    selected_ids = set()
+    for post in ranked_posts:
+        if selected and post.author_id == selected[-1].author_id and any(
+            candidate.author_id != post.author_id for candidate in ranked_posts[len(selected):]
+        ):
+            continue
+        selected.append(post)
 
-    def add_from(bucket, limit=None):
-        added = 0
-        for post in bucket:
-            if post.id in selected_ids:
-                continue
-            selected.append(post)
-            selected_ids.add(post.id)
-            added += 1
-            if limit is not None and added >= limit:
-                break
-
-    if followed_ids:
-        add_from(followed, 2)
-        add_from(useful, 1)
-        add_from(popular, 2)
-        add_from(useful, 1)
-        add_from(followed)
-    else:
-        # Discovery feed for new accounts: popular first, then useful and fresh posts.
-        add_from(popular, max(1, len(posts) // 2))
-        add_from(useful, max(1, len(posts) // 5))
-
-    add_from(recent)
-    return [post_by_id[post.id] for post in selected]
+    selected_ids = {post.id for post in selected}
+    selected.extend(post for post in ranked_posts if post.id not in selected_ids)
+    return selected
 
 
 def _build_market_feed_items(request):
@@ -350,7 +332,23 @@ def social_feed(request):
     
     # Compose one deduplicated feed from followed, popular, useful, and recent buckets.
     feed_seed = request.GET.get('feed_seed') or uuid.uuid4().hex
-    posts = _build_hybrid_feed(request.user, feed_type, is_adsense_crawler, feed_seed)
+    try:
+        priority_post_id = int(request.GET.get('new_post', ''))
+    except (TypeError, ValueError):
+        priority_post_id = None
+    if priority_post_id and (
+        not request.user.is_authenticated or
+        not Post.objects.filter(id=priority_post_id, author=request.user).exists()
+    ):
+        priority_post_id = None
+    posts = _build_hybrid_feed(
+        request.user,
+        feed_type,
+        is_adsense_crawler,
+        feed_seed,
+        request.session.session_key or '',
+        priority_post_id,
+    )
     market_products, recommended_jobs = _build_market_feed_items(request)
 
     # Paginate feed so we do not load every post at once
@@ -492,7 +490,7 @@ def create_post(request):
             post.author = request.user
             post.save()
             messages.success(request, 'Post created successfully!')
-            return redirect('hotel:social_feed')
+            return redirect(f"{redirect('hotel:social_feed').url}?new_post={post.id}")
 
     return render(request, 'hotel/create_post.html', {
         'form': form,
@@ -509,7 +507,7 @@ def public_create_post(request):
         post.author = request.user
         post.save()
         messages.success(request, 'Post created successfully!')
-        return redirect('hotel:social_feed')
+        return redirect(f"{redirect('hotel:social_feed').url}?new_post={post.id}")
 
     return render(request, 'hotel/post.html', {
         'form': form,
