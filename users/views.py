@@ -643,7 +643,7 @@ def profile_edit(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Your profile was successfully updated!')
-            return redirect('users:user_profile')
+            return redirect('users:profile')
     else:
         form = ProfileEditForm(instance=user)
     try:
