@@ -48,7 +48,7 @@
                             <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-500">🧕🏾</span>
                             <span class="text-xs font-bold text-indigo-500">Nakintu</span>
                         </div>
-                        <p class="text-sm md:text-base italic">Hello! I'm Nakintu — I help you bargain for a fair price. Try typing: "I can offer 80,000" or write in your language.</p>
+                        <p class="text-sm md:text-base italic">Hello! I'm Nakintu — I help you bargain for a fair price. Try typing: "I can offer {{ product.get_currency_code }} {{ product.price|floatformat:0|intcomma }}" or write in your language.</p>
                     </div>
                 </div>
 
