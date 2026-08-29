@@ -23,6 +23,13 @@ def robots_txt(request):
         "Allow: /jobs/",
         "Allow: /languages/",
         "Allow: /eshop/",
+        "# Explicit AdSense crawler access",
+        "User-agent: Mediapartners-Google",
+        "Allow: /ads.txt",
+        "Allow: /",
+        "User-agent: AdsBot-Google",
+        "Allow: /ads.txt",
+        "Allow: /",
         "# Disallow admin and sensitive areas",
         "Disallow: /admin/",
         "Disallow: /accounts/",
@@ -34,7 +41,7 @@ def robots_txt(request):
         f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap-profiles.xml",
         f"Sitemap: https://{settings.DEFAULT_DOMAIN}/sitemap-feeds.xml",
     ]
-    return HttpResponse("\n".join(lines), content_type="text/plain")
+    return HttpResponse("\n".join(lines), content_type="text/plain; charset=utf-8")
 
 
 def show_ip(request):
@@ -44,7 +51,9 @@ def show_ip(request):
 
 def ads_txt(request):
     content = "google.com, pub-9564790727166506, DIRECT, f08c47fec0942fa0\n"
-    return HttpResponse(content, content_type="text/plain")
+    response = HttpResponse(content, content_type="text/plain; charset=utf-8")
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
 
 sitemaps_dict = {
     'static': StaticViewSitemap,
