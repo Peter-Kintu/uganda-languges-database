@@ -168,6 +168,50 @@ CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID") or os.getenv("CAREERJET_
 CAREERJET_API_ENABLED = os.getenv("CAREERJET_ENABLED", "1").lower() in ("1", "true", "yes")
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 
+# Static outbound proxy support for Koyeb / dynamic IP hosts.
+# Set CAREERJET_PROXY_URL or PROXY_URL in the environment to route external requests through a fixed public IP proxy.
+PROXY_URL = (
+    os.getenv("CAREERJET_PROXY_URL")
+    or os.getenv("PROXY_URL")
+    or os.getenv("HTTPS_PROXY")
+    or os.getenv("HTTP_PROXY")
+)
+
+# Force a single outbound proxy identity for external requests.
+# This is important on Koyeb/serverless environments where the node IP rotates.
+if PROXY_URL:
+    os.environ['HTTP_PROXY'] = PROXY_URL
+    os.environ['HTTPS_PROXY'] = PROXY_URL
+    os.environ['http_proxy'] = PROXY_URL
+    os.environ['https_proxy'] = PROXY_URL
+
+
+def get_outbound_proxies():
+    """Return the explicit proxy configuration for external HTTP calls.
+
+    If no proxy is configured, this returns {} so the requests do not silently
+    route through an unpredictable infrastructure default.
+    """
+    proxy_url = (
+        os.getenv("CAREERJET_PROXY_URL")
+        or os.getenv("PROXY_URL")
+        or os.getenv("HTTPS_PROXY")
+        or os.getenv("HTTP_PROXY")
+    )
+    if not proxy_url:
+        return {}
+    return {'http': proxy_url, 'https': proxy_url}
+
+
+def get_external_session():
+    """Build a requests session that uses an explicit proxy and ignores ambient env proxies."""
+    session = requests.Session()
+    session.trust_env = False
+    proxies = get_outbound_proxies()
+    if proxies:
+        session.proxies.update(proxies)
+    return session
+
 # Log API key status for debugging (first 6 chars only for security)
 if CAREERJET_API_KEY:
     key_preview = CAREERJET_API_KEY[:6] + "..." if len(CAREERJET_API_KEY) > 6 else "****"
@@ -316,8 +360,9 @@ def fetch_jooble_data(keywords, location=""):
     time.sleep(0.5)
 
     try:
-        # Create session for better cookie handling and retry
-        session = requests.Session()
+        # Create session for better cookie handling and retry.
+        # Explicit proxy use prevents Koyeb/serverless hosts from rotating the outbound IP.
+        session = get_external_session()
         retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[403, 429, 500, 502, 503, 504], allowed_methods=["POST", "GET"])
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("https://", adapter)
@@ -326,7 +371,7 @@ def fetch_jooble_data(keywords, location=""):
 
         print(f"Jooble: Searching '{keywords}' in '{api_location or 'Global'}'")
 
-        response = session.post(url, json=body, timeout=15)
+        response = session.post(url, json=body, timeout=15, proxies=get_outbound_proxies())
 
         print(f"Jooble Status: {response.status_code}")
 
@@ -497,15 +542,15 @@ def fetch_careerjet_data(request, keywords, location=""):
     time.sleep(0.5)
 
     try:
-        # Use session for better connection handling
-        session = requests.Session()
+        # Use session for better connection handling and force the same proxy identity for every request.
+        session = get_external_session()
         retry = Retry(total=2, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504], allowed_methods=["POST", "GET"])
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("https://", adapter)
         session.mount("http://", adapter)
         session.headers.update(headers)
 
-        response = session.get(url, params=params, timeout=20)
+        response = session.get(url, params=params, timeout=20, proxies=get_outbound_proxies())
         print(f"CareerJet Status: {response.status_code}")
 
         if response.status_code == 200:
@@ -563,7 +608,7 @@ def fetch_careerjet_data(request, keywords, location=""):
                     params['location'] = ''
 
                 time.sleep(0.5)
-                response = session.get(url, params=params, timeout=20)
+                response = session.get(url, params=params, timeout=20, proxies=get_outbound_proxies())
 
                 if response.status_code == 200:
                     data = response.json()

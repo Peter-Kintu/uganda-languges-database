@@ -164,13 +164,13 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'myuganda.middleware.CanonicalDomainMiddleware',  # Preserve canonical host while excluding crawler files
     'myuganda.middleware.WordPressProbeBlockMiddleware',  # Block wp-json, xmlrpc, wp-includes, and rest_route probes
-    'myuganda.middleware.RateLimitMiddleware',  # Protect high-traffic endpoints and stop abuse bursts
     'whitenoise.middleware.WhiteNoiseMiddleware', # High-performance static serving
     'django.middleware.gzip.GZipMiddleware',  # Compress responses for faster loading
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'myuganda.middleware.RateLimitMiddleware',  # Protect high-traffic endpoints and stop abuse bursts
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'myuganda.middleware.HTTPMethodSecurityMiddleware',  # Restrict HTTP methods

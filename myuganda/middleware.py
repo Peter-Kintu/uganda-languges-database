@@ -168,8 +168,17 @@ class RateLimitMiddleware(MiddlewareMixin):
             burst = min(burst, max(5, int(limit * 0.25)))
 
         now = int(time.time())
-        if request.user.is_authenticated:
-            key_base = f"ratelimit:user:{request.user.id}"
+        user = getattr(request, 'user', None)
+        if user is None:
+            logger.warning(
+                "Rate limit skipped because request.user was missing for path=%s remote_addr=%s",
+                request.path,
+                request.META.get('REMOTE_ADDR', 'unknown'),
+            )
+            return None
+
+        if getattr(user, 'is_authenticated', False):
+            key_base = f"ratelimit:user:{user.id}"
         else:
             ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'unknown')).split(',')[0].strip()
             key_base = f"ratelimit:ip:{ip}"
