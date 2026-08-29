@@ -1,5 +1,7 @@
 import os
+import socket
 from pathlib import Path
+from urllib.parse import urlparse
 from django.urls import reverse_lazy
 import dj_database_url
 import cloudinary
@@ -284,6 +286,23 @@ DJANGO_CACHE_TABLE = os.getenv('DJANGO_CACHE_TABLE', 'django_cache_table')
 REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1')
 USE_REDIS_CACHE = os.getenv('USE_REDIS_CACHE', 'True').lower() in ('1', 'true', 'yes', 'on')
 
+
+def redis_is_available(redis_url):
+    """Return True only when the configured Redis instance is actually reachable."""
+    try:
+        parsed = urlparse(redis_url)
+        host = parsed.hostname or '127.0.0.1'
+        port = parsed.port or 6379
+        with socket.create_connection((host, port), timeout=1):
+            return True
+    except Exception:
+        return False
+
+
+if USE_REDIS_CACHE and not redis_is_available(REDIS_URL):
+    print(f"[Redis] Not reachable at {REDIS_URL}. Falling back to local/database cache for stability.")
+    USE_REDIS_CACHE = False
+
 # --- STORAGE BACKENDS ---
 # Check if Cloudinary is properly configured
 CLOUDINARY_CONFIGURED = (
@@ -437,8 +456,9 @@ else:
     }
 
 # Use Redis for session storage when available so the app remains stateless across workers.
-SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
-SESSION_CACHE_ALIAS = 'default'
+# If Redis is unavailable, fall back to the default database-backed sessions instead of crashing.
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' if USE_REDIS_CACHE else 'django.contrib.sessions.backends.db'
+SESSION_CACHE_ALIAS = 'default' if USE_REDIS_CACHE else None
 
 # Celery configuration. This runs background tasks without blocking the request cycle.
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', REDIS_URL)
