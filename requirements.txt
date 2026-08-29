@@ -9,6 +9,11 @@ psycopg[binary]
 dj-database-url
 python-dotenv
 
+# Cache & background tasks
+redis
+django-redis
+celery
+
 # Static Files & Security
 whitenoise[brotli]
 django-cors-headers

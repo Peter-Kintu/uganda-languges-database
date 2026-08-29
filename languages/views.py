@@ -3,6 +3,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponse
 from django.db.models import F, Q, Count
 from django.urls import reverse
+from django.views.decorators.cache import cache_page
 from datetime import date, datetime, timedelta
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import login_required
@@ -704,6 +705,7 @@ def deduplicate_jobs(jobs_list):
     return unique_jobs
 
 
+@cache_page(60 * 5)
 @allow_google_bot_or_login
 def browse_job_listings(request):
     job_id = request.GET.get('job_id')

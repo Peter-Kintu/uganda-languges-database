@@ -16,6 +16,8 @@ from django.utils import timezone
 from django.contrib import messages
 from django.db.models import F, Q
 from django.urls import reverse
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 
 # Internal App Models and Forms
 from .models import BusinessReel, SocialProfile, SecureMessage
@@ -35,6 +37,7 @@ if os.environ.get('CLOUDINARY_CLOUD_NAME'):
     )
 
 
+@method_decorator(cache_page(60 * 5), name='dispatch')
 class FeedView(ListView):
     """
     Pillar 2: Main social feed displaying Business Reels.

@@ -9,6 +9,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from urllib.parse import quote
 from .models import Post, Comment, Like, Connection, Message, Share, Community, CommunityMessage, FeedImpression
 from .forms import PostForm
+from .tasks import warm_hotel_feed_cache, rebuild_hotel_feed_cache
 from users.models import CustomUser
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -52,6 +53,16 @@ def _translation_cache_key(text, source_lang, target_lang):
     target = (target_lang or 'en').lower().strip()
     digest = hashlib.md5(text.encode('utf-8')).hexdigest()[:8]
     return f"trans_{digest}_{source}_{target}"
+
+
+def invalidate_hotel_feed_cache():
+    """Clear cached public feed data after writes that affect the homepage feed."""
+    cache_keys = [
+        'hotel:feed:public:all',
+        'social:feed:public:all',
+    ]
+    cache.delete_many(cache_keys)
+    rebuild_hotel_feed_cache.delay('hotel:feed:public:all', 20)
 
 
 def _is_suspicious_text(t, original_len):
@@ -489,6 +500,8 @@ def create_post(request):
             post = form.save(commit=False)
             post.author = request.user
             post.save()
+            invalidate_hotel_feed_cache()
+            warm_hotel_feed_cache.delay()
             messages.success(request, 'Post created successfully!')
             return redirect(f"{redirect('hotel:social_feed').url}?new_post={post.id}")
 
@@ -506,6 +519,8 @@ def public_create_post(request):
         post = form.save(commit=False)
         post.author = request.user
         post.save()
+        invalidate_hotel_feed_cache()
+        warm_hotel_feed_cache.delay()
         messages.success(request, 'Post created successfully!')
         return redirect(f"{redirect('hotel:social_feed').url}?new_post={post.id}")
 
@@ -520,6 +535,7 @@ def like_post(request, post_id):
     like, created = Like.objects.get_or_create(post=post, user=request.user)
     if not created:
         like.delete()
+    invalidate_hotel_feed_cache()
     return JsonResponse({'likes_count': post.likes.count()})
 
 @login_required
@@ -535,6 +551,7 @@ def add_comment(request, post_id):
                 content = ''
         if content:
             comment = Comment.objects.create(post=post, author=request.user, content=content)
+            invalidate_hotel_feed_cache()
             return JsonResponse({
                 'success': True,
                 'comment': {

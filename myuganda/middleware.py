@@ -13,11 +13,28 @@ Django URL resolution.
 
 import logging
 import re
+import time
 
+from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
+
+THROTTLED_PATHS = {
+    '/hotel/': {'limit': 25, 'window': 60},
+    '/hotel/social_feed': {'limit': 25, 'window': 60},
+    '/social/feed/': {'limit': 30, 'window': 60},
+    '/languages/jobs/': {'limit': 20, 'window': 60},
+    '/languages/': {'limit': 25, 'window': 60},
+    '/login/': {'limit': 8, 'window': 300},
+    '/register/': {'limit': 8, 'window': 300},
+    '/social/publish/': {'limit': 6, 'window': 300},
+    '/hotel/create_post/': {'limit': 6, 'window': 300},
+    '/hotel/post/': {'limit': 6, 'window': 300},
+    '/upload/': {'limit': 6, 'window': 300},
+}
 
 # Allowed HTTP methods for this application
 ALLOWED_METHODS = {'GET', 'HEAD', 'POST', 'OPTIONS'}
@@ -121,6 +138,64 @@ class HTTPMethodSecurityMiddleware(MiddlewareMixin):
         
         # Allow all other methods (they will be handled by Django views)
         # Returning None means "continue processing"
+        return None
+
+
+class RateLimitMiddleware(MiddlewareMixin):
+    """Simple IP + user rate limiter for public, high-traffic endpoints."""
+
+    def process_request(self, request):
+        if request.method not in {'GET', 'POST', 'HEAD'}:
+            return None
+
+        path = request.path or '/'
+        if path.startswith('/admin/') or path.startswith('/static/') or path.startswith('/media/'):
+            return None
+
+        limit = getattr(settings, 'RATE_LIMIT_REQUESTS_PER_MINUTE', 120)
+        window = getattr(settings, 'RATE_LIMIT_WINDOW_SECONDS', 60)
+        burst = getattr(settings, 'RATE_LIMIT_BURST', 30)
+
+        matching_rule = None
+        for known_path, rule in THROTTLED_PATHS.items():
+            if path == known_path or path.startswith(known_path):
+                matching_rule = rule
+                break
+
+        if matching_rule:
+            limit = matching_rule['limit']
+            window = matching_rule['window']
+            burst = min(burst, max(5, int(limit * 0.25)))
+
+        now = int(time.time())
+        if request.user.is_authenticated:
+            key_base = f"ratelimit:user:{request.user.id}"
+        else:
+            ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'unknown')).split(',')[0].strip()
+            key_base = f"ratelimit:ip:{ip}"
+
+        bucket_key = f"{key_base}:{path}"
+        window_key = f"{bucket_key}:window"
+
+        current_window = cache.get(window_key)
+        if current_window is None:
+            current_window = now
+            cache.set(window_key, current_window, timeout=window)
+
+        request_count = cache.get(f"{bucket_key}:{current_window}", 0)
+        effective_limit = max(10, limit - burst)
+        if request_count >= effective_limit:
+            response = HttpResponse(
+                "Too many requests. Please slow down and try again shortly.",
+                status=429,
+                content_type='text/plain',
+            )
+            response['Retry-After'] = str(window)
+            response['X-RateLimit-Limit'] = str(effective_limit)
+            response['X-RateLimit-Remaining'] = '0'
+            return response
+
+        cache.set(f"{bucket_key}:{current_window}", request_count + 1, timeout=window)
         return None
 
 

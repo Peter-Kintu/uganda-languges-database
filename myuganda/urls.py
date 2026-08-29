@@ -8,7 +8,20 @@ from django.views.generic import TemplateView
 from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap, UserProfileSitemap, BusinessReelSitemap, custom_sitemap_view
 
 import requests
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.core.cache import cache
+
+
+def redis_health_check(request):
+    try:
+        cache_key = 'health:redis:check'
+        result = cache.set(cache_key, 'ok', timeout=30)
+        value = cache.get(cache_key)
+        if result and value == 'ok':
+            return JsonResponse({'status': 'ok', 'redis': 'healthy'}, status=200)
+        return JsonResponse({'status': 'error', 'redis': 'unreachable'}, status=503)
+    except Exception as exc:
+        return JsonResponse({'status': 'error', 'redis': 'unreachable', 'detail': str(exc)}, status=503)
 
 
 def robots_txt(request):
@@ -71,6 +84,7 @@ urlpatterns = [
 
     # Root robots.txt should always be served from the canonical site entrypoint.
     path("robots.txt", robots_txt),
+    path("redis-health/", redis_health_check, name="redis_health_check"),
 
     # 1. Admin
     path("admin/", admin.site.urls),

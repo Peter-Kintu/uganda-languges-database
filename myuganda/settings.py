@@ -164,6 +164,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'myuganda.middleware.CanonicalDomainMiddleware',  # Preserve canonical host while excluding crawler files
     'myuganda.middleware.WordPressProbeBlockMiddleware',  # Block wp-json, xmlrpc, wp-includes, and rest_route probes
+    'myuganda.middleware.RateLimitMiddleware',  # Protect high-traffic endpoints and stop abuse bursts
     'whitenoise.middleware.WhiteNoiseMiddleware', # High-performance static serving
     'django.middleware.gzip.GZipMiddleware',  # Compress responses for faster loading
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -172,8 +173,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'myuganda.middleware.HTTPMethodSecurityMiddleware',  # NEW: Restrict HTTP methods
-    'myuganda.middleware.SecurityHeadersMiddleware',  # NEW: Add additional security headers
+    'myuganda.middleware.HTTPMethodSecurityMiddleware',  # Restrict HTTP methods
+    'myuganda.middleware.SecurityHeadersMiddleware',  # Add additional security headers
 ]
 
 ROOT_URLCONF = 'myuganda.urls'
@@ -241,6 +242,11 @@ AUTH_PASSWORD_VALIDATORS = [
 SESSION_COOKIE_AGE = 31536000  # 1 year 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
+# --- RATE LIMITING & TRAFFIC CONTROL ---
+RATE_LIMIT_REQUESTS_PER_MINUTE = int(os.getenv('RATE_LIMIT_REQUESTS_PER_MINUTE', '120'))
+RATE_LIMIT_BURST = int(os.getenv('RATE_LIMIT_BURST', '30'))
+RATE_LIMIT_WINDOW_SECONDS = int(os.getenv('RATE_LIMIT_WINDOW_SECONDS', '60'))
+
 # --- STATIC & MEDIA FILES ---
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -275,6 +281,8 @@ NLLB_API_URL = os.getenv('NLLB_API_URL', '')
 # and create the cache table via `python manage.py createcachetable`.
 USE_DATABASE_CACHE = os.getenv('USE_DATABASE_CACHE', 'False').lower() in ('1', 'true', 'yes')
 DJANGO_CACHE_TABLE = os.getenv('DJANGO_CACHE_TABLE', 'django_cache_table')
+REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1')
+USE_REDIS_CACHE = os.getenv('USE_REDIS_CACHE', 'True').lower() in ('1', 'true', 'yes', 'on')
 
 # --- STORAGE BACKENDS ---
 # Check if Cloudinary is properly configured
@@ -396,8 +404,19 @@ LOGGING = {
 }
 
 # --- CACHING CONFIGURATION ---
-# Keep production memory usage low by avoiding local in-process caches.
-if DATABASE_URL and not DEBUG and USE_DATABASE_CACHE:
+# Production-ready cache setup: prefer Redis, then DB cache, then local memory fallback.
+if USE_REDIS_CACHE:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'uganda_db',
+        }
+    }
+elif DATABASE_URL and not DEBUG and USE_DATABASE_CACHE:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
@@ -416,3 +435,20 @@ else:
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         }
     }
+
+# Use Redis for session storage when available so the app remains stateless across workers.
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
+
+# Celery configuration. This runs background tasks without blocking the request cycle.
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', REDIS_URL)
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', REDIS_URL)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_ALWAYS_EAGER = os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False').lower() in ('1', 'true', 'yes', 'on') and DEBUG
+
+# If Redis is unavailable in a local dev environment, the app still starts without crashing.
+if not USE_REDIS_CACHE and not DEBUG:
+    CELERY_TASK_ALWAYS_EAGER = True
