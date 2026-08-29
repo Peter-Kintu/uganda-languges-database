@@ -49,24 +49,60 @@ def _pesapal_auth_header():
     return {'Authorization': f'Basic {token}'}
 
 
-def _pesapal_request(method, path, json_data=None, timeout=20):
+def _pesapal_access_token():
+    config = _get_pesapal_config()
+    if not config['consumer_key'] or not config['consumer_secret']:
+        raise ValueError('Pesapal consumer key and secret must be configured.')
+
+    base_url = config['base_url'].rstrip('/')
+    url = f"{base_url}/api/Auth/RequestToken"
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    payload = {
+        'consumer_key': config['consumer_key'],
+        'consumer_secret': config['consumer_secret'],
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=20)
+        if not getattr(response, 'ok', response.status_code < 400):
+            response.raise_for_status()
+        auth_response = response.json()
+    except requests.exceptions.RequestException as exc:
+        logger.warning('Pesapal token request failed: %s', exc)
+        raise RuntimeError(f'Pesapal token request failed: {exc}') from exc
+
+    token = auth_response.get('token') if isinstance(auth_response, dict) else None
+    if not token:
+        raise ValueError('Pesapal authentication did not return a bearer token.')
+    return token
+
+
+def _pesapal_request(method, path, json_data=None, timeout=20, access_token=None):
     config = _get_pesapal_config()
     base_url = config['base_url'].rstrip('/')
     if base_url.endswith('/api'):
         base_url = base_url[:-4]
-    if not base_url.endswith('/pesapalv3'):
-        base_url = base_url
     url = f"{base_url}/api/{path.lstrip('/')}"
     headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
     }
     payload = json_data
+
     if path.lstrip('/') == 'Auth/RequestToken':
         payload = {
             'consumer_key': config['consumer_key'],
             'consumer_secret': config['consumer_secret'],
         }
+    elif access_token:
+        headers['Authorization'] = f'Bearer {access_token}'
+    elif path.lstrip('/').startswith('Transactions/') or path.lstrip('/').startswith('Settlement/'):
+        access_token = _pesapal_access_token()
+        headers['Authorization'] = f'Bearer {access_token}'
+
     method = method.lower()
 
     try:
@@ -366,7 +402,12 @@ def pesapal_start_checkout(request):
                 'last_name': request.user.last_name or 'User',
             },
         }
-        order_payload = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data=submit_payload)
+        order_payload = _pesapal_request(
+            'post',
+            'Transactions/SubmitOrderRequest',
+            json_data=submit_payload,
+            access_token=token,
+        )
     except Exception as exc:
         payment.status = 'FAILED'
         payment.save(update_fields=['status'])
@@ -398,7 +439,12 @@ def pesapal_ipn(request):
         if not token:
             raise ValueError('Pesapal authentication did not return a bearer token.')
 
-        transaction_payload = _pesapal_request('post', 'Transactions/GetTransactionStatus', json_data={'orderTrackingId': tracking_id})
+        transaction_payload = _pesapal_request(
+            'post',
+            'Transactions/GetTransactionStatus',
+            json_data={'orderTrackingId': tracking_id},
+            access_token=token,
+        )
     except Exception as exc:
         logger.exception('Pesapal IPN verification failed: %s', exc)
         return JsonResponse({'status': 'error', 'message': 'Unable to verify payment status.'}, status=502)

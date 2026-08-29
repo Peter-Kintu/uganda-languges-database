@@ -69,6 +69,32 @@ class PesapalConfigTests(TestCase):
             timeout=20,
         )
 
+    @patch.dict('os.environ', {
+        'PESAPAL_CONSUMER_KEY': 'live-key',
+        'PESAPAL_CONSUMER_SECRET': 'live-secret',
+    })
+    @patch('users.views._pesapal_access_token', return_value='bearer-token-xyz')
+    @patch('users.views.requests.post')
+    def test_submit_order_uses_bearer_token_auth(self, mock_post, mock_access_token):
+        mock_post.return_value = SimpleNamespace(
+            status_code=200,
+            ok=True,
+            json=lambda: {'order_tracking_id': 'tracking-456'},
+        )
+
+        _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={'id': 'order-001'})
+
+        mock_post.assert_called_once_with(
+            'https://pay.pesapal.com/v3/api/Transactions/SubmitOrderRequest',
+            headers={
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer bearer-token-xyz',
+            },
+            json={'id': 'order-001'},
+            timeout=20,
+        )
+
 
 class PesapalIntegrationTests(TestCase):
     def setUp(self):
@@ -78,6 +104,10 @@ class PesapalIntegrationTests(TestCase):
             password='secret1234',
         )
 
+    @patch.dict('os.environ', {
+        'PESAPAL_CONSUMER_KEY': 'live-key',
+        'PESAPAL_CONSUMER_SECRET': 'live-secret',
+    })
     @patch('users.views.requests.post')
     def test_start_checkout_returns_redirect(self, mock_post):
         mock_post.side_effect = [
@@ -96,6 +126,10 @@ class PesapalIntegrationTests(TestCase):
         self.assertTrue(PesapalPayment.objects.filter(user=self.user).exists())
         self.assertTrue(UserSubscription.objects.filter(user=self.user).exists())
 
+    @patch.dict('os.environ', {
+        'PESAPAL_CONSUMER_KEY': 'live-key',
+        'PESAPAL_CONSUMER_SECRET': 'live-secret',
+    })
     @patch('users.views.requests.post')
     def test_ipn_marks_subscription_active(self, mock_post):
         payment = PesapalPayment.objects.create(
