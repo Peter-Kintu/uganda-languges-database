@@ -39,6 +39,18 @@
         scroll-behavior: smooth;
     }
 
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
     body {
         background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 50%, #f9fafb 100%);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
@@ -947,6 +959,9 @@
         transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
         animation: slideIn 0.28s ease;
         overflow: hidden;
+        contain: layout paint style;
+        content-visibility: auto;
+        contain-intrinsic-size: 320px;
     }
 
     @keyframes slideIn {
@@ -1053,6 +1068,7 @@
         transition: all 0.3s ease;
         box-shadow: none;
         max-width: none;
+        content-visibility: auto;
     }
 
     .post-image:hover {
@@ -2984,8 +3000,12 @@
         });
     }
 
+    let postVisibilityObserver = null;
+
     function initPostVisibilityObserver() {
-        const observer = new IntersectionObserver((entries) => {
+        if (!('IntersectionObserver' in window)) return;
+        if (!postVisibilityObserver) {
+            postVisibilityObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 const card = entry.target;
                 const postId = card.dataset.postId;
@@ -3012,9 +3032,14 @@
                     }
                 }
             });
-        }, { threshold: [0.6] });
+            }, { threshold: [0.6], rootMargin: '120px 0px' });
+        }
 
-        document.querySelectorAll('[data-impression-kind][data-impression-id]').forEach(card => observer.observe(card));
+        document.querySelectorAll('[data-impression-kind][data-impression-id]').forEach(card => {
+            if (card.dataset.observerAttached === 'true') return;
+            card.dataset.observerAttached = 'true';
+            postVisibilityObserver.observe(card);
+        });
     }
 
     function markPostRead(postId) {
@@ -3088,6 +3113,7 @@
         let startY = 0;
         let currentY = 0;
         let isPulling = false;
+        let pullFrame = 0;
         const threshold = 80;
 
         document.addEventListener('touchstart', function(event) {
@@ -3100,15 +3126,23 @@
         document.addEventListener('touchmove', function(event) {
             if (!isPulling) return;
             currentY = event.touches[0].clientY;
-            const distance = Math.max(0, currentY - startY);
-            const translate = Math.min(distance / 2, threshold);
-            document.documentElement.style.setProperty('--pull-translate', `${translate}px`);
+            if (pullFrame) return;
+            pullFrame = requestAnimationFrame(() => {
+                pullFrame = 0;
+                const distance = Math.max(0, currentY - startY);
+                const translate = Math.min(distance / 2, threshold);
+                document.documentElement.style.setProperty('--pull-translate', `${translate}px`);
+            });
         }, { passive: true });
 
         document.addEventListener('touchend', function() {
             if (!isPulling) return;
             const distance = currentY - startY;
             isPulling = false;
+            if (pullFrame) {
+                cancelAnimationFrame(pullFrame);
+                pullFrame = 0;
+            }
             document.documentElement.style.setProperty('--pull-translate', '0px');
             if (distance > threshold) {
                 refreshFeedWithNewSeed();
@@ -3217,14 +3251,19 @@
     }
     window.history.replaceState({}, '', cleanFeedUrl.toString());
 
+    let scrollFrame = 0;
     window.addEventListener('scroll', () => {
-        if (window.scrollY > window.innerHeight) {
-            hasScrolledDown = true;
-        }
-        if (hasScrolledDown && window.scrollY <= 8 && !isRefreshingFeed) {
-            isRefreshingFeed = true;
-            refreshFeedWithNewSeed();
-        }
+        if (scrollFrame) return;
+        scrollFrame = requestAnimationFrame(() => {
+            scrollFrame = 0;
+            if (window.scrollY > window.innerHeight) {
+                hasScrolledDown = true;
+            }
+            if (hasScrolledDown && window.scrollY <= 8 && !isRefreshingFeed) {
+                isRefreshingFeed = true;
+                refreshFeedWithNewSeed();
+            }
+        });
     }, { passive: true });
 
     if (sentinel) {
