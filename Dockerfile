@@ -47,12 +47,16 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 ENV DEBUG="False"
-ENV DJANGO_ENV="production"
+# Asset compilation must not require runtime secrets. The entrypoint runs with
+# DJANGO_ENV=production after Koyeb injects the deployment environment.
+ENV DJANGO_ENV="build"
 
 RUN which npm && node -v && npm -v
 RUN python manage.py tailwind install
 RUN python manage.py tailwind build
 RUN python manage.py collectstatic --noinput
+
+ENV DJANGO_ENV="production"
 
 ENV GUNICORN_WORKERS=2
 ENV GUNICORN_THREADS=2
