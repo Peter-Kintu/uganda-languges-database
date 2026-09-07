@@ -83,6 +83,7 @@ urlpatterns = [
     path('lauchregistration/', RedirectView.as_view(url='/launchregistration/', permanent=False)),
     path('launchregistration/admin/', user_views.registration_admin, name='registration_admin'),
     path('launchregistration/admin/<str:booking_ref>/verify/', user_views.verify_registration, name='verify_registration'),
+    path('launchregistration/admin/<str:booking_ref>/delete/', user_views.delete_registration, name='delete_registration'),
     path('launchregistration/', user_views.launch_registration, name='launch_registration'),
     path('launchregistration/status/<str:booking_ref>/', user_views.registration_status, name='registration_status'),
 

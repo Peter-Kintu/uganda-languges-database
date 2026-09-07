@@ -69,6 +69,22 @@ class EventRegistrationTests(TestCase):
         booking.refresh_from_db()
         self.assertTrue(booking.is_verified)
 
+    def test_staff_can_delete_registration(self):
+        booking = EventBooking.objects.create(
+            booking_ref='BOOK-DELETE1',
+            full_name='Attendee Cancelled',
+            phone='0789746493',
+            email='cancelled@example.com',
+            ticket_type='FREE',
+            is_verified=True,
+        )
+        self.client.force_login(self.staff_user)
+
+        response = self.client.post(reverse('delete_registration', args=[booking.booking_ref]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(EventBooking.objects.filter(booking_ref='BOOK-DELETE1').exists())
+
     def test_free_registration_is_confirmed_and_redirects_to_status(self):
         response = self.client.post(reverse('launch_registration'), {
             'full_name': 'Amina Nakato',
@@ -81,6 +97,12 @@ class EventRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('registration_status', args=[booking.booking_ref]))
         self.assertTrue(booking.is_verified)
+
+        status_response = self.client.get(response.url)
+        self.assertContains(status_response, 'WhatsApp')
+        self.assertContains(status_response, 'Telegram')
+        self.assertContains(status_response, 'Save copy')
+        self.assertContains(status_response, booking.booking_ref)
 
     def test_ceo_registration_requires_payment_evidence(self):
         response = self.client.post(reverse('launch_registration'), {

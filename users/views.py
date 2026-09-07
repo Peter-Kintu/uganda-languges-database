@@ -69,6 +69,19 @@ def verify_registration(request, booking_ref):
     return redirect('registration_admin')
 
 
+@staff_required
+def delete_registration(request, booking_ref):
+    if request.method != 'POST':
+        return redirect('registration_admin')
+    booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
+    attendee_name = booking.full_name
+    if booking.payment_proof:
+        booking.payment_proof.delete(save=False)
+    booking.delete()
+    messages.success(request, f'{attendee_name} has been removed from the registrations.')
+    return redirect('registration_admin')
+
+
 def launch_registration(request):
     if request.method == 'POST':
         ticket_type = request.POST.get('ticket_type', 'FREE')
@@ -99,7 +112,17 @@ def launch_registration(request):
 
 def registration_status(request, booking_ref):
     booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
-    return render(request, 'registration_status.html', {'booking': booking})
+    status_url = request.build_absolute_uri()
+    share_message = (
+        f"Africana AI Festival registration for {booking.full_name}: "
+        f"{booking.get_ticket_type_display()} - booking reference {booking.booking_ref}. "
+        f"Check confirmation: {status_url}"
+    )
+    return render(request, 'registration_status.html', {
+        'booking': booking,
+        'share_message': share_message,
+        'status_url': status_url,
+    })
 
 
 def _get_pesapal_config():

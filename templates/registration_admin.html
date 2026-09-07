@@ -11,7 +11,7 @@
     .back { color: var(--rust); font-weight: 700; text-decoration: none; } .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; } .stat, .panel { background: var(--paper); border: 1px solid var(--line); box-shadow: 0 5px 16px #6f4c2412; } .stat { padding: 17px; } .stat strong { display: block; font-size: 27px; } .stat span { color: #6c6256; font-size: 13px; }
     .panel { overflow: hidden; } .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px; border-bottom: 1px solid var(--line); background: #fff4d9; } select, .filter-button { border: 1px solid #cdbf9e; border-radius: 4px; padding: 9px 11px; background: #fff; font: inherit; } .filter-button { background: var(--rust); color: #fff; border-color: var(--rust); font-weight: 700; cursor: pointer; }
     .table-wrap { overflow-x: auto; } table { width: 100%; border-collapse: collapse; min-width: 900px; } th, td { padding: 13px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; } th { color: #6c6256; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; background: #fffdf8; } tr:last-child td { border-bottom: 0; } .name { font-weight: 700; } .muted { color: #6c6256; font-size: 13px; } .badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; } .free { background: #e5f2df; color: #286022; } .ceo { background: #ffe3a5; color: #75470a; } .verified { color: #286022; font-weight: 700; } .pending { color: #9a5714; font-weight: 700; } .proof { color: var(--rust); font-weight: 700; }
-    .verify { padding: 7px 10px; border: 0; border-radius: 4px; background: var(--rust); color: #fff; font-weight: 700; cursor: pointer; } .message { margin-bottom: 16px; padding: 11px 14px; background: #e5f2df; color: #286022; border: 1px solid #b9d6ae; }
+    .verify, .delete { padding: 7px 10px; border: 0; border-radius: 4px; color: #fff; font-weight: 700; cursor: pointer; } .verify { background: var(--rust); } .delete { margin-top: 6px; background: #6b1f1f; } .message { margin-bottom: 16px; padding: 11px 14px; background: #e5f2df; color: #286022; border: 1px solid #b9d6ae; }
     @media (max-width: 600px) { header { display: block; } .back { display: inline-block; margin-top: 12px; } .stats { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -45,7 +45,10 @@
               <td>{% if booking.payment_proof %}<a class="proof" href="{{ booking.payment_proof.url }}" target="_blank" rel="noopener">View proof</a>{% else %}-{% endif %}</td>
               <td class="muted">{{ booking.created_at|date:'d M Y H:i' }}</td>
               <td>{% if booking.is_verified %}<span class="verified">Verified</span>{% else %}<span class="pending">Pending</span>{% endif %}</td>
-              <td>{% if not booking.is_verified %}<form method="post" action="{% url 'verify_registration' booking.booking_ref %}">{% csrf_token %}<button class="verify" type="submit">Verify</button></form>{% else %}-{% endif %}</td>
+              <td>
+                {% if not booking.is_verified %}<form method="post" action="{% url 'verify_registration' booking.booking_ref %}">{% csrf_token %}<button class="verify" type="submit">Verify</button></form>{% endif %}
+                <form method="post" action="{% url 'delete_registration' booking.booking_ref %}" onsubmit="return confirm('Delete {{ booking.full_name|escapejs }} from registrations? This cannot be undone.');">{% csrf_token %}<button class="delete" type="submit">Delete</button></form>
+              </td>
             </tr>
           {% empty %}<tr><td colspan="7">No registrations match this filter.</td></tr>{% endfor %}
           </tbody>
