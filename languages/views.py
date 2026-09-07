@@ -162,9 +162,9 @@ def post_job(request):
     return render(request, 'contribute.html', {'form': form})
 
 # API Credentials
-JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY") or "46f60849-92b7-4a9f-a381-709376fe6f92"
+JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY")
 # Try both CAREERJET_PUBLISHER_ID and CAREERJET_API_KEY for compatibility
-CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID") or os.getenv("CAREERJET_API_KEY") or "a9927b4ab404ffaff0e637290f35b7a8"
+CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID") or os.getenv("CAREERJET_API_KEY")
 CAREERJET_API_ENABLED = os.getenv("CAREERJET_ENABLED", "1").lower() in ("1", "true", "yes")
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
 

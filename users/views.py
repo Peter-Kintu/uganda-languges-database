@@ -4,7 +4,7 @@ import logging
 import requests
 import time
 import base64
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta, date
 from django.template.loader import render_to_string
 from django.shortcuts import render, redirect, get_object_or_404
@@ -16,7 +16,7 @@ from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
-from django.db import IntegrityError, models
+from django.db import IntegrityError, models, transaction
 from django.db.models import Q, Count
 from django.db.models.functions import TruncMonth
 from django.db.models import Sum
@@ -351,7 +351,6 @@ def user_logout(request):
 
 
 @login_required
-@csrf_exempt
 def pesapal_start_checkout(request):
     if request.method not in {'POST', 'GET'}:
         return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
@@ -427,11 +426,14 @@ def pesapal_start_checkout(request):
 
 @csrf_exempt
 def pesapal_ipn(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'POST required.'}, status=405)
+
     tracking_id = request.POST.get('OrderTrackingId') or request.POST.get('order_tracking_id')
     if not tracking_id:
         return JsonResponse({'status': 'error', 'message': 'Missing tracking id.'}, status=400)
 
-    payment = get_object_or_404(PesapalPayment, tracking_id=tracking_id)
+    payment = get_object_or_404(PesapalPayment.objects.select_related('subscription'), tracking_id=tracking_id)
 
     try:
         auth_payload = _pesapal_request('post', 'Auth/RequestToken')
@@ -449,25 +451,57 @@ def pesapal_ipn(request):
         logger.exception('Pesapal IPN verification failed: %s', exc)
         return JsonResponse({'status': 'error', 'message': 'Unable to verify payment status.'}, status=502)
 
+    provider_tracking_id = transaction_payload.get('orderTrackingId') or transaction_payload.get('OrderTrackingId')
+    if provider_tracking_id and str(provider_tracking_id) != str(payment.tracking_id):
+        return JsonResponse({'status': 'error', 'message': 'Payment tracking mismatch.'}, status=400)
+
+    provider_reference = (
+        transaction_payload.get('merchantReference')
+        or transaction_payload.get('merchant_reference')
+        or transaction_payload.get('id')
+        or transaction_payload.get('order_id')
+    )
+    if provider_reference and str(provider_reference) != str(payment.order_id):
+        return JsonResponse({'status': 'error', 'message': 'Payment order mismatch.'}, status=400)
+
+    try:
+        provider_amount = Decimal(str(transaction_payload.get('amount')))
+    except (TypeError, ValueError, InvalidOperation):
+        return JsonResponse({'status': 'error', 'message': 'Payment amount missing or invalid.'}, status=400)
+    provider_currency = str(transaction_payload.get('currency') or '').upper()
+    if provider_amount != payment.amount or provider_currency != payment.currency.upper():
+        return JsonResponse({'status': 'error', 'message': 'Payment amount or currency mismatch.'}, status=400)
+
     status = str(transaction_payload.get('status') or transaction_payload.get('Status') or '').upper()
-    if status in {'COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL'}:
-        payment.status = 'PAID'
-        payment.subscription.status = 'active'
-        payment.subscription.is_active = True
-        payment.subscription.start_date = datetime.now()
-        payment.subscription.end_date = datetime.now() + timedelta(days=30)
-        payment.subscription.save(update_fields=['status', 'is_active', 'start_date', 'end_date'])
-    else:
-        payment.status = 'FAILED' if status in {'FAILED', 'CANCELLED', 'CANCELED'} else payment.status
-        payment.subscription.status = 'failed' if payment.status == 'FAILED' else payment.subscription.status
-        payment.subscription.is_active = False
-        payment.subscription.save(update_fields=['status', 'is_active'])
-    payment.save(update_fields=['status'])
+    with transaction.atomic():
+        locked_payment = PesapalPayment.objects.select_for_update().select_related('subscription').get(pk=payment.pk)
+        if locked_payment.status == 'PAID':
+            return JsonResponse({'status': 'OK', 'message': 'Payment notification already processed.'})
+        if locked_payment.status in {'FAILED', 'CANCELLED'}:
+            return JsonResponse({'status': 'OK', 'message': 'Payment is already in a terminal state.'})
+        if status in {'COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL'}:
+            if not locked_payment.subscription:
+                return JsonResponse({'status': 'error', 'message': 'Payment has no subscription.'}, status=409)
+            now = timezone.now()
+            locked_payment.status = 'PAID'
+            locked_payment.subscription.status = 'active'
+            locked_payment.subscription.is_active = True
+            locked_payment.subscription.start_date = now
+            locked_payment.subscription.end_date = now + timedelta(days=30)
+            locked_payment.subscription.save(update_fields=['status', 'is_active', 'start_date', 'end_date'])
+        elif status in {'FAILED', 'CANCELLED', 'CANCELED'}:
+            locked_payment.status = 'CANCELLED' if status in {'CANCELLED', 'CANCELED'} else 'FAILED'
+            if locked_payment.subscription:
+                locked_payment.subscription.status = 'failed'
+                locked_payment.subscription.is_active = False
+                locked_payment.subscription.save(update_fields=['status', 'is_active'])
+        else:
+            return JsonResponse({'status': 'OK', 'message': 'Payment remains pending.'})
+        locked_payment.save(update_fields=['status', 'updated_at'])
 
     return JsonResponse({'status': 'OK', 'message': 'Pesapal notification processed.'})
 
 
-@login_required
 def pesapal_callback(request):
     tracking_id = request.GET.get('OrderTrackingId') or request.GET.get('orderTrackingId')
     if tracking_id:
@@ -698,7 +732,6 @@ def profile_edit(request):
         return render(request, 'profile_edit.html', {'form': form})
 
 @login_required
-@csrf_exempt
 def update_language(request):
     """Update user's preferred language"""
     if request.method == 'POST':
@@ -793,7 +826,6 @@ def profile_ai(request):
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
-@csrf_exempt
 @login_required
 def cerebras_proxy(request):
     """Proxies chat requests to Cerebras (primary) using gpt-oss-120b and falls back to Sunbird AI.
@@ -988,7 +1020,6 @@ I'll still provide a structured answer once the service is restored.
 ai_quiz_generator = profile_ai
 
 
-@csrf_exempt
 @login_required
 def generate_advert_image(request):
     """Generates an advertisement graphic using Sunbird AI's Image Generation API."""
@@ -1101,7 +1132,6 @@ def generate_advert_image(request):
 
 
 
-@csrf_exempt
 @login_required
 def generate_document_pdf(request):
     """

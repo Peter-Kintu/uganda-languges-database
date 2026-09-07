@@ -234,7 +234,7 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         # X-Frame-Options: Prevent clickjacking
         # Already set by Django's X_FRAME_OPTIONS, but explicitly included
         if 'X-Frame-Options' not in response:
-            response['X-Frame-Options'] = 'SAMEORIGIN'
+            response['X-Frame-Options'] = 'DENY'
         
         # X-XSS-Protection: Deprecated but useful for legacy browsers
         response['X-XSS-Protection'] = '1; mode=block'

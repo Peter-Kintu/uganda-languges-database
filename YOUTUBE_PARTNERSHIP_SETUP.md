@@ -44,7 +44,7 @@ Key packages added:
 Add to your `.env` file:
 
 ```env
-YOUTUBE_API_KEY=AIzaSyA5EUWnwUtpnrKUf9mGBrFOYNWq1Uw4aXQ
+YOUTUBE_API_KEY=replace-with-a-new-key
 ```
 
 ### Step 3: Run Migrations

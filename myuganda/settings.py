@@ -1,5 +1,6 @@
 import os
 import socket
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 from django.urls import reverse_lazy
@@ -16,18 +17,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-(p31q0!)f868y09ivx%&d&jjc&^jenjy6p2ozj%3pijiwm_2=f'
-)
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
+DEPLOYMENT_ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development').strip().lower()
+TESTING = 'test' in sys.argv
+
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEPLOYMENT_ENVIRONMENT == 'production' and not TESTING:
+        raise RuntimeError('SECRET_KEY must be configured in production.')
+    SECRET_KEY = 'django-insecure-local-development-only-key'
+
+DEBUG = env_bool('DEBUG', default=False)
+if DEPLOYMENT_ENVIRONMENT == 'production' and DEBUG and not TESTING:
+    raise RuntimeError('DEBUG must be False in production.')
 PREPEND_WWW = False  # Prevent CommonMiddleware from redirecting apex domain requests to www
 
 # --- ALLOWED HOSTS ---
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
+configured_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
+if DEPLOYMENT_ENVIRONMENT == 'production' and not configured_hosts and not TESTING:
+    raise RuntimeError('DJANGO_ALLOWED_HOSTS must be configured in production.')
+ALLOWED_HOSTS = [host.strip() for host in configured_hosts.split(',') if host.strip()] or ['localhost', '127.0.0.1', '[::1]']
 
 # Custom canonical domain used for sitemap URLs and metadata
 DEFAULT_DOMAIN = os.environ.get('DEFAULT_DOMAIN', 'www.africanaai.info')
@@ -38,7 +53,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 
-if not DEBUG:
+if not DEBUG and not TESTING:
     # 1. Force Redirect to HTTPS
     SECURE_SSL_REDIRECT = True
     
@@ -57,7 +72,7 @@ if not DEBUG:
     # 4. Modern Browser Protections
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'SAMEORIGIN'  # Prevent clickjacking (stricter than default)
+    X_FRAME_OPTIONS = 'DENY'
     SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
     # IMPORTANT: Careerjet tracking requires referrer to be sent to external domains
     SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
@@ -69,7 +84,6 @@ if not DEBUG:
         "'self'",
         "https://unpkg.com",  # FFmpeg.wasm
         "https://cdn.jsdelivr.net",  # Optional: alternative CDN
-        "https://trusted-domain.com",  # Replace with your trusted domains
     )
     SECURE_CSP_STYLE_SRC = (
         "'self'",
@@ -308,8 +322,12 @@ if USE_REDIS_CACHE and not redis_is_available(REDIS_URL):
 CLOUDINARY_CONFIGURED = (
     os.environ.get('CLOUDINARY_CLOUD_NAME') and 
     os.environ.get('CLOUDINARY_API_KEY') and
-    not os.environ.get('CLOUDINARY_API_KEY').startswith('your-')  # Placeholder check
+    os.environ.get('CLOUDINARY_API_SECRET') and
+    not os.environ.get('CLOUDINARY_API_KEY').startswith('your-')
 )
+
+if DEPLOYMENT_ENVIRONMENT == 'production' and not CLOUDINARY_CONFIGURED and not TESTING:
+    raise RuntimeError('Cloudinary credentials must be configured in production for durable media storage.')
 
 if CLOUDINARY_CONFIGURED and not DEBUG:
     # Use Cloudinary in production when credentials are set

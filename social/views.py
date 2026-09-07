@@ -10,7 +10,6 @@ from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.contrib import messages
@@ -96,11 +95,11 @@ def upload_reel(request):
             reel.author = request.user
             
             # --- THREE-TIER STORAGE LOGIC ---
-            # All new uploads go to local server disk (Choice B)
+            # Production stores uploads through the durable configured backend.
             if 'local_video' in request.FILES:
                 reel.local_video = request.FILES['local_video']
                 reel.video = None
-                reel.storage_tier = 'LOCAL'  # Initial tier: Local server storage
+                reel.storage_tier = 'CLOUDINARY' if os.environ.get('CLOUDINARY_CLOUD_NAME') else 'LOCAL'
             
             # Generate unique share token for viral loop metrics
             if not hasattr(reel, 'share_token') or not reel.share_token:
@@ -170,7 +169,6 @@ def toggle_like_reel(request, reel_id):
     })
 
 @login_required
-@csrf_exempt
 @require_POST
 def track_share(request, reel_id):
     """
@@ -187,7 +185,6 @@ def track_share(request, reel_id):
     })
 
 @login_required
-@csrf_exempt
 @require_POST
 def track_download(request, reel_id):
     """
@@ -204,7 +201,6 @@ def track_download(request, reel_id):
     })
 
 @login_required
-@csrf_exempt
 @require_POST
 def track_view(request, reel_id):
     """

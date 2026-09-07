@@ -70,7 +70,7 @@
 ## 🔧 Configuration (USER ACTION REQUIRED)
 
 ### Environment Setup
-- [ ] Add to `.env`: `YOUTUBE_API_KEY=AIzaSyA5EUWnwUtpnrKUf9mGBrFOYNWq1Uw4aXQ`
+- [ ] Add a newly generated `YOUTUBE_API_KEY` to the deployment environment
 - [ ] Verify API key is not committed to git
 - [ ] Add to `.gitignore` if not already there
 

@@ -12,7 +12,7 @@ Set your Cerebras API key in your environment:
 .\venv\Scripts\Activate.ps1
 
 # Set environment variable
-$env:CEREBRAS_API_KEY = "csk-8wn62ectvvdcvewfmjmf8ycw29eerpyhwnp3n3fj496wdty8"
+$env:CEREBRAS_API_KEY = "replace-with-a-new-key"
 
 # Verify it's set
 echo $env:CEREBRAS_API_KEY
@@ -21,7 +21,7 @@ echo $env:CEREBRAS_API_KEY
 #### Option B: .env File (Recommended for local dev)
 Create or edit `.env` file in your project root:
 ```
-CEREBRAS_API_KEY=csk-8wn62ectvvdcvewfmjmf8ycw29eerpyhwnp3n3fj496wdty8
+CEREBRAS_API_KEY=replace-with-a-new-key
 ```
 
 #### Option C: Permanent (Windows System Environment)
@@ -30,7 +30,7 @@ CEREBRAS_API_KEY=csk-8wn62ectvvdcvewfmjmf8ycw29eerpyhwnp3n3fj496wdty8
    - Click **Environment Variables** button
    - Under "User variables", click **New...**
    - Variable name: `CEREBRAS_API_KEY`
-   - Variable value: `csk-8wn62ectvvdcvewfmjmf8ycw29eerpyhwnp3n3fj496wdty8`
+  - Variable value: configure a newly generated key in the deployment environment
    - Click **OK** twice
    - Restart PowerShell/IDE
 

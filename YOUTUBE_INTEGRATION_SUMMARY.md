@@ -54,7 +54,7 @@ Your Africana AI social app now has a **complete YouTube partnership system** th
 
 ### Step 1: Environment
 ```bash
-echo 'YOUTUBE_API_KEY=AIzaSyA5EUWnwUtpnrKUf9mGBrFOYNWq1Uw4aXQ' >> .env
+echo 'YOUTUBE_API_KEY=replace-with-a-new-key' >> .env
 ```
 
 ### Step 2: Install & Migrate
@@ -340,6 +340,6 @@ Your YouTube integration is **production-ready**. The system is:
 
 ---
 
-**API Key:** `AIzaSyA5EUWnwUtpnrKUf9mGBrFOYNWq1Uw4aXQ`
+**API Key:** Configure a newly generated key through the deployment environment.
 **Domain Restriction:** `https://www.africanaai.info/`
 **Date Configured:** May 4, 2026

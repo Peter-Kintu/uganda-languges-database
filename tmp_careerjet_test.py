@@ -2,7 +2,7 @@ import os
 import requests
 import base64
 
-CAREERJET_API_KEY = os.getenv('CAREERJET_PUBLISHER_ID', 'a9927b4ab404ffaff0e637290f35b7a8')
+CAREERJET_API_KEY = os.getenv('CAREERJET_PUBLISHER_ID')
 url = 'https://search.api.careerjet.net/v4/query'
 params = {
     'locale_code': 'en_GB',

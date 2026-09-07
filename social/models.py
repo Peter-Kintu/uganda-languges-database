@@ -3,7 +3,7 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Count
-from django.core.files.storage import FileSystemStorage, storages # Import storage routing
+from django.core.files.storage import storages
 from cloudinary.models import CloudinaryField
 import cloudinary
 import uuid
@@ -13,7 +13,6 @@ from decimal import Decimal
 
 # Link to your existing CustomUser
 User = settings.AUTH_USER_MODEL
-LOCAL_VIDEO_STORAGE = FileSystemStorage()
 
 # --- PILLAR 1 & 4: IDENTITY ---
 
@@ -122,7 +121,7 @@ class BusinessReel(models.Model):
     # Tier 1: Local disk (Choice B - Initial staging)
     local_video = models.FileField(
         upload_to='reels/staging/',
-        storage=LOCAL_VIDEO_STORAGE,
+        storage=storages['reels_video'],
         blank=True,
         null=True,
         help_text="Video stored on server disk (low-cost, handles initial uploads)."

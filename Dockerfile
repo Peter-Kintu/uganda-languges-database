@@ -47,7 +47,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 ENV DEBUG="False"
-ENV SECRET_KEY="build-time-dummy-key"
+ENV DJANGO_ENV="production"
 
 RUN which npm && node -v && npm -v
 RUN python manage.py tailwind install

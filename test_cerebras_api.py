@@ -5,13 +5,11 @@ import os
 import sys
 import django
 
-# Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myuganda.settings')
-django.setup()
-
-from cerebras.cloud.sdk import Cerebras
-
 def test_cerebras_api():
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myuganda.settings')
+    django.setup()
+    from cerebras.cloud.sdk import Cerebras
+
     api_key = os.environ.get("CEREBRAS_API_KEY", "").strip()
     if not api_key:
         print("❌ CEREBRAS_API_KEY not set")

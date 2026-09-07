@@ -4,7 +4,7 @@ import base64
 import json
 
 # Copy the necessary parts from views.py
-CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID", "a9927b4ab404ffaff0e637290f35b7a8")
+CAREERJET_API_KEY = os.getenv("CAREERJET_PUBLISHER_ID")
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -153,15 +153,15 @@ def fetch_careerjet_data(request, keywords, location="Africa"):
         print(f"CareerJet API Error: {e}")
     return []
 
-# Test the function
-print("Testing CareerJet API fetch...")
-request = MockRequest()
-jobs = fetch_careerjet_data(request, 'developer', 'Uganda')
-print(f"Found {len(jobs)} jobs from CareerJet")
-for job in jobs[:3]:  # Show first 3 jobs
-    print(f"- {job['title']} at {job['company']} in {job['location']}")
-if jobs:
-    print("✓ Jobs are being fetched successfully!")
-    print("✓ Clicks should now be tracked with the new API.")
-else:
-    print("✗ No jobs returned - check API key or network.")
+def main():
+    print("Testing CareerJet API fetch...")
+    request = MockRequest()
+    jobs = fetch_careerjet_data(request, 'developer', 'Uganda')
+    print(f"Found {len(jobs)} jobs from CareerJet")
+    for job in jobs[:3]:
+        print(f"- {job['title']} at {job['company']} in {job['location']}")
+    return 0 if jobs else 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -3,7 +3,7 @@
 ## 1️⃣ Add API Key to .env
 
 ```bash
-echo 'YOUTUBE_API_KEY=AIzaSyA5EUWnwUtpnrKUf9mGBrFOYNWq1Uw4aXQ' >> .env
+echo 'YOUTUBE_API_KEY=replace-with-a-new-key' >> .env
 ```
 
 ## 2️⃣ Install Dependencies
