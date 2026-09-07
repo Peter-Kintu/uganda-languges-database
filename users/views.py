@@ -26,6 +26,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.template import TemplateDoesNotExist
 from .models import EventBooking
 import uuid
+from io import BytesIO
+from pathlib import Path
+import qrcode
+from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -64,7 +68,16 @@ def verify_registration(request, booking_ref):
         return redirect('registration_admin')
     booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
     booking.is_verified = True
-    booking.save(update_fields=['is_verified'])
+    if booking.ticket_type == 'CEO' and booking.founding_member_number is None:
+        last_number = EventBooking.objects.filter(
+            ticket_type='CEO',
+            founding_member_number__isnull=False,
+        ).order_by('-founding_member_number').values_list('founding_member_number', flat=True).first() or 0
+        if last_number >= 300:
+            messages.error(request, 'All 300 founding CEO member cards have already been assigned.')
+            return redirect('registration_admin')
+        booking.founding_member_number = last_number + 1
+    booking.save(update_fields=['is_verified', 'founding_member_number'])
     messages.success(request, f'{booking.full_name} has been marked as verified.')
     return redirect('registration_admin')
 
@@ -95,9 +108,14 @@ def launch_registration(request):
             messages.error(request, 'CEO Table bookings need a MoMo reference or payment proof.')
             return render(request, 'launch_registration.html')
 
+        full_name = request.POST.get('full_name', '').strip()
+        if EventBooking.objects.filter(full_name__iexact=full_name).exists():
+            messages.error(request, 'This name has already been registered. Each attendee name can register only once.')
+            return render(request, 'launch_registration.html')
+
         booking = EventBooking.objects.create(
             booking_ref=f"BOOK-{uuid.uuid4().hex[:8].upper()}",
-            full_name=request.POST.get('full_name', '').strip(),
+            full_name=full_name,
             phone=request.POST.get('phone', '').strip(),
             email=request.POST.get('email', '').strip(),
             ticket_type=ticket_type,
@@ -123,6 +141,75 @@ def registration_status(request, booking_ref):
         'share_message': share_message,
         'status_url': status_url,
     })
+
+
+def download_registration(request, booking_ref):
+    booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
+    status = 'Verified' if booking.is_verified else 'Awaiting manual payment verification'
+    receipt = '\n'.join([
+        'AFRICANA AI FESTIVAL REGISTRATION',
+        '================================',
+        f'Name: {booking.full_name}',
+        f'Phone: {booking.phone}',
+        f'Email: {booking.email}',
+        f'Ticket: {booking.get_ticket_type_display()}',
+        f'Booking reference: {booking.booking_ref}',
+        f'Status: {status}',
+        f'Registered: {booking.created_at:%d %B %Y %H:%M}',
+        '',
+        'Keep this receipt for event check-in.',
+    ])
+    response = HttpResponse(receipt, content_type='text/plain; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.txt"'
+    return response
+
+
+def _card_font(size, bold=False):
+    font_name = 'LiberationSans-Bold.ttf' if bold else 'LiberationSans-Regular.ttf'
+    for font_dir in ('/usr/share/fonts/truetype/liberation2', '/usr/share/fonts/truetype/dejavu'):
+        font_path = Path(font_dir) / font_name
+        if font_path.exists():
+            return ImageFont.truetype(str(font_path), size)
+    return ImageFont.load_default()
+
+
+def download_ceo_card(request, booking_ref):
+    booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
+    if booking.ticket_type != 'CEO' or not booking.is_verified or booking.founding_member_number is None:
+        return HttpResponse('CEO card is available after payment verification.', status=404)
+
+    image_path = Path(settings.BASE_DIR) / 'static' / 'images' / 'africanaai_card.png'
+    card = Image.open(image_path).convert('RGB')
+    draw = ImageDraw.Draw(card)
+    member_label = f'{booking.founding_member_number:03d}/300'
+    verify_url = request.build_absolute_uri(reverse('verify_delegate', args=[booking.booking_ref]))
+
+    # Cover the sample identity fields on the supplied artwork with this booking's data.
+    draw.rectangle((370, 270, 1530, 335), fill=(18, 18, 18))
+    draw.text((960, 285), f'FOUNDING MEMBER {member_label}  |  {booking.full_name.upper()}',
+              fill=(255, 220, 145), font=_card_font(34, bold=True), anchor='mm')
+    draw.rectangle((600, 1070, 1190, 1135), fill=(18, 18, 18))
+    draw.text((895, 1102), f'{booking.booking_ref}  |  {booking.full_name}',
+              fill=(255, 220, 145), font=_card_font(25, bold=True), anchor='mm')
+
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=2)
+    qr.add_data(verify_url)
+    qr.make(fit=True)
+    qr_image = qr.make_image(fill_color='#17130d', back_color='#f8df9a').convert('RGB').resize((260, 260))
+    card.paste(qr_image, (1460, 840))
+
+    output = BytesIO()
+    card.save(output, format='PNG', optimize=True)
+    response = HttpResponse(output.getvalue(), content_type='image/png')
+    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-ceo-card.png"'
+    return response
+
+
+def verify_delegate(request, booking_no):
+    booking = EventBooking.objects.filter(
+        booking_ref=booking_no.upper(), ticket_type='CEO', is_verified=True
+    ).first()
+    return render(request, 'verify.html', {'booking': booking, 'booking_no': booking_no.upper()})
 
 
 def _get_pesapal_config():

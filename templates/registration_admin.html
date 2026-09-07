@@ -40,7 +40,7 @@
           {% for booking in bookings %}
             <tr>
               <td><div class="name">{{ booking.full_name }}</div><div class="muted">{{ booking.email }}<br>{{ booking.phone }}<br>{{ booking.booking_ref }}</div></td>
-              <td><span class="badge {% if booking.ticket_type == 'CEO' %}ceo{% else %}free{% endif %}">{{ booking.get_ticket_type_display }}</span></td>
+              <td><span class="badge {% if booking.ticket_type == 'CEO' %}ceo{% else %}free{% endif %}">{{ booking.get_ticket_type_display }}</span>{% if booking.founding_member_number %}<div class="muted">Member {{ booking.founding_member_number|stringformat:'03d' }}/300</div>{% endif %}</td>
               <td>{{ booking.transaction_id|default:'-' }}</td>
               <td>{% if booking.payment_proof %}<a class="proof" href="{{ booking.payment_proof.url }}" target="_blank" rel="noopener">View proof</a>{% else %}-{% endif %}</td>
               <td class="muted">{{ booking.created_at|date:'d M Y H:i' }}</td>

@@ -101,8 +101,51 @@ class EventRegistrationTests(TestCase):
         status_response = self.client.get(response.url)
         self.assertContains(status_response, 'WhatsApp')
         self.assertContains(status_response, 'Telegram')
-        self.assertContains(status_response, 'Save copy')
+        self.assertContains(status_response, 'Download registration')
         self.assertContains(status_response, booking.booking_ref)
+
+        download_response = self.client.get(reverse('download_registration', args=[booking.booking_ref]))
+        self.assertEqual(download_response.status_code, 200)
+        self.assertIn(booking.booking_ref.encode(), download_response.content)
+        self.assertIn('attachment;', download_response['Content-Disposition'])
+
+    def test_same_name_cannot_register_multiple_times(self):
+        registration = {
+            'full_name': 'Same Attendee',
+            'phone': '0789746493',
+            'email': 'same@example.com',
+            'ticket_type': 'FREE',
+        }
+        first = self.client.post(reverse('launch_registration'), registration)
+        second = self.client.post(reverse('launch_registration'), registration)
+
+        self.assertEqual(first.status_code, 302)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(EventBooking.objects.filter(full_name='Same Attendee').count(), 1)
+
+    def test_free_registration_has_receipt_and_unverified_ceo_has_no_card(self):
+        booking = EventBooking.objects.create(
+            booking_ref='BOOK-CARDTEST', full_name='Card Test', phone='0700000000',
+            email='card@example.com', ticket_type='CEO', transaction_id='MOMO-1',
+        )
+        card_response = self.client.get(reverse('download_ceo_card', args=[booking.booking_ref]))
+        self.assertEqual(card_response.status_code, 404)
+
+    def test_verified_ceo_can_download_personalized_card(self):
+        booking = EventBooking.objects.create(
+            booking_ref='BOOK-CARDOK1', full_name='Card Holder', phone='0700000000',
+            email='holder@example.com', ticket_type='CEO', transaction_id='MOMO-2',
+        )
+        self.client.force_login(self.staff_user)
+        self.client.post(reverse('verify_registration', args=[booking.booking_ref]))
+        booking.refresh_from_db()
+
+        card_response = self.client.get(reverse('download_ceo_card', args=[booking.booking_ref]))
+
+        self.assertEqual(card_response.status_code, 200)
+        self.assertEqual(card_response['Content-Type'], 'image/png')
+        self.assertIn(b'\x89PNG', card_response.content[:8])
+        self.assertEqual(booking.founding_member_number, 1)
 
     def test_ceo_registration_requires_payment_evidence(self):
         response = self.client.post(reverse('launch_registration'), {

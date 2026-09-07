@@ -86,6 +86,9 @@ urlpatterns = [
     path('launchregistration/admin/<str:booking_ref>/delete/', user_views.delete_registration, name='delete_registration'),
     path('launchregistration/', user_views.launch_registration, name='launch_registration'),
     path('launchregistration/status/<str:booking_ref>/', user_views.registration_status, name='registration_status'),
+    path('launchregistration/status/<str:booking_ref>/download/', user_views.download_registration, name='download_registration'),
+    path('launchregistration/status/<str:booking_ref>/card/', user_views.download_ceo_card, name='download_ceo_card'),
+    path('verify/<str:booking_no>/', user_views.verify_delegate, name='verify_delegate'),
 
     # Google verification file
     path("googled5b56ec94e5b9cb2.html",

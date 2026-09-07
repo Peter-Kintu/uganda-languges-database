@@ -20,6 +20,7 @@ django-cors-headers
 django-tailwind
 # Media (Cloudinary)
 Pillow
+qrcode
 cloudinary
 django-cloudinary-storage
 

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.functions import Lower
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
@@ -241,10 +242,17 @@ class EventBooking(models.Model):
     transaction_id = models.CharField(max_length=100, blank=True)
     payment_proof = models.FileField(upload_to='event_payment_proofs/', blank=True, null=True)
     is_verified = models.BooleanField(default=False)
+    founding_member_number = models.PositiveSmallIntegerField(unique=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                Lower('full_name'),
+                name='unique_event_booking_full_name_ci',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.booking_ref} - {self.full_name}"
