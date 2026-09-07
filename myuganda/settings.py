@@ -39,10 +39,18 @@ if DEPLOYMENT_ENVIRONMENT == 'production' and DEBUG and not TESTING:
 PREPEND_WWW = False  # Prevent CommonMiddleware from redirecting apex domain requests to www
 
 # --- ALLOWED HOSTS ---
-configured_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
-if DEPLOYMENT_ENVIRONMENT == 'production' and not configured_hosts and not TESTING:
-    raise RuntimeError('DJANGO_ALLOWED_HOSTS must be configured in production.')
-ALLOWED_HOSTS = [host.strip() for host in configured_hosts.split(',') if host.strip()] or ['localhost', '127.0.0.1', '[::1]']
+configured_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '').strip()
+default_allowed_hosts = [
+    'www.africanaai.info',
+    'africanaai.info',
+    '.koyeb.app',
+    'localhost',
+    '127.0.0.1',
+    '[::1]',
+]
+ALLOWED_HOSTS = [
+    host.strip() for host in configured_hosts.split(',') if host.strip()
+] if configured_hosts else default_allowed_hosts
 
 # Custom canonical domain used for sitemap URLs and metadata
 DEFAULT_DOMAIN = os.environ.get('DEFAULT_DOMAIN', 'www.africanaai.info')
