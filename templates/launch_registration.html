@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Africana AI Festival | Registration</title>
+  <style>
+    :root { --ink: #17130d; --paper: #fffaf0; --gold: #e9a91a; --rust: #9d3f24; --line: #eadcc1; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #201b17; color: var(--ink); font: 16px/1.45 Georgia, serif; }
+    main { max-width: 720px; margin: 32px auto; background: var(--paper); box-shadow: 0 18px 50px #0008; }
+    header { padding: 34px 24px 28px; text-align: center; color: #fff8e7; background: linear-gradient(135deg, #7e2d1c, #c8791b 58%, #e9a91a); }
+    header p, header h1 { margin: 0; } header p { font: 700 12px/1.4 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; } header h1 { margin: 10px 0 6px; font-size: clamp(28px, 7vw, 48px); line-height: 1; }
+    .intro, form { padding: 24px; } .intro { border-bottom: 1px solid var(--line); } .intro h2 { margin: 0 0 12px; font-size: 22px; }
+    .highlights { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 18px; } .highlight { padding: 13px 10px; border: 1px solid var(--line); background: #fff; text-align: center; font-weight: 700; font-size: 14px; }
+    label { display: block; margin: 0 0 6px; font: 700 14px Arial, sans-serif; } input { width: 100%; border: 1px solid #cdbf9e; border-radius: 4px; padding: 12px; font: inherit; background: #fff; } input:focus { outline: 2px solid var(--gold); }
+    .field { margin-bottom: 17px; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .ticket-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0 18px; } .ticket { display: block; padding: 16px; border: 2px solid #d8c9aa; border-radius: 6px; cursor: pointer; background: #fff; } .ticket:has(input:checked) { border-color: var(--rust); background: #fff2d1; } .ticket input { width: auto; margin-right: 7px; accent-color: var(--rust); } .ticket strong { display: block; margin-top: 8px; } .ticket small { display: block; margin-top: 5px; color: #5e5144; }
+    #payment-block { padding: 16px; border: 1px solid #d49c39; background: #fff1c9; } #payment-block h3 { margin: 0 0 8px; color: var(--rust); font: 700 15px Arial, sans-serif; text-transform: uppercase; } .payment-details { margin: 0 0 15px; padding-left: 18px; font-family: monospace; font-size: 13px; }
+    button { width: 100%; border: 0; border-radius: 4px; padding: 15px; background: var(--rust); color: #fff; cursor: pointer; font: 700 17px Arial, sans-serif; } button:hover { background: #7e2d1c; }
+    .message { padding: 12px; margin-bottom: 17px; background: #f8d7c9; color: #702b1c; font-family: Arial, sans-serif; font-size: 14px; } .fine-print { color: #6c6256; text-align: center; font: 12px Arial, sans-serif; } .hidden { display: none; }
+    @media (max-width: 560px) { main { margin: 0; } .grid, .ticket-options, .highlights { grid-template-columns: 1fr; } header, .intro, form { padding: 22px 18px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p>Shop • Work • Grow In Your Language</p>
+      <h1>Africana AI Festival &amp; Launch</h1>
+      <p>28 November 2026 • ICT Innovation Hub, Nakawa</p>
+    </header>
+    <section class="intro">
+      <h2>A cultural-tech celebration for everyone</h2>
+      <div class="highlights">
+        <div class="highlight">African Foods &amp; Cultural Dishes</div>
+        <div class="highlight">Cultural Dances &amp; Performances</div>
+        <div class="highlight">Top Musicians</div>
+        <div class="highlight">Live Broadcast &amp; AI Demos</div>
+      </div>
+    </section>
+    <form action="{% url 'launch_registration' %}" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% for message in messages %}<div class="message">{{ message }}</div>{% endfor %}
+      <div class="field"><label for="full_name">Full name</label><input id="full_name" name="full_name" required maxlength="150" autocomplete="name" placeholder="e.g. Kintu Peter"></div>
+      <div class="grid">
+        <div class="field"><label for="phone">WhatsApp / phone</label><input id="phone" name="phone" required maxlength="30" autocomplete="tel" placeholder="0789746493"></div>
+        <div class="field"><label for="email">Email address</label><input id="email" type="email" name="email" required maxlength="254" autocomplete="email" placeholder="name@domain.com"></div>
+      </div>
+      <div class="field">
+        <label>Ticket category</label>
+        <div class="ticket-options">
+          <label class="ticket"><input type="radio" name="ticket_type" value="FREE" checked> General Public<strong>FREE ENTRY</strong><small>All sessions, marketplace and performances.</small></label>
+          <label class="ticket"><input type="radio" name="ticket_type" value="CEO"> CEO Table Pass<strong>UGX 50,000</strong><small>Reserved table for four, premium lunch and VIP pass.</small></label>
+        </div>
+      </div>
+      <div id="payment-block" class="hidden">
+        <h3>Manual payment details</h3>
+        <ul class="payment-details"><li>MoMoPay merchant code: <strong>22852101</strong></li><li>Direct MoMo: <strong>0789746493</strong></li></ul>
+        <div class="field"><label for="transaction_id">MoMo transaction ID / reference</label><input id="transaction_id" name="transaction_id" maxlength="100" placeholder="e.g. 1982736450"></div>
+        <div class="field"><label for="payment_proof">Upload payment proof (optional if reference is provided)</label><input id="payment_proof" type="file" name="payment_proof" accept="image/*,.pdf"></div>
+      </div>
+      <button type="submit">Complete registration</button>
+      <p class="fine-print">Official portal: africanaai.info • CEO Table bookings are confirmed after manual payment review.</p>
+    </form>
+  </main>
+  <script>
+    const paymentBlock = document.getElementById('payment-block');
+    document.querySelectorAll('input[name="ticket_type"]').forEach((input) => input.addEventListener('change', () => {
+      paymentBlock.classList.toggle('hidden', input.value !== 'CEO' || !input.checked);
+    }));
+  </script>
+</body>
+</html>

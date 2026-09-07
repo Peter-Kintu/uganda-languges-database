@@ -227,6 +227,29 @@ class UserSubscription(models.Model):
         return f"{self.user.username} - {self.plan_name} ({self.status})"
 
 
+class EventBooking(models.Model):
+    TICKET_CHOICES = [
+        ('FREE', 'General Public'),
+        ('CEO', 'CEO Table Pass'),
+    ]
+
+    booking_ref = models.CharField(max_length=20, unique=True)
+    full_name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=30)
+    email = models.EmailField()
+    ticket_type = models.CharField(max_length=4, choices=TICKET_CHOICES)
+    transaction_id = models.CharField(max_length=100, blank=True)
+    payment_proof = models.FileField(upload_to='event_payment_proofs/', blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.booking_ref} - {self.full_name}"
+
+
 class PesapalPayment(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),

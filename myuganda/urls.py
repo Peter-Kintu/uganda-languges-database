@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic.base import RedirectView
 from django.views.generic import TemplateView
+from users import views as user_views
 
 from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap, UserProfileSitemap, BusinessReelSitemap, custom_sitemap_view
 
@@ -78,6 +79,13 @@ sitemaps_dict = {
 }
 
 urlpatterns = [
+    path('lauchregistration', RedirectView.as_view(url='/launchregistration/', permanent=False)),
+    path('lauchregistration/', RedirectView.as_view(url='/launchregistration/', permanent=False)),
+    path('launchregistration/admin/', user_views.registration_admin, name='registration_admin'),
+    path('launchregistration/admin/<str:booking_ref>/verify/', user_views.verify_registration, name='verify_registration'),
+    path('launchregistration/', user_views.launch_registration, name='launch_registration'),
+    path('launchregistration/status/<str:booking_ref>/', user_views.registration_status, name='registration_status'),
+
     # Google verification file
     path("googled5b56ec94e5b9cb2.html",
          TemplateView.as_view(template_name="googled5b56ec94e5b9cb2.html")),

@@ -12,6 +12,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.forms import AuthenticationForm
@@ -23,9 +24,82 @@ from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.template import TemplateDoesNotExist
+from .models import EventBooking
+import uuid
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+
+staff_required = user_passes_test(
+    lambda user: user.is_authenticated and user.is_staff,
+    login_url='/admin/login/',
+)
+
+
+@staff_required
+def registration_admin(request):
+    bookings = EventBooking.objects.all()
+    ticket_type = request.GET.get('ticket_type', '').strip().upper()
+    status = request.GET.get('status', '').strip().lower()
+    if ticket_type in {'FREE', 'CEO'}:
+        bookings = bookings.filter(ticket_type=ticket_type)
+    if status == 'pending':
+        bookings = bookings.filter(is_verified=False)
+    elif status == 'verified':
+        bookings = bookings.filter(is_verified=True)
+    return render(request, 'registration_admin.html', {
+        'bookings': bookings,
+        'selected_ticket_type': ticket_type,
+        'selected_status': status,
+        'total_count': EventBooking.objects.count(),
+        'pending_count': EventBooking.objects.filter(is_verified=False).count(),
+        'verified_count': EventBooking.objects.filter(is_verified=True).count(),
+    })
+
+
+@staff_required
+def verify_registration(request, booking_ref):
+    if request.method != 'POST':
+        return redirect('registration_admin')
+    booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
+    booking.is_verified = True
+    booking.save(update_fields=['is_verified'])
+    messages.success(request, f'{booking.full_name} has been marked as verified.')
+    return redirect('registration_admin')
+
+
+def launch_registration(request):
+    if request.method == 'POST':
+        ticket_type = request.POST.get('ticket_type', 'FREE')
+        if ticket_type not in {'FREE', 'CEO'}:
+            messages.error(request, 'Please select a valid ticket category.')
+            return render(request, 'launch_registration.html')
+
+        transaction_id = request.POST.get('transaction_id', '').strip()
+        payment_proof = request.FILES.get('payment_proof')
+        if ticket_type == 'CEO' and not transaction_id and not payment_proof:
+            messages.error(request, 'CEO Table bookings need a MoMo reference or payment proof.')
+            return render(request, 'launch_registration.html')
+
+        booking = EventBooking.objects.create(
+            booking_ref=f"BOOK-{uuid.uuid4().hex[:8].upper()}",
+            full_name=request.POST.get('full_name', '').strip(),
+            phone=request.POST.get('phone', '').strip(),
+            email=request.POST.get('email', '').strip(),
+            ticket_type=ticket_type,
+            transaction_id=transaction_id,
+            payment_proof=payment_proof,
+            is_verified=ticket_type == 'FREE',
+        )
+        return redirect('registration_status', booking_ref=booking.booking_ref)
+
+    return render(request, 'launch_registration.html')
+
+
+def registration_status(request, booking_ref):
+    booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
+    return render(request, 'registration_status.html', {'booking': booking})
 
 
 def _get_pesapal_config():

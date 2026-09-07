@@ -6,7 +6,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from myuganda.middleware import WordPressProbeBlockMiddleware
-from users.models import PesapalPayment, UserSubscription
+from users.models import EventBooking, PesapalPayment, UserSubscription
 from users.views import _get_pesapal_config, _pesapal_request
 
 
@@ -33,6 +33,78 @@ class PesapalConfigTests(TestCase):
     def test_default_pesapal_base_url_uses_production_domain(self):
         config = _get_pesapal_config()
         self.assertEqual(config['base_url'], 'https://pay.pesapal.com/v3')
+
+
+class EventRegistrationTests(TestCase):
+    def setUp(self):
+        self.staff_user = User.objects.create_user(
+            username='event_admin',
+            password='secret1234',
+            is_staff=True,
+        )
+
+    def test_registration_admin_requires_staff_user(self):
+        response = self.client.get(reverse('registration_admin'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response.url)
+
+    def test_staff_can_filter_and_verify_registration(self):
+        booking = EventBooking.objects.create(
+            booking_ref='BOOK-ADMIN1',
+            full_name='Peter Kintu',
+            phone='0789746493',
+            email='peter@example.com',
+            ticket_type='CEO',
+            transaction_id='1982736450',
+        )
+        self.client.force_login(self.staff_user)
+
+        response = self.client.get(reverse('registration_admin'), {'status': 'pending', 'ticket_type': 'CEO'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Peter Kintu')
+        self.assertContains(response, '1982736450')
+
+        response = self.client.post(reverse('verify_registration', args=[booking.booking_ref]))
+        self.assertEqual(response.status_code, 302)
+        booking.refresh_from_db()
+        self.assertTrue(booking.is_verified)
+
+    def test_free_registration_is_confirmed_and_redirects_to_status(self):
+        response = self.client.post(reverse('launch_registration'), {
+            'full_name': 'Amina Nakato',
+            'phone': '0789746493',
+            'email': 'amina@example.com',
+            'ticket_type': 'FREE',
+        })
+
+        booking = EventBooking.objects.get()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('registration_status', args=[booking.booking_ref]))
+        self.assertTrue(booking.is_verified)
+
+    def test_ceo_registration_requires_payment_evidence(self):
+        response = self.client.post(reverse('launch_registration'), {
+            'full_name': 'Peter Kintu',
+            'phone': '0789746493',
+            'email': 'peter@example.com',
+            'ticket_type': 'CEO',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(EventBooking.objects.exists())
+
+    def test_ceo_registration_with_transaction_id_is_pending(self):
+        self.client.post(reverse('launch_registration'), {
+            'full_name': 'Peter Kintu',
+            'phone': '0789746493',
+            'email': 'peter@example.com',
+            'ticket_type': 'CEO',
+            'transaction_id': '1982736450',
+        })
+
+        booking = EventBooking.objects.get()
+        self.assertFalse(booking.is_verified)
+        self.assertEqual(booking.transaction_id, '1982736450')
 
     def test_pesapal_request_path_is_joined_without_double_api_segment(self):
         config = _get_pesapal_config()

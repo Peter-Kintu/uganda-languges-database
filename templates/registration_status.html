@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registration {{ booking.booking_ref }} | Africana AI</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #201b17; color: #17130d; font: 16px/1.5 Georgia, serif; }
+    main { width: min(92vw, 560px); padding: 34px; background: #fffaf0; box-shadow: 0 18px 50px #0008; text-align: center; }
+    .mark { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #e9a91a; color: #7e2d1c; font: 700 32px Arial, sans-serif; }
+    h1 { margin: 18px 0 8px; font-size: 30px; } p { color: #5e5144; } .ref { display: inline-block; margin: 12px 0; padding: 10px 14px; background: #fff1c9; font: 700 16px monospace; color: #7e2d1c; }
+    a { display: inline-block; margin-top: 18px; padding: 13px 20px; background: #9d3f24; color: #fff; text-decoration: none; font: 700 15px Arial, sans-serif; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark">✓</div>
+    <h1>Registration received</h1>
+    <p>Your {{ booking.get_ticket_type_display }} booking reference is:</p>
+    <div class="ref">{{ booking.booking_ref }}</div>
+    {% if booking.is_verified %}
+      <p>Your free public ticket is confirmed. Keep this reference for event check-in.</p>
+    {% else %}
+      <p>Your CEO Table request is awaiting manual payment verification. We will contact you on {{ booking.phone }} after review.</p>
+    {% endif %}
+    <a href="{% url 'launch_registration' %}">Register another attendee</a>
+  </main>
+</body>
+</html>
