@@ -366,6 +366,19 @@
         border-color: #dc2626 !important;
     }
 
+    .language-select {
+        max-width: 150px;
+        min-height: 36px;
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        background: transparent;
+        color: var(--text-secondary);
+        padding: 0 10px;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
     .sidebar-overlay {
         display: none;
         position: absolute;
@@ -436,6 +449,33 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
             <div style="font-weight: 600; color: var(--text-primary);" id="chatTitle">Africana AI - Career & Business</div>
+            <label for="chatLanguage" style="margin-left: auto; font-size: 12px; color: var(--text-secondary);">Language</label>
+            <select id="chatLanguage" class="language-select" aria-label="Choose chat language" title="Choose chat language">
+                <option value="auto">Auto detect</option>
+                <optgroup label="Ugandan languages">
+                    <option value="lg">Luganda</option><option value="nyn">Runyankole</option>
+                    <option value="ach">Acholi</option><option value="lgg">Lugbara</option>
+                    <option value="teo">Ateso</option><option value="xog">Lusoga</option>
+                    <option value="nyo">Runyoro</option><option value="ttj">Rutooro</option>
+                    <option value="alz">Alur</option><option value="cgg">Rukiga</option>
+                    <option value="myx">Lumasaba</option><option value="kpz">Kupsapiiny</option>
+                    <option value="pok">Pokot</option>
+                </optgroup>
+                <optgroup label="African languages">
+                    <option value="sw">Swahili</option><option value="rw">Kinyarwanda</option>
+                    <option value="am">Amharic</option><option value="ha">Hausa</option>
+                    <option value="ig">Igbo</option><option value="yo">Yoruba</option>
+                    <option value="zu">Zulu</option><option value="xh">Xhosa</option>
+                    <option value="sn">Shona</option><option value="so">Somali</option>
+                    <option value="om">Oromo</option><option value="ti">Tigrinya</option>
+                    <option value="ln">Lingala</option><option value="mg">Malagasy</option>
+                    <option value="st">Sesotho</option><option value="tn">Setswana</option>
+                    <option value="ee">Ewe</option><option value="ak">Akan</option>
+                    <option value="wo">Wolof</option><option value="ff">Fulfulde</option>
+                    <option value="bm">Bambara</option><option value="ber">Tamazight</option>
+                </optgroup>
+                <option value="en">English</option><option value="fr">French</option><option value="pt">Portuguese</option>
+            </select>
         </div>
 
         <div class="chat-log-container">
@@ -466,15 +506,26 @@
     const chatInput = document.getElementById('chatInput');
     const sidebarMenu = document.getElementById('sidebarMenu');
     const overlay = document.getElementById('menuOverlay');
+    const chatLanguage = document.getElementById('chatLanguage');
 
     let currentSessionId = '';
     let lastAiReply = '';
     let speechRecognition = null;
+    let selectedChatLanguage = localStorage.getItem('africana_chat_language') || 'auto';
+    chatLanguage.value = selectedChatLanguage;
+    chatLanguage.addEventListener('change', function() {
+        selectedChatLanguage = chatLanguage.value;
+        localStorage.setItem('africana_chat_language', selectedChatLanguage);
+    });
     const speechLanguageMap = {
         lg: 'lg-UG', lug: 'lg-UG', sw: 'sw-KE', swa: 'sw-KE',
         rw: 'rw-RW', kin: 'rw-RW', am: 'am-ET', ha: 'ha-NG',
+        nyn: 'en-UG', ach: 'en-UG', lgg: 'en-UG', teo: 'en-UG', xog: 'en-UG',
+        nyo: 'en-UG', ttj: 'en-UG', alz: 'en-UG', cgg: 'en-UG', myx: 'en-UG',
         yo: 'yo-NG', ig: 'ig-NG', zu: 'zu-ZA', xh: 'xh-ZA',
-        sn: 'sn-ZW', so: 'so-SO', om: 'om-ET', ti: 'ti-ET',
+        sn: 'sn-ZW', so: 'so-SO', om: 'om-ET', ti: 'ti-ET', ln: 'fr-CD',
+        mg: 'fr-MG', st: 'st-ZA', tn: 'tn-ZA', ee: 'ee-GH', ak: 'ak-GH',
+        wo: 'fr-SN', ff: 'fr-SN', bm: 'fr-ML', ber: 'fr-MA',
         en: 'en-US'
     };
 
@@ -495,7 +546,7 @@
         }
 
         speechRecognition = new SpeechRecognition();
-        speechRecognition.lang = selectedSpeechLanguage(detectLanguage(chatInput.value) || 'en');
+        speechRecognition.lang = selectedSpeechLanguage(selectedChatLanguage === 'auto' ? detectLanguage(chatInput.value) : selectedChatLanguage);
         speechRecognition.continuous = false;
         speechRecognition.interimResults = false;
         button.classList.add('listening');
@@ -693,7 +744,7 @@
 
         updateHistorySidebar();
 
-        const detectedLang = detectLanguage(text);
+        const detectedLang = selectedChatLanguage === 'auto' ? detectLanguage(text) : selectedChatLanguage;
         window.lastChatLanguage = detectedLang;
 
         try {

@@ -1064,6 +1064,21 @@ def cerebras_proxy(request):
             'so': ' Respond in Somali when discussing with the user in Somali.',
             'om': ' Respond in Oromo when discussing with the user in Oromo.',
             'ti': ' Respond in Tigrinya when discussing with the user in Tigrinya.',
+            'ln': ' Respond in Lingala when discussing with the user in Lingala.',
+            'mg': ' Respond in Malagasy when discussing with the user in Malagasy.',
+            'st': ' Respond in Sesotho when discussing with the user in Sesotho.',
+            'tn': ' Respond in Setswana when discussing with the user in Setswana.',
+            'ee': ' Respond in Ewe when discussing with the user in Ewe.',
+            'ak': ' Respond in Akan when discussing with the user in Akan.',
+            'wo': ' Respond in Wolof when discussing with the user in Wolof.',
+            'ff': ' Respond in Fulfulde when discussing with the user in Fulfulde.',
+            'bm': ' Respond in Bambara when discussing with the user in Bambara.',
+            'ber': ' Respond in Tamazight when discussing with the user in Tamazight.',
+            'ttj': ' Respond in Rutooro when discussing with the user in Rutooro.',
+            'cgg': ' Respond in Rukiga when discussing with the user in Rukiga.',
+            'myx': ' Respond in Lumasaba when discussing with the user in Lumasaba.',
+            'kpz': ' Respond in Kupsapiiny when discussing with the user in Kupsapiiny.',
+            'pok': ' Respond in Pokot when discussing with the user in Pokot.',
         }
         lang_note = lang_note_map.get(user_language, '')
 
