@@ -199,6 +199,15 @@ class CartItem(models.Model):
 
 class Order(models.Model):
     STATUS_CHOICES = [
+        ('created', 'Created'),
+        ('payment_pending', 'Payment pending'),
+        ('escrowed', 'Funds held in escrow'),
+        ('dispatching', 'Dispatching'),
+        ('in_transit', 'In transit'),
+        ('delivered', 'Delivered'),
+        ('released', 'Funds released'),
+        ('disputed', 'Disputed'),
+        ('refunded', 'Refunded'),
         ('Pending', 'Pending'),
         ('Completed', 'Completed'),
         ('Cancelled', 'Cancelled'),
@@ -220,7 +229,16 @@ class Order(models.Model):
     
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     total_commission = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='created')
+    currency = models.CharField(max_length=3, default='UGX')
+    payment_deadline = models.DateTimeField(blank=True, null=True)
+    delivery_address = models.CharField(max_length=255, blank=True)
+    delivery_city = models.CharField(max_length=100, blank=True)
+    delivery_phone = models.CharField(max_length=30, blank=True)
+    delivery_latitude = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    delivery_longitude = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    buyer_confirmed_at = models.DateTimeField(blank=True, null=True)
+    funds_released_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -241,3 +259,88 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} (Qty: {self.quantity})"
+
+
+class CommercePayment(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+        ('refunded', 'Refunded'),
+    ]
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='commerce_payment')
+    pesapal_order_id = models.CharField(max_length=100, unique=True)
+    tracking_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    provider_reference = models.CharField(max_length=255, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='UGX')
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='pending')
+    raw_status = models.CharField(max_length=50, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class InventoryItem(models.Model):
+    product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name='inventory')
+    sku = models.CharField(max_length=80, unique=True, blank=True)
+    quantity_on_hand = models.PositiveIntegerField(default=0)
+    quantity_reserved = models.PositiveIntegerField(default=0)
+    reorder_level = models.PositiveIntegerField(default=5)
+    version = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def available_quantity(self):
+        return max(self.quantity_on_hand - self.quantity_reserved, 0)
+
+
+class StockMovement(models.Model):
+    MOVEMENT_CHOICES = [('restock', 'Restock'), ('sale', 'Sale'), ('release', 'Reservation released'), ('adjustment', 'Adjustment')]
+    inventory = models.ForeignKey(InventoryItem, on_delete=models.CASCADE, related_name='movements')
+    movement_type = models.CharField(max_length=20, choices=MOVEMENT_CHOICES)
+    quantity = models.IntegerField()
+    reference = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class AffiliateEvent(models.Model):
+    EVENT_CHOICES = [('click', 'Click'), ('view', 'View'), ('conversion', 'Conversion')]
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='affiliate_events')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='affiliate_events')
+    event_type = models.CharField(max_length=12, choices=EVENT_CHOICES)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='affiliate_events')
+    commission_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class AffiliatePayout(models.Model):
+    STATUS_CHOICES = [('pending', 'Pending'), ('held', 'Held'), ('payable', 'Payable'), ('paid', 'Paid'), ('reversed', 'Reversed')]
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='affiliate_payouts')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='affiliate_payouts')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='held')
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(blank=True, null=True)
+
+
+class LiveShoppingSession(models.Model):
+    STATUS_CHOICES = [('scheduled', 'Scheduled'), ('live', 'Live'), ('ended', 'Ended')]
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='live_shopping_sessions')
+    title = models.CharField(max_length=200)
+    stream_url = models.URLField(blank=True)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='scheduled')
+    language = models.CharField(max_length=10, default='en')
+    started_at = models.DateTimeField(blank=True, null=True)
+    ended_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class LivePinnedProduct(models.Model):
+    session = models.ForeignKey(LiveShoppingSession, on_delete=models.CASCADE, related_name='pinned_products')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='live_sessions')
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['position', 'created_at']

@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from urllib.parse import quote
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
@@ -6,15 +7,21 @@ from django.core.serializers import serialize
 from django.db.models import F, Sum 
 from decimal import Decimal, InvalidOperation # Import InvalidOperation for robust number handling
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from .forms import ProductForm, NegotiationForm 
-from .models import Product, Cart, CartItem
+from .models import (
+    Product, Cart, CartItem, CommercePayment, InventoryItem, StockMovement,
+    AffiliateEvent, AffiliatePayout, LiveShoppingSession, LivePinnedProduct,
+)
 from django.utils import timezone
 from datetime import timedelta
 import re 
 import os
+import json
+import uuid
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from .models import Order, OrderItem  
+from .models import Order, OrderItem
 from users.models import Notification
 from aliexpress_api import AliexpressApi, models
 from django.conf import settings
@@ -22,6 +29,198 @@ import logging
 from django.utils.text import slugify
 
 User = get_user_model()
+
+
+def _agent_reply(language, message, products=None, order=None):
+    if order:
+        labels = {'en': 'Order', 'lg': 'Oda', 'sw': 'Agizo', 'ha': 'Oda'}
+        return f"{labels.get(language, 'Order')} #{order.id}: {order.get_status_display()}."
+    if products:
+        names = ', '.join(product.name for product in products[:5])
+        return f"{names}."
+    prompts = {
+        'lg': 'Nnyamba okunoonya ekintu oba okulondoola oda yo.',
+        'sw': 'Naweza kutafuta bidhaa au kufuatilia agizo lako.',
+        'ha': 'Zan iya nemo kaya ko bin diddigin odarka.',
+    }
+    return prompts.get(language, 'Tell me what product you need or share an order number.')
+
+
+@login_required
+def commerce_agent(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    payload = request.POST if request.POST else json.loads(request.body or '{}')
+    message = str(payload.get('message', '')).strip()
+    language = str(payload.get('language') or getattr(request.user, 'language', 'en')).lower()
+    if not message:
+        return JsonResponse({'error': 'message is required.'}, status=400)
+
+    order_match = re.search(r'(?:order|oda|agizo)\s*#?([0-9]+)', message, re.IGNORECASE)
+    if order_match:
+        order = Order.objects.filter(id=order_match.group(1), buyer=request.user).first()
+        if not order:
+            return JsonResponse({'reply': 'Order not found.' if language == 'en' else _agent_reply(language, message)})
+        return JsonResponse({'reply': _agent_reply(language, message, order=order), 'order_id': order.id, 'status': order.status})
+
+    query = re.sub(r'\b(find|search|show|look for|nnyamba|noonya|tafuta|nemo)\b', '', message, flags=re.IGNORECASE).strip()
+    products = list(Product.objects.filter(name__icontains=query).order_by('-impressions')[:5]) if query else []
+    return JsonResponse({'reply': _agent_reply(language, message, products=products), 'products': [{'id': p.id, 'name': p.name, 'price': str(p.price), 'currency': p.get_currency_code()} for p in products]})
+
+
+@login_required
+def merchant_inventory(request):
+    if request.method != 'GET':
+        return JsonResponse({'error': 'GET required.'}, status=405)
+    items = InventoryItem.objects.filter(product__vendor_user=request.user).select_related('product')
+    return JsonResponse({'items': [{'product_id': item.product_id, 'name': item.product.name, 'sku': item.sku, 'on_hand': item.quantity_on_hand, 'reserved': item.quantity_reserved, 'available': item.available_quantity, 'version': item.version} for item in items]})
+
+
+@login_required
+def merchant_inventory_sync(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+    product_id = payload.get('product_id')
+    quantity = payload.get('quantity')
+    idempotency_key = str(payload.get('idempotency_key', '')).strip()
+    if not product_id or not isinstance(quantity, int) or not idempotency_key:
+        return JsonResponse({'error': 'product_id, integer quantity, and idempotency_key are required.'}, status=400)
+    product = get_object_or_404(Product, id=product_id, vendor_user=request.user)
+    with transaction.atomic():
+        item, _ = InventoryItem.objects.select_for_update().get_or_create(product=product, defaults={'sku': f'SKU-{product.id}'})
+        if StockMovement.objects.filter(reference=idempotency_key).exists():
+            return JsonResponse({'status': 'already_applied', 'version': item.version})
+        if item.quantity_on_hand + quantity < item.quantity_reserved:
+            return JsonResponse({'error': 'Quantity cannot be below reserved stock.'}, status=409)
+        item.quantity_on_hand += quantity
+        item.version += 1
+        item.save(update_fields=['quantity_on_hand', 'version', 'updated_at'])
+        StockMovement.objects.create(inventory=item, movement_type='restock' if quantity >= 0 else 'adjustment', quantity=quantity, reference=idempotency_key)
+    return JsonResponse({'status': 'applied', 'product_id': product.id, 'on_hand': item.quantity_on_hand, 'version': item.version})
+
+
+@login_required
+def start_commerce_payment(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    cart = get_user_cart(request)
+    if not cart.items.exists():
+        return JsonResponse({'error': 'Cart is empty.'}, status=400)
+    delivery = request.session.get('delivery_details', {})
+    first_item = cart.items.select_related('product').first()
+    with transaction.atomic():
+        order = Order.objects.create(
+            buyer=request.user, total_amount=cart.cart_total, currency=first_item.product.get_currency_code(),
+            status='payment_pending', delivery_address=delivery.get('address', ''), delivery_city=delivery.get('city', ''),
+            delivery_phone=delivery.get('phone', ''), delivery_latitude=delivery.get('latitude') or None, delivery_longitude=delivery.get('longitude') or None,
+        )
+        for item in cart.items.select_related('product'):
+            OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price_at_purchase=item.product.negotiated_price or item.product.price, commission_at_purchase=item.product.referral_commission)
+        payment = CommercePayment.objects.create(order=order, pesapal_order_id=f'eshop-{order.id}-{uuid.uuid4().hex[:8]}', amount=order.total_amount, currency=order.currency)
+    try:
+        from users.views import _pesapal_request
+        callback_url = request.build_absolute_uri(reverse('users:pesapal_callback'))
+        notification_url = request.build_absolute_uri(reverse('eshop:commerce_payment_ipn'))
+        token = _pesapal_request('post', 'Auth/RequestToken').get('token')
+        response = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={'id': payment.pesapal_order_id, 'currency': payment.currency, 'amount': f'{payment.amount:.2f}', 'description': f'Africana AI order #{order.id}', 'callback_url': callback_url, 'notification_id': notification_url, 'billing_address': {'email_address': request.user.email or f'{request.user.username}@example.com', 'phone_number': order.delivery_phone, 'country_code': 'UG', 'first_name': request.user.first_name or request.user.username, 'last_name': request.user.last_name or 'User'}}, access_token=token)
+    except Exception as exc:
+        payment.status = 'failed'
+        payment.save(update_fields=['status', 'updated_at'])
+        logger.exception('Commerce Pesapal checkout failed: %s', exc)
+        return JsonResponse({'error': 'Unable to start payment.'}, status=502)
+    payment.tracking_id = response.get('order_tracking_id') or response.get('OrderTrackingId')
+    payment.save(update_fields=['tracking_id', 'updated_at'])
+    return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'redirect_url': response.get('redirect_url') or response.get('RedirectUrl')})
+
+
+@csrf_exempt
+def commerce_payment_ipn(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    tracking_id = request.POST.get('OrderTrackingId') or request.GET.get('OrderTrackingId')
+    payment = get_object_or_404(CommercePayment.objects.select_related('order'), tracking_id=tracking_id)
+    try:
+        from users.views import _pesapal_request
+        token = _pesapal_request('post', 'Auth/RequestToken').get('token')
+        payload = _pesapal_request('post', 'Transactions/GetTransactionStatus', json_data={'orderTrackingId': tracking_id}, access_token=token)
+        status = str(payload.get('status') or payload.get('Status') or '').upper()
+        with transaction.atomic():
+            payment = CommercePayment.objects.select_for_update().select_related('order').get(pk=payment.pk)
+            if status in {'COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL'}:
+                payment.status = 'paid'
+                payment.raw_status = status
+                payment.provider_reference = str(payload.get('confirmation_code') or payload.get('payment_method') or '')
+                payment.order.status = 'escrowed'
+                payment.order.save(update_fields=['status'])
+            elif status in {'FAILED', 'CANCELLED', 'CANCELED'}:
+                payment.status = 'cancelled' if status != 'FAILED' else 'failed'
+                payment.raw_status = status
+                payment.order.status = 'cancelled'
+                payment.order.save(update_fields=['status'])
+            payment.save(update_fields=['status', 'raw_status', 'provider_reference', 'updated_at'])
+    except Exception:
+        logger.exception('Commerce Pesapal IPN verification failed.')
+        return JsonResponse({'error': 'Unable to verify payment.'}, status=502)
+    return JsonResponse({'status': 'accepted'})
+
+
+@login_required
+def merchant_dashboard(request):
+    products = Product.objects.filter(vendor_user=request.user).select_related('inventory')
+    orders = Order.objects.filter(order_items__product__vendor_user=request.user).distinct().order_by('-created_at')[:25]
+    return render(request, 'eshop/merchant_dashboard.html', {'products': products, 'orders': orders})
+
+
+@login_required
+def affiliate_click(request):
+    product = get_object_or_404(Product, id=request.GET.get('product_id'))
+    creator_id = request.GET.get('creator_id')
+    creator = User.objects.filter(id=creator_id).first() if creator_id else request.user
+    AffiliateEvent.objects.create(creator=creator, product=product, event_type='click')
+    return JsonResponse({'status': 'tracked', 'affiliate_url': product.affiliate_url or ''})
+
+
+@login_required
+def live_sessions(request):
+    if request.method == 'GET':
+        sessions = LiveShoppingSession.objects.filter(status__in={'scheduled', 'live'}).prefetch_related('pinned_products__product')[:50]
+        return JsonResponse({'sessions': [{'id': session.id, 'title': session.title, 'host': session.host.username, 'status': session.status, 'language': session.language, 'stream_url': session.stream_url, 'products': [{'id': pin.product_id, 'name': pin.product.name} for pin in session.pinned_products.all()]} for session in sessions]})
+    if request.method != 'POST':
+        return JsonResponse({'error': 'GET or POST required.'}, status=405)
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+    title = str(payload.get('title', '')).strip()
+    if not title:
+        return JsonResponse({'error': 'title is required.'}, status=400)
+    session = LiveShoppingSession.objects.create(host=request.user, title=title, language=payload.get('language', getattr(request.user, 'language', 'en')), stream_url=payload.get('stream_url', ''))
+    for position, product_id in enumerate(payload.get('product_ids', [])):
+        product = Product.objects.filter(id=product_id, vendor_user=request.user).first()
+        if product:
+            LivePinnedProduct.objects.create(session=session, product=product, position=position)
+    return JsonResponse({'id': session.id, 'status': session.status}, status=201)
+
+
+@login_required
+def confirm_delivery(request, order_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    with transaction.atomic():
+        order = get_object_or_404(Order.objects.select_for_update(), id=order_id, buyer=request.user)
+        if order.status not in {'delivered', 'escrowed'}:
+            return JsonResponse({'error': 'Order is not ready for delivery confirmation.'}, status=409)
+        order.status = 'released'
+        order.buyer_confirmed_at = timezone.now()
+        order.funds_released_at = order.buyer_confirmed_at
+        order.save(update_fields=['status', 'buyer_confirmed_at', 'funds_released_at'])
+        for event in order.affiliate_events.filter(event_type='conversion'):
+            AffiliatePayout.objects.filter(order=order, creator=event.creator).update(status='payable')
+    return JsonResponse({'order_id': order.id, 'status': order.status, 'funds_released_at': order.funds_released_at.isoformat()})
 # ------------------------------------
 # Helper Functions
 # ------------------------------------
@@ -593,7 +792,7 @@ def confirm_order_whatsapp(request):
             buyer=request.user,
             referrer=referrer,
             total_amount=cart.cart_total,
-            status='Completed' # Assuming immediate completion via WhatsApp
+            status='payment_pending'
         )
 
         total_comm = 0
@@ -910,7 +1109,7 @@ def buy_now(request, product_id):
         Order.objects.create(
             buyer=request.user,
             total_amount=product.price,
-            status='Completed', # Mark as completed since you've fulfilled your part
+            status='created',
             total_commission=product.referral_commission # If defined
         )
         

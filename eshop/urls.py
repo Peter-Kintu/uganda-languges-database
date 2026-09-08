@@ -31,6 +31,15 @@ urlpatterns = [
     path('product/<slug:slug>/accept-price/', views.accept_negotiated_price, name='accept_negotiated_price'),
     path('sync-aliexpress/', views.sync_aliexpress_products, name='sync_aliexpress'),
     path('buy/<int:product_id>/', views.buy_now, name='buy_now'),
+    path('api/commerce-agent/', views.commerce_agent, name='commerce_agent'),
+    path('api/merchant/inventory/', views.merchant_inventory, name='merchant_inventory'),
+    path('api/merchant/inventory/sync/', views.merchant_inventory_sync, name='merchant_inventory_sync'),
+    path('merchant/dashboard/', views.merchant_dashboard, name='merchant_dashboard'),
+    path('api/payments/start/', views.start_commerce_payment, name='start_commerce_payment'),
+    path('api/payments/ipn/', views.commerce_payment_ipn, name='commerce_payment_ipn'),
+    path('api/orders/<int:order_id>/confirm-delivery/', views.confirm_delivery, name='confirm_delivery'),
+    path('api/affiliate/click/', views.affiliate_click, name='affiliate_click'),
+    path('api/live/sessions/', views.live_sessions, name='live_sessions'),
     # Temporary deletion route - remove after running
     # path('secret-delete-ali-products-9921/', views.temporary_delete_ali_products),
 ]

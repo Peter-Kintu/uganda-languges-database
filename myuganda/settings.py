@@ -182,6 +182,7 @@ INSTALLED_APPS = [
     'hotel',
     'movie',
     'social', 
+    'logistics',
 ]
 
 TAILWIND_APP_NAME = 'theme'

@@ -103,6 +103,7 @@ urlpatterns = [
 
     # 5. E‑shop
     path("eshop/", include("eshop.urls", namespace="eshop")),
+    path("logistics/", include("logistics.urls", namespace="logistics")),
 
     # 6. Hotels
     path("hotel/", include("hotel.urls", namespace="hotel")),
