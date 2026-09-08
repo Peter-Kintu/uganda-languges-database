@@ -182,7 +182,8 @@ def _build_hybrid_feed(
     elif feed_type == 'location':
         posts_query = posts_query.exclude(location__isnull=True).exclude(location='')
 
-    posts = list(posts_query.order_by('-created_at'))
+    max_ranked_posts = max(20, int(getattr(settings, 'FEED_RANKING_MAX_POSTS', 500)))
+    posts = list(posts_query.order_by('-created_at')[:max_ranked_posts])
     if not posts:
         return []
 
@@ -242,9 +243,10 @@ def _build_market_feed_items(request):
         return [], []
 
     rotation = random.SystemRandom()
+    max_products = max(5, int(getattr(settings, 'FEED_MARKET_MAX_PRODUCTS', 100)))
     products = list(Product.objects.filter(
         Q(source='aliexpress') | Q(source='local', referral_commission__gt=0)
-    ).exclude(price__isnull=True).order_by('-last_synced'))
+    ).exclude(price__isnull=True).order_by('-last_synced')[:max_products])
     rotation.shuffle(products)
     products = products[:5]
 
@@ -290,7 +292,8 @@ def _build_market_feed_items(request):
         matching_jobs = jobs.filter(relevance_query)
         if matching_jobs.exists():
             jobs = matching_jobs
-    jobs = list(jobs.order_by('-upvotes', '-timestamp'))
+    max_jobs = max(5, int(getattr(settings, 'FEED_MARKET_MAX_JOBS', 100)))
+    jobs = list(jobs.order_by('-upvotes', '-timestamp')[:max_jobs])
     rotation.shuffle(jobs)
     jobs = jobs[:5]
     return products, jobs
