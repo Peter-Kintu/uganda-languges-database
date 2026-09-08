@@ -101,7 +101,7 @@ def _google_translate(text, source_lang, target_lang):
         res = requests.get(
             GOOGLE_TRANSLATE_BASE,
             params=params,
-            timeout=20,
+            timeout=10,
             headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
                 'Accept': 'application/json',
@@ -588,7 +588,9 @@ def accept_connection(request, connection_id):
 SUNBIRD_URL = getattr(settings, 'SUNBIRD_API_URL', 'https://api.sunbird.ai')
 SUNBIRD_API_KEY = getattr(settings, 'SUNBIRD_API_KEY', None)
 SUNBIRD_TRANSLATION_TIMEOUT = getattr(settings, 'SUNBIRD_TRANSLATION_TIMEOUT', 10)
-NLLB_URL = getattr(settings, 'NLLB_API_URL', None) or 'https://sing-sjf2.onrender.com/translate'
+NLLB_URL = getattr(settings, 'NLLB_API_URL', None)
+NLLB_TRANSLATION_TIMEOUT = getattr(settings, 'NLLB_TRANSLATION_TIMEOUT', 30)
+TRANSLATION_PROVIDER_COOLDOWN = getattr(settings, 'TRANSLATION_PROVIDER_COOLDOWN', 300)
 LIBRE_URL = "https://libretranslate.com/translate"
 LIBRE_ALT_URL = getattr(settings, 'LIBRE_ALT_URL', 'https://libretranslate.de/translate')
 LIBRE_API_KEY = getattr(settings, 'LIBRE_API_KEY', None)
@@ -620,6 +622,10 @@ LIBRE_SUPPORTED = {
 }
 
 GOOGLE_TRANSLATE_BASE = 'https://translate.googleapis.com/translate_a/single'
+GOOGLE_LANGUAGE_OVERRIDES = {
+    'lug': 'lg',
+    'swa': 'sw',
+}
 
 # Allow UI language codes to be mapped to service-specific translation codes.
 LANGUAGE_SERVICE_OVERRIDES = {
@@ -658,8 +664,18 @@ def translate_smart(text, target_lang, source_lang='en'):
     if cached is not None and isinstance(cached, str) and len(cached) > 0:
         return cached
 
+    def _provider_is_cooling_down(provider):
+        return bool(_safe_cache_get(f'translation_provider_down:{provider}'))
+
+    def _cool_down_provider(provider):
+        _safe_cache_set(
+            f'translation_provider_down:{provider}',
+            True,
+            TRANSLATION_PROVIDER_COOLDOWN,
+        )
+
     def _try_sunbird():
-        if not SUNBIRD_API_KEY:
+        if not SUNBIRD_API_KEY or _provider_is_cooling_down('sunbird'):
             print("Sunbird API key not configured, skipping Sunbird translation")
             return None
 
@@ -693,12 +709,16 @@ def translate_smart(text, target_lang, source_lang='en'):
                 }
             )
         except requests.Timeout:
+            _cool_down_provider('sunbird')
             print(f"Sunbird timeout for {target_code}; trying translation fallbacks")
             return None
         except requests.RequestException as e:
+            _cool_down_provider('sunbird')
             print(f"Sunbird request error for {target_code}: {str(e)[:120]}")
             return None
         if res.status_code != 200:
+            if res.status_code in {401, 403, 429} or res.status_code >= 500:
+                _cool_down_provider('sunbird')
             if res.status_code == 422:
                 print(f"Sunbird validation error for {target_code}: {res.text[:300]}")
             elif res.status_code >= 500:
@@ -723,7 +743,7 @@ def translate_smart(text, target_lang, source_lang='en'):
         return None
 
     def _try_nllb():
-        if not NLLB_URL:
+        if not NLLB_URL or _provider_is_cooling_down('nllb'):
             print("NLLB API URL not configured, skipping NLLB translation")
             return None
         request_url = NLLB_URL.rstrip('/') + '/'
@@ -738,7 +758,7 @@ def translate_smart(text, target_lang, source_lang='en'):
             res = requests.post(
                 request_url,
                 json=payload,
-                timeout=100,
+                timeout=NLLB_TRANSLATION_TIMEOUT,
                 headers={
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
                     'Accept': 'application/json',
@@ -746,13 +766,17 @@ def translate_smart(text, target_lang, source_lang='en'):
                 }
             )
         except requests.Timeout:
-            print(f"NLLB timeout for {target_code} (possible Render cold start)")
+            _cool_down_provider('nllb')
+            print(f"NLLB timeout for {target_code}; trying translation fallbacks")
             return None
         except Exception as e:
+            _cool_down_provider('nllb')
             print(f"NLLB request error for {target_code}: {str(e)[:120]}")
             return None
 
         if res.status_code != 200:
+            if res.status_code in {401, 403, 429} or res.status_code >= 500:
+                _cool_down_provider('nllb')
             if res.status_code == 403:
                 print(f"NLLB access forbidden (rate limited or IP blocked) for {target_code}")
             elif res.status_code >= 500:
@@ -867,9 +891,13 @@ def translate_smart(text, target_lang, source_lang='en'):
 
     def _try_google():
         try:
-            for code in [target_lang, target_code]:
-                if not code:
-                    continue
+            google_codes = [
+                target_lang,
+                target_code,
+                GOOGLE_LANGUAGE_OVERRIDES.get(target_lang),
+                GOOGLE_LANGUAGE_OVERRIDES.get(target_code),
+            ]
+            for code in dict.fromkeys(code for code in google_codes if code):
                 text_candidate = _google_translate(text, source_lang, code)
                 if text_candidate:
                     return text_candidate
@@ -883,6 +911,10 @@ def translate_smart(text, target_lang, source_lang='en'):
 
     if target_in_sunbird:
         translated_text = _try_sunbird()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
+        translated_text = _try_google()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
@@ -903,11 +935,11 @@ def translate_smart(text, target_lang, source_lang='en'):
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
     elif target_in_nllb:
-        translated_text = _try_nllb()
+        translated_text = _try_google()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
-        translated_text = _try_libre()
+        translated_text = _try_nllb()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
@@ -920,11 +952,11 @@ def translate_smart(text, target_lang, source_lang='en'):
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
     else:
-        translated_text = _try_libre()
+        translated_text = _try_google()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
-        translated_text = _try_google()
+        translated_text = _try_libre()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
@@ -962,7 +994,14 @@ def translate_text(request):
         return JsonResponse({'translated': translated, 'success': True})
     except Exception as e:
         print(f"translate_text error: {str(e)[:150]}")
-        return JsonResponse({'error': str(e)[:100], 'translated': ''}, status=500)
+        fallback_text = locals().get('text', '')
+        return JsonResponse({
+            'success': True,
+            'translated': fallback_text,
+            'source_text': fallback_text,
+            'fallback': True,
+            'note': 'Translation service unavailable. Showing original text.',
+        })
 
 @login_required
 def send_message(request, user_id):
@@ -1184,10 +1223,15 @@ def gemini_translate(request):
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
     except Exception as e:
         print(f"Translation endpoint error: {e}")
+        fallback_text = locals().get('text', '')
         return JsonResponse({
-            'error': 'Translation service error', 
-            'success': False
-        }, status=500)
+            'success': True,
+            'translated': fallback_text,
+            'source_text': fallback_text,
+            'target_language': locals().get('target_language', 'en'),
+            'fallback': True,
+            'note': 'Translation service unavailable. Showing original text.',
+        })
 
 @login_required
 def conversation(request, user_id):

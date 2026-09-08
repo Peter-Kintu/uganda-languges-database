@@ -299,7 +299,10 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 # Translation service endpoints
 SUNBIRD_API_URL = os.getenv('SUNBIRD_API_URL', 'https://api.sunbird.ai')
 SUNBIRD_API_KEY = os.getenv('SUNBIRD_API_KEY')
-NLLB_API_URL = os.getenv('NLLB_API_URL', '')
+NLLB_API_URL = os.getenv('NLLB_API_URL')
+SUNBIRD_TRANSLATION_TIMEOUT = int(os.getenv('SUNBIRD_TRANSLATION_TIMEOUT', '10'))
+NLLB_TRANSLATION_TIMEOUT = int(os.getenv('NLLB_TRANSLATION_TIMEOUT', '30'))
+TRANSLATION_PROVIDER_COOLDOWN = int(os.getenv('TRANSLATION_PROVIDER_COOLDOWN', '300'))
 
 # Cache backend selection. For production use with DatabaseCache, enable this explicitly
 # and create the cache table via `python manage.py createcachetable`.
@@ -377,7 +380,7 @@ JAZZMIN_SETTINGS = {
     "site_title": "Africana AI Admin",
     "site_header": "Africana AI",
     "site_brand": "Africana AI",
-    "site_logo": "images/uganda_logo.png",
+    "site_logo": "images/africana-ai-logo.svg",
     "welcome_sign": "Africana AI Ecosystem Management",
     "copyright": "Africana AI Project",
     "search_model": ["users.CustomUser", "social.BusinessReel"], 
@@ -408,7 +411,7 @@ JAZZMIN_SETTINGS = {
 
 JAZZMIN_UI_TWEAKS = {
     "theme": "flatly",
-    "dark_mode_theme": "darkly",
+    "default_theme_mode": "dark",
     "navbar_fixed": True,
     "sidebar_fixed": True,
     "sidebar_nav_child_indent": True,
