@@ -591,6 +591,9 @@ SUNBIRD_TRANSLATION_TIMEOUT = getattr(settings, 'SUNBIRD_TRANSLATION_TIMEOUT', 1
 NLLB_URL = getattr(settings, 'NLLB_API_URL', None)
 NLLB_TRANSLATION_TIMEOUT = getattr(settings, 'NLLB_TRANSLATION_TIMEOUT', 30)
 TRANSLATION_PROVIDER_COOLDOWN = getattr(settings, 'TRANSLATION_PROVIDER_COOLDOWN', 300)
+GEMINI_API_KEY = getattr(settings, 'GEMINI_API_KEY', None)
+GEMINI_TRANSLATION_MODEL = getattr(settings, 'GEMINI_TRANSLATION_MODEL', 'gemini-2.0-flash')
+GEMINI_TRANSLATION_TIMEOUT = getattr(settings, 'GEMINI_TRANSLATION_TIMEOUT', 20)
 LIBRE_URL = "https://libretranslate.com/translate"
 LIBRE_ALT_URL = getattr(settings, 'LIBRE_ALT_URL', 'https://libretranslate.de/translate')
 LIBRE_API_KEY = getattr(settings, 'LIBRE_API_KEY', None)
@@ -656,6 +659,14 @@ NLLB_LANGUAGE_OVERRIDES = {
     'tn': 'tsn', 'ss': 'ssw', 've': 'ven', 'nr': 'nbl', 'mg': 'mlg',
     'ln': 'lin', 'kg': 'kon', 'ak': 'aka', 'ee': 'ewe', 'tw': 'twi',
     'fon': 'fon', 'bem': 'bem', 'kik': 'kik', 'luo': 'luo', 'luy': 'luy',
+}
+
+AFRICAN_LANGUAGE_NAMES = {
+    'nyn': 'Runyankole', 'lug': 'Luganda', 'lg': 'Luganda', 'ach': 'Acholi',
+    'lgg': 'Lugbara', 'teo': 'Ateso', 'xog': 'Soga (Lusoga)',
+    'swa': 'Swahili', 'sw': 'Swahili', 'kin': 'Kinyarwanda', 'rw': 'Kinyarwanda',
+    'swh': 'Swahili', 'luo': 'Dholuo', 'luy': 'Luhya', 'nyo': 'Runyoro',
+    'alz': 'Alur', 'cgg': 'Chiga (Rukiga)', 'ttj': 'Rutooro', 'myx': 'Masaaba',
 }
 
 
@@ -935,10 +946,53 @@ def translate_smart(text, target_lang, source_lang='en'):
             print(f"Google translate fallback error for {target_lang}: {e}")
             return None
 
+    def _try_gemini():
+        if not GEMINI_API_KEY or _provider_is_cooling_down('gemini'):
+            return None
+
+        language_name = AFRICAN_LANGUAGE_NAMES.get(target_lang) or AFRICAN_LANGUAGE_NAMES.get(target_code) or target_lang
+        source_name = 'the detected source language' if source_lang == 'auto' else source_lang
+        prompt = (
+            f"Translate the text below from {source_name} to {language_name}. "
+            "Return only the translation, with no explanation, labels, or quotation marks.\n\n"
+            f"Text:\n{text}"
+        )
+        request_url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{GEMINI_TRANSLATION_MODEL}:generateContent"
+        )
+        try:
+            res = requests.post(
+                request_url,
+                params={'key': GEMINI_API_KEY},
+                json={'contents': [{'parts': [{'text': prompt}]}]},
+                timeout=GEMINI_TRANSLATION_TIMEOUT,
+                headers={'Content-Type': 'application/json'},
+            )
+            if res.status_code != 200:
+                if res.status_code in {401, 403, 429} or res.status_code >= 500:
+                    _cool_down_provider('gemini')
+                print(f"Gemini translation status {res.status_code} for {target_lang}")
+                return None
+            data = res.json()
+            translated = data['candidates'][0]['content']['parts'][0].get('text', '').strip()
+            if translated and translated != text and not _is_suspicious_text(translated, len(text)):
+                return translated
+        except requests.Timeout:
+            _cool_down_provider('gemini')
+            print(f"Gemini translation timeout for {target_lang}")
+        except (requests.RequestException, KeyError, IndexError, TypeError, ValueError) as error:
+            print(f"Gemini translation error for {target_lang}: {str(error)[:120]}")
+        return None
+
     target_in_sunbird = target_code in SUNBIRD_LANGS or target_lang in SUNBIRD_LANGS
     target_in_nllb = target_code in NLLB_LANGS or target_lang in NLLB_LANGS
 
     if target_in_sunbird:
+        translated_text = _try_gemini()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
         translated_text = _try_sunbird()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)
@@ -964,6 +1018,10 @@ def translate_smart(text, target_lang, source_lang='en'):
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
     elif target_in_nllb:
+        translated_text = _try_gemini()
+        if translated_text:
+            _safe_cache_set(cache_key, translated_text, 604800)
+            return translated_text
         translated_text = _try_google()
         if translated_text:
             _safe_cache_set(cache_key, translated_text, 604800)

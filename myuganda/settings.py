@@ -291,6 +291,8 @@ ALI_APP_KEY = os.getenv('ALI_APP_KEY')
 ALI_APP_SECRET = os.getenv('ALI_APP_SECRET')
 ALI_TRACKING_ID = os.getenv('ALI_TRACKING_ID')
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_TRANSLATION_MODEL = os.getenv('GEMINI_TRANSLATION_MODEL', 'gemini-2.0-flash')
+GEMINI_TRANSLATION_TIMEOUT = int(os.getenv('GEMINI_TRANSLATION_TIMEOUT', '20'))
 CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY")
 TMDB_TOKEN = os.environ.get('TMDB_TOKEN')
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
@@ -474,7 +476,8 @@ elif DATABASE_URL and not DEBUG and USE_DATABASE_CACHE:
 elif not DEBUG:
     CACHES = {
         'default': {
-            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'uganda-translation-local-cache',
         }
     }
 else:
