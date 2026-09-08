@@ -602,7 +602,9 @@ SUNBIRD_LANGS = {
     'laj', 'lsm', 'luc', 'mhi', 'pok', 'rub', 'ruc', 'rwm', 'tlj', 'nuj', 'nyo'
 }
 
-# NLLB handles these African languages - LibreTranslate doesn't support well
+# NLLB handles these African languages - LibreTranslate doesn't support well.
+# Codes are ISO 639-3 where available; NLLB deployments may also accept the
+# corresponding FLORES-200 code (for example, nyn_Latn).
 NLLB_LANGS = {
     # Uganda
     'lg', 'lug', 'nyn', 'ach', 'lgg', 'teo', 'xog', 'ttj', 'nyo', 'laj', 'alz',
@@ -611,7 +613,12 @@ NLLB_LANGS = {
     # East/Southern Africa  
     'rw', 'rn', 'so', 'om', 'ti', 'st', 'nso', 'tn', 'ss', 've', 'nr',
     # West/Central/South Africa
-    'ny', 'sn', 'tw', 'ak', 'ee', 'fon', 'ln', 'kg', 'mg'
+    'ny', 'sn', 'tw', 'ak', 'ee', 'fon', 'ln', 'kg', 'mg',
+    # Additional African languages supported by NLLB/FLORES-200
+    'bem', 'bho', 'crs', 'dyu', 'kab', 'kas', 'kik', 'kmb', 'kon', 'lua',
+    'mfe', 'mos', 'pag', 'sag', 'sat', 'sco', 'umb', 'wol', 'zgh', 'ber',
+    'bbc', 'bjn', 'bug', 'ceb', 'fuv', 'guz', 'jav', 'kam', 'kn', 'kri',
+    'min', 'nso', 'nya', 'swh', 'tgl', 'tir', 'war', 'yue'
 }
 
 # LibreTranslate supported languages (most European + a few others)
@@ -625,11 +632,30 @@ GOOGLE_TRANSLATE_BASE = 'https://translate.googleapis.com/translate_a/single'
 GOOGLE_LANGUAGE_OVERRIDES = {
     'lug': 'lg',
     'swa': 'sw',
+    'swh': 'sw',
+    'nya': 'ny',
+}
+
+# Google Translate accepts only a subset of African language codes. Do not
+# send NLLB/Sunbird-only codes such as nyn to Google, which returns HTTP 400.
+GOOGLE_AFRICAN_LANGS = {
+    'af', 'am', 'ar', 'ber', 'bm', 'ca', 'ee', 'es', 'ff', 'ha', 'ig', 'lg',
+    'ln', 'mg', 'ms', 'mt', 'nd', 'nl', 'ny', 'om', 'pt', 'rw', 'so', 'sn',
+    'st', 'sw', 'ti', 'tn', 'ts', 'wo', 'xh', 'yo', 'zu'
 }
 
 # Allow UI language codes to be mapped to service-specific translation codes.
 LANGUAGE_SERVICE_OVERRIDES = {
     'lg': 'lug',  # Luganda is commonly selected as 'lg' in the UI but NLLB expects ISO 639-3 'lug'
+}
+
+NLLB_LANGUAGE_OVERRIDES = {
+    'lg': 'lug', 'sw': 'swh', 'rw': 'kin', 'am': 'amh', 'ha': 'hau',
+    'ig': 'ibo', 'yo': 'yor', 'zu': 'zul', 'xh': 'xho', 'sn': 'sna',
+    'ny': 'nya', 'so': 'som', 'om': 'orm', 'ti': 'tir', 'st': 'sot',
+    'tn': 'tsn', 'ss': 'ssw', 've': 'ven', 'nr': 'nbl', 'mg': 'mlg',
+    'ln': 'lin', 'kg': 'kon', 'ak': 'aka', 'ee': 'ewe', 'tw': 'twi',
+    'fon': 'fon', 'bem': 'bem', 'kik': 'kik', 'luo': 'luo', 'luy': 'luy',
 }
 
 
@@ -749,9 +775,10 @@ def translate_smart(text, target_lang, source_lang='en'):
         request_url = NLLB_URL.rstrip('/') + '/'
         # NLLB expects proper language codes, default to 'en' for auto
         source_code = 'en' if service_source_lang in {'en', 'eng', 'auto'} else service_source_lang
+        nllb_target_code = NLLB_LANGUAGE_OVERRIDES.get(target_code, target_code)
         payload = {
             'source': source_code,
-            'target': target_code,
+            'target': nllb_target_code,
             'text': text
         }
         try:
@@ -898,6 +925,8 @@ def translate_smart(text, target_lang, source_lang='en'):
                 GOOGLE_LANGUAGE_OVERRIDES.get(target_code),
             ]
             for code in dict.fromkeys(code for code in google_codes if code):
+                if code not in GOOGLE_AFRICAN_LANGS and code not in LIBRE_SUPPORTED:
+                    continue
                 text_candidate = _google_translate(text, source_lang, code)
                 if text_candidate:
                     return text_candidate
