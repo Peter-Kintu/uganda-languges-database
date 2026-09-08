@@ -130,6 +130,9 @@ def featured_recruiter_view(request):
 
 @login_required
 def export_contributions_json(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Staff access required.'}, status=403)
+
     validated_posts = JobPost.objects.all().values(
         'post_content', 'required_skills', 'job_category', 
         'job_type', 'recruiter_name', 'recruiter_location',

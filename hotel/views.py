@@ -19,6 +19,7 @@ import os
 import hashlib
 import uuid
 import random
+import logging
 from datetime import timedelta
 
 try:
@@ -29,6 +30,7 @@ except ImportError:
     JobPost = None
 
 INVESTOR_CREATE_PASSCODE = getattr(settings, 'INVESTOR_CREATE_PASSCODE', '23882')
+logger = logging.getLogger(__name__)
 
 
 def _safe_cache_get(key, default=None):
@@ -53,6 +55,29 @@ def _translation_cache_key(text, source_lang, target_lang):
     target = (target_lang or 'en').lower().strip()
     digest = hashlib.md5(text.encode('utf-8')).hexdigest()[:8]
     return f"trans_{digest}_{source}_{target}"
+
+
+TRANSLATION_GLOSSARY = {
+    'uganda': 'Uganda',
+    'kampala': 'Kampala',
+    'africana ai': 'Africana AI',
+}
+
+
+def _normalize_translation(text, original_text):
+    """Clean common model wrappers while preserving the provider's translation."""
+    if not isinstance(text, str):
+        return None
+    cleaned = text.strip().strip('"\'`')
+    for prefix in ('Translation:', 'Translated text:', 'Answer:'):
+        if cleaned.lower().startswith(prefix.lower()):
+            cleaned = cleaned[len(prefix):].strip()
+            break
+    if not cleaned or cleaned == original_text or _is_suspicious_text(cleaned, len(original_text)):
+        return None
+    for source_term, preferred_term in TRANSLATION_GLOSSARY.items():
+        cleaned = cleaned.replace(source_term, preferred_term)
+    return cleaned
 
 
 def invalidate_hotel_feed_cache():
@@ -122,8 +147,8 @@ def _google_translate(text, source_lang, target_lang):
                 if segment:
                     translated_segments.append(segment)
 
-        translated = ' '.join(translated_segments).strip()
-        if translated and isinstance(translated, str) and len(translated) > 2 and translated != text and not _is_suspicious_text(translated, len(text)):
+        translated = _normalize_translation(' '.join(translated_segments), text)
+        if translated and len(translated) > 2:
             return translated
     except Exception as e:
         print(f"Google fallback error for {target_lang}: {str(e)[:150]}")
@@ -699,6 +724,7 @@ def translate_smart(text, target_lang, source_lang='en'):
     cache_key = _translation_cache_key(text, source_lang, target_lang)
     cached = _safe_cache_get(cache_key)
     if cached is not None and isinstance(cached, str) and len(cached) > 0:
+        _safe_cache_set(f'translation_metric:cache_hit:{target_lang}', 1, 86400)
         return cached
 
     def _provider_is_cooling_down(provider):
@@ -710,6 +736,13 @@ def translate_smart(text, target_lang, source_lang='en'):
             True,
             TRANSLATION_PROVIDER_COOLDOWN,
         )
+
+    def _record_provider_result(provider, success):
+        metric = f'translation_metric:{provider}:{"success" if success else "failure"}'
+        try:
+            cache.incr(metric)
+        except Exception:
+            _safe_cache_set(metric, 1, 86400)
 
     def _try_sunbird():
         if not SUNBIRD_API_KEY or _provider_is_cooling_down('sunbird'):
@@ -775,7 +808,9 @@ def translate_smart(text, target_lang, source_lang='en'):
             data.get('output', {}).get('text')
         )
         if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious_text(translated_text, len(text)):
+            _record_provider_result('sunbird', True)
             return translated_text
+        _record_provider_result('sunbird', False)
         print(f"Sunbird returned suspicious/empty result for {target_code}: {json.dumps(data)[:400]}")
         return None
 
@@ -831,7 +866,9 @@ def translate_smart(text, target_lang, source_lang='en'):
 
         translated_text = data.get('translated_text') or data.get('translation') or data.get('translated')
         if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious_text(translated_text, len(text)):
+            _record_provider_result('nllb', True)
             return translated_text
+        _record_provider_result('nllb', False)
         print(f"NLLB returned suspicious/empty result for {target_code}: {json.dumps(data)[:400]}")
         return None
 
@@ -882,6 +919,7 @@ def translate_smart(text, target_lang, source_lang='en'):
                 data = res.json()
                 translated_text = data.get('translatedText') or data.get('translation') or data.get('translated')
                 if isinstance(translated_text, str) and translated_text.strip() and translated_text != text and not _is_suspicious_text(translated_text, len(text)):
+                    _record_provider_result('libre', True)
                     return translated_text
             except requests.Timeout:
                 print(f"LibreTranslate timeout for {target_code} at {url}")
@@ -918,6 +956,7 @@ def translate_smart(text, target_lang, source_lang='en'):
             if result.get('responseStatus') == 200:
                 translated = result.get('responseData', {}).get('translatedText', '')
                 if translated and isinstance(translated, str) and translated.strip() and translated != text and translated.lower() != 'undefined' and not _is_suspicious_text(translated, len(text)):
+                    _record_provider_result('mymemory', True)
                     return translated
             else:
                 print(f"MyMemory status {result.get('responseStatus')} for {target_lang}")
@@ -977,6 +1016,7 @@ def translate_smart(text, target_lang, source_lang='en'):
             data = res.json()
             translated = data['candidates'][0]['content']['parts'][0].get('text', '').strip()
             if translated and translated != text and not _is_suspicious_text(translated, len(text)):
+                _record_provider_result('gemini', True)
                 return translated
         except requests.Timeout:
             _cool_down_provider('gemini')
@@ -1052,7 +1092,8 @@ def translate_smart(text, target_lang, source_lang='en'):
             _safe_cache_set(cache_key, translated_text, 604800)
             return translated_text
 
-    print(f"All translation tiers failed for {target_lang} ({source_lang}), returning original")
+    _safe_cache_set(f'translation_metric:failure:{target_lang}', 1, 86400)
+    logger.warning("All translation tiers failed for target=%s source=%s", target_lang, source_lang)
     return text
 
 @login_required
@@ -1250,9 +1291,17 @@ def gemini_translate(request):
         text = data.get('text', '').strip()
         target_language = data.get('target_language', 'en')
         source_language = data.get('source_language', 'en')
+
+        if isinstance(target_language, str):
+            target_language = target_language.lower().strip()
+        if isinstance(source_language, str):
+            source_language = source_language.lower().strip()
         
         if not text:
             return JsonResponse({'error': 'Text required'}, status=400)
+
+        if len(text) > 5000:
+            return JsonResponse({'error': 'Text too long (max 5000 chars)'}, status=400)
         
         # Don't translate if source and target are the same
         if source_language == target_language:

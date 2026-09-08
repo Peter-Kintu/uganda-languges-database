@@ -369,10 +369,19 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 def tts_proxy(request):
-    text = request.GET.get('text', '')
-    lang = request.GET.get('lang', 'en')
+    text = request.GET.get('text', '').strip()
+    lang = request.GET.get('lang', 'en').lower().strip()
     if not text:
         return HttpResponse("No text provided", status=400)
+
+    if len(text) > 2000:
+        return HttpResponse("Text too long", status=400)
+
+    tts_language_map = {
+        'lug': 'lg', 'nyn': 'en', 'ach': 'en', 'lgg': 'en', 'teo': 'en',
+        'xog': 'en', 'nyo': 'en', 'alz': 'en', 'swa': 'sw', 'kin': 'rw',
+    }
+    lang = tts_language_map.get(lang, lang)
     
     tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={text}&tl={lang}&client=tw-ob"
     try:
@@ -1024,16 +1033,37 @@ def cerebras_proxy(request):
         raw_contents = body.get('contents', []) or []
         user_language = body.get('language', 'en').lower()
 
+        if not isinstance(raw_contents, list) or len(raw_contents) > 30:
+            return JsonResponse({'error': 'Conversation history is too large.'}, status=400)
+        if sum(len(str(item)) for item in raw_contents) > 30000:
+            return JsonResponse({'error': 'Conversation content is too large.'}, status=400)
+
         profile = _get_user_profile_data(request.user)
 
         lang_note_map = {
             'lg': ' Respond in Luganda when discussing with the user in Luganda.',
+            'lug': ' Respond in Luganda when discussing with the user in Luganda.',
+            'nyn': ' Respond in Runyankole when discussing with the user in Runyankole.',
+            'ach': ' Respond in Acholi when discussing with the user in Acholi.',
+            'lgg': ' Respond in Lugbara when discussing with the user in Lugbara.',
+            'teo': ' Respond in Ateso when discussing with the user in Ateso.',
+            'xog': ' Respond in Lusoga when discussing with the user in Lusoga.',
+            'nyo': ' Respond in Runyoro when discussing with the user in Runyoro.',
+            'alz': ' Respond in Alur when discussing with the user in Alur.',
             'sw': ' Respond in Swahili when discussing with the user in Swahili.',
+            'swa': ' Respond in Swahili when discussing with the user in Swahili.',
+            'rw': ' Respond in Kinyarwanda when discussing with the user in Kinyarwanda.',
+            'kin': ' Respond in Kinyarwanda when discussing with the user in Kinyarwanda.',
             'zu': ' Respond in Zulu when discussing with the user in Zulu.',
             'xh': ' Respond in Xhosa when discussing with the user in Xhosa.',
             'yo': ' Respond in Yoruba when discussing with the user in Yoruba.',
             'am': ' Respond in Amharic when discussing with the user in Amharic.',
             'ha': ' Respond in Hausa when discussing with the user in Hausa.',
+            'ig': ' Respond in Igbo when discussing with the user in Igbo.',
+            'sn': ' Respond in Shona when discussing with the user in Shona.',
+            'so': ' Respond in Somali when discussing with the user in Somali.',
+            'om': ' Respond in Oromo when discussing with the user in Oromo.',
+            'ti': ' Respond in Tigrinya when discussing with the user in Tigrinya.',
         }
         lang_note = lang_note_map.get(user_language, '')
 

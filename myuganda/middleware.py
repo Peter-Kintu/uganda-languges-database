@@ -33,6 +33,10 @@ THROTTLED_PATHS = {
     '/social/publish/': {'limit': 6, 'window': 300},
     '/hotel/create_post/': {'limit': 6, 'window': 300},
     '/hotel/post/': {'limit': 6, 'window': 300},
+    '/hotel/gemini-translate/': {'limit': 20, 'window': 60},
+    '/hotel/translate/': {'limit': 20, 'window': 60},
+    '/api/v1/cerebras_proxy/': {'limit': 20, 'window': 60},
+    '/api/v1/generate_image/': {'limit': 5, 'window': 300},
     '/upload/': {'limit': 6, 'window': 300},
 }
 
@@ -219,6 +223,25 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
     
     def process_response(self, request, response):
         """Add security headers to response"""
+
+        csp_directives = {
+            'default-src': getattr(settings, 'SECURE_CSP_DEFAULT_SRC', ("'self'",)),
+            'script-src': getattr(settings, 'SECURE_CSP_SCRIPT_SRC', ("'self'",)),
+            'style-src': getattr(settings, 'SECURE_CSP_STYLE_SRC', ("'self'",)),
+            'img-src': getattr(settings, 'SECURE_CSP_IMG_SRC', ("'self'", 'data:')),
+            'font-src': getattr(settings, 'SECURE_CSP_FONT_SRC', ("'self'",)),
+            'connect-src': getattr(settings, 'SECURE_CSP_CONNECT_SRC', ("'self'",)),
+            'media-src': getattr(settings, 'SECURE_CSP_MEDIA_SRC', ("'self'",)),
+            'frame-src': getattr(settings, 'SECURE_CSP_FRAME_SRC', ("'self'",)),
+            'object-src': ("'none'",),
+            'base-uri': ("'self'",),
+            'frame-ancestors': ("'none'",),
+            'form-action': ("'self'",),
+        }
+        response['Content-Security-Policy'] = '; '.join(
+            f"{directive} {' '.join(values)}"
+            for directive, values in csp_directives.items()
+        )
         
         # Permissions-Policy: Restrict access to sensitive browser features
         # This prevents attackers from exploiting camera, microphone, geolocation, etc.

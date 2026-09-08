@@ -345,6 +345,27 @@
         background-color: var(--accent-green-dark) !important;
     }
 
+    .btn-voice {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 50% !important;
+        background: transparent !important;
+        color: var(--text-secondary) !important;
+        border: 1px solid var(--glass-border) !important;
+        cursor: pointer !important;
+        padding: 0 !important;
+        margin: 0 0 1px 0 !important;
+    }
+
+    .btn-voice.listening {
+        color: #dc2626 !important;
+        border-color: #dc2626 !important;
+    }
+
     .sidebar-overlay {
         display: none;
         position: absolute;
@@ -424,6 +445,12 @@
         <div class="chat-input-area">
             <div class="input-glass-wrapper">
                 <textarea id="chatInput" placeholder="Message your career AI..." rows="1"></textarea>
+                <button type="button" onclick="toggleVoiceInput()" id="voiceInputButton" class="btn-voice" title="Speak your message" aria-label="Speak your message">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0M12 19v3M8 22h8"></path></svg>
+                </button>
+                <button type="button" onclick="speakLastReply()" id="speakReplyButton" class="btn-voice" title="Read the latest reply aloud" aria-label="Read the latest reply aloud">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"></path><path d="M19 9a5 5 0 0 1 0 6M22 6a9 9 0 0 1 0 12"></path></svg>
+                </button>
                 <button type="button" onclick="typeQuery()" id="sendChatButton" class="btn-send">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
@@ -441,6 +468,69 @@
     const overlay = document.getElementById('menuOverlay');
 
     let currentSessionId = '';
+    let lastAiReply = '';
+    let speechRecognition = null;
+    const speechLanguageMap = {
+        lg: 'lg-UG', lug: 'lg-UG', sw: 'sw-KE', swa: 'sw-KE',
+        rw: 'rw-RW', kin: 'rw-RW', am: 'am-ET', ha: 'ha-NG',
+        yo: 'yo-NG', ig: 'ig-NG', zu: 'zu-ZA', xh: 'xh-ZA',
+        sn: 'sn-ZW', so: 'so-SO', om: 'om-ET', ti: 'ti-ET',
+        en: 'en-US'
+    };
+
+    function selectedSpeechLanguage(language) {
+        return speechLanguageMap[language] || language || 'en-US';
+    }
+
+    function toggleVoiceInput() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const button = document.getElementById('voiceInputButton');
+        if (!SpeechRecognition) {
+            appendMessage('ai', 'Voice input is not supported by this browser. You can still use the speaker button for replies.');
+            return;
+        }
+        if (speechRecognition) {
+            speechRecognition.stop();
+            return;
+        }
+
+        speechRecognition = new SpeechRecognition();
+        speechRecognition.lang = selectedSpeechLanguage(detectLanguage(chatInput.value) || 'en');
+        speechRecognition.continuous = false;
+        speechRecognition.interimResults = false;
+        button.classList.add('listening');
+        speechRecognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            chatInput.value = `${chatInput.value} ${transcript}`.trim();
+            chatInput.dispatchEvent(new Event('input'));
+        };
+        speechRecognition.onerror = function() {
+            appendMessage('ai', 'Voice input could not be heard. Please try again or type your message.');
+        };
+        speechRecognition.onend = function() {
+            button.classList.remove('listening');
+            speechRecognition = null;
+        };
+        speechRecognition.start();
+    }
+
+    function speakText(text, language) {
+        if (!text) return;
+        const cleanText = text.replace(/[*_#`]/g, '').replace(/\s+/g, ' ').trim();
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = selectedSpeechLanguage(language);
+            window.speechSynthesis.speak(utterance);
+            return;
+        }
+        const audio = new Audio(`/api/v1/tts/?text=${encodeURIComponent(cleanText)}&lang=${encodeURIComponent(language || 'en')}`);
+        audio.play().catch(() => appendMessage('ai', 'Voice playback is not supported by this browser.'));
+    }
+
+    function speakLastReply() {
+        if (lastAiReply) speakText(lastAiReply, window.lastChatLanguage || 'en');
+    }
     const WELCOME_MESSAGE = "Hello! I am Africana AI, your intelligent career and business companion. I'm here to help with job strategies, career advancement, business planning, entrepreneurship, and professional development. What can I assist you with today?";
 
     if (window.marked) {
@@ -567,16 +657,27 @@
     function detectLanguage(text) {
         const swahiliKeywords = ['mimi', 'unajua', 'karibu', 'shukrani', 'leo', 'nini', 'lakini', 'tunaweza'];
         const lugandaKeywords = ['nze', 'okukuba', 'omugenyi', 'webale', 'leero', 'ki', 'naye', 'tusobola'];
+        const runyankoleKeywords = ['nyowe', 'ori ota', 'webare', 'nikaki', 'tukore'];
+        const acholiKeywords = ['apwoyo', 'itimo', 'ngo ma', 'an'];
+        const atesoKeywords = ['ejai', 'apei', 'ngai', 'ibore'];
+        const lusogaKeywords = ['niina', 'weebale', 'otya', 'kiina'];
         const yorubaKeywords = ['mo', 'lo', 'se', 'e', 'nko', 'wa', 'soso'];
         
         const lowerText = text.toLowerCase();
         const swahiliScore = swahiliKeywords.filter(kw => lowerText.includes(kw)).length;
         const lugandaScore = lugandaKeywords.filter(kw => lowerText.includes(kw)).length;
+        const runyankoleScore = runyankoleKeywords.filter(kw => lowerText.includes(kw)).length;
+        const acholiScore = acholiKeywords.filter(kw => lowerText.includes(kw)).length;
+        const atesoScore = atesoKeywords.filter(kw => lowerText.includes(kw)).length;
+        const lusogaScore = lusogaKeywords.filter(kw => lowerText.includes(kw)).length;
         const yorubaScore = yorubaKeywords.filter(kw => lowerText.includes(kw)).length;
 
-        if (swahiliScore > lugandaScore && swahiliScore > yorubaScore && swahiliScore > 0) return 'sw';
-        if (lugandaScore > swahiliScore && lugandaScore > yorubaScore && lugandaScore > 0) return 'lg';
-        if (yorubaScore > 0) return 'yo';
+        const scores = [
+            ['sw', swahiliScore], ['lg', lugandaScore], ['nyn', runyankoleScore],
+            ['ach', acholiScore], ['teo', atesoScore], ['xog', lusogaScore],
+            ['yo', yorubaScore]
+        ].sort((left, right) => right[1] - left[1]);
+        if (scores[0][1] > 0) return scores[0][0];
         return 'en';
     }
 
@@ -593,6 +694,7 @@
         updateHistorySidebar();
 
         const detectedLang = detectLanguage(text);
+        window.lastChatLanguage = detectedLang;
 
         try {
             const response = await fetch('/api/v1/cerebras_proxy/', {
@@ -623,6 +725,8 @@
             removeLoadingMessage();
             
             if (reply) {
+                lastAiReply = reply;
+                window.lastChatLanguage = detectedLang;
                 // Check if user asked for PDF export
                 if (text.toLowerCase().includes('resume') || text.toLowerCase().includes('cv') || text.toLowerCase().includes('export')) {
                     appendMessage('ai', reply);

@@ -90,8 +90,11 @@ if not DEBUG and not TESTING:
     SECURE_CSP_DEFAULT_SRC = ("'self'",)
     SECURE_CSP_SCRIPT_SRC = (
         "'self'",
+        "'unsafe-inline'",  # Existing templates use inline initialization scripts
         "https://unpkg.com",  # FFmpeg.wasm
         "https://cdn.jsdelivr.net",  # Optional: alternative CDN
+        "https://cdnjs.cloudflare.com",  # Markdown and browser-side utilities
+        "https://accounts.google.com",  # Google authentication widgets
     )
     SECURE_CSP_STYLE_SRC = (
         "'self'",
@@ -123,6 +126,7 @@ if not DEBUG and not TESTING:
         "'self'",
         "https://www.youtube.com",  # YouTube embeds
         "https://youtube.com",
+        "https://accounts.google.com",  # Google authentication widgets
     )
     SECURE_CSP_REPORT_URI = '/admin/csp-report/'  # Optional: CSP violation reporting
 
