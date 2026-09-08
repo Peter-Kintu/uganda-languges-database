@@ -246,7 +246,7 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         # Permissions-Policy: Restrict access to sensitive browser features
         # This prevents attackers from exploiting camera, microphone, geolocation, etc.
         response['Permissions-Policy'] = (
-            'camera=(), microphone=(), geolocation=(), payment=()'
+            'camera=(), microphone=(self), geolocation=(), payment=()'
         )
         
         # X-Content-Type-Options: Prevent browsers from MIME-sniffing

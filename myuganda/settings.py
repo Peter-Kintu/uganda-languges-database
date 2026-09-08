@@ -94,6 +94,7 @@ if not DEBUG and not TESTING:
         "https://unpkg.com",  # FFmpeg.wasm
         "https://cdn.jsdelivr.net",  # Optional: alternative CDN
         "https://cdnjs.cloudflare.com",  # Markdown and browser-side utilities
+        "https://cdn.tailwindcss.com",  # Tailwind runtime used by the base template
         "https://accounts.google.com",  # Google authentication widgets
     )
     SECURE_CSP_STYLE_SRC = (
@@ -117,6 +118,8 @@ if not DEBUG and not TESTING:
         "https://api.cloudinary.com",  # Cloudinary uploads
         "https://res.cloudinary.com",   # Cloudinary delivery
         "https://wa.me",  # WhatsApp integration
+        "https://translate.googleapis.com",  # Translation fallback
+        "https://translate.google.com",  # Browser TTS fallback
     )
     SECURE_CSP_MEDIA_SRC = (
         "'self'",
