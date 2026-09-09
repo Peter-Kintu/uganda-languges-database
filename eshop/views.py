@@ -535,6 +535,7 @@ def product_list(request):
 
     return render(request, 'eshop/product_list.html', {
         'products': products,
+        'category_choices': Product.CATEGORY_CHOICES,
         'cart': cart,
         'cart_total': cart_total,
         'search_query': search_query,
