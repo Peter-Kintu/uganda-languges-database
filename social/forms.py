@@ -1,5 +1,6 @@
 from django import forms
 from .models import BusinessReel, SecureMessage
+from eshop.models import Product
 
 
 class BusinessReelUploadForm(forms.ModelForm):
@@ -19,12 +20,19 @@ class BusinessReelUploadForm(forms.ModelForm):
         })
     )
 
+    shoppable_product = forms.ModelChoiceField(
+        queryset=Product.objects.none(), required=False,
+        empty_label='No product tag',
+        help_text='Tag one of your products so viewers can shop without leaving the feed.',
+    )
+
     class Meta:
         model = BusinessReel
         # Explicitly defining fields to ensure security of the AI Floor Price (Pillar 3)
         fields = [
             'local_video', 
             'caption', 
+            'shoppable_product',
             'price', 
             'currency', 
             'floor_price', 
@@ -61,6 +69,7 @@ class BusinessReelUploadForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['shoppable_product'].queryset = Product.objects.filter(vendor_user=self.initial.get('author')).order_by('name') if self.initial.get('author') else Product.objects.none()
         # Marking pricing as optional to support "Professional Mode" (Pillar 2)
         self.fields['price'].required = False
         self.fields['floor_price'].required = False

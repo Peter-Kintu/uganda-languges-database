@@ -105,6 +105,11 @@ class BusinessReel(models.Model):
     UPDATED: Three-tier hybrid storage (IndexedDB → Local Server → Cloudinary CDN).
     """
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reels')
+    shoppable_product = models.ForeignKey(
+        'eshop.Product', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='shoppable_reels'
+    )
+    creator_commission_percent = models.DecimalField(max_digits=5, decimal_places=2, default=5.00)
     
     # --- THREE-TIER STORAGE SYSTEM ---
     STORAGE_TIERS = [
@@ -318,6 +323,29 @@ class SecureMessage(models.Model):
 
     def __str__(self):
         return f"Secure Msg: {self.sender.username} -> {self.recipient.username}"
+
+
+class NativeInvoice(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending payment'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    issuer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='issued_invoices')
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_invoices')
+    product = models.ForeignKey('eshop.Product', on_delete=models.PROTECT, related_name='native_invoices')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='UGX')
+    pesapal_order_id = models.CharField(max_length=100, unique=True)
+    tracking_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    checkout_url = models.URLField(blank=True)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 class VideoEndorsement(models.Model):

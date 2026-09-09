@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from unittest.mock import patch
 
 from .models import AffiliateEvent, AffiliatePayout, CommercePayment, Order, Product
 
@@ -23,6 +24,7 @@ class EscrowOrderTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, 'released')
+        self.assertEqual(self.order.escrow_status, 'released')
         self.assertEqual(AffiliatePayout.objects.get(order=self.order).status, 'payable')
 
     def test_unpaid_order_cannot_be_confirmed(self):
@@ -31,3 +33,25 @@ class EscrowOrderTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.post(reverse('eshop:confirm_delivery', args=[self.order.id]))
         self.assertEqual(response.status_code, 409)
+
+    @patch('users.views._pesapal_request')
+    def test_pesapal_get_ipn_funds_escrow(self, pesapal_request):
+        pesapal_request.side_effect = [
+            {'token': 'test-token'},
+            {'status': 'COMPLETED', 'confirmation_code': 'MOMO-123'},
+        ]
+        self.order.status = 'payment_pending'
+        self.order.escrow_status = 'pending'
+        self.order.save(update_fields=['status', 'escrow_status'])
+        payment = self.order.commerce_payment
+        payment.tracking_id = 'tracking-1'
+        payment.save(update_fields=['tracking_id'])
+
+        response = self.client.get(reverse('pesapal_ipn'), {'OrderTrackingId': 'tracking-1'})
+
+        self.assertEqual(response.status_code, 200)
+        self.order.refresh_from_db()
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, 'paid')
+        self.assertEqual(self.order.escrow_status, 'funded')
+        self.assertEqual(self.order.status, 'escrowed')

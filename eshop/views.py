@@ -7,6 +7,7 @@ from django.core.serializers import serialize
 from django.db.models import F, Sum 
 from decimal import Decimal, InvalidOperation # Import InvalidOperation for robust number handling
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import check_password, make_password
 from django.views.decorators.csrf import csrf_exempt
 from .forms import ProductForm, NegotiationForm 
 from .models import (
@@ -19,6 +20,10 @@ import re
 import os
 import json
 import uuid
+import secrets
+import requests
+import qrcode
+from io import BytesIO
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from .models import Order, OrderItem
@@ -113,10 +118,12 @@ def start_commerce_payment(request):
     delivery = request.session.get('delivery_details', {})
     first_item = cart.items.select_related('product').first()
     with transaction.atomic():
+        delivery_pin = f'{secrets.randbelow(1000000):06d}'
         order = Order.objects.create(
             buyer=request.user, total_amount=cart.cart_total, currency=first_item.product.get_currency_code(),
             status='payment_pending', delivery_address=delivery.get('address', ''), delivery_city=delivery.get('city', ''),
             delivery_phone=delivery.get('phone', ''), delivery_latitude=delivery.get('latitude') or None, delivery_longitude=delivery.get('longitude') or None,
+            delivery_pin_hash=make_password(delivery_pin),
         )
         for item in cart.items.select_related('product'):
             OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price_at_purchase=item.product.negotiated_price or item.product.price, commission_at_purchase=item.product.referral_commission)
@@ -124,7 +131,7 @@ def start_commerce_payment(request):
     try:
         from users.views import _pesapal_request
         callback_url = request.build_absolute_uri(reverse('users:pesapal_callback'))
-        notification_url = request.build_absolute_uri(reverse('eshop:commerce_payment_ipn'))
+        notification_url = request.build_absolute_uri(reverse('pesapal_ipn'))
         token = _pesapal_request('post', 'Auth/RequestToken').get('token')
         response = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={'id': payment.pesapal_order_id, 'currency': payment.currency, 'amount': f'{payment.amount:.2f}', 'description': f'Africana AI order #{order.id}', 'callback_url': callback_url, 'notification_id': notification_url, 'billing_address': {'email_address': request.user.email or f'{request.user.username}@example.com', 'phone_number': order.delivery_phone, 'country_code': 'UG', 'first_name': request.user.first_name or request.user.username, 'last_name': request.user.last_name or 'User'}}, access_token=token)
     except Exception as exc:
@@ -134,14 +141,17 @@ def start_commerce_payment(request):
         return JsonResponse({'error': 'Unable to start payment.'}, status=502)
     payment.tracking_id = response.get('order_tracking_id') or response.get('OrderTrackingId')
     payment.save(update_fields=['tracking_id', 'updated_at'])
-    return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'redirect_url': response.get('redirect_url') or response.get('RedirectUrl')})
+    return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'redirect_url': response.get('redirect_url') or response.get('RedirectUrl'), 'delivery_pin': delivery_pin, 'delivery_qr_token': str(order.delivery_qr_token)})
 
 
 @csrf_exempt
 def commerce_payment_ipn(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required.'}, status=405)
-    tracking_id = request.POST.get('OrderTrackingId') or request.GET.get('OrderTrackingId')
+    if request.method not in {'GET', 'POST'}:
+        return JsonResponse({'error': 'GET or POST required.'}, status=405)
+    payload = request.POST if request.method == 'POST' else request.GET
+    tracking_id = payload.get('OrderTrackingId') or payload.get('orderTrackingId')
+    if not tracking_id:
+        return JsonResponse({'error': 'OrderTrackingId is required.'}, status=400)
     payment = get_object_or_404(CommercePayment.objects.select_related('order'), tracking_id=tracking_id)
     try:
         from users.views import _pesapal_request
@@ -155,7 +165,8 @@ def commerce_payment_ipn(request):
                 payment.raw_status = status
                 payment.provider_reference = str(payload.get('confirmation_code') or payload.get('payment_method') or '')
                 payment.order.status = 'escrowed'
-                payment.order.save(update_fields=['status'])
+                payment.order.escrow_status = 'funded'
+                payment.order.save(update_fields=['status', 'escrow_status'])
             elif status in {'FAILED', 'CANCELLED', 'CANCELED'}:
                 payment.status = 'cancelled' if status != 'FAILED' else 'failed'
                 payment.raw_status = status
@@ -211,16 +222,142 @@ def confirm_delivery(request, order_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required.'}, status=405)
     with transaction.atomic():
-        order = get_object_or_404(Order.objects.select_for_update(), id=order_id, buyer=request.user)
+        order = get_object_or_404(Order.objects.select_for_update(), id=order_id)
+        is_buyer = order.buyer_id == request.user.id
+        is_vendor = order.order_items.filter(product__vendor_user=request.user).exists()
+        if not (is_buyer or is_vendor):
+            return JsonResponse({'error': 'You are not authorized to confirm this order.'}, status=403)
         if order.status not in {'delivered', 'escrowed'}:
             return JsonResponse({'error': 'Order is not ready for delivery confirmation.'}, status=409)
+        supplied_pin = str(request.POST.get('pin') or request.headers.get('X-Delivery-PIN') or '').strip()
+        supplied_qr = str(request.POST.get('qr_token') or request.headers.get('X-Delivery-QR') or '').strip()
+        has_valid_credential = (
+            bool(supplied_pin and order.delivery_pin_hash and check_password(supplied_pin, order.delivery_pin_hash))
+            or supplied_qr == str(order.delivery_qr_token)
+        )
+        if is_vendor and not has_valid_credential:
+            return JsonResponse({'error': 'A valid delivery PIN or QR token is required.'}, status=400)
         order.status = 'released'
+        order.escrow_status = 'released'
         order.buyer_confirmed_at = timezone.now()
         order.funds_released_at = order.buyer_confirmed_at
-        order.save(update_fields=['status', 'buyer_confirmed_at', 'funds_released_at'])
+        order.save(update_fields=['status', 'escrow_status', 'buyer_confirmed_at', 'funds_released_at'])
         for event in order.affiliate_events.filter(event_type='conversion'):
             AffiliatePayout.objects.filter(order=order, creator=event.creator).update(status='payable')
     return JsonResponse({'order_id': order.id, 'status': order.status, 'funds_released_at': order.funds_released_at.isoformat()})
+
+
+@login_required
+def delivery_qr(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if order.buyer_id != request.user.id and not order.order_items.filter(product__vendor_user=request.user).exists():
+        return HttpResponse('Not found.', status=404)
+    if not order.delivery_qr_token:
+        return HttpResponse('QR unavailable.', status=404)
+    qr = qrcode.QRCode(box_size=8, border=2)
+    qr.add_data(str(order.delivery_qr_token))
+    qr.make(fit=True)
+    image = qr.make_image(fill_color='#172b3a', back_color='white')
+    output = BytesIO()
+    image.save(output, format='PNG')
+    return HttpResponse(output.getvalue(), content_type='image/png')
+
+
+@login_required
+def disburse_affiliate_payout(request, payout_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    payout = get_object_or_404(AffiliatePayout.objects.select_related('creator'), id=payout_id, creator=request.user)
+    if payout.status != 'payable':
+        return JsonResponse({'error': 'Payout is not payable.'}, status=409)
+    social_profile = getattr(request.user, 'social_profile', None)
+    payout_phone = str(request.POST.get('phone') or getattr(social_profile, 'whatsapp_number', '')).strip()
+    payout_path = os.getenv('PESAPAL_PAYOUT_PATH', '').strip()
+    if not payout_phone or not payout_path:
+        return JsonResponse({'error': 'Configure a payout phone and PESAPAL_PAYOUT_PATH before disbursement.'}, status=503)
+    try:
+        from users.views import _pesapal_request
+        result = _pesapal_request('post', payout_path, json_data={
+            'amount': f'{payout.amount:.2f}',
+            'currency': payout.order.currency,
+            'recipient_phone': payout_phone,
+            'reference': f'africana-affiliate-{payout.id}',
+            'description': f'Affiliate commission for order #{payout.order_id}',
+        })
+    except Exception:
+        logger.exception('Affiliate payout failed for payout %s', payout.id)
+        return JsonResponse({'error': 'Payout provider request failed.'}, status=502)
+    payout.status = 'paid' if str(result.get('status', '')).upper() in {'SUCCESS', 'COMPLETED', 'PAID'} else 'pending'
+    payout.payout_phone = payout_phone
+    payout.provider_reference = str(result.get('reference') or result.get('transaction_id') or result.get('id') or '')
+    payout.provider_status = str(result.get('status') or result.get('message') or '')
+    if payout.status == 'paid':
+        payout.paid_at = timezone.now()
+    payout.save(update_fields=['status', 'payout_phone', 'provider_reference', 'provider_status', 'paid_at'])
+    return JsonResponse({'payout_id': payout.id, 'status': payout.status, 'provider_reference': payout.provider_reference})
+
+
+@login_required
+def voice_product_search(request):
+    if request.method not in {'GET', 'POST'}:
+        return JsonResponse({'error': 'GET or POST required.'}, status=405)
+    payload = request.POST if request.method == 'POST' else request.GET
+    query = str(payload.get('q') or payload.get('transcript') or '').strip()
+    if not query:
+        return JsonResponse({'error': 'transcript is required.'}, status=400)
+    amount_match = re.search(r'(?:under|below|less than|nga|wansi wa)\s*([\d,]+)', query, re.IGNORECASE)
+    max_price = Decimal(amount_match.group(1).replace(',', '')) if amount_match else None
+    currency = next((code for code in Product.CURRENCY_CHOICES if code[0].lower() in query.lower()), ('UGX', ''))[0]
+    search_text = re.split(r'\b(?:under|below|less than|nga|wansi wa)\b', query, maxsplit=1, flags=re.IGNORECASE)[0]
+    search_text = re.sub(r'\b(?:find|search|show|me|please|high-waist|in|for)\b', ' ', search_text, flags=re.IGNORECASE)
+    search_text = ' '.join(search_text.split()).strip()
+    products = Product.objects.all()
+    for term in search_text.split():
+        products = products.filter(name__icontains=term)
+    if max_price is not None:
+        products = products.filter(price__lte=max_price, currency=currency)
+    products = products.order_by('-impressions')[:20]
+    return JsonResponse({'query': query, 'currency': currency, 'max_price': str(max_price) if max_price is not None else None, 'products': [{'id': product.id, 'name': product.name, 'price': str(product.price), 'currency': product.get_currency_code(), 'url': reverse('eshop:product_detail', args=[product.slug])} for product in products]})
+
+
+@login_required
+def whatsapp_catalog_sync(request):
+    if request.method == 'POST' and request.POST.get('action') == 'connect':
+        from .models import WhatsAppCatalogConnection
+        connection, _ = WhatsAppCatalogConnection.objects.update_or_create(
+            merchant=request.user,
+            defaults={
+                'phone_number_id': request.POST.get('phone_number_id', '').strip(),
+                'catalog_id': request.POST.get('catalog_id', '').strip(),
+                'access_token': request.POST.get('access_token', '').strip(),
+                'is_active': True,
+            },
+        )
+        return JsonResponse({'status': 'connected', 'connection_id': connection.id})
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    from .models import WhatsAppCatalogConnection
+    connection = get_object_or_404(WhatsAppCatalogConnection, merchant=request.user, is_active=True)
+    products = Product.objects.filter(vendor_user=request.user)
+    synced = 0
+    try:
+        for product in products:
+            response = requests.post(
+                f'https://graph.facebook.com/v20.0/{connection.catalog_id}/products',
+                params={'access_token': connection.access_token},
+                json={'retailer_id': str(product.id), 'name': product.name, 'description': product.description[:500], 'price': int(product.price or 0) * 100, 'currency': product.currency, 'availability': 'in stock', 'url': request.build_absolute_uri(reverse('eshop:product_detail', args=[product.slug]))},
+                timeout=20,
+            )
+            response.raise_for_status()
+            synced += 1
+        connection.last_synced_at = timezone.now()
+        connection.last_sync_error = ''
+        connection.save(update_fields=['last_synced_at', 'last_sync_error', 'updated_at'])
+    except requests.RequestException as exc:
+        connection.last_sync_error = str(exc)
+        connection.save(update_fields=['last_sync_error', 'updated_at'])
+        return JsonResponse({'error': 'WhatsApp catalog sync failed.', 'synced': synced}, status=502)
+    return JsonResponse({'status': 'synced', 'synced': synced})
 # ------------------------------------
 # Helper Functions
 # ------------------------------------

@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from django.views.generic.base import RedirectView
 from django.views.generic import TemplateView
 from users import views as user_views
+from eshop import views as eshop_views
 
 from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap, UserProfileSitemap, BusinessReelSitemap, custom_sitemap_view
 
@@ -97,6 +98,7 @@ urlpatterns = [
     # Root robots.txt should always be served from the canonical site entrypoint.
     path("robots.txt", robots_txt),
     path("redis-health/", redis_health_check, name="redis_health_check"),
+    path("api/v1/payments/pesapal-ipn/", eshop_views.commerce_payment_ipn, name="pesapal_ipn"),
 
     # 1. Admin
     path("admin/", admin.site.urls),

@@ -12,7 +12,7 @@
         <div class="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-3 lg:px-6">
             <a href="{% url 'eshop:product_list' %}" class="shrink-0 rounded border border-transparent px-1 py-1 hover:border-white"><span class="text-2xl font-black tracking-tight">africana<span class="text-[#e59a22]">.</span></span></a>
             <div class="hidden items-center gap-2 text-xs leading-tight xl:flex"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="1.8" d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg><span class="text-slate-500">Deliver to<br><strong class="text-[#172b3a]">Uganda & worldwide</strong></span></div>
-            <form method="GET" action="{% url 'eshop:product_list' %}" class="flex min-w-0 flex-1 overflow-hidden rounded-md bg-white focus-within:ring-2 focus-within:ring-[#ff9900]"><select name="category" class="hidden bg-slate-100 px-3 text-xs text-slate-700 outline-none sm:block"><option value="">All categories</option>{% for value, label in category_choices %}<option value="{{ value }}" {% if category_query == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><input type="search" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, brands and more" class="min-w-0 flex-1 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"><button type="submit" aria-label="Search" class="bg-[#febd69] px-4 text-slate-900 hover:bg-[#f3a847]"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg></button></form>
+            <form method="GET" action="{% url 'eshop:product_list' %}" class="flex min-w-0 flex-1 overflow-hidden rounded-md bg-white focus-within:ring-2 focus-within:ring-[#ff9900]"><select name="category" class="hidden bg-slate-100 px-3 text-xs text-slate-700 outline-none sm:block"><option value="">All categories</option>{% for value, label in category_choices %}<option value="{{ value }}" {% if category_query == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><input id="product-search-input" type="search" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, brands and more" class="min-w-0 flex-1 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"><button type="button" id="voice-search-button" aria-label="Search by voice" title="Search by voice" class="px-3 text-[#007c83] hover:bg-[#e8f4f1]">🎙️</button><button type="submit" aria-label="Search" class="bg-[#febd69] px-4 text-slate-900 hover:bg-[#f3a847]"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg></button></form>
             <div class="hidden shrink-0 text-xs leading-tight md:block"><span class="text-slate-500">Hello, {% if user.is_authenticated %}{{ user.username }}{% else %}sign in{% endif %}</span><br><strong>Account & Lists</strong></div>
             <a href="{% url 'eshop:add_product' %}" class="flex shrink-0 whitespace-nowrap rounded border border-transparent px-2 py-1 text-xs hover:border-white">Sell on Africana</a>
             <a href="{% url 'eshop:view_cart' %}" class="flex shrink-0 items-end gap-1 rounded border border-transparent px-2 py-1 hover:border-white" aria-label="Shopping cart"><svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="1.8" d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 1.9-1.4L21 8H6.1M10 20a1 1 0 1 1-2 0m10 0a1 1 0 1 1-2 0"/></svg><strong class="text-sm">Cart</strong></a>
@@ -21,6 +21,7 @@
     <nav class="bg-white text-[#172b3a] shadow-sm"><div class="mx-auto flex max-w-[1500px] items-center gap-5 overflow-x-auto px-4 py-2 text-sm lg:px-6"><a href="{% url 'eshop:product_list' %}" class="flex shrink-0 items-center gap-2 font-bold hover:text-[#e59a22]"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg> All</a><a href="?category=food-agriculture" class="shrink-0 hover:text-[#e59a22]">Fresh & food</a><a href="?category=electronics" class="shrink-0 hover:text-[#e59a22]">Electronics</a><a href="?category=fashion" class="shrink-0 hover:text-[#e59a22]">Fashion</a><a href="?category=home-furniture" class="shrink-0 hover:text-[#e59a22]">Home & living</a><a href="?category=beauty-personal-care" class="shrink-0 hover:text-[#e59a22]">Beauty</a><a href="?source=local" class="shrink-0 hover:text-[#e59a22]">Local sellers</a><a href="{% url 'eshop:add_product' %}" class="ml-auto flex shrink-0 font-bold text-[#007c83]">Start selling on Africana</a></div></nav>
 
     <main class="mx-auto max-w-[1500px] px-4 py-5 lg:px-6">
+        <div class="mb-4 flex justify-end"><label class="flex items-center gap-2 text-xs font-semibold text-slate-600">Display currency <select id="currency-switcher" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-xs"><option value="DZD">DZD</option><option value="AOA">AOA</option><option value="BWP">BWP</option><option value="BIF">BIF</option><option value="CVE">CVE</option><option value="XAF">XAF</option><option value="KMF">KMF</option><option value="CDF">CDF</option><option value="DJF">DJF</option><option value="ERN">ERN</option><option value="SZL">SZL</option><option value="ETB">ETB</option><option value="GMD">GMD</option><option value="GHS">GHS</option><option value="GNF">GNF</option><option value="KES">KES</option><option value="LSL">LSL</option><option value="LRD">LRD</option><option value="LYD">LYD</option><option value="MGA">MGA</option><option value="MWK">MWK</option><option value="MRU">MRU</option><option value="MUR">MUR</option><option value="MAD">MAD</option><option value="MZN">MZN</option><option value="NAD">NAD</option><option value="NGN">NGN</option><option value="RWF">RWF</option><option value="STN">STN</option><option value="SCR">SCR</option><option value="SLE">SLE</option><option value="SOS">SOS</option><option value="ZAR">ZAR</option><option value="SSP">SSP</option><option value="SDG">SDG</option><option value="TZS">TZS</option><option value="TND">TND</option><option value="UGX">UGX</option><option value="XOF">XOF</option><option value="ZMW">ZMW</option><option value="ZWL">ZWL</option><option value="EGP">EGP</option><option value="USD">USD</option></select></label></div>
         <section class="marketplace-hero relative overflow-hidden rounded-lg px-6 py-10 sm:px-10 lg:px-16"><div class="relative z-10 max-w-xl"><p class="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#007185]">Made close. Delivered far.</p><h1 class="text-3xl font-black tracking-tight text-[#172b4d] sm:text-5xl">Discover products with a story.</h1><p class="mt-4 max-w-lg text-base text-slate-700">Authentic goods from African makers, useful technology, and everyday essentials in one trusted marketplace.</p><a href="#results" class="mt-6 inline-flex rounded-md bg-[#ff9900] px-5 py-3 text-sm font-bold text-slate-950 shadow-sm hover:bg-[#e88b00]">Explore today's picks</a></div><div class="hero-pattern absolute inset-y-0 right-0 hidden w-2/5 lg:block"></div></section>
         <div class="mt-5 grid gap-4 sm:grid-cols-3"><div class="flex items-center gap-3 rounded-lg bg-white p-4 shadow-sm"><span class="rounded-full bg-emerald-100 p-2 text-emerald-700">✓</span><div><strong class="block text-sm">Trusted local sellers</strong><span class="text-xs text-slate-500">Real people, real products</span></div></div><div class="flex items-center gap-3 rounded-lg bg-white p-4 shadow-sm"><span class="rounded-full bg-sky-100 p-2 text-sky-700">↗</span><div><strong class="block text-sm">Worldwide delivery</strong><span class="text-xs text-slate-500">From Kampala to your door</span></div></div><div class="flex items-center gap-3 rounded-lg bg-white p-4 shadow-sm"><span class="rounded-full bg-amber-100 p-2 text-amber-700">₵</span><div><strong class="block text-sm">Fair prices</strong><span class="text-xs text-slate-500">Negotiate when available</span></div></div></div>
         <div class="mt-7 grid gap-6 lg:grid-cols-[230px_1fr]">
@@ -47,12 +48,52 @@
 </style>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const currencyRates = { UGX: 1, DZD: 0.0084, AOA: 0.72, BWP: 0.0079, BIF: 0.0012, CVE: 0.0073, XAF: 0.21, KMF: 0.21, CDF: 0.0009, DJF: 0.0048, ERN: 0.00018, SZL: 0.0079, ETB: 0.012, GMD: 0.0092, GHS: 0.00043, GNF: 0.000023, KES: 0.036, LSL: 0.0079, LRD: 0.00014, LYD: 0.000073, MGA: 0.000082, MWK: 0.00031, MRU: 0.00011, MUR: 0.0073, MAD: 0.0027, MZN: 0.015, NAD: 0.0079, NGN: 0.00042, RWF: 0.00026, STN: 0.0000068, SCR: 0.0036, SLE: 0.0000022, SOS: 0.00015, ZAR: 0.0079, SSP: 0.00015, SDG: 0.000072, TZS: 0.40, TND: 0.00084, USD: 0.00027, XOF: 0.21, ZMW: 0.0054, ZWL: 0.00027, EGP: 0.013 };
+        const currencySwitcher = document.getElementById('currency-switcher');
+        const storedCurrency = localStorage.getItem('africana_currency') || 'UGX';
+        if (currencySwitcher) {
+            currencySwitcher.value = storedCurrency;
+            currencySwitcher.addEventListener('change', function () {
+                localStorage.setItem('africana_currency', currencySwitcher.value);
+                document.querySelectorAll('.marketplace-shell article .text-xl').forEach(function (priceElement) {
+                    if (!priceElement.dataset.price) {
+                        priceElement.dataset.price = priceElement.textContent.replace(/[^0-9.-]/g, '');
+                        priceElement.dataset.currency = priceElement.previousElementSibling.textContent.trim();
+                    }
+                    const amount = Number(priceElement.dataset.price);
+                    const source = priceElement.dataset.currency;
+                    const sourceInUgx = source === 'UGX' ? amount : amount / (currencyRates[source] || 1);
+                    const converted = sourceInUgx * currencyRates[currencySwitcher.value];
+                    priceElement.textContent = `${currencySwitcher.value} ${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                });
+            });
+        }
         const filterButton = document.getElementById('mobile-filter-button');
         const filterForm = document.querySelector('section form[action*="product_list"]');
         if (filterButton && filterForm) {
             filterButton.addEventListener('click', function () {
                 filterForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
             });
+        }
+        const voiceButton = document.getElementById('voice-search-button');
+        const searchInput = document.getElementById('product-search-input');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (voiceButton && searchInput && SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = document.documentElement.lang || 'en-UG';
+            recognition.interimResults = false;
+            voiceButton.addEventListener('click', function () {
+                voiceButton.textContent = '⏺️';
+                recognition.start();
+            });
+            recognition.addEventListener('result', function (event) {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript.split(/\b(?:under|below|less than|nga|wansi wa)\b/i)[0].replace(/\b(find|search|show|me|please|high-waist|in|for)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+                searchInput.form.submit();
+            });
+            recognition.addEventListener('end', function () { voiceButton.textContent = '🎙️'; });
+        } else if (voiceButton) {
+            voiceButton.hidden = true;
         }
     });
 </script>
@@ -69,6 +110,222 @@
         .marketplace-shell main { padding-left: 0.75rem; padding-right: 0.75rem; }
         .marketplace-shell .grid-cols-2 article h3 { font-size: 0.78rem; line-height: 1.2rem; }
         .marketplace-shell .grid-cols-2 article .text-xl { font-size: 1.05rem; }
+    }
+</style>
+<style>
+    .marketplace-shell {
+        --market-ink: #172b3a;
+        --market-teal: #007c83;
+        --market-teal-dark: #005f63;
+        --market-gold: #e59a22;
+        --market-mint: #e8f4f1;
+        --market-line: #dce8e5;
+        background:
+            radial-gradient(circle at 8% 14%, rgba(0, 124, 131, .08), transparent 26rem),
+            radial-gradient(circle at 92% 38%, rgba(229, 154, 34, .08), transparent 24rem),
+            #f3f6f5 !important;
+        color: var(--market-ink) !important;
+        font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+    }
+
+    .marketplace-shell > div:first-child {
+        border-bottom: 1px solid rgba(23, 43, 58, .08);
+        box-shadow: 0 8px 28px rgba(23, 43, 58, .06);
+    }
+
+    .marketplace-shell > div:first-child > div {
+        min-height: 72px;
+    }
+
+    .marketplace-shell > div:first-child a:hover,
+    .marketplace-shell > nav a:hover {
+        border-color: transparent;
+    }
+
+    .marketplace-shell > div:first-child form {
+        border: 1px solid var(--market-line);
+        box-shadow: 0 8px 24px rgba(23, 43, 58, .06);
+    }
+
+    .marketplace-shell > div:first-child form:focus-within {
+        box-shadow: 0 0 0 3px rgba(0, 124, 131, .13), 0 10px 28px rgba(23, 43, 58, .08);
+    }
+
+    .marketplace-shell > div:first-child form button {
+        background: var(--market-gold) !important;
+    }
+
+    .marketplace-shell > nav {
+        border-bottom: 1px solid var(--market-line);
+        box-shadow: none !important;
+    }
+
+    .marketplace-shell > nav > div {
+        min-height: 46px;
+    }
+
+    .marketplace-shell > nav a {
+        border-radius: 999px;
+        transition: background-color .2s ease, color .2s ease, transform .2s ease;
+    }
+
+    .marketplace-shell > nav a:hover {
+        background: var(--market-mint);
+        color: var(--market-teal-dark) !important;
+        transform: translateY(-1px);
+    }
+
+    .marketplace-shell main {
+        padding-top: 1.75rem;
+    }
+
+    .marketplace-shell main > .mb-4 {
+        align-items: center;
+        min-height: 38px;
+    }
+
+    .marketplace-shell #currency-switcher {
+        border-color: var(--market-line);
+        border-radius: 999px;
+        color: var(--market-ink);
+        font-weight: 800;
+        box-shadow: 0 4px 14px rgba(23, 43, 58, .05);
+    }
+
+    .marketplace-shell .marketplace-hero {
+        min-height: 360px;
+        display: flex;
+        align-items: center;
+        border: 1px solid rgba(0, 124, 131, .12);
+        box-shadow: 0 22px 60px rgba(23, 43, 58, .08);
+        background-image: linear-gradient(96deg, #e5f3ef 0%, #eef8f5 46%, rgba(238, 248, 245, .65) 100%) !important;
+    }
+
+    .marketplace-shell .marketplace-hero h1 {
+        max-width: 650px;
+        font-size: clamp(2.5rem, 5vw, 4.8rem);
+        line-height: .98;
+        letter-spacing: -.045em;
+        color: var(--market-ink) !important;
+    }
+
+    .marketplace-shell .marketplace-hero p:first-child {
+        color: var(--market-teal-dark) !important;
+        letter-spacing: .24em;
+    }
+
+    .marketplace-shell .marketplace-hero a {
+        border-radius: 999px;
+        background: var(--market-gold) !important;
+        box-shadow: 0 10px 22px rgba(229, 154, 34, .22);
+        transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+    }
+
+    .marketplace-shell .marketplace-hero a:hover {
+        background: #c97918 !important;
+        box-shadow: 0 14px 28px rgba(201, 121, 24, .25);
+        transform: translateY(-2px);
+    }
+
+    .marketplace-shell .hero-pattern {
+        opacity: .8;
+        transform: rotate(-7deg) scale(1.1);
+    }
+
+    .marketplace-shell main > .mt-5 > div {
+        border: 1px solid var(--market-line);
+        box-shadow: 0 12px 30px rgba(23, 43, 58, .055);
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .marketplace-shell main > .mt-5 > div:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 34px rgba(23, 43, 58, .1);
+    }
+
+    .marketplace-shell aside,
+    .marketplace-shell #results > .mb-5 {
+        border: 1px solid var(--market-line);
+        box-shadow: 0 14px 32px rgba(23, 43, 58, .055);
+    }
+
+    .marketplace-shell aside a:hover,
+    .marketplace-shell aside a.font-bold {
+        color: var(--market-teal) !important;
+    }
+
+    .marketplace-shell #mobile-filter-button {
+        border-color: var(--market-line);
+        color: var(--market-teal-dark);
+        border-radius: 999px;
+    }
+
+    .marketplace-shell article {
+        border-color: var(--market-line) !important;
+        box-shadow: 0 8px 24px rgba(23, 43, 58, .055) !important;
+        transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+
+    .marketplace-shell article:hover {
+        border-color: rgba(0, 124, 131, .3) !important;
+        box-shadow: 0 20px 38px rgba(23, 43, 58, .13) !important;
+        transform: translateY(-5px);
+    }
+
+    .marketplace-shell article > a:first-child > div:first-child {
+        background: #edf4f2;
+    }
+
+    .marketplace-shell article > a:first-child > div:first-child > span {
+        background: var(--market-gold) !important;
+        color: var(--market-ink) !important;
+        border-radius: 999px;
+        box-shadow: 0 4px 10px rgba(23, 43, 58, .12);
+    }
+
+    .marketplace-shell article h3 {
+        letter-spacing: -.01em;
+    }
+
+    .marketplace-shell article .bg-\[\#ff9900\] {
+        background: var(--market-gold) !important;
+        border-radius: 999px;
+        box-shadow: 0 7px 16px rgba(229, 154, 34, .18);
+    }
+
+    .marketplace-shell article .bg-\[\#ff9900\]:hover {
+        background: #c97918 !important;
+    }
+
+    .marketplace-shell footer {
+        margin-top: 3rem;
+        border-top: 4px solid var(--market-gold);
+    }
+
+    @media (max-width: 640px) {
+        .marketplace-shell > div:first-child > div {
+            min-height: 60px;
+            gap: .5rem;
+        }
+
+        .marketplace-shell .marketplace-hero {
+            min-height: 400px;
+            align-items: flex-end;
+            padding-bottom: 2rem;
+        }
+
+        .marketplace-shell .marketplace-hero h1 {
+            font-size: 2.65rem;
+        }
+
+        .marketplace-shell .marketplace-hero p:first-child {
+            font-size: .65rem;
+            letter-spacing: .16em;
+        }
+
+        .marketplace-shell main > .mt-5 > div {
+            padding: .8rem;
+        }
     }
 </style>
 {% endblock %}

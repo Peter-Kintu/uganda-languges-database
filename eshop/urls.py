@@ -38,6 +38,10 @@ urlpatterns = [
     path('api/payments/start/', views.start_commerce_payment, name='start_commerce_payment'),
     path('api/payments/ipn/', views.commerce_payment_ipn, name='commerce_payment_ipn'),
     path('api/orders/<int:order_id>/confirm-delivery/', views.confirm_delivery, name='confirm_delivery'),
+    path('orders/<int:order_id>/delivery-qr.png', views.delivery_qr, name='delivery_qr'),
+    path('api/payouts/<int:payout_id>/disburse/', views.disburse_affiliate_payout, name='disburse_affiliate_payout'),
+    path('api/voice-search/', views.voice_product_search, name='voice_product_search'),
+    path('api/whatsapp/catalog-sync/', views.whatsapp_catalog_sync, name='whatsapp_catalog_sync'),
     path('api/affiliate/click/', views.affiliate_click, name='affiliate_click'),
     path('api/live/sessions/', views.live_sessions, name='live_sessions'),
     # Temporary deletion route - remove after running

@@ -217,6 +217,12 @@
             <div class="max-w-5xl mx-auto flex flex-col space-y-4">
                 
                 <div class="flex justify-start">
+                    {% if reel.shoppable_product %}
+                        <a href="{% url 'eshop:product_detail' reel.shoppable_product.slug %}" class="mr-2 flex items-center bg-amber-500 px-5 py-2.5 rounded-2xl shadow-lg border border-amber-300/50">
+                            <span class="text-xl mr-2">🛍️</span>
+                            <span class="text-xs font-black uppercase tracking-widest text-slate-950">Shop {{ reel.shoppable_product.name|truncatechars:22 }}</span>
+                        </a>
+                    {% endif %}
                     {% if reel.price %}
                         <button onclick="triggerHaggle('{{ reel.id }}', '{{ reel.author.social_profile.whatsapp_number }}', '{{ reel.caption|escapejs }}', '{{ reel.price }}', '{{ reel.currency }}')" class="flex items-center bg-green-600 px-5 py-2.5 rounded-2xl shadow-[0_0_20px_rgba(34,197,94,0.4)] border border-green-400/50 agent-pulse group">
                             <span class="text-xl mr-2">🤝</span>

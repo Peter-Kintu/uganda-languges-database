@@ -5,11 +5,13 @@ import uuid
 import urllib.parse
 import logging
 import cloudinary
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.contrib import messages
@@ -19,10 +21,11 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 
 # Internal App Models and Forms
-from .models import BusinessReel, SocialProfile, SecureMessage
+from .models import BusinessReel, SocialProfile, SecureMessage, NativeInvoice
 from .forms import BusinessReelUploadForm, SecureMessageForm
 # External User Model from users app
 from users.models import CustomUser
+from eshop.models import Product
 
 logger = logging.getLogger(__name__)
 
@@ -89,10 +92,14 @@ def upload_reel(request):
     Background task will promote viral videos to Cloudinary CDN (Tier 3) automatically.
     """
     if request.method == 'POST':
-        form = BusinessReelUploadForm(request.POST, request.FILES)
+        form = BusinessReelUploadForm(request.POST, request.FILES, initial={'author': request.user})
         if form.is_valid():
             reel = form.save(commit=False)
             reel.author = request.user
+            tagged_product = form.cleaned_data.get('shoppable_product')
+            if tagged_product and tagged_product.vendor_user_id != request.user.id:
+                form.add_error('shoppable_product', 'You can only tag products from your own catalog.')
+                return render(request, 'social/upload.html', {'form': form})
             
             # --- THREE-TIER STORAGE LOGIC ---
             # Production stores uploads through the durable configured backend.
@@ -128,6 +135,7 @@ def upload_reel(request):
         initial_data = {}
         if hasattr(request.user, 'social_profile'):
             initial_data['whatsapp_number'] = request.user.social_profile.whatsapp_number
+        initial_data['author'] = request.user
         form = BusinessReelUploadForm(initial=initial_data)
 
     return render(request, 'social/upload.html', {'form': form})
@@ -264,6 +272,9 @@ def chat_detail(request, partner_id):
         (Q(sender=request.user) & Q(recipient=partner)) |
         (Q(sender=partner) & Q(recipient=request.user))
     ).order_by('timestamp')
+    invoices = NativeInvoice.objects.filter(
+        Q(issuer=request.user, buyer=partner) | Q(issuer=partner, buyer=request.user)
+    ).select_related('product')
     
     # Mark messages as read upon entering thread
     thread.filter(recipient=request.user, is_read=False).update(is_read=True)
@@ -280,8 +291,89 @@ def chat_detail(request, partner_id):
 
     return render(request, 'social/chat_detail.html', {
         'partner': partner,
-        'thread': thread
+        'thread': thread,
+        'invoices': invoices,
+        'merchant_products': Product.objects.filter(vendor_user=request.user).order_by('name'),
     })
+
+
+@login_required
+@require_POST
+def issue_invoice(request, partner_id):
+    partner = get_object_or_404(CustomUser, id=partner_id)
+    product_id = request.POST.get('product_id')
+    amount = request.POST.get('amount')
+    product = get_object_or_404(Product, id=product_id, vendor_user=request.user)
+    try:
+        amount = Decimal(amount)
+        if amount <= 0:
+            raise ValueError
+    except (TypeError, ValueError, InvalidOperation):
+        return JsonResponse({'error': 'A valid positive amount is required.'}, status=400)
+
+    invoice = NativeInvoice.objects.create(
+        issuer=request.user,
+        buyer=partner,
+        product=product,
+        amount=amount,
+        currency=product.get_currency_code(),
+        pesapal_order_id=f'invoice-{uuid.uuid4().hex}',
+    )
+    try:
+        from users.views import _pesapal_request
+        token = _pesapal_request('post', 'Auth/RequestToken').get('token')
+        response = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={
+            'id': invoice.pesapal_order_id,
+            'currency': invoice.currency,
+            'amount': f'{invoice.amount:.2f}',
+            'description': f'Africana invoice for {product.name}',
+            'callback_url': request.build_absolute_uri(reverse('users:pesapal_callback')),
+            'notification_id': request.build_absolute_uri(reverse('social:invoice_ipn')),
+            'billing_address': {
+                'email_address': partner.email or f'{partner.username}@example.com',
+                'country_code': 'UG',
+                'first_name': partner.first_name or partner.username,
+                'last_name': partner.last_name or 'Buyer',
+            },
+        }, access_token=token)
+    except Exception:
+        logger.exception('Native invoice payment setup failed.')
+        invoice.status = 'failed'
+        invoice.save(update_fields=['status', 'updated_at'])
+        return JsonResponse({'error': 'Unable to create the payment link.'}, status=502)
+
+    invoice.tracking_id = response.get('order_tracking_id') or response.get('OrderTrackingId')
+    invoice.checkout_url = response.get('redirect_url') or response.get('RedirectUrl') or ''
+    invoice.save(update_fields=['tracking_id', 'checkout_url', 'updated_at'])
+    SecureMessage.objects.create(
+        sender=request.user,
+        recipient=partner,
+        content=f'Invoice for {product.name}: {invoice.currency} {invoice.amount:.2f}',
+    )
+    return JsonResponse({'invoice_id': invoice.id, 'checkout_url': invoice.checkout_url, 'status': invoice.status})
+
+
+@csrf_exempt
+def invoice_ipn(request):
+    if request.method not in {'GET', 'POST'}:
+        return JsonResponse({'error': 'GET or POST required.'}, status=405)
+    payload = request.POST if request.method == 'POST' else request.GET
+    tracking_id = payload.get('OrderTrackingId') or payload.get('orderTrackingId')
+    invoice = get_object_or_404(NativeInvoice, tracking_id=tracking_id)
+    try:
+        from users.views import _pesapal_request
+        token = _pesapal_request('post', 'Auth/RequestToken').get('token')
+        result = _pesapal_request('post', 'Transactions/GetTransactionStatus', json_data={'orderTrackingId': tracking_id}, access_token=token)
+        status = str(result.get('status') or result.get('Status') or '').upper()
+        if status in {'COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL'}:
+            invoice.status = 'paid'
+        elif status in {'FAILED', 'CANCELLED', 'CANCELED'}:
+            invoice.status = 'failed'
+        invoice.save(update_fields=['status', 'updated_at'])
+    except Exception:
+        logger.exception('Native invoice IPN verification failed.')
+        return JsonResponse({'error': 'Unable to verify invoice payment.'}, status=502)
+    return JsonResponse({'status': 'accepted'})
 
 @login_required
 @require_POST

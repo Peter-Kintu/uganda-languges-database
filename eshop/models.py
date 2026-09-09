@@ -78,14 +78,48 @@ class Product(models.Model):
     
     # Currency Settings
     CURRENCY_CHOICES = [
+        ('DZD', 'DZD (Algerian Dinar)'),
+        ('AOA', 'AOA (Angolan Kwanza)'),
+        ('BWP', 'BWP (Botswana Pula)'),
+        ('BIF', 'BIF (Burundian Franc)'),
+        ('CVE', 'CVE (Cape Verdean Escudo)'),
+        ('XAF', 'XAF (Central African CFA Franc)'),
+        ('KMF', 'KMF (Comorian Franc)'),
+        ('CDF', 'CDF (Congolese Franc)'),
+        ('DJF', 'DJF (Djiboutian Franc)'),
+        ('ERN', 'ERN (Eritrean Nakfa)'),
+        ('SZL', 'SZL (Eswatini Lilangeni)'),
+        ('ETB', 'ETB (Ethiopian Birr)'),
+        ('GMD', 'GMD (Gambian Dalasi)'),
+        ('GHS', 'GHS (Ghanaian Cedi)'),
+        ('GNF', 'GNF (Guinean Franc)'),
+        ('KES', 'KES (Kenyan Shilling)'),
+        ('LSL', 'LSL (Lesotho Loti)'),
+        ('LRD', 'LRD (Liberian Dollar)'),
+        ('LYD', 'LYD (Libyan Dinar)'),
+        ('MGA', 'MGA (Malagasy Ariary)'),
+        ('MWK', 'MWK (Malawian Kwacha)'),
+        ('MRU', 'MRU (Mauritanian Ouguiya)'),
+        ('MUR', 'MUR (Mauritian Rupee)'),
+        ('MAD', 'MAD (Moroccan Dirham)'),
+        ('MZN', 'MZN (Mozambican Metical)'),
+        ('NAD', 'NAD (Namibian Dollar)'),
+        ('NGN', 'NGN (Nigerian Naira)'),
+        ('RWF', 'RWF (Rwandan Franc)'),
+        ('STN', 'STN (Sao Tome and Principe Dobra)'),
+        ('SCR', 'SCR (Seychellois Rupee)'),
+        ('SLE', 'SLE (Sierra Leonean Leone)'),
+        ('SOS', 'SOS (Somali Shilling)'),
+        ('ZAR', 'ZAR (South African Rand)'),
+        ('SSP', 'SSP (South Sudanese Pound)'),
+        ('SDG', 'SDG (Sudanese Pound)'),
+        ('TZS', 'TZS (Tanzanian Shilling)'),
+        ('TND', 'TND (Tunisian Dinar)'),
         ('UGX', 'UGX (Ugandan Shilling)'),
         ('USD', 'USD (US Dollar)'),
-        ('KES', 'KES (Kenyan Shilling)'),
-        ('NGN', 'NGN (Nigerian Naira)'),
-        ('GHS', 'GHS (Ghanaian Cedi)'),
-        ('ZAR', 'ZAR (South African Rand)'),
-        ('TZS', 'TZS (Tanzanian Shilling)'),
-        ('RWF', 'RWF (Rwandan Franc)'),
+        ('XOF', 'XOF (West African CFA Franc)'),
+        ('ZMW', 'ZMW (Zambian Kwacha)'),
+        ('ZWL', 'ZWL (Zimbabwean Dollar)'),
         ('EGP', 'EGP (Egyptian Pound)'),
     ]
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='UGX')
@@ -198,6 +232,12 @@ class CartItem(models.Model):
 # --- Order Models (The Referral Bridge) ---
 
 class Order(models.Model):
+    ESCROW_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('funded', 'Funds held in escrow'),
+        ('released', 'Funds released'),
+        ('disputed', 'Disputed'),
+    ]
     STATUS_CHOICES = [
         ('created', 'Created'),
         ('payment_pending', 'Payment pending'),
@@ -230,6 +270,7 @@ class Order(models.Model):
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     total_commission = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='created')
+    escrow_status = models.CharField(max_length=10, choices=ESCROW_STATUS_CHOICES, default='pending', db_index=True)
     currency = models.CharField(max_length=3, default='UGX')
     payment_deadline = models.DateTimeField(blank=True, null=True)
     delivery_address = models.CharField(max_length=255, blank=True)
@@ -237,6 +278,8 @@ class Order(models.Model):
     delivery_phone = models.CharField(max_length=30, blank=True)
     delivery_latitude = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
     delivery_longitude = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    delivery_pin_hash = models.CharField(max_length=128, blank=True)
+    delivery_qr_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, null=True, blank=True)
     buyer_confirmed_at = models.DateTimeField(blank=True, null=True)
     funds_released_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -322,6 +365,9 @@ class AffiliatePayout(models.Model):
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='held')
     created_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(blank=True, null=True)
+    payout_phone = models.CharField(max_length=30, blank=True)
+    provider_reference = models.CharField(max_length=255, blank=True)
+    provider_status = models.CharField(max_length=30, blank=True)
 
 
 class LiveShoppingSession(models.Model):
@@ -344,3 +390,16 @@ class LivePinnedProduct(models.Model):
 
     class Meta:
         ordering = ['position', 'created_at']
+
+
+class WhatsAppCatalogConnection(models.Model):
+    """Merchant connection details for optional WhatsApp Business catalog sync."""
+    merchant = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='whatsapp_catalog')
+    phone_number_id = models.CharField(max_length=100)
+    catalog_id = models.CharField(max_length=100)
+    access_token = models.TextField()
+    is_active = models.BooleanField(default=True)
+    last_synced_at = models.DateTimeField(blank=True, null=True)
+    last_sync_error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
