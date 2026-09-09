@@ -5,23 +5,36 @@
 {% block title %}Add a Product{% endblock %}
 
 {% block content %}
-<header class="relative bg-center bg-cover h-64 md:h-80" style="background-image: url('https://images.unsplash.com/photo-1542450893-a9d701dfc6a9?q=80&w=2940&auto=format&fit=crop');">
+<style>
+    .seller-page { background: #f3f4f6; color: #172033; }
+    .seller-page .seller-hero { background: linear-gradient(100deg, #131921, #232f3e); }
+    .seller-page .seller-panel { border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 8px 28px rgba(15, 23, 42, .08); }
+    .seller-page input, .seller-page textarea, .seller-page select { border-color: #cbd5e1; background: #fff; color: #172033; }
+    .seller-page .bg-gray-700 { background: #f8fafc; border-color: #cbd5e1; }
+    .seller-page .bg-gray-900\/50 { background: #e2e8f0; }
+    .seller-page .text-gray-200, .seller-page .text-gray-300, .seller-page .text-gray-400 { color: #475569; }
+    .seller-page .bg-indigo-900\/20 { background: #f0fdfa; border-color: #99f6e4; }
+    .seller-page .text-indigo-300 { color: #0f766e; }
+    .seller-page label { color: #475569; }
+</style>
+<div class="seller-page min-h-screen">
+<header class="seller-hero relative h-64 md:h-80">
     <div class="absolute inset-0 bg-gradient-to-r from-blue-600/80 to-purple-600/80 flex items-center justify-center">
         <div class="text-center text-white p-4">
-            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-3 animate-fade-in-up">
+            <h1 class="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight mb-3 animate-fade-in-up">
                 Share Your Product, Unlock Prosperity 🌍
             </h1>
-            <p class="text-lg md:text-2xl font-light text-blue-100 animate-fade-in-up delay-150">
+            <p class="text-base sm:text-lg md:text-2xl font-light text-blue-100 animate-fade-in-up delay-150">
                 List a product and connect with a global community instantly.
             </p>
         </div>
     </div>
 </header>
 
-<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-16 relative z-10">
-    <div class="w-full max-w-4xl mx-auto p-10 bg-white rounded-3xl shadow-2xl border border-gray-200">
+<div class="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 -mt-10 sm:-mt-16 relative z-10">
+    <div class="seller-panel w-full max-w-4xl mx-auto p-4 sm:p-6 md:p-10 bg-white">
 
-        <h2 class="text-3xl font-bold text-gray-800 mb-8 border-b border-gray-200 pb-4">Product Listing Form</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8 border-b border-gray-200 pb-4">Product Listing Form</h2>
 
         <form method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %} 
@@ -63,7 +76,7 @@
                 </div>
             </div>
 
-            <div class="p-6 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl mt-4">
+            <div class="p-4 sm:p-6 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl mt-4">
                 <div class="flex items-center mb-4">
                     <span class="text-2xl mr-3">🤝</span>
                     <h3 class="text-xl font-bold text-indigo-300">Referral Program</h3>
@@ -136,6 +149,8 @@
         </form>
 
     </div>
+</div>
+
 </div>
 
 <script>
