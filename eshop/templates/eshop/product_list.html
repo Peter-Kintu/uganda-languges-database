@@ -15,6 +15,7 @@
             <form method="GET" action="{% url 'eshop:product_list' %}" class="flex min-w-0 flex-1 overflow-hidden rounded-md bg-white focus-within:ring-2 focus-within:ring-[#ff9900]"><select name="category" class="hidden bg-slate-100 px-3 text-xs text-slate-700 outline-none sm:block"><option value="">All categories</option>{% for value, label in category_choices %}<option value="{{ value }}" {% if category_query == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><input id="product-search-input" type="search" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, brands and more" class="min-w-0 flex-1 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"><button type="button" id="voice-search-button" aria-label="Search by voice" title="Search by voice" class="px-3 text-[#007c83] hover:bg-[#e8f4f1]">🎙️</button><button type="submit" aria-label="Search" class="bg-[#febd69] px-4 text-slate-900 hover:bg-[#f3a847]"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg></button></form>
             <div class="hidden shrink-0 text-xs leading-tight md:block"><span class="text-slate-500">Hello, {% if user.is_authenticated %}{{ user.username }}{% else %}sign in{% endif %}</span><br><strong>Account & Lists</strong></div>
             <a href="{% url 'eshop:add_product' %}" class="flex shrink-0 whitespace-nowrap rounded border border-transparent px-2 py-1 text-xs hover:border-white">Sell on Africana</a>
+            <label class="market-language-control flex min-w-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-[#172b3a]" title="Change Africana language"><span aria-hidden="true">文</span><span class="sr-only">Preferred language</span><select id="market-language-select" class="max-w-[100px] border-0 bg-transparent p-0 text-[11px] font-bold text-[#172b3a] outline-none sm:max-w-[130px]"><option value="en">English</option><option value="lg">Luganda</option><option value="sw">Kiswahili</option><option value="nyn">Runyankole</option><option value="ach">Acholi</option><option value="xsm">Kisamach</option><option value="teo">Ateso</option><option value="lue">Lusoga</option><option value="alur">Alur</option><option value="rw">Kinyarwanda</option><option value="rn">Kirundi</option><option value="ln">Lingala</option><option value="yo">Yoruba</option><option value="ha">Hausa</option><option value="ig">Igbo</option><option value="ak">Akan</option><option value="zu">isiZulu</option><option value="xh">isiXhosa</option><option value="sn">chiShona</option><option value="ny">Chichewa</option><option value="am">Amharic</option><option value="om">Afaan Oromoo</option><option value="fr">Français</option><option value="pt">Português</option><option value="ar">العربية</option></select></label>
             <a href="{% url 'eshop:view_cart' %}" class="flex shrink-0 items-end gap-1 rounded border border-transparent px-2 py-1 hover:border-white" aria-label="Shopping cart"><svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="1.8" d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 1.9-1.4L21 8H6.1M10 20a1 1 0 1 1-2 0m10 0a1 1 0 1 1-2 0"/></svg><strong class="text-sm">Cart</strong></a>
         </div>
     </div>
@@ -328,4 +329,51 @@
         }
     }
 </style>
+<style>
+    .marketplace-translate-engine {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .goog-te-banner-frame { display: none !important; }
+    body { top: 0 !important; }
+</style>
+<div id="google_translate_element" class="marketplace-translate-engine" aria-hidden="true"></div>
+<script>
+    window.africanaTranslateReady = function () {
+        const select = document.getElementById('market-language-select');
+        const engine = document.querySelector('.goog-te-combo');
+        if (!select || !engine) return;
+        const savedLanguage = localStorage.getItem('africana_language') || '{% if user.is_authenticated %}{{ user.language|default:"en" }}{% else %}en{% endif %}';
+        select.value = savedLanguage;
+        if (savedLanguage !== 'en') {
+            engine.value = savedLanguage;
+            engine.dispatchEvent(new Event('change'));
+        }
+        select.addEventListener('change', function () {
+            const language = select.value;
+            localStorage.setItem('africana_language', language);
+            engine.value = language;
+            engine.dispatchEvent(new Event('change'));
+            {% if user.is_authenticated %}
+            fetch('{% url "eshop:save_language_preference" %}', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'}, body: `language=${encodeURIComponent(language)}`}).catch(function () {});
+            {% endif %}
+        });
+    };
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,lg,sw,nyn,ach,xsm,teo,lue,alur,rw,rn,ln,yo,ha,ig,ak,zu,xh,sn,ny,am,om,fr,pt,ar',
+            autoDisplay: false
+        }, 'google_translate_element');
+        window.setTimeout(window.africanaTranslateReady, 400);
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        window.setTimeout(window.africanaTranslateReady, 1200);
+    });
+</script>
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
 {% endblock %}

@@ -726,6 +726,19 @@ def product_list(request):
         'max_price_query': max_price_query,
     })
 
+
+@login_required
+def save_language_preference(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    language = str(request.POST.get('language', '')).strip().lower()
+    supported_languages = {'en', 'lg', 'sw', 'nyn', 'ach', 'xsm', 'teo', 'lue', 'alur', 'rw', 'rn', 'ln', 'yo', 'ha', 'ig', 'ak', 'zu', 'xh', 'sn', 'ny', 'am', 'om', 'fr', 'pt', 'ar'}
+    if language not in supported_languages:
+        return JsonResponse({'error': 'Unsupported language.'}, status=400)
+    request.user.language = language
+    request.user.save(update_fields=['language'])
+    return JsonResponse({'status': 'saved', 'language': language})
+
 @login_required
 def add_product(request):
     """Handles the form for vendors to add a new product."""
