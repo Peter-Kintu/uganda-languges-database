@@ -1087,6 +1087,16 @@
                     });
             });
         }
+
+        if ('serviceWorker' in navigator && 'PushManager' in window && window.Notification && Notification.permission === 'granted') {
+            navigator.serviceWorker.ready.then(function(registration) {
+                return registration.pushManager.getSubscription();
+            }).then(function(subscription) {
+                if (subscription) {
+                    fetch('{% url "social:save_push_subscription" %}', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'}, body: JSON.stringify(subscription)});
+                }
+            }).catch(function() {});
+        }
     </script>
 
     <script>

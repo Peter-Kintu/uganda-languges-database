@@ -28,6 +28,21 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+self.addEventListener('push', event => {
+  const data = event.data ? event.data.json() : { title: 'Africana AI', body: 'You have a new marketplace update.' };
+  event.waitUntil(self.registration.showNotification(data.title || 'Africana AI', {
+    body: data.body || '',
+    icon: '/static/images/africana-ai-logo.svg',
+    badge: '/static/images/africana-ai-logo.svg',
+    data: { url: data.url || '/' }
+  }));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data.url || '/'));
+});
+
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') {
     return;

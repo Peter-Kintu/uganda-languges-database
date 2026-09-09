@@ -38,6 +38,7 @@ urlpatterns = [
     path('chat/<int:partner_id>/', views.chat_detail, name='chat_detail'),
     path('chat/<int:partner_id>/invoice/', views.issue_invoice, name='issue_invoice'),
     path('invoices/ipn/', views.invoice_ipn, name='invoice_ipn'),
+    path('notifications/push/subscribe/', views.save_push_subscription, name='save_push_subscription'),
 
     # The 'Hire' Protocol: Gateway to initiate the secure handshake
     # UPDATED: Now returns a WhatsApp redirect URL if the creator has a linked number

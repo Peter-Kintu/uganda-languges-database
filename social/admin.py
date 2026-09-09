@@ -31,9 +31,11 @@ class SocialProfileAdmin(admin.ModelAdmin):
         'trust_score_display', 
         'verified_deals_count', 
         'is_verified_merchant', 
+        'verification_tier',
+        'verification_status',
         'auto_negotiation_enabled'
     )
-    list_filter = ('is_verified_merchant', 'auto_negotiation_enabled')
+    list_filter = ('is_verified_merchant', 'verification_tier', 'verification_status', 'auto_negotiation_enabled')
     search_fields = ('user__username', 'user__email')
     actions = ['recalculate_trust']
     
@@ -42,7 +44,7 @@ class SocialProfileAdmin(admin.ModelAdmin):
             'fields': ('user',)
         }),
         ('Pillar 1: Trust Ledger', {
-            'fields': ('trust_score', 'verified_deals_count', 'is_verified_merchant'),
+            'fields': ('trust_score', 'verified_deals_count', 'is_verified_merchant', 'verification_tier', 'verification_status', 'national_id_last4', 'business_registration_ref'),
             'description': "Verified metrics that power the 'Proof of Work' profile layer."
         }),
         ('Pillar 3: Agentic Commerce', {

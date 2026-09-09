@@ -195,6 +195,21 @@ class Product(models.Model):
         ]
 
 
+class PromotionCampaign(models.Model):
+    STATUS_CHOICES = [('draft', 'Draft'), ('active', 'Active'), ('paused', 'Paused'), ('ended', 'Ended')]
+    merchant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='promotion_campaigns')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='promotion_campaigns')
+    daily_budget = models.DecimalField(max_digits=12, decimal_places=2)
+    bid_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
+    starts_at = models.DateTimeField(blank=True, null=True)
+    ends_at = models.DateTimeField(blank=True, null=True)
+    impressions = models.PositiveIntegerField(default=0)
+    clicks = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 # --- Cart and CartItem Models ---
 
 class Cart(models.Model):

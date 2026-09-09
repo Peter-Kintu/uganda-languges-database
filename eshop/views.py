@@ -4,14 +4,14 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
-from django.db.models import F, Sum 
+from django.db.models import F, Sum, Max, Q
 from decimal import Decimal, InvalidOperation # Import InvalidOperation for robust number handling
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import check_password, make_password
 from django.views.decorators.csrf import csrf_exempt
 from .forms import ProductForm, NegotiationForm 
 from .models import (
-    Product, Cart, CartItem, CommercePayment, InventoryItem, StockMovement,
+    Product, Cart, CartItem, CommercePayment, InventoryItem, StockMovement, PromotionCampaign,
     AffiliateEvent, AffiliatePayout, LiveShoppingSession, LivePinnedProduct,
 )
 from django.utils import timezone
@@ -183,7 +183,47 @@ def commerce_payment_ipn(request):
 def merchant_dashboard(request):
     products = Product.objects.filter(vendor_user=request.user).select_related('inventory')
     orders = Order.objects.filter(order_items__product__vendor_user=request.user).distinct().order_by('-created_at')[:25]
-    return render(request, 'eshop/merchant_dashboard.html', {'products': products, 'orders': orders})
+    from django.db.models import Count, Sum
+    from social.models import MerchantAnalyticsEvent, SocialProfile
+    analytics = MerchantAnalyticsEvent.objects.filter(merchant=request.user)
+    profile = SocialProfile.objects.filter(user=request.user).first()
+    metrics = {
+        'product_views': analytics.filter(event_type='product_view').count(),
+        'reel_views': analytics.filter(event_type='reel_view').count(),
+        'cart_adds': analytics.filter(event_type='cart_add').count(),
+        'sales': orders.filter(status__in={'released', 'Completed'}).count(),
+        'revenue': orders.filter(status__in={'released', 'Completed'}).aggregate(total=Sum('total_amount'))['total'] or 0,
+    }
+    return render(request, 'eshop/merchant_dashboard.html', {'products': products, 'orders': orders, 'metrics': metrics, 'social_profile': profile})
+
+
+@login_required
+def submit_verification(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    from social.models import SocialProfile
+    profile, _ = SocialProfile.objects.get_or_create(user=request.user)
+    profile.national_id_last4 = str(request.POST.get('national_id_last4', '')).strip()[-4:]
+    profile.business_registration_ref = str(request.POST.get('business_registration_ref', '')).strip()[:100]
+    profile.verification_status = 'pending'
+    profile.save(update_fields=['national_id_last4', 'business_registration_ref', 'verification_status'])
+    return JsonResponse({'status': profile.verification_status})
+
+
+@login_required
+def create_promotion(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    product = get_object_or_404(Product, id=request.POST.get('product_id'), vendor_user=request.user)
+    try:
+        daily_budget = Decimal(request.POST.get('daily_budget', '0'))
+        bid_amount = Decimal(request.POST.get('bid_amount', '0'))
+    except (InvalidOperation, TypeError):
+        return JsonResponse({'error': 'Budget and bid must be valid amounts.'}, status=400)
+    if daily_budget <= 0 or bid_amount <= 0:
+        return JsonResponse({'error': 'Budget and bid must be positive.'}, status=400)
+    campaign = PromotionCampaign.objects.create(merchant=request.user, product=product, daily_budget=daily_budget, bid_amount=bid_amount, status='active')
+    return JsonResponse({'campaign_id': campaign.id, 'status': campaign.status})
 
 
 @login_required
@@ -635,7 +675,9 @@ def product_list(request):
         except User.DoesNotExist:
             request.session.pop('active_referrer', None)
 
-    products = Product.objects.all().order_by('-id')
+    products = Product.objects.annotate(
+        promotion_bid=Max('promotion_campaigns__bid_amount', filter=Q(promotion_campaigns__status='active'))
+    ).order_by('-promotion_bid', '-id')
 
     # Search and Filter Logic
     search_query = request.GET.get('search', '').strip()
@@ -703,6 +745,12 @@ def add_product(request):
 def product_detail(request, slug):
     """Displays detailed information for a specific product."""
     product = get_object_or_404(Product, slug=slug)
+    try:
+        from social.models import MerchantAnalyticsEvent
+        if product.vendor_user_id:
+            MerchantAnalyticsEvent.objects.create(merchant_id=product.vendor_user_id, product=product, event_type='product_view', visitor_key=request.session.session_key or '')
+    except Exception:
+        logger.exception('Product view analytics failed for product %s', product.id)
     
     # Check for referral link in URL
     referrer_username = request.GET.get('ref')
@@ -735,6 +783,12 @@ def add_to_cart(request, product_id):
         product=product,
         defaults={'quantity': 1}
     )
+    try:
+        from social.models import MerchantAnalyticsEvent
+        if product.vendor_user_id:
+            MerchantAnalyticsEvent.objects.create(merchant_id=product.vendor_user_id, product=product, event_type='cart_add', visitor_key=request.session.session_key or '')
+    except Exception:
+        logger.exception('Cart analytics failed for product %s', product.id)
     
     if not created:
         # If item already exists, increase quantity

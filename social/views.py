@@ -21,7 +21,7 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 
 # Internal App Models and Forms
-from .models import BusinessReel, SocialProfile, SecureMessage, NativeInvoice
+from .models import BusinessReel, SocialProfile, SecureMessage, NativeInvoice, BrowserPushSubscription, MerchantAnalyticsEvent
 from .forms import BusinessReelUploadForm, SecureMessageForm
 # External User Model from users app
 from users.models import CustomUser
@@ -219,12 +219,30 @@ def track_view(request, reel_id):
     reel.views_count = F('views_count') + 1
     reel.save(update_fields=['views_count'])
     reel.refresh_from_db()
+    MerchantAnalyticsEvent.objects.create(merchant_id=reel.author_id, reel=reel, product=reel.shoppable_product, event_type='reel_view', visitor_key=request.session.session_key or '')
     
     return JsonResponse({
         'status': 'SUCCESS',
         'total_views': reel.views_count,
         'storage_tier': reel.storage_tier
     })
+
+
+@login_required
+@require_POST
+def save_push_subscription(request):
+    try:
+        payload = json.loads(request.body or '{}')
+        endpoint = str(payload.get('endpoint', '')).strip()
+        if not endpoint:
+            raise ValueError
+        BrowserPushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={'user': request.user, 'subscription': payload, 'is_active': True},
+        )
+    except (ValueError, json.JSONDecodeError):
+        return JsonResponse({'error': 'A valid push subscription is required.'}, status=400)
+    return JsonResponse({'status': 'subscribed'})
 
 # --- SOVEREIGN MESSAGING PROTOCOLS ---
 

@@ -19,6 +19,30 @@
     <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Offline sync</p><p class="mt-2 font-semibold text-emerald-700">Ready</p></div>
   </section>
 
+  <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Product views</p><p class="mt-2 text-2xl font-bold">{{ metrics.product_views }}</p></div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Reel views</p><p class="mt-2 text-2xl font-bold">{{ metrics.reel_views }}</p></div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Cart adds</p><p class="mt-2 text-2xl font-bold">{{ metrics.cart_adds }}</p></div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Completed sales</p><p class="mt-2 text-2xl font-bold">{{ metrics.sales }}</p></div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Revenue</p><p class="mt-2 text-2xl font-bold">{{ metrics.revenue|floatformat:0 }}</p></div>
+  </section>
+
+  <section class="grid gap-6 lg:grid-cols-2">
+    <form method="post" action="{% url 'eshop:submit_verification' %}" class="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
+      {% csrf_token %}<div><h2 class="font-bold text-slate-900">Seller verification</h2><p class="mt-1 text-sm text-slate-500">Submit your merchant details for a verified badge review.</p></div>
+      <input name="national_id_last4" inputmode="numeric" maxlength="4" placeholder="Last 4 digits of National ID" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+      <input name="business_registration_ref" maxlength="100" placeholder="Business registration reference" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+      <button class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white hover:bg-teal-800">Submit verification</button>
+      <p class="text-xs text-slate-500">Current status: {{ social_profile.verification_status|default:"unsubmitted" }}</p>
+    </form>
+    <form method="post" action="{% url 'eshop:create_promotion' %}" class="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
+      {% csrf_token %}<div><h2 class="font-bold text-slate-900">Promote a listing</h2><p class="mt-1 text-sm text-slate-500">Set an internal daily budget and bid to rank your product higher.</p></div>
+      <select name="product_id" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Choose a product</option>{% for product in products %}<option value="{{ product.id }}">{{ product.name }}</option>{% endfor %}</select>
+      <div class="grid grid-cols-2 gap-3"><input name="daily_budget" required type="number" step="0.01" placeholder="Daily budget" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"><input name="bid_amount" required type="number" step="0.01" placeholder="Bid amount" class="rounded-lg border border-slate-300 px-3 py-2 text-sm"></div>
+      <button class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-amber-600">Start promotion</button>
+    </form>
+  </section>
+
   <section class="overflow-hidden rounded-xl border border-slate-200 bg-white">
     <div class="border-b border-slate-200 px-5 py-4"><h2 class="font-bold text-slate-900">Inventory</h2></div>
     <div class="overflow-x-auto"><table class="min-w-full text-left text-sm"><thead class="bg-slate-50 text-slate-500"><tr><th class="px-5 py-3">Product</th><th class="px-5 py-3">SKU</th><th class="px-5 py-3">Available</th><th class="px-5 py-3">Reserved</th></tr></thead><tbody class="divide-y divide-slate-100">{% for product in products %}<tr><td class="px-5 py-3 font-medium">{{ product.name }}</td><td class="px-5 py-3">{{ product.inventory.sku|default:"-" }}</td><td class="px-5 py-3">{{ product.inventory.available_quantity|default:0 }}</td><td class="px-5 py-3">{{ product.inventory.quantity_reserved|default:0 }}</td></tr>{% empty %}<tr><td colspan="4" class="px-5 py-8 text-center text-slate-500">No products yet.</td></tr>{% endfor %}</tbody></table></div>

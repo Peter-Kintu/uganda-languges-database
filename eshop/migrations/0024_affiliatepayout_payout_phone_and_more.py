@@ -6,6 +6,13 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+def populate_delivery_qr_tokens(apps, schema_editor):
+    Order = apps.get_model('eshop', 'Order')
+    for order in Order.objects.filter(delivery_qr_token__isnull=True).iterator():
+        order.delivery_qr_token = uuid.uuid4()
+        order.save(update_fields=['delivery_qr_token'])
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -35,6 +42,12 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, max_length=128),
         ),
         migrations.AddField(
+            model_name='order',
+            name='delivery_qr_token',
+            field=models.UUIDField(blank=True, editable=False, null=True, unique=True),
+        ),
+        migrations.RunPython(populate_delivery_qr_tokens, migrations.RunPython.noop),
+        migrations.AlterField(
             model_name='order',
             name='delivery_qr_token',
             field=models.UUIDField(blank=True, default=uuid.uuid4, editable=False, null=True, unique=True),

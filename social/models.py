@@ -36,6 +36,16 @@ class SocialProfile(models.Model):
         default=False, 
         help_text="Awarded after AI assessment and identity verification."
     )
+    VERIFICATION_TIER_CHOICES = [
+        ('none', 'Not verified'),
+        ('local_maker', 'Verified Local Maker'),
+        ('hub_resident', 'Hub Resident'),
+        ('top_seller', 'Top Seller'),
+    ]
+    verification_tier = models.CharField(max_length=20, choices=VERIFICATION_TIER_CHOICES, default='none')
+    verification_status = models.CharField(max_length=20, default='unsubmitted')
+    national_id_last4 = models.CharField(max_length=4, blank=True)
+    business_registration_ref = models.CharField(max_length=100, blank=True)
 
     # --- CONTACT SETTINGS ---
     whatsapp_number = models.CharField(
@@ -323,6 +333,31 @@ class SecureMessage(models.Model):
 
     def __str__(self):
         return f"Secure Msg: {self.sender.username} -> {self.recipient.username}"
+
+
+class BrowserPushSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='browser_push_subscriptions')
+    endpoint = models.URLField(unique=True)
+    subscription = models.JSONField(default=dict)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class MerchantAnalyticsEvent(models.Model):
+    EVENT_CHOICES = [
+        ('product_view', 'Product view'),
+        ('reel_view', 'Reel view'),
+        ('cart_add', 'Cart add'),
+        ('checkout', 'Checkout'),
+        ('sale', 'Sale'),
+    ]
+    merchant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='merchant_analytics_events')
+    product = models.ForeignKey('eshop.Product', on_delete=models.CASCADE, null=True, blank=True, related_name='analytics_events')
+    reel = models.ForeignKey(BusinessReel, on_delete=models.CASCADE, null=True, blank=True, related_name='analytics_events')
+    event_type = models.CharField(max_length=20, choices=EVENT_CHOICES)
+    visitor_key = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
 
 class NativeInvoice(models.Model):
