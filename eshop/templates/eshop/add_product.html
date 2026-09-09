@@ -44,6 +44,12 @@
                     <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Product Name</label>
                     {{ form.name|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 placeholder:text-gray-500" }}
                 </div>
+
+                <div>
+                    <label for="{{ form.category.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Product Category</label>
+                    {{ form.category|attr:"class:w-full px-4 py-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" }}
+                    <p class="mt-1 text-xs text-gray-500">Choose the category shoppers will use to find this product.</p>
+                </div>
                 
                 <div>
                     <label for="{{ form.country.id_for_label }}" class="block text-sm font-medium text-gray-600 mb-2">Country of Origin</label>
