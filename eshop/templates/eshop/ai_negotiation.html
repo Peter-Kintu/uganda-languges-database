@@ -151,47 +151,63 @@
         .negotiation-input { border-color: rgba(209, 213, 219, 0.6); }
 
     /* Global shadow removal for negotiator UI */
-    #chat-window, .chat-bubble-user, .chat-bubble-bot, .negotiation-input, button[type="submit"], .max-w-4xl, .accept-button, .shadow-2xl, .shadow-xl, .shadow-lg, .shadow-sm, .shadow-inner {
+    .negotiation-page #chat-window,
+    .negotiation-page .chat-bubble-user,
+    .negotiation-page .chat-bubble-bot,
+    .negotiation-page .negotiation-input,
+    .negotiation-page button[type="submit"],
+    .negotiation-page .max-w-4xl,
+    .negotiation-page .accept-button,
+    .negotiation-page .shadow-2xl,
+    .negotiation-page .shadow-xl,
+    .negotiation-page .shadow-lg,
+    .negotiation-page .shadow-sm,
+    .negotiation-page .shadow-inner {
         box-shadow: none !important;
     }
 
-    header { min-height: 180px; }
-    header h1 { line-height: 1.05; }
+    .negotiation-page header { min-height: 180px; }
+    .negotiation-page header h1 { line-height: 1.05; }
 
     @media (max-width: 1024px) {
-        .max-w-4xl { max-width: 92%; }
-        #chat-window { height: 520px; }
-        header h1 { font-size: 2rem; }
-        #chat-window p, #chat-window span { font-size: 0.96rem; }
+        .negotiation-page .max-w-4xl { max-width: 92%; }
+        .negotiation-page #chat-window { height: 520px; }
+        .negotiation-page header h1 { font-size: 2rem; }
+        .negotiation-page #chat-window p,
+        .negotiation-page #chat-window span { font-size: 0.96rem; }
     }
 
     @media (max-width: 768px) {
-        .container { padding-left: 1rem; padding-right: 1rem; }
-        #chat-window { height: 460px; }
-        .flex.flex-col.sm\:flex-row { flex-direction: column; }
-        .bg-gray-100 { padding: 1rem; }
-        button[type="submit"] { width: 100%; }
-        header { padding: 1.5rem; }
-            .chat-bubble-user, .chat-bubble-bot { box-shadow: none; }
-            #chat-window { padding: 1rem; }
-            .chat-bubble-user, .chat-bubble-bot { max-width: 100%; }
-            .chat-bubble-bot { border: none; }
-            .chat-bubble-user { border: none; }
-            .negotiation-input { border: none; box-shadow: none; }
+        .negotiation-page .container { padding-left: 1rem; padding-right: 1rem; }
+        .negotiation-page #chat-window { height: 460px; }
+        .negotiation-page .flex.flex-col.sm\:flex-row { flex-direction: column; }
+        .negotiation-page .bg-gray-100 { padding: 1rem; }
+        .negotiation-page button[type="submit"] { width: 100%; }
+        .negotiation-page header { padding: 1.5rem; }
+        .negotiation-page .chat-bubble-user,
+        .negotiation-page .chat-bubble-bot { box-shadow: none; }
+        .negotiation-page #chat-window { padding: 1rem; }
+        .negotiation-page .chat-bubble-user,
+        .negotiation-page .chat-bubble-bot { max-width: 100%; }
+        .negotiation-page .chat-bubble-bot { border: none; }
+        .negotiation-page .chat-bubble-user { border: none; }
+        .negotiation-page .negotiation-input { border: none; box-shadow: none; }
     }
 
     @media (max-width: 640px) {
-        #chat-window { height: 380px !important; }
-        button[type="submit"] { padding: 0.9rem 1rem; }
-        .rounded-2xl { border-radius: 1rem; }
-        .text-sm { font-size: 0.95rem !important; }
-        header h1 { font-size: 1.75rem; }
-            #chat-window { background: #f9fafb; }
-            .chat-bubble-user, .chat-bubble-bot { padding: 1rem; }
-            .chat-bubble-user { border-radius: 1.25rem; }
-            .chat-bubble-bot { border-radius: 1.25rem; }
-            .chat-bubble-user p, .chat-bubble-bot p { font-size: 0.96rem; }
-            .negotiation-input { padding: 0.75rem; }
+        .negotiation-page #chat-window { height: 380px !important; }
+        .negotiation-page button[type="submit"] { padding: 0.9rem 1rem; }
+        .negotiation-page .rounded-2xl { border-radius: 1rem; }
+        .negotiation-page .text-sm { font-size: 0.95rem !important; }
+        .negotiation-page header h1 { font-size: 1.75rem; }
+        .negotiation-page #chat-window { background: #f9fafb; }
+        .negotiation-page .chat-bubble-user,
+        .negotiation-page .chat-bubble-bot { padding: 1rem; }
+        .negotiation-page .chat-bubble-user { border-radius: 1.25rem; }
+        .negotiation-page .chat-bubble-bot { border-radius: 1.25rem; }
+        .negotiation-page .chat-bubble-user p,
+        .negotiation-page .chat-bubble-bot p { font-size: 0.96rem; }
+        .negotiation-page .negotiation-input { padding: 0.75rem; }
     }
 
     .negotiation-page {
@@ -416,6 +432,185 @@
 
         .negotiation-page .mt-10 {
             margin-top: 2rem;
+        }
+    }
+
+    .negotiation-page {
+        min-height: 100%;
+    }
+
+    .negotiation-page > .container {
+        width: min(100%, 1120px);
+    }
+
+    .negotiation-page .max-w-4xl {
+        max-width: 1040px;
+    }
+
+    .negotiation-page > .container > .max-w-4xl > .p-4 {
+        padding: clamp(1rem, 3vw, 2.5rem);
+    }
+
+    .negotiation-page #chat-window {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(1rem, 2.2vw, 1.5rem);
+        height: clamp(420px, 65vh, 720px);
+        min-height: 420px;
+        padding: clamp(1rem, 2.5vw, 1.75rem);
+        border-color: #dfe5ef;
+        border-radius: 24px;
+        scrollbar-gutter: stable;
+    }
+
+    .negotiation-page #chat-window > .flex {
+        flex: 0 0 auto;
+        width: 100%;
+    }
+
+    .negotiation-page .chat-bubble-user,
+    .negotiation-page .chat-bubble-bot {
+        width: fit-content;
+        max-width: min(74%, 700px);
+        padding: 1rem 1.15rem;
+        border-radius: 20px;
+        overflow-wrap: anywhere;
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .negotiation-page .chat-bubble-user:hover,
+    .negotiation-page .chat-bubble-bot:hover {
+        transform: translateY(-1px);
+    }
+
+    .negotiation-page .chat-bubble-bot {
+        border-color: #d9e1ed;
+    }
+
+    .negotiation-page .chat-bubble-user p,
+    .negotiation-page .chat-bubble-bot p {
+        font-size: clamp(0.92rem, 1.2vw, 1.05rem);
+        line-height: 1.65;
+        overflow-wrap: anywhere;
+    }
+
+    .negotiation-page .chat-bubble-bot > div:first-child,
+    .negotiation-page .chat-bubble-user > p:first-child {
+        margin-bottom: 0.55rem;
+    }
+
+    .negotiation-page .negotiation-input {
+        align-items: stretch;
+        min-height: 70px;
+        padding: 0.55rem;
+        border-color: #d9e1ed;
+        background: #ffffff;
+    }
+
+    .negotiation-page .negotiation-input:focus-within {
+        border-color: #818cf8;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12) !important;
+    }
+
+    .negotiation-page #id_user_message {
+        min-height: 54px;
+        font-size: 1rem;
+    }
+
+    .negotiation-page #negotiation-form button[type="submit"] {
+        min-width: 190px;
+        align-self: stretch;
+        box-shadow: 0 10px 24px rgba(67, 56, 202, 0.2) !important;
+    }
+
+    .negotiation-page #negotiation-form > div:last-child {
+        margin-top: 0.7rem;
+        padding: 0 0.35rem;
+        font-size: 0.75rem;
+    }
+
+    .negotiation-page .mt-10 {
+        margin-top: clamp(2.5rem, 5vw, 4rem);
+    }
+
+    .negotiation-page .mt-10 > div:last-child {
+        border-color: #dfe5ef;
+        background: #f8fafc;
+    }
+
+    @media (min-width: 769px) {
+        .negotiation-page .chat-bubble-user,
+        .negotiation-page .chat-bubble-bot {
+            min-width: 120px;
+        }
+
+        .negotiation-page #negotiation-form .flex.flex-col.sm\:flex-row {
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        .negotiation-page #negotiation-form .flex-grow {
+            min-width: 0;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .negotiation-page #chat-window {
+            height: min(64vh, 560px) !important;
+            min-height: 360px;
+            padding: 0.8rem;
+            border-radius: 18px;
+        }
+
+        .negotiation-page .chat-bubble-user,
+        .negotiation-page .chat-bubble-bot {
+            max-width: 92%;
+            padding: 0.85rem 0.9rem;
+            border-radius: 17px;
+        }
+
+        .negotiation-page .chat-bubble-user p,
+        .negotiation-page .chat-bubble-bot p {
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        .negotiation-page .negotiation-input {
+            min-height: 0;
+            padding: 0.45rem;
+        }
+
+        .negotiation-page #negotiation-form button[type="submit"] {
+            min-width: 0;
+            box-shadow: 0 8px 18px rgba(67, 56, 202, 0.18) !important;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .negotiation-page > .container > .max-w-4xl > .p-4 {
+            padding: 0.65rem;
+        }
+
+        .negotiation-page #chat-window {
+            height: min(60vh, 440px) !important;
+            min-height: 320px;
+            padding: 0.65rem;
+        }
+
+        .negotiation-page .chat-bubble-user,
+        .negotiation-page .chat-bubble-bot {
+            max-width: 95%;
+            padding: 0.75rem 0.8rem;
+        }
+
+        .negotiation-page .chat-bubble-user p,
+        .negotiation-page .chat-bubble-bot p {
+            font-size: 0.9rem;
+        }
+
+        .negotiation-page #negotiation-form > div:last-child {
+            align-items: flex-start;
+            font-size: 0.68rem;
         }
     }
 </style>
