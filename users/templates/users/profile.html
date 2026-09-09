@@ -90,6 +90,9 @@
                                 <a href="{% url 'users:profile_ai' %}" class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:brightness-110">
                                     🤖 AI
                                 </a>
+                                <a href="{% url 'hotel:create_post' %}" class="inline-flex items-center gap-2 rounded-2xl bg-[#007c83] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-teal-700/20 transition hover:bg-[#005f63]" title="Investor-only Create access">
+                                    ✍️ Create
+                                </a>
                                 <form method="post" action="{% url 'users:pesapal_start_checkout' %}">
                                     {% csrf_token %}
                                     <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-amber-500/20 transition hover:bg-amber-600">

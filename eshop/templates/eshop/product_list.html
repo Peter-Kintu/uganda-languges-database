@@ -14,7 +14,7 @@
             <div class="hidden items-center gap-2 text-xs leading-tight xl:flex"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="1.8" d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg><span class="text-slate-300">Deliver to<br><strong class="text-white">Uganda & worldwide</strong></span></div>
             <form method="GET" action="{% url 'eshop:product_list' %}" class="flex min-w-0 flex-1 overflow-hidden rounded-md bg-white focus-within:ring-2 focus-within:ring-[#ff9900]"><select name="category" class="hidden bg-slate-100 px-3 text-xs text-slate-700 outline-none sm:block"><option value="">All categories</option>{% for value, label in category_choices %}<option value="{{ value }}" {% if category_query == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><input type="search" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, brands and more" class="min-w-0 flex-1 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"><button type="submit" aria-label="Search" class="bg-[#febd69] px-4 text-slate-900 hover:bg-[#f3a847]"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg></button></form>
             <div class="hidden shrink-0 text-xs leading-tight md:block"><span class="text-slate-300">Hello, {% if user.is_authenticated %}{{ user.username }}{% else %}sign in{% endif %}</span><br><strong>Account & Lists</strong></div>
-            <a href="{% url 'eshop:add_product' %}" class="flex shrink-0 rounded border border-transparent px-2 py-1 text-xs hover:border-white">Sell<br><strong>on Africana</strong></a>
+            <a href="{% url 'eshop:add_product' %}" class="flex shrink-0 whitespace-nowrap rounded border border-transparent px-2 py-1 text-xs hover:border-white">Sell on Africana</a>
             <a href="{% url 'eshop:view_cart' %}" class="flex shrink-0 items-end gap-1 rounded border border-transparent px-2 py-1 hover:border-white" aria-label="Shopping cart"><svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="1.8" d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 1.9-1.4L21 8H6.1M10 20a1 1 0 1 1-2 0m10 0a1 1 0 1 1-2 0"/></svg><strong class="text-sm">Cart</strong></a>
         </div>
     </div>
@@ -58,6 +58,8 @@
 </script>
 <style>
     .marketplace-shell { overflow-x: hidden; }
+    .marketplace-shell > nav > div { column-gap: 1rem; }
+    .marketplace-shell > nav a { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0.35rem; margin-right: 0.25rem; padding-left: 0.25rem; padding-right: 0.25rem; white-space: nowrap; }
     .marketplace-shell a, .marketplace-shell button, .marketplace-shell input, .marketplace-shell select { max-width: 100%; }
     .marketplace-shell h1, .marketplace-shell h2, .marketplace-shell h3, .marketplace-shell p { overflow-wrap: anywhere; }
     @media (max-width: 640px) {
