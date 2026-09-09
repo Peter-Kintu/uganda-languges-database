@@ -738,6 +738,10 @@
         {% block content %}{% endblock %}
     </main>
 
+    <div id="global-page-loader" role="status" aria-label="Loading page">
+        <span class="loader-mark" aria-hidden="true"></span>
+    </div>
+
     <style id="africana-final-theme">
         /* Final cross-site theme layer. It changes color only; page behavior remains untouched. */
         :root {
@@ -749,6 +753,10 @@
             --africana-surface: #fbfaf7;
             --africana-panel: #ffffff;
             --africana-border: #ddd8ce;
+            --primary: #007c83;
+            --primary-dark: #005f63;
+            --secondary: #e59a22;
+            --success: #007c83;
         }
 
         body,
@@ -828,6 +836,89 @@
             background-color: var(--africana-ink) !important;
             border-color: var(--africana-teal) !important;
             color: #d8e5e2 !important;
+        }
+
+        .inbox-wrapper,
+        .bg-gradient-to-br.from-gray-50,
+        .bg-gradient-to-br.from-slate-50 {
+            background: var(--africana-surface) !important;
+        }
+
+        .inbox-card,
+        .inbox-card .inbox-tabs,
+        .create-post-card,
+        .post-card,
+        .sidebar-card,
+        .modal-content {
+            background: var(--africana-panel) !important;
+            border-color: var(--africana-border) !important;
+        }
+
+        .header,
+        .btn-primary,
+        .inbox-tabs .tab-btn.active,
+        .avatar {
+            background: var(--africana-teal) !important;
+            background-image: none !important;
+        }
+
+        .header,
+        .btn-primary,
+        .header .btn-header {
+            box-shadow: 0 8px 24px rgba(0, 95, 99, 0.18) !important;
+        }
+
+        .chip.active,
+        .inbox-tabs .tab-btn.active {
+            color: #fff !important;
+            border-color: var(--africana-teal-dark) !important;
+        }
+
+        .tab-btn:hover,
+        .tab-btn.active,
+        .sidebar-item:hover,
+        .show-more-btn,
+        .post-content a,
+        .comment-more-btn {
+            color: var(--africana-teal-dark) !important;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: var(--africana-saffron) !important;
+        }
+
+        #global-page-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: grid;
+            place-items: center;
+            background: rgba(251, 250, 247, 0.96);
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 180ms ease, visibility 180ms ease;
+        }
+
+        #global-page-loader.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        #global-page-loader .loader-mark {
+            width: 42px;
+            height: 42px;
+            border: 3px solid #c8e2df;
+            border-top-color: var(--africana-teal);
+            border-radius: 50%;
+            animation: africana-loader-spin 700ms linear infinite;
+        }
+
+        @keyframes africana-loader-spin { to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            #global-page-loader { transition: none; }
+            #global-page-loader .loader-mark { animation: none; }
         }
     </style>
 
@@ -915,6 +1006,21 @@
     </footer>
     
     {% block footer_scripts %}{% endblock %}
+
+    <script>
+        (function () {
+            const loader = document.getElementById('global-page-loader');
+            if (!loader) return;
+
+            const hideLoader = () => loader.classList.add('is-hidden');
+            if (document.readyState === 'complete') {
+                hideLoader();
+            } else {
+                window.addEventListener('load', hideLoader, { once: true });
+                window.setTimeout(hideLoader, 8000);
+            }
+        }());
+    </script>
 
     <script>
         // Mobile nav toggle functionality
