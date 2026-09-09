@@ -2032,6 +2032,97 @@
             background: #1f2937 !important;
         }
     }
+
+    /* Reaction controls: a dedicated Like action plus a separate reaction tray. */
+    .reaction-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex: 0 0 auto;
+        padding: 3px;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        background: #f8fafc;
+    }
+
+    .reaction-like,
+    .reaction-more {
+        min-width: 0;
+        border: 0;
+        background: transparent;
+    }
+
+    .reaction-like {
+        color: #52606d;
+    }
+
+    .reaction-like:hover,
+    .reaction-like.is-selected {
+        color: #c2415a;
+        background: #fff1f3;
+    }
+
+    .reaction-like.is-pending { opacity: 0.7; }
+
+    .reaction-more {
+        width: 30px;
+        min-width: 30px;
+        padding: 8px 6px;
+        color: #7b8794;
+    }
+
+    .reaction-more:hover {
+        color: #007c83;
+        background: #e8f4f1;
+    }
+
+    .reaction-picker {
+        position: fixed;
+        display: flex;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid #dbe4ea;
+        border-radius: 999px;
+        background: #ffffff;
+        box-shadow: 0 18px 42px rgba(23, 43, 58, 0.2);
+        z-index: 1002;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(6px) scale(0.96);
+        transition: opacity 150ms ease, transform 150ms ease;
+    }
+
+    .reaction-picker.visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+    }
+
+    .reaction-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border: 1px solid transparent;
+        border-radius: 50%;
+        background: #f8fafc;
+        font-size: 17px;
+        cursor: pointer;
+        transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
+    }
+
+    .reaction-btn:hover,
+    .reaction-btn.is-selected {
+        transform: translateY(-3px) scale(1.08);
+        background: #e8f4f1;
+        border-color: #9bd1c9;
+    }
+
+    @media (max-width: 480px) {
+        .reaction-picker { max-width: calc(100vw - 24px); overflow-x: auto; }
+        .reaction-btn { width: 36px; height: 36px; }
+    }
 </style>
 
 <script type="application/ld+json">
@@ -2239,10 +2330,15 @@
                         <!-- Footer Actions -->
                         {% if request.user.is_authenticated and not is_crawler %}
                             <div class="post-footer">
-                                <button class="post-action" onclick="openReactionPicker({{ post.id }}, this)" data-post-id="{{ post.id }}" title="React to this post">
-                                    <span id="like-icon-{{ post.id }}">👍</span>
-                                    <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
-                                </button>
+                                <div class="reaction-control" data-reaction-control="{{ post.id }}">
+                                    <button class="post-action reaction-like" onclick="likePost({{ post.id }}, this, 'love')" data-post-id="{{ post.id }}" data-reaction="love" aria-label="Like post" title="Like post">
+                                        <span id="like-icon-{{ post.id }}" aria-hidden="true">♡</span>
+                                        <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
+                                    </button>
+                                    <button class="post-action reaction-more" onclick="openReactionPicker({{ post.id }}, this)" aria-label="More reactions" title="More reactions">
+                                        <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m7 10 5 5 5-5"/></svg>
+                                    </button>
+                                </div>
                                 <button class="post-action" onclick="toggleComments({{ post.id }}, this)" title="View comments">
                                     <span>💬</span>
                                     <span id="comment-count-{{ post.id }}">{{ post.comments.count }}</span>
@@ -2496,9 +2592,10 @@
 <div id="reaction-picker" class="reaction-picker">
     <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'like')" title="Like">👍</button>
     <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'celebrate')" title="Celebrate">🎉</button>
-    <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'love')" title="Love">❤️</button>
     <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'support')" title="Support">💪</button>
     <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'funny')" title="Funny">😄</button>
+    <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'insightful')" title="Insightful">💡</button>
+    <button class="reaction-btn" type="button" onclick="selectReaction(reactionTarget.postId, 'curious')" title="Curious">🤔</button>
 </div>
 
 <!-- Image Lightbox Modal -->
@@ -2702,12 +2799,12 @@
 
         reactionTarget = { postId, btn };
         const rect = btn.getBoundingClientRect();
-        const left = rect.left + window.pageXOffset + rect.width / 2 - picker.offsetWidth / 2;
-        const top = rect.top + window.pageYOffset - picker.offsetHeight - 12;
+        picker.style.display = 'flex';
+        const left = rect.left + rect.width / 2 - picker.offsetWidth / 2;
+        const top = rect.top - picker.offsetHeight - 12;
 
-        picker.style.left = `${Math.max(12, left)}px`;
+        picker.style.left = `${Math.max(12, Math.min(left, window.innerWidth - picker.offsetWidth - 12))}px`;
         picker.style.top = `${Math.max(12, top)}px`;
-        picker.style.display = 'inline-flex';
         picker.classList.add('visible');
     }
 
@@ -2719,38 +2816,56 @@
     }
 
     function selectReaction(postId, reactionType) {
-        const btn = document.querySelector(`button[data-post-id='${postId}']`);
+        const btn = document.querySelector(`.reaction-like[data-post-id='${postId}']`);
         if (!btn) return;
         likePost(postId, btn, reactionType);
+        document.querySelectorAll('.reaction-btn').forEach(reactionButton => {
+            reactionButton.classList.toggle('is-selected', reactionButton.title.toLowerCase() === reactionType);
+        });
         hideReactionPicker();
     }
 
     let reactionTarget = null;
 
     function likePost(postId, btn, reactionType = 'like') {
+        const likeIcon = document.getElementById(`like-icon-${postId}`);
+        const likeCount = document.getElementById(`like-count-${postId}`);
+        const previousIcon = likeIcon ? likeIcon.textContent : '';
+        const previousCount = likeCount ? likeCount.textContent : '';
+        const previousReaction = btn.dataset.reaction || 'love';
+        const emojiMap = {
+            like: '👍',
+            celebrate: '🎉',
+            love: '♥',
+            support: '💪',
+            funny: '😄',
+            insightful: '💡',
+            curious: '🤔'
+        };
+
+        if (likeIcon) likeIcon.textContent = emojiMap[reactionType] || '♥';
+        btn.dataset.reaction = reactionType;
+        btn.classList.add('is-selected', 'is-pending');
+
         fetch(`/hotel/like-post/${postId}/`, {
             method: 'POST',
             headers: { 'X-CSRFToken': csrfToken }
         })
         .then(r => r.json())
         .then(data => {
-            const likeIcon = document.getElementById(`like-icon-${postId}`);
-            const likeCount = document.getElementById(`like-count-${postId}`);
             if (likeIcon && likeCount) {
-                const emojiMap = {
-                    like: '👍',
-                    celebrate: '🎉',
-                    love: '❤️',
-                    support: '💪',
-                    funny: '😄'
-                };
                 likeIcon.textContent = emojiMap[reactionType] || '👍';
                 likeCount.textContent = data.likes_count;
-                btn.classList.add('liked');
             }
+            btn.classList.remove('is-pending');
+            btn.classList.add('is-selected');
         })
         .catch(e => {
             console.error('Like failed:', e);
+            if (likeIcon) likeIcon.textContent = previousIcon;
+            if (likeCount) likeCount.textContent = previousCount;
+            btn.dataset.reaction = previousReaction;
+            btn.classList.remove('is-pending', 'is-selected');
             alert('Failed to like post. Please try again.');
         });
     }
