@@ -2019,6 +2019,20 @@
     .zoom-in {
         animation: zoomIn 0.3s ease;
     }
+
+    @media (prefers-color-scheme: dark) {
+        .post-content,
+        .post-content p,
+        .post-content a,
+        #translate-result,
+        #translate-result strong {
+            color: #f3f4f6;
+        }
+
+        #translate-result {
+            background: #1f2937 !important;
+        }
+    }
 </style>
 
 <script type="application/ld+json">

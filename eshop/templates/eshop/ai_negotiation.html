@@ -6,7 +6,7 @@
 {% block title %}Negotiate Price for {{ product.name }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-white py-10">
+<div class="negotiation-page min-h-screen bg-white py-10">
     <div class="container mx-auto px-4 py-8 md:px-6 md:py-12">
         {# Main Negotiation Card #}
         <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden">
@@ -192,6 +192,231 @@
             .chat-bubble-bot { border-radius: 1.25rem; }
             .chat-bubble-user p, .chat-bubble-bot p { font-size: 0.96rem; }
             .negotiation-input { padding: 0.75rem; }
+    }
+
+    .negotiation-page {
+        --negotiation-ink: #172033;
+        --negotiation-muted: #667085;
+        --negotiation-border: #e4e8f0;
+        --negotiation-surface: #ffffff;
+        background:
+            radial-gradient(circle at 8% 0%, rgba(99, 102, 241, 0.12), transparent 34%),
+            linear-gradient(180deg, #f8faff 0%, #eef2f8 100%);
+        color: var(--negotiation-ink);
+        padding: clamp(1rem, 4vw, 3rem) 0;
+    }
+
+    .negotiation-page > .container {
+        max-width: 980px;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .negotiation-page .max-w-4xl {
+        width: 100%;
+        max-width: 920px;
+        border: 1px solid rgba(218, 224, 235, 0.9);
+        border-radius: 28px;
+        background: var(--negotiation-surface);
+        overflow: hidden;
+    }
+
+    .negotiation-page header {
+        min-height: 0;
+        padding: clamp(1.25rem, 4vw, 2rem);
+        background:
+            radial-gradient(circle at 85% 10%, rgba(129, 140, 248, 0.3), transparent 30%),
+            linear-gradient(135deg, #1d2752 0%, #312e81 55%, #4c1d95 100%);
+        border-bottom: 0;
+    }
+
+    .negotiation-page header h1 {
+        margin-bottom: 0.55rem;
+        color: #ffffff;
+        font-size: clamp(1.5rem, 3vw, 2.25rem);
+        letter-spacing: -0.02em;
+    }
+
+    .negotiation-page header > div:first-child > p {
+        color: rgba(238, 242, 255, 0.75);
+    }
+
+    .negotiation-page header > div:last-child {
+        min-width: 150px;
+        padding: 0.8rem 1rem;
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(12px);
+    }
+
+    .negotiation-page header > div:last-child p:last-child {
+        color: #ffffff;
+    }
+
+    .negotiation-page > .container > .max-w-4xl > .p-4 {
+        padding: clamp(0.75rem, 3vw, 2rem);
+    }
+
+    .negotiation-page #chat-window {
+        height: clamp(390px, 60vh, 600px);
+        margin-bottom: 1.25rem;
+        padding: clamp(0.75rem, 2vw, 1.25rem);
+        border: 1px solid var(--negotiation-border);
+        border-radius: 20px;
+        background: #f7f9fc;
+    }
+
+    .negotiation-page .chat-bubble-user,
+    .negotiation-page .chat-bubble-bot {
+        max-width: min(78%, 620px);
+        padding: 0.9rem 1rem;
+        border-radius: 18px;
+        line-height: 1.55;
+    }
+
+    .negotiation-page .chat-bubble-user {
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        border-bottom-right-radius: 5px;
+    }
+
+    .negotiation-page .chat-bubble-bot {
+        background: var(--negotiation-surface);
+        border: 1px solid var(--negotiation-border);
+        border-bottom-left-radius: 5px;
+        color: var(--negotiation-ink);
+    }
+
+    .negotiation-page .chat-bubble-bot p,
+    .negotiation-page .chat-bubble-user p {
+        line-height: 1.55;
+    }
+
+    .negotiation-page .negotiation-input {
+        gap: 0.75rem;
+        padding: 0.5rem;
+        border: 1px solid var(--negotiation-border);
+        border-radius: 18px;
+        background: #f7f9fc;
+    }
+
+    .negotiation-page .negotiation-input > div:first-child {
+        min-width: 0;
+        padding: 0 0.75rem;
+    }
+
+    .negotiation-page #id_user_message {
+        width: 100%;
+        min-height: 48px;
+        padding: 0.8rem 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--negotiation-ink);
+        font-size: 0.98rem;
+        line-height: 1.45;
+        resize: vertical;
+    }
+
+    .negotiation-page #id_user_message::placeholder {
+        color: #98a2b3;
+    }
+
+    .negotiation-page #negotiation-form button[type="submit"] {
+        min-height: 48px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        white-space: nowrap;
+    }
+
+    .negotiation-page #negotiation-form > div:last-child {
+        color: var(--negotiation-muted);
+    }
+
+    .negotiation-page #typing-indicator {
+        border: 1px solid var(--negotiation-border);
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    @media (max-width: 640px) {
+        .negotiation-page {
+            padding: 0;
+        }
+
+        .negotiation-page > .container {
+            padding: 0;
+        }
+
+        .negotiation-page .max-w-4xl {
+            max-width: none;
+            border: 0;
+            border-radius: 0;
+        }
+
+        .negotiation-page header {
+            padding: 1.25rem 1rem 1.1rem;
+        }
+
+        .negotiation-page header > div:last-child {
+            width: 100%;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+        }
+
+        .negotiation-page > .container > .max-w-4xl > .p-4 {
+            padding: 0.8rem;
+        }
+
+        .negotiation-page #chat-window {
+            height: min(58vh, 460px) !important;
+            min-height: 330px;
+            margin-bottom: 0.85rem;
+            padding: 0.65rem;
+            border-radius: 16px;
+        }
+
+        .negotiation-page .chat-bubble-user,
+        .negotiation-page .chat-bubble-bot {
+            max-width: 88%;
+            padding: 0.8rem 0.85rem;
+            font-size: 0.92rem;
+        }
+
+        .negotiation-page .negotiation-input {
+            padding: 0.4rem;
+            border-radius: 16px;
+        }
+
+        .negotiation-page .negotiation-input > div:first-child {
+            padding: 0 0.7rem;
+        }
+
+        .negotiation-page #id_user_message {
+            min-height: 44px;
+            font-size: 0.95rem;
+        }
+
+        .negotiation-page #negotiation-form button[type="submit"] {
+            width: 100%;
+            min-height: 46px;
+            border-radius: 12px;
+        }
+
+        .negotiation-page #negotiation-form > div:last-child {
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .negotiation-page #negotiation-form > div:last-child > * {
+            max-width: 50%;
+        }
+
+        .negotiation-page .mt-10 {
+            margin-top: 2rem;
+        }
     }
 </style>
 
