@@ -345,23 +345,35 @@
 <script>
     window.africanaTranslateReady = function () {
         const select = document.getElementById('market-language-select');
-        const engine = document.querySelector('.goog-te-combo');
-        if (!select || !engine) return;
+        if (!select || select.dataset.bound === 'true') return;
         const savedLanguage = localStorage.getItem('africana_language') || '{% if user.is_authenticated %}{{ user.language|default:"en" }}{% else %}en{% endif %}';
         select.value = savedLanguage;
-        if (savedLanguage !== 'en') {
-            engine.value = savedLanguage;
-            engine.dispatchEvent(new Event('change'));
+
+        function applyLanguage(language) {
+            const engine = document.querySelector('.goog-te-combo');
+            if (!engine) return false;
+            engine.value = language;
+            engine.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
         }
+
         select.addEventListener('change', function () {
             const language = select.value;
             localStorage.setItem('africana_language', language);
-            engine.value = language;
-            engine.dispatchEvent(new Event('change'));
+            applyLanguage(language);
             {% if user.is_authenticated %}
             fetch('{% url "eshop:save_language_preference" %}', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'}, body: `language=${encodeURIComponent(language)}`}).catch(function () {});
             {% endif %}
         });
+        select.dataset.bound = 'true';
+
+        if (!applyLanguage(savedLanguage)) {
+            const observer = new MutationObserver(function () {
+                if (applyLanguage(savedLanguage)) observer.disconnect();
+            });
+            observer.observe(document.body, {childList: true, subtree: true});
+            window.setTimeout(function () { observer.disconnect(); }, 10000);
+        }
     };
     function googleTranslateElementInit() {
         new google.translate.TranslateElement({
