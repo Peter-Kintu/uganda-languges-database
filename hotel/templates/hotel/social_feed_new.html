@@ -96,7 +96,9 @@
     .btn-header {
         background: rgba(255, 255, 255, 0.2);
         color: white;
-        padding: 12px 20px;
+        width: 48px;
+        height: 48px;
+        padding: 0;
         border-radius: 999px;
         border: 1px solid rgba(255, 255, 255, 0.28);
         font-size: 15px;
@@ -110,15 +112,12 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 44px;
+        min-height: 48px;
         box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
     }
 
     .btn-header::before {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 8px;
+        display: none;
     }
 
     .btn-header:hover {
@@ -689,13 +688,15 @@
         }
 
         .btn-header {
-            min-width: 80px;
-            font-size: 12px;
-            padding: 8px 12px;
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            font-size: 0;
+            padding: 0;
             border-radius: 12px;
             flex: 0 1 auto;
             text-align: center;
-            min-height: 36px;
+            min-height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -734,9 +735,11 @@
         }
 
         .btn-header {
-            min-width: unset;
-            font-size: 12px;
-            padding: 8px 10px;
+            width: 42px;
+            min-width: 42px;
+            height: 42px;
+            font-size: 0;
+            padding: 0;
             border-radius: 10px;
             flex: 0 0 auto;
             white-space: nowrap;
@@ -748,10 +751,7 @@
         }
 
         .btn-header::before {
-            content: attr(data-icon);
-            margin-right: 6px;
-            font-size: 18px;
-            line-height: 1;
+            display: none;
         }
 
 
@@ -786,16 +786,15 @@
 
     @media (max-width: 360px) {
         .btn-header {
-            padding: 8px;
-            font-size: 0;
-            min-width: 40px;
             width: 40px;
             height: 40px;
+            padding: 0;
+            font-size: 0;
+            min-width: 40px;
         }
 
         .btn-header::before {
-            margin-right: 0;
-            font-size: 18px;
+            display: none;
         }
 
         .header-actions {
@@ -2074,9 +2073,15 @@
     <div class="header-content">
         <div class="header-actions">
 
-            <a href="{% url 'languages:browse_job_listings' %}" class="btn-header job-button" data-icon="💼">Jobs</a>
-            <a href="{% url 'movie:movie_list' %}" class="btn-header" data-icon="🎬">Movies</a>
-            <a href="{% url 'hotel:inbox' %}" class="btn-header" data-icon="📥">Inbox</a>
+            <a href="{% url 'languages:browse_job_listings' %}" class="btn-header job-button" aria-label="Jobs" title="Jobs">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1m-9 4h14m-16 9h18a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2Z"/></svg>
+            </a>
+            <a href="{% url 'movie:movie_list' %}" class="btn-header" aria-label="Movies" title="Movies">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m7 3 10 4M3 7l10 4m-8 6 10 4M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H3Z"/></svg>
+            </a>
+            <a href="{% url 'hotel:inbox' %}" class="btn-header" aria-label="Inbox" title="Inbox">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4zM4 9h4l1.5 3h5L16 9h4"/></svg>
+            </a>
         </div>
     </div>
 </div>
