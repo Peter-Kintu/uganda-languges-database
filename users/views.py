@@ -16,6 +16,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
+from django.core.mail import send_mail
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
@@ -333,6 +334,26 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+
+def _send_welcome_email(user):
+    if not user.email:
+        return
+    try:
+        send_mail(
+            subject='Welcome to Africana AI',
+            message=(
+                f'Hi {user.get_full_name() or user.username},\n\n'
+                'Thank you for signing up for Africana AI. Your account is ready.\n\n'
+                'Visit https://www.africanaai.info to get started.\n\n'
+                'The Africana AI team'
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+    except Exception:
+        logger.exception('Welcome email could not be sent to %s.', user.email)
+
 # Safely import eshop models
 try:
     from eshop.models import Product, CartItem, Order 
@@ -472,6 +493,7 @@ def google_auth_receiver(request):
         )
         if created:
             user.save()
+            _send_welcome_email(user)
 
         login(request, user)
         return redirect(next_url or reverse('hotel:social_feed'))
@@ -516,6 +538,7 @@ def user_register(request):
                 else:
                     form.add_error(None, 'Unable to complete registration. Please try again.')
             else:
+                _send_welcome_email(user)
                 login(request, user)
                 if 'referrer' in request.session:
                     del request.session['referrer']

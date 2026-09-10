@@ -2,12 +2,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from myuganda.middleware import WordPressProbeBlockMiddleware
 from users.models import EventBooking, PesapalPayment, UserSubscription
-from users.views import _get_pesapal_config, _pesapal_request
+from users.views import _get_pesapal_config, _pesapal_request, _send_welcome_email
 
 
 User = get_user_model()
@@ -231,6 +232,22 @@ class EventRegistrationTests(TestCase):
             json={'id': 'order-001'},
             timeout=20,
         )
+
+
+class UserRegistrationEmailTests(TestCase):
+    def test_registration_sends_welcome_email(self):
+        user = User.objects.create_user(
+            username='amina',
+            email='amina@example.com',
+            password='Violet!River7Stone#',
+        )
+
+        _send_welcome_email(user)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['amina@example.com'])
+        self.assertEqual(mail.outbox[0].from_email, 'Africana AI <info@africanaai.info>')
+        self.assertIn('Welcome to Africana AI', mail.outbox[0].subject)
 
 
 class PesapalIntegrationTests(TestCase):
