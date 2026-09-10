@@ -1,0 +1,157 @@
+<div id="google_translate_element" class="eshop-translate-engine" aria-hidden="true"></div>
+<label class="eshop-language-control" title="Change Africana language">
+    <span aria-hidden="true">文</span>
+    <span class="sr-only">Preferred language</span>
+    <select class="eshop-language-select" aria-label="Preferred language">
+        <option value="en">English</option>
+        <option value="lg">Luganda</option>
+        <option value="sw">Kiswahili</option>
+        <option value="nyn">Runyankole</option>
+        <option value="ach">Acholi</option>
+        <option value="xsm">Kisamach</option>
+        <option value="teo">Ateso</option>
+        <option value="lue">Lusoga</option>
+        <option value="alur">Alur</option>
+        <option value="rw">Kinyarwanda</option>
+        <option value="rn">Kirundi</option>
+        <option value="ln">Lingala</option>
+        <option value="yo">Yoruba</option>
+        <option value="ha">Hausa</option>
+        <option value="ig">Igbo</option>
+        <option value="ak">Akan</option>
+        <option value="zu">isiZulu</option>
+        <option value="xh">isiXhosa</option>
+        <option value="sn">chiShona</option>
+        <option value="ny">Chichewa</option>
+        <option value="am">Amharic</option>
+        <option value="om">Afaan Oromoo</option>
+        <option value="fr">Français</option>
+        <option value="pt">Português</option>
+        <option value="ar">العربية</option>
+    </select>
+</label>
+<style>
+    .eshop-translate-engine {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .eshop-language-control {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1000;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        max-width: calc(100vw - 2rem);
+        padding: .45rem .65rem;
+        border: 1px solid #dce8e5;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .96);
+        color: #172b3a;
+        font-size: .75rem;
+        font-weight: 800;
+        box-shadow: 0 8px 24px rgba(23, 43, 58, .12);
+    }
+
+    .eshop-language-control select {
+        max-width: 9rem;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font-size: .7rem;
+        font-weight: 800;
+        outline: none;
+    }
+
+    .marketplace-shell .eshop-language-control {
+        display: none;
+    }
+
+    .goog-te-banner-frame,
+    .goog-te-balloon-frame {
+        display: none !important;
+    }
+
+    body {
+        top: 0 !important;
+    }
+</style>
+<script>
+    (function () {
+        const supportedLanguages = 'en,lg,sw,nyn,ach,xsm,teo,lue,alur,rw,rn,ln,yo,ha,ig,ak,zu,xh,sn,ny,am,om,fr,pt,ar';
+        const savedLanguage = localStorage.getItem('africana_language') || '{% if user.is_authenticated %}{{ user.language|default:"en" }}{% else %}en{% endif %}';
+
+        function getSelectors() {
+            return Array.from(document.querySelectorAll('.eshop-language-select, #market-language-select'));
+        }
+
+        function applyLanguage(language) {
+            const engine = document.querySelector('.goog-te-combo');
+            if (!engine) return false;
+            engine.value = language;
+            engine.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }
+
+        function bindLanguageControls() {
+            const selectors = getSelectors();
+            if (!selectors.length) return;
+            document.querySelectorAll('.eshop-language-control').forEach(function (control) {
+                if (document.querySelector('#market-language-select')) control.style.display = 'none';
+            });
+            selectors.forEach(function (select) {
+                if (select.dataset.bound === 'true') return;
+                select.value = savedLanguage;
+                select.addEventListener('change', function () {
+                    const language = select.value;
+                    localStorage.setItem('africana_language', language);
+                    selectors.forEach(function (otherSelect) { otherSelect.value = language; });
+                    applyLanguage(language);
+                    {% if user.is_authenticated %}
+                    fetch('{% url "eshop:save_language_preference" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: 'language=' + encodeURIComponent(language)
+                    }).catch(function () {});
+                    {% endif %}
+                });
+                select.dataset.bound = 'true';
+            });
+            applyLanguage(savedLanguage);
+        }
+
+        window.googleTranslateElementInit = function () {
+            if (!window.google || !google.translate || document.querySelector('.goog-te-combo')) {
+                bindLanguageControls();
+                return;
+            }
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: supportedLanguages,
+                autoDisplay: false
+            }, 'google_translate_element');
+            bindLanguageControls();
+            window.setTimeout(bindLanguageControls, 500);
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            bindLanguageControls();
+            const observer = new MutationObserver(function () {
+                bindLanguageControls();
+                if (applyLanguage(savedLanguage)) observer.disconnect();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            window.setTimeout(function () { observer.disconnect(); }, 15000);
+        });
+    }());
+</script>
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
