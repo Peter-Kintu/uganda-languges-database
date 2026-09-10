@@ -17,6 +17,7 @@
         --glass-border: rgba(15, 23, 42, 0.08);
         --user-bg: #d1fae5;
         --ai-bg: #e2e8f0;
+        --accent-ink: #064e3b;
     }
 
     /* --- FORCE PARENT SANITIZATION (Bypasses base.html constraints) --- */
@@ -180,6 +181,23 @@
         flex-shrink: 0;
     }
 
+    .chat-title-block {
+        min-width: 0;
+    }
+
+    .chat-title-block strong {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .chat-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.72rem;
+        margin-top: 0.15rem;
+    }
+
     .menu-toggle-btn {
         display: none;
         background: transparent;
@@ -204,6 +222,80 @@
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
+    }
+
+    .welcome-panel {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f8fafc 68%, #fffbeb 100%);
+        border: 1px solid rgba(22, 163, 74, 0.16);
+        border-radius: 18px;
+        padding: 1.25rem;
+    }
+
+    .welcome-panel h1 {
+        color: var(--accent-ink);
+        font-size: clamp(1.35rem, 3vw, 1.9rem);
+        line-height: 1.2;
+        margin: 0 0 0.45rem;
+    }
+
+    .welcome-panel p {
+        color: var(--text-secondary);
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    .profile-snapshot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-top: 0.9rem;
+    }
+
+    .profile-chip,
+    .prompt-chip {
+        border-radius: 999px;
+        font-size: 0.75rem;
+        padding: 0.42rem 0.7rem;
+    }
+
+    .profile-chip {
+        background: rgba(255, 255, 255, 0.75);
+        color: var(--accent-ink);
+        border: 1px solid rgba(6, 78, 59, 0.12);
+    }
+
+    .prompt-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.55rem;
+        margin-top: 1rem;
+    }
+
+    .prompt-chip {
+        background: #ffffff;
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .prompt-chip:hover {
+        border-color: var(--accent-green);
+        transform: translateY(-1px);
+    }
+
+    .focus-select {
+        max-width: 145px;
+        min-height: 36px;
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        background: transparent;
+        color: var(--text-secondary);
+        padding: 0 10px;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
     }
 
     .message-wrapper {
@@ -305,6 +397,68 @@
         margin: 0 auto;
         width: 100%;
         box-sizing: border-box;
+    }
+
+    .attachment-tools {
+        max-width: 800px;
+        margin: 0 auto 0.6rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        min-height: 30px;
+    }
+
+    .attachment-button,
+    .analyze-attachment-button {
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        background: var(--bg-sidebar);
+        color: var(--text-secondary);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.75rem;
+        padding: 0.45rem 0.7rem;
+    }
+
+    .analyze-attachment-button {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+        color: #fff;
+        display: none;
+    }
+
+    .attachment-button:hover,
+    .analyze-attachment-button:hover {
+        filter: brightness(0.95);
+    }
+
+    .attachment-preview {
+        align-items: center;
+        color: var(--text-secondary);
+        display: none;
+        font-size: 0.75rem;
+        gap: 0.45rem;
+        min-width: 0;
+    }
+
+    .attachment-preview img {
+        border-radius: 6px;
+        height: 30px;
+        object-fit: cover;
+        width: 30px;
+    }
+
+    .attachment-name {
+        max-width: 190px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .attachment-status {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        margin-left: auto;
     }
 
     #chatInput {
@@ -421,6 +575,19 @@
         .message-bubble {
             max-width: 85%;
         }
+
+        .chat-subtitle,
+        .chat-top-bar > label {
+            display: none;
+        }
+
+        .focus-select {
+            max-width: 112px;
+        }
+
+        .prompt-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
@@ -448,7 +615,16 @@
             <button class="menu-toggle-btn" onclick="toggleMobileMenu()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <div style="font-weight: 600; color: var(--text-primary);" id="chatTitle">Africana AI - Career & Business</div>
+            <div class="chat-title-block" id="chatTitle">
+                <strong>Africana AI</strong>
+                <div class="chat-subtitle">Your local career and business companion</div>
+            </div>
+            <select id="focusSelect" class="focus-select" aria-label="Choose your current focus" title="Choose your current focus">
+                <option value="career">Career growth</option>
+                <option value="jobs">Find opportunities</option>
+                <option value="business">Build a business</option>
+                <option value="skills">Learn new skills</option>
+            </select>
             <label for="chatLanguage" style="margin-left: auto; font-size: 12px; color: var(--text-secondary);">Language</label>
             <select id="chatLanguage" class="language-select" aria-label="Choose chat language" title="Choose chat language">
                 <option value="auto">Auto detect</option>
@@ -483,6 +659,18 @@
         </div>
 
         <div class="chat-input-area">
+            <div class="attachment-tools">
+                <input id="attachmentInput" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,.docx" hidden>
+                <button type="button" class="attachment-button" id="attachmentButton" title="Upload a CV, document, or outfit photo">
+                    <span aria-hidden="true">+</span> Add file
+                </button>
+                <div class="attachment-preview" id="attachmentPreview">
+                    <img id="attachmentThumbnail" alt="Selected image preview">
+                    <span class="attachment-name" id="attachmentName"></span>
+                </div>
+                <button type="button" class="analyze-attachment-button" id="analyzeAttachmentButton">Analyze file</button>
+                <span class="attachment-status" id="attachmentStatus" aria-live="polite"></span>
+            </div>
             <div class="input-glass-wrapper">
                 <textarea id="chatInput" placeholder="Message your career AI..." rows="1"></textarea>
                 <button type="button" onclick="toggleVoiceInput()" id="voiceInputButton" class="btn-voice" title="Speak your message" aria-label="Speak your message">
@@ -507,15 +695,85 @@
     const sidebarMenu = document.getElementById('sidebarMenu');
     const overlay = document.getElementById('menuOverlay');
     const chatLanguage = document.getElementById('chatLanguage');
+    const focusSelect = document.getElementById('focusSelect');
+    const attachmentInput = document.getElementById('attachmentInput');
+    const attachmentButton = document.getElementById('attachmentButton');
+    const attachmentPreview = document.getElementById('attachmentPreview');
+    const attachmentThumbnail = document.getElementById('attachmentThumbnail');
+    const attachmentName = document.getElementById('attachmentName');
+    const analyzeAttachmentButton = document.getElementById('analyzeAttachmentButton');
+    const attachmentStatus = document.getElementById('attachmentStatus');
+    const profileContext = {
+        name: "{{ user.get_full_name|default:user.username|escapejs }}",
+        headline: "{{ user.headline|default:''|escapejs }}",
+        location: "{{ user.location|default:''|escapejs }}"
+    };
 
     let currentSessionId = '';
     let lastAiReply = '';
     let speechRecognition = null;
     let selectedChatLanguage = localStorage.getItem('africana_chat_language') || 'auto';
+    let selectedFocus = localStorage.getItem('africana_ai_focus') || 'career';
     chatLanguage.value = selectedChatLanguage;
+    focusSelect.value = selectedFocus;
     chatLanguage.addEventListener('change', function() {
         selectedChatLanguage = chatLanguage.value;
         localStorage.setItem('africana_chat_language', selectedChatLanguage);
+    });
+    focusSelect.addEventListener('change', function() {
+        selectedFocus = focusSelect.value;
+        localStorage.setItem('africana_ai_focus', selectedFocus);
+    });
+    attachmentButton.addEventListener('click', () => attachmentInput.click());
+    attachmentInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+        attachmentName.textContent = file.name;
+        attachmentPreview.style.display = 'flex';
+        analyzeAttachmentButton.style.display = 'inline-block';
+        attachmentStatus.textContent = `${Math.round(file.size / 1024)} KB selected`;
+        if (file.type.startsWith('image/')) {
+            attachmentThumbnail.src = URL.createObjectURL(file);
+            attachmentThumbnail.style.display = 'block';
+        } else {
+            attachmentThumbnail.removeAttribute('src');
+            attachmentThumbnail.style.display = 'none';
+        }
+    });
+
+    analyzeAttachmentButton.addEventListener('click', async function() {
+        const file = attachmentInput.files[0];
+        if (!file || !currentSessionId) return;
+        const formData = new FormData();
+        formData.append('attachment', file);
+        formData.append('user_focus', selectedFocus);
+        formData.append('language', selectedChatLanguage === 'auto' ? detectLanguage(chatInput.value) : selectedChatLanguage);
+        formData.append('user_need', chatInput.value.trim());
+        this.disabled = true;
+        attachmentStatus.textContent = 'Analyzing...';
+        try {
+            const response = await fetch('/api/v1/analyze_ai_attachment/', {
+                method: 'POST',
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+                body: formData
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Analysis failed.');
+            appendMessage('user', `Analyze ${file.name}${chatInput.value.trim() ? `: ${chatInput.value.trim()}` : ''}`);
+            saveMessage(currentSessionId, 'user', `Analyze ${file.name}`);
+            appendMessage('ai', data.text);
+            saveMessage(currentSessionId, 'ai', data.text);
+            chatInput.value = '';
+            attachmentInput.value = '';
+            attachmentPreview.style.display = 'none';
+            analyzeAttachmentButton.style.display = 'none';
+            attachmentStatus.textContent = 'Analysis complete';
+            updateHistorySidebar();
+        } catch (error) {
+            attachmentStatus.textContent = error.message;
+        } finally {
+            this.disabled = false;
+        }
     });
     const speechLanguageMap = {
         lg: 'lg-UG', lug: 'lg-UG', sw: 'sw-KE', swa: 'sw-KE',
@@ -668,6 +926,40 @@
         scrollToBottom();
     }
 
+    function escapeHtml(value) {
+        const element = document.createElement('div');
+        element.innerText = value;
+        return element.innerHTML;
+    }
+
+    function appendWelcome() {
+        const panel = document.createElement('div');
+        panel.className = 'welcome-panel';
+        const name = profileContext.name || 'there';
+        const details = [profileContext.headline, profileContext.location].filter(Boolean);
+        panel.innerHTML = `
+            <h1>Good to see you, ${escapeHtml(name)}.</h1>
+            <p>Tell me what you are working toward and I will help you turn it into a practical next step, grounded in your market and your experience.</p>
+            <div class="profile-snapshot">
+                ${details.map(detail => `<span class="profile-chip">${escapeHtml(detail)}</span>`).join('')}
+                <span class="profile-chip">Focus: ${escapeHtml(focusSelect.options[focusSelect.selectedIndex].text)}</span>
+            </div>
+            <div class="prompt-grid">
+                <button class="prompt-chip" type="button" data-prompt="Review my profile and suggest my strongest next career move.">Map my next career move</button>
+                <button class="prompt-chip" type="button" data-prompt="Find realistic job opportunities and an application plan for me.">Build a job search plan</button>
+                <button class="prompt-chip" type="button" data-prompt="Help me validate a small business idea for my local market.">Validate a business idea</button>
+                <button class="prompt-chip" type="button" data-prompt="Create a 30-day learning plan based on my goals and current skills.">Create a learning plan</button>
+            </div>`;
+        chatLog.appendChild(panel);
+        panel.querySelectorAll('[data-prompt]').forEach(button => {
+            button.addEventListener('click', () => {
+                chatInput.value = button.dataset.prompt;
+                chatInput.dispatchEvent(new Event('input'));
+                chatInput.focus();
+            });
+        });
+    }
+
     function appendLoadingMessage() {
         removeLoadingMessage();
         const wrapper = document.createElement('div');
@@ -760,7 +1052,8 @@
                         text: m.text
                     })),
                     preferred_api: 'cerebras',
-                    language: detectedLang
+                    language: detectedLang,
+                    user_focus: selectedFocus
                 })
             });
 
@@ -779,18 +1072,18 @@
                 lastAiReply = reply;
                 window.lastChatLanguage = detectedLang;
                 // Check if user asked for PDF export
-                if (text.toLowerCase().includes('resume') || text.toLowerCase().includes('cv') || text.toLowerCase().includes('export')) {
-                    appendMessage('ai', reply);
-                    appendMessage('ai', '📄 **Would you like me to export this as a PDF Resume?** You can say "export as resume" and I\'ll generate it for you.');
-                } else if (text.toLowerCase().includes('business plan') || text.toLowerCase().includes('plan') || text.toLowerCase().includes('startup')) {
-                    appendMessage('ai', reply);
-                    appendMessage('ai', '📋 **Would you like me to export this as a Business Plan PDF?** Just say "export as plan" and I\'ll create it.');
-                } else if (text.toLowerCase().includes('export as resume') || text.toLowerCase().includes('download resume')) {
+                if (text.toLowerCase().includes('export as resume') || text.toLowerCase().includes('download resume')) {
                     exportToPDF(reply, 'resume');
-                    appendMessage('ai', '✅ Your **Resume PDF** is being generated and will download shortly.');
+                    appendMessage('ai', 'Your Resume PDF is being generated and will download shortly.');
                 } else if (text.toLowerCase().includes('export as plan') || text.toLowerCase().includes('download plan')) {
                     exportToPDF(reply, 'business_plan');
-                    appendMessage('ai', '✅ Your **Business Plan PDF** is being generated and will download shortly.');
+                    appendMessage('ai', 'Your Business Plan PDF is being generated and will download shortly.');
+                } else if (text.toLowerCase().includes('resume') || text.toLowerCase().includes('cv') || text.toLowerCase().includes('export')) {
+                    appendMessage('ai', reply);
+                    appendMessage('ai', '**Would you like me to export this as a PDF Resume?** Say "export as resume" and I\'ll generate it for you.');
+                } else if (text.toLowerCase().includes('business plan') || text.toLowerCase().includes('plan') || text.toLowerCase().includes('startup')) {
+                    appendMessage('ai', reply);
+                    appendMessage('ai', '**Would you like me to export this as a Business Plan PDF?** Say "export as plan" and I\'ll create it.');
                 } else {
                     appendMessage('ai', reply);
                 }
@@ -852,6 +1145,7 @@
         
         const history = getSessionHistory(id);
         if (history.length === 0) {
+            appendWelcome();
             appendMessage('ai', WELCOME_MESSAGE);
             saveMessage(id, 'ai', WELCOME_MESSAGE);
         } else {

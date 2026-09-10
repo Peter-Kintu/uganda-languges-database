@@ -4,6 +4,8 @@ import logging
 import requests
 import time
 import base64
+import zipfile
+import xml.etree.ElementTree as ET
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta, date
 from django.template.loader import render_to_string
@@ -1020,6 +1022,128 @@ def profile_ai(request):
         return render(request, 'profile_ai.html', {'user': request.user})
 
 @login_required
+def analyze_ai_attachment(request):
+    """Analyze a user-provided image or text document against their selected goal."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+
+    attachment = request.FILES.get('attachment')
+    if not attachment:
+        return JsonResponse({'error': 'Please choose a file to analyze.'}, status=400)
+    if attachment.size > 8 * 1024 * 1024:
+        return JsonResponse({'error': 'Files must be 8 MB or smaller.'}, status=400)
+
+    allowed_types = {
+        'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
+        'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+    if attachment.content_type not in allowed_types:
+        return JsonResponse({'error': 'Upload a JPG, PNG, WEBP, PDF, DOCX, or TXT file.'}, status=400)
+
+    focus_labels = {
+        'career': 'career growth and professional direction',
+        'jobs': 'finding realistic job opportunities and improving applications',
+        'business': 'building and validating a practical African business',
+        'skills': 'learning priorities and closing skill gaps',
+    }
+    focus = focus_labels.get(request.POST.get('user_focus', 'career').lower(), focus_labels['career'])
+    user_need = request.POST.get('user_need', '').strip()[:1000]
+    language = request.POST.get('language', 'en').lower()
+    profile = _get_user_profile_data(request.user)
+    profile_note = (
+        f"User profile: {profile['full_name']}; role: {profile['headline']}; "
+        f"skills: {', '.join(profile['skills'][:10]) or 'not specified'}; "
+        f"experience: {', '.join(profile['experiences'][:5]) or 'not specified'}."
+    )
+    instruction = (
+        f"You are Africana AI, a practical African career and business companion. {profile_note} "
+        f"The user's current focus is {focus}. Their specific request is: {user_need or 'Give the most useful feedback for this file.'} "
+        "Analyze only what is present. Give concise, specific feedback, explain why it matters, "
+        "and finish with three prioritized next actions. For clothing images, comment only on outfit "
+        "coordination, fit, color, grooming presentation, context, and culturally respectful styling; "
+        "do not infer identity, body judgments, health, age, or protected traits. "
+        f"Respond in {language} when it is a supported language; otherwise respond in clear English."
+    )
+
+    try:
+        if attachment.content_type.startswith('image/'):
+            api_key = os.environ.get('GEMINI_API_KEY', '').strip().replace('"', '').replace("'", '')
+            if not api_key:
+                return JsonResponse({'error': 'Image analysis is not configured yet.'}, status=503)
+            encoded = base64.b64encode(attachment.read()).decode('ascii')
+            payload = {
+                'contents': [{'parts': [
+                    {'text': instruction},
+                    {'inline_data': {'mime_type': attachment.content_type, 'data': encoded}},
+                ]}],
+                'generationConfig': {'temperature': 0.45, 'maxOutputTokens': 1200},
+            }
+            response = requests.post(
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                params={'key': api_key}, json=payload, timeout=35,
+            )
+            response.raise_for_status()
+            candidates = response.json().get('candidates', [])
+            parts = candidates[0].get('content', {}).get('parts', []) if candidates else []
+            result = ''.join(part.get('text', '') for part in parts).strip()
+        else:
+            if attachment.content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                with zipfile.ZipFile(attachment) as document_zip:
+                    document_xml = document_zip.read('word/document.xml')
+                root = ET.fromstring(document_xml)
+                raw_text = ' '.join(node.text or '' for node in root.iter() if node.tag.endswith('}t'))
+            else:
+                raw_text = attachment.read().decode('utf-8', errors='ignore')
+            if attachment.content_type == 'application/pdf':
+                return JsonResponse({'error': 'PDF text extraction is not available yet. Upload a DOCX or TXT copy.'}, status=400)
+            document_messages = [
+                {'role': 'system', 'content': instruction},
+                {'role': 'user', 'content': raw_text[:24000]},
+            ]
+            result = None
+            api_key = os.environ.get('CEREBRAS_API_KEY', '').strip().replace('"', '').replace("'", '')
+            if api_key:
+                try:
+                    client = Cerebras(api_key=api_key)
+                    completion = client.chat.completions.create(
+                        messages=document_messages, model='gpt-oss-120b',
+                        max_completion_tokens=1200, temperature=0.45, stream=False,
+                    )
+                    result = completion.choices[0].message.content.strip() if completion.choices else ''
+                except Exception as error:
+                    logging.warning('Cerebras document analysis failed: %s', str(error)[:200])
+            if not result:
+                sunbird_token = os.environ.get('SUNBIRD_API_KEY', '').strip().replace('"', '').replace("'", '')
+                if sunbird_token:
+                    sunbird_response = requests.post(
+                        'https://api.sunbird.ai/tasks/sunflower_inference',
+                        headers={
+                            'accept': 'application/json',
+                            'Authorization': f'Bearer {sunbird_token}',
+                            'Content-Type': 'application/json',
+                        },
+                        json={'messages': document_messages}, timeout=25,
+                    )
+                    sunbird_response.raise_for_status()
+                    sunbird_data = sunbird_response.json()
+                    choices = sunbird_data.get('choices') or []
+                    if choices:
+                        result = choices[0].get('message', {}).get('content', '') or choices[0].get('content', '')
+                    result = result or sunbird_data.get('text') or sunbird_data.get('output_text') or sunbird_data.get('content') or ''
+                    result = str(result).strip()
+
+        if not result:
+            return JsonResponse({'error': 'The AI could not produce feedback for this file.'}, status=502)
+        return JsonResponse({'text': result, 'filename': attachment.name})
+    except (requests.RequestException, UnicodeDecodeError, ValueError) as error:
+        logging.warning('Attachment analysis failed: %s', str(error)[:200])
+        return JsonResponse({'error': 'Attachment analysis is temporarily unavailable.'}, status=502)
+    except Exception as error:
+        logging.warning('Attachment analysis error: %s', str(error)[:200])
+        return JsonResponse({'error': 'Attachment analysis is temporarily unavailable.'}, status=502)
+
+
+@login_required
 def cerebras_proxy(request):
     """Proxies chat requests to Cerebras (primary) using gpt-oss-120b and falls back to Sunbird AI.
     Auto-detects language from user input. Supports business & job guidance across African languages.
@@ -1032,6 +1156,14 @@ def cerebras_proxy(request):
         body = json.loads(request.body)
         raw_contents = body.get('contents', []) or []
         user_language = body.get('language', 'en').lower()
+        user_focus = body.get('user_focus', 'career').lower()
+        focus_labels = {
+            'career': 'career growth and professional direction',
+            'jobs': 'finding realistic job opportunities and building an application pipeline',
+            'business': 'building and validating a practical African business',
+            'skills': 'targeted learning and closing the user\'s skill gaps',
+        }
+        focus_instruction = focus_labels.get(user_focus, focus_labels['career'])
 
         if not isinstance(raw_contents, list) or len(raw_contents) > 30:
             return JsonResponse({'error': 'Conversation history is too large.'}, status=400)
@@ -1089,6 +1221,9 @@ You are Africana AI, an elite career advisor and business strategist for African
 Name: {profile['full_name']} | Role: {profile['headline']}
 Skills: {', '.join(profile['skills'][:10]) or 'Not specified'}
 Experience: {', '.join(profile['experiences'][:5]) if profile['experiences'] else 'Not specified'}
+
+**CURRENT USER FOCUS:**
+Prioritize {focus_instruction}. Connect every recommendation to the user's profile and end with one clear next action.
 
 **YOUR CORE EXPERTISE:**
 

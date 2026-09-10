@@ -34,6 +34,7 @@ urlpatterns = [
     path('update-language/', views.update_language, name='update_language'),
 
     # --- AI Services & Career Tools ---
+    path("api/v1/analyze_ai_attachment/", views.analyze_ai_attachment, name="analyze_ai_attachment"),
     path("api/v1/cerebras_proxy/", views.cerebras_proxy, name="cerebras_proxy"),
     path("api/v1/generate_image/", views.generate_advert_image, name="generate_advert_image"), # <-- Sunbird image generation endpoint
     path("profile/ai-companion/export-pdf/", views.generate_document_pdf, name="generate_document_pdf"),
