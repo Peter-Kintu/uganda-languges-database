@@ -1070,6 +1070,7 @@ def analyze_ai_attachment(request):
             api_key = os.environ.get('GEMINI_API_KEY', '').strip().replace('"', '').replace("'", '')
             if not api_key:
                 return JsonResponse({'error': 'Image analysis is not configured yet.'}, status=503)
+            vision_model = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
             encoded = base64.b64encode(attachment.read()).decode('ascii')
             payload = {
                 'contents': [{'parts': [
@@ -1079,7 +1080,7 @@ def analyze_ai_attachment(request):
                 'generationConfig': {'temperature': 0.45, 'maxOutputTokens': 1200},
             }
             response = requests.post(
-                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                f'https://generativelanguage.googleapis.com/v1beta/models/{vision_model}:generateContent',
                 params={'key': api_key}, json=payload, timeout=35,
             )
             response.raise_for_status()
