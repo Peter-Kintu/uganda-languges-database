@@ -952,11 +952,26 @@ def delivery_location_view(request):
     }
     return render(request, 'eshop/delivery_location.html', context)
 
+
+@login_required
+def payment_view(request):
+    """Shows the in-app payment step after delivery details are saved."""
+    cart = get_user_cart(request)
+    delivery = request.session.get('delivery_details')
+    if not cart.items.exists() or not delivery:
+        messages.error(request, 'Please provide delivery details before payment.')
+        return redirect('eshop:delivery_location')
+    return render(request, 'eshop/payment.html', {
+        'cart': cart,
+        'cart_total': cart.cart_total,
+        'currency': cart.items.first().product.get_currency_code(),
+    })
+
 @login_required
 def process_delivery_location(request):
     """Processes and saves delivery details into the session."""
     if request.method == 'POST':
-        address = request.POST.get('address_line1', '').strip()
+        address = (request.POST.get('address') or request.POST.get('address_line1') or '').strip()
         city = request.POST.get('city', '').strip()
         phone = request.POST.get('phone', '').strip()
         latitude = request.POST.get('latitude', 'N/A')
@@ -972,7 +987,7 @@ def process_delivery_location(request):
         }
         
         messages.success(request, "Delivery location confirmed! Please proceed to order confirmation.")
-        return redirect('eshop:confirm_order_whatsapp') 
+        return redirect('eshop:payment')
         
     return redirect('eshop:delivery_location')
 @login_required

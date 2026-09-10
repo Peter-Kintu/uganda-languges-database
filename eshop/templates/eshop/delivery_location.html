@@ -302,9 +302,10 @@
                 if(error.code === 2) errorMsg = "Couldn't locate you. Try moving outdoors or enter address manually.";
                 if(error.code === 3) errorMsg = "Location request timed out. Try again.";
 
-                mapMessage.innerHTML = `<span class="text-red-400 font-bold">${errorMsg}</span>`;
-                btnText.textContent = 'Try Again';
-                signalStatus.textContent = 'Offline';
+                mapMessage.innerHTML = `<span class="text-amber-600 font-bold">${errorMsg}</span><br><span class="text-slate-500">Manual address entry is available below.</span>`;
+                btnText.textContent = 'Try GPS Again';
+                signalStatus.textContent = 'Manual mode';
+                signalStatus.className = 'text-xs font-bold text-amber-600 uppercase tracking-tighter';
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
