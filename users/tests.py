@@ -3,11 +3,13 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.management import call_command
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from myuganda.middleware import WordPressProbeBlockMiddleware
 from users.models import EventBooking, PesapalPayment, UserSubscription
+from users.tasks import send_user_notification_task
 from users.views import _get_pesapal_config, _pesapal_request, _send_welcome_email
 
 
@@ -248,6 +250,42 @@ class UserRegistrationEmailTests(TestCase):
         self.assertEqual(mail.outbox[0].to, ['amina@example.com'])
         self.assertEqual(mail.outbox[0].from_email, 'Africana AI <info@africanaai.info>')
         self.assertIn('Welcome to Africana AI', mail.outbox[0].subject)
+
+    def test_notification_task_sends_using_default_sender(self):
+        result = send_user_notification_task.run(
+            'amina@example.com',
+            'System notification',
+            'Your Africana AI notification is ready.',
+        )
+
+        self.assertTrue(result)
+        self.assertEqual(mail.outbox[0].to, ['amina@example.com'])
+        self.assertEqual(mail.outbox[0].from_email, 'Africana AI <info@africanaai.info>')
+
+
+class DailyDigestCommandTests(TestCase):
+    def test_daily_digest_sends_only_to_active_users_with_email(self):
+        User.objects.create_user(username='active', email='active@example.com', is_active=True)
+        User.objects.create_user(username='inactive', email='inactive@example.com', is_active=False)
+        User.objects.create_user(username='no_email', email='', is_active=True)
+
+        call_command('send_daily_digest')
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['active@example.com'])
+
+    def test_daily_digest_continues_after_a_delivery_failure(self):
+        User.objects.create_user(username='first', email='first@example.com', is_active=True)
+        User.objects.create_user(username='second', email='second@example.com', is_active=True)
+
+        with patch('users.management.commands.send_daily_digest.send_mail', side_effect=[
+            RuntimeError('SMTP unavailable'),
+            1,
+        ]) as mock_send_mail:
+            call_command('send_daily_digest')
+
+        self.assertEqual(mock_send_mail.call_count, 2)
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class PesapalIntegrationTests(TestCase):
