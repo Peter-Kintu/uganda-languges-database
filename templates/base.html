@@ -638,14 +638,6 @@
                     </a>
                 </div>
 
-                <label class="africana-global-language ml-auto mr-2 flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-1.5 text-xs font-bold text-gray-700 shadow-sm" title="Change Africana language">
-                    <span aria-hidden="true">文</span>
-                    <span class="sr-only">Preferred language</span>
-                    <select id="africana-global-language" class="max-w-[112px] border-0 bg-transparent p-0 text-[11px] font-bold text-gray-700 outline-none">
-                        <option value="en">English</option><option value="lg">Luganda</option><option value="sw">Kiswahili</option><option value="nyn">Runyankole</option><option value="ach">Acholi</option><option value="xsm">Kisamach</option><option value="teo">Ateso</option><option value="lue">Lusoga</option><option value="alur">Alur</option><option value="rw">Kinyarwanda</option><option value="rn">Kirundi</option><option value="ln">Lingala</option><option value="yo">Yoruba</option><option value="ha">Hausa</option><option value="ig">Igbo</option><option value="ak">Akan</option><option value="zu">isiZulu</option><option value="xh">isiXhosa</option><option value="sn">chiShona</option><option value="ny">Chichewa</option><option value="am">Amharic</option><option value="om">Afaan Oromoo</option><option value="fr">Français</option><option value="pt">Português</option><option value="ar">العربية</option>
-                    </select>
-                </label>
-                
                 <!-- Mobile Menu Toggle Button -->
                 <button id="mobile-nav-toggle" class="md:hidden p-3 rounded-xl hover:bg-gray-100 transition-all duration-300 ease-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" aria-label="Toggle menu" aria-expanded="false">
                     <div class="hamburger" id="hamburger-menu">
@@ -1015,7 +1007,6 @@
     
     {% block footer_scripts %}{% endblock %}
 
-    <div id="africana_global_translate_engine" aria-hidden="true" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;"></div>
     <script>
         (function () {
             const loader = document.getElementById('global-page-loader');
@@ -1085,48 +1076,6 @@
             });
         });
 
-        window.africanaGlobalTranslateReady = function() {
-            const languageSelect = document.getElementById('africana-global-language');
-            if (!languageSelect || languageSelect.dataset.bound === 'true') return;
-            const savedLanguage = localStorage.getItem('africana_language') || '{% if user.is_authenticated %}{{ user.language|default:"en" }}{% else %}en{% endif %}';
-
-            function applyLanguage(language) {
-                const engine = document.querySelector('.goog-te-combo');
-                if (!engine) return false;
-                engine.value = language;
-                engine.dispatchEvent(new Event('change', {bubbles: true}));
-                return true;
-            }
-
-            languageSelect.value = savedLanguage;
-            languageSelect.addEventListener('change', function() {
-                const language = languageSelect.value;
-                localStorage.setItem('africana_language', language);
-                applyLanguage(language);
-                {% if user.is_authenticated %}
-                fetch('{% url "eshop:save_language_preference" %}', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'}, body: `language=${encodeURIComponent(language)}`}).catch(function() {});
-                {% endif %}
-            });
-            languageSelect.dataset.bound = 'true';
-
-            if (!applyLanguage(savedLanguage)) {
-                const observer = new MutationObserver(function() {
-                    if (applyLanguage(savedLanguage)) observer.disconnect();
-                });
-                observer.observe(document.body, {childList: true, subtree: true});
-                window.setTimeout(function() { observer.disconnect(); }, 10000);
-            }
-        };
-
-        window.africanaGlobalGoogleTranslateInit = function() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'en,lg,sw,nyn,ach,xsm,teo,lue,alur,rw,rn,ln,yo,ha,ig,ak,zu,xh,sn,ny,am,om,fr,pt,ar',
-                autoDisplay: false
-            }, 'africana_global_translate_engine');
-            window.setTimeout(window.africanaGlobalTranslateReady, 400);
-        };
-
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('{% static "sw.js" %}')
@@ -1164,6 +1113,5 @@
             });
         });
     </script>
-    <script src="https://translate.google.com/translate_a/element.js?cb=africanaGlobalGoogleTranslateInit" async defer></script>
 </body>
 </html>
