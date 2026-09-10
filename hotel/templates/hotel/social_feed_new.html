@@ -32,7 +32,6 @@
         --gray-400: #9ca3af;
         --gray-600: #4b5563;
         --gray-900: #111827;
-        --pull-translate: 0px;
     }
 
     html {
@@ -189,9 +188,6 @@
         display: grid;
         grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
         gap: 16px;
-        transform: translateY(var(--pull-translate, 0));
-        transition: transform 0.2s ease-out;
-        will-change: transform;
     }
 
     .feed {
@@ -982,6 +978,25 @@
     .post-card:hover {
         box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
         transform: translateY(-2px);
+    }
+
+    html.is-scrolling .post-card,
+    html.is-scrolling .sidebar-card,
+    html.is-scrolling .btn-header,
+    html.is-scrolling .chip {
+        transition: none !important;
+    }
+
+    html.is-scrolling .create-post-card,
+    html.is-scrolling .post-card,
+    html.is-scrolling .sidebar-card {
+        backdrop-filter: none;
+    }
+
+    html.is-scrolling .post-card:hover,
+    html.is-scrolling .btn-header:hover,
+    html.is-scrolling .chip:hover {
+        transform: none;
     }
 
     .post-card:active {
@@ -3267,9 +3282,6 @@
             if (pullFrame) return;
             pullFrame = requestAnimationFrame(() => {
                 pullFrame = 0;
-                const distance = Math.max(0, currentY - startY);
-                const translate = Math.min(distance / 2, threshold);
-                document.documentElement.style.setProperty('--pull-translate', `${translate}px`);
             });
         }, { passive: true });
 
@@ -3281,7 +3293,6 @@
                 cancelAnimationFrame(pullFrame);
                 pullFrame = 0;
             }
-            document.documentElement.style.setProperty('--pull-translate', '0px');
             if (distance > threshold) {
                 refreshFeedWithNewSeed();
             }
@@ -3376,8 +3387,6 @@
     let isLoading = false;
     let hasNextPage = {{ page_obj.has_next|lower }};
     let hasLoadedMorePosts = false;
-    let hasScrolledDown = false;
-    let isRefreshingFeed = false;
     const sentinel = document.getElementById('load-more-sentinel');
 
     const cleanFeedUrl = new URL(window.location.href);
@@ -3390,17 +3399,16 @@
     window.history.replaceState({}, '', cleanFeedUrl.toString());
 
     let scrollFrame = 0;
+    let scrollEndTimer = 0;
     window.addEventListener('scroll', () => {
+        document.documentElement.classList.add('is-scrolling');
+        window.clearTimeout(scrollEndTimer);
+        scrollEndTimer = window.setTimeout(() => {
+            document.documentElement.classList.remove('is-scrolling');
+        }, 120);
         if (scrollFrame) return;
         scrollFrame = requestAnimationFrame(() => {
             scrollFrame = 0;
-            if (window.scrollY > window.innerHeight) {
-                hasScrolledDown = true;
-            }
-            if (hasScrolledDown && window.scrollY <= 8 && !isRefreshingFeed) {
-                isRefreshingFeed = true;
-                refreshFeedWithNewSeed();
-            }
         });
     }, { passive: true });
 

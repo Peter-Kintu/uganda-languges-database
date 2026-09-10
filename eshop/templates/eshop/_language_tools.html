@@ -99,6 +99,16 @@
             return true;
         }
 
+        function applyLanguageWhenReady(language) {
+            if (applyLanguage(language)) return;
+            const startedAt = Date.now();
+            const retry = window.setInterval(function () {
+                if (applyLanguage(language) || Date.now() - startedAt >= 10000) {
+                    window.clearInterval(retry);
+                }
+            }, 100);
+        }
+
         function bindLanguageControls() {
             const selectors = getSelectors();
             if (!selectors.length) return;
@@ -112,7 +122,7 @@
                     const language = select.value;
                     localStorage.setItem('africana_language', language);
                     selectors.forEach(function (otherSelect) { otherSelect.value = language; });
-                    applyLanguage(language);
+                    applyLanguageWhenReady(language);
                     {% if user.is_authenticated %}
                     fetch('{% url "eshop:save_language_preference" %}', {
                         method: 'POST',
@@ -126,7 +136,7 @@
                 });
                 select.dataset.bound = 'true';
             });
-            applyLanguage(savedLanguage);
+            applyLanguageWhenReady(savedLanguage);
         }
 
         window.googleTranslateElementInit = function () {
@@ -147,7 +157,7 @@
             bindLanguageControls();
             const observer = new MutationObserver(function () {
                 bindLanguageControls();
-                if (applyLanguage(savedLanguage)) observer.disconnect();
+                if (document.querySelector('.goog-te-combo')) observer.disconnect();
             });
             observer.observe(document.body, { childList: true, subtree: true });
             window.setTimeout(function () { observer.disconnect(); }, 15000);

@@ -83,18 +83,38 @@
             const recognition = new SpeechRecognition();
             recognition.lang = document.documentElement.lang || 'en-UG';
             recognition.interimResults = false;
+            recognition.continuous = false;
             voiceButton.addEventListener('click', function () {
+                if (voiceButton.classList.contains('is-listening')) return;
+                try {
+                    recognition.start();
+                } catch (error) {
+                    voiceButton.classList.remove('is-listening');
+                }
+            });
+            recognition.addEventListener('start', function () {
+                voiceButton.classList.add('is-listening');
                 voiceButton.textContent = '⏺️';
-                recognition.start();
+                voiceButton.setAttribute('aria-pressed', 'true');
             });
             recognition.addEventListener('result', function (event) {
                 const transcript = event.results[0][0].transcript;
                 searchInput.value = transcript.split(/\b(?:under|below|less than|nga|wansi wa)\b/i)[0].replace(/\b(find|search|show|me|please|high-waist|in|for)\b/gi, ' ').replace(/\s+/g, ' ').trim();
                 searchInput.form.submit();
             });
-            recognition.addEventListener('end', function () { voiceButton.textContent = '🎙️'; });
+            recognition.addEventListener('error', function () {
+                voiceButton.classList.remove('is-listening');
+                voiceButton.textContent = '🎙️';
+                voiceButton.removeAttribute('aria-pressed');
+            });
+            recognition.addEventListener('end', function () {
+                voiceButton.classList.remove('is-listening');
+                voiceButton.textContent = '🎙️';
+                voiceButton.removeAttribute('aria-pressed');
+            });
         } else if (voiceButton) {
-            voiceButton.hidden = true;
+            voiceButton.disabled = true;
+            voiceButton.title = 'Voice search is not supported in this browser';
         }
     });
 </script>
@@ -150,6 +170,38 @@
 
     .marketplace-shell > div:first-child form:focus-within {
         box-shadow: 0 0 0 3px rgba(0, 124, 131, .13), 0 10px 28px rgba(23, 43, 58, .08);
+    }
+
+    .marketplace-shell #voice-search-button,
+    .marketplace-shell > div:first-child form > button[type="submit"] {
+        flex: 0 0 auto;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+    }
+
+    .marketplace-shell #voice-search-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .marketplace-shell #voice-search-button.is-listening {
+        border-radius: .35rem;
+        background: #e8f4f1;
+        color: #c97918;
+        animation: voice-pulse 1s ease-in-out infinite;
+    }
+
+    .marketplace-shell #voice-search-button:disabled {
+        cursor: not-allowed;
+        opacity: .55;
+    }
+
+    @keyframes voice-pulse {
+        50% { transform: scale(1.08); }
     }
 
     .marketplace-shell > div:first-child form button {
