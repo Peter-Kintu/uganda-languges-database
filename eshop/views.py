@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
 from django.db.models import F, Sum, Max, Q
+from django.db.models.deletion import ProtectedError
 from decimal import Decimal, InvalidOperation # Import InvalidOperation for robust number handling
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import check_password, make_password
@@ -784,6 +785,31 @@ def add_product(request):
     else:
         form = ProductForm()
     return render(request, 'eshop/add_product.html', {'form': form})
+
+
+@login_required
+def edit_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id, vendor_user=request.user)
+    form = ProductForm(request.POST or None, request.FILES or None, instance=product)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, f"Product '{product.name}' was updated.")
+        return redirect('eshop:merchant_dashboard')
+    return render(request, 'eshop/add_product.html', {'form': form, 'editing': True, 'product': product})
+
+
+@login_required
+def delete_product(request, product_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    product = get_object_or_404(Product, id=product_id, vendor_user=request.user)
+    try:
+        product.delete()
+    except ProtectedError:
+        messages.error(request, 'This product is linked to order history and cannot be deleted.')
+    else:
+        messages.success(request, 'Product deleted.')
+    return redirect('eshop:merchant_dashboard')
 
 @login_required
 def product_detail(request, slug):
