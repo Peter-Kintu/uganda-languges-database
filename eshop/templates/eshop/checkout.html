@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load humanize %}
 
-{% block title %}Confirm Your Order {% endblock %}
+{% block title %}Review Your Order | Africana AI{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-white py-16 px-4 sm:px-6 lg:px-8">
@@ -11,9 +11,9 @@
                 <svg class="mx-auto mb-6 h-16 w-16 text-emerald-500 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">Order Confirmed! Adventure Awaits! 🌍</h1>
+                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">Review your order</h1>
                 <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                    Thank you! Your order is being processed. Review the final details and choose your next step below.
+                    Your order is ready. Confirm your delivery location next, then continue to secure payment.
                 </p>
             </div>
 
@@ -43,14 +43,14 @@
                 </div>
 
                 <p class="mt-6 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-medium text-slate-700">
-                    A vendor will contact you shortly to confirm the final price, delivery details, and payment.
+                    Delivery details and payment are the next steps. Your order is sent to the vendor after you complete checkout.
                 </p>
             </div>
 
             <div class="mt-10 grid gap-4 sm:grid-cols-2">
                 <a href="{% url 'eshop:delivery_location' %}?vendor_phone={{ vendor.phone_number }}"
                    class="inline-flex items-center justify-center rounded-3xl bg-slate-900 px-8 py-4 text-base font-semibold text-white transition duration-300 hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200">
-                    Set Delivery Location Now 🗺️
+                    Continue to delivery and payment
                 </a>
 
                 {% with referrer=request.session.active_referrer %}

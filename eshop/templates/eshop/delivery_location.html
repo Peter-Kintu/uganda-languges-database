@@ -221,7 +221,11 @@
 
                     <button type="submit" id="confirm-button" 
                             class="w-full py-6 bg-white text-black hover:bg-indigo-600 hover:text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all duration-500 shadow-2xl transform active:scale-[0.98] mt-4">
-                        Send Order to Vendor via WhatsApp 💬
+                        Save delivery details and continue to payment
+                    </button>
+                    <button type="button" id="whatsapp-button"
+                            class="w-full rounded-2xl border border-emerald-600 px-5 py-4 text-sm font-bold text-emerald-700 transition hover:bg-emerald-50">
+                        Send order details via WhatsApp instead
                     </button>
                 </form>
             </div>
@@ -311,26 +315,36 @@
         );
     });
 
-    document.getElementById('delivery-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-
+    function getDeliveryDetails() {
         const lat = document.getElementById('input_latitude').value;
         const lng = document.getElementById('input_longitude').value;
         const address = document.getElementById('address').value;
         const city = document.getElementById('city').value;
         const phone = document.getElementById('phone').value;
-        const vendorPhoneNumber = document.getElementById('input_vendor_whatsapp').value; 
 
         if (address === '' || city === '' || phone === '') {
             alert('Please fill address, city and phone.');
-            return;
+            return null;
         }
 
         // If GPS was not established, allow manual submission after user confirmation
         let includeGps = true;
         if (lat === '0.000000' || lng === '0.000000') {
             includeGps = confirm('We could not fetch your GPS coordinates. Send the order using the address only? (Recommended if you cannot get location)');
-            if (!includeGps) return;
+            if (!includeGps) return null;
+        }
+
+        return { lat, lng, address, city, phone, includeGps };
+    }
+
+    document.getElementById('whatsapp-button').addEventListener('click', function() {
+        const details = getDeliveryDetails();
+        if (!details) return;
+
+        const vendorPhoneNumber = document.getElementById('input_vendor_whatsapp').value;
+        if (!vendorPhoneNumber) {
+            alert("Error: No vendor phone number found in system.");
+            return;
         }
 
         let itemsList = "";
@@ -340,14 +354,14 @@
         {% endfor %}
 
         // Note: Using standard maps URL for universal compatibility
-        const mapUrl = (includeGps && lat !== '0.000000') ? `https://www.google.com/maps?q=${lat},${lng}` : '';
+        const mapUrl = (details.includeGps && details.lat !== '0.000000') ? `https://www.google.com/maps?q=${details.lat},${details.lng}` : '';
 
         let messageContent = `*NEW DELIVERY ORDER (Africana AI)*\n\n` +
                     `*🛍️ Items:*\n${itemsList}\n` +
                     `*💰 Total:* {{ cart.items.first.product.get_currency_code }} {{ cart_total|floatformat:0 }}\n\n` +
-                    `*📍 Address:* ${address}, ${city}\n` +
-                    `*📞 Phone:* ${phone}\n` +
-                    (includeGps && lat !== '0.000000' ? `*🌍 GPS:* ${lat}, ${lng}\n` : '') +
+                    `*📍 Address:* ${details.address}, ${details.city}\n` +
+                    `*📞 Phone:* ${details.phone}\n` +
+                    (details.includeGps && details.lat !== '0.000000' ? `*🌍 GPS:* ${details.lat}, ${details.lng}\n` : '') +
                     (mapUrl ? `*🗺️ Map:* ${mapUrl}\n` : '') ;
 
         if (activeReferrer !== '') {
@@ -356,11 +370,6 @@
 
         const message = encodeURIComponent(messageContent);
         const cleanVendorPhoneNumber = vendorPhoneNumber.replace(/[^0-9]/g, '');
-        
-        if (!cleanVendorPhoneNumber) {
-            alert("Error: No vendor phone number found in system.");
-            return;
-        }
         
         window.location.href = `https://wa.me/${cleanVendorPhoneNumber}?text=${message}`;
     });
