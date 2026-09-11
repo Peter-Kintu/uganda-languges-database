@@ -36,19 +36,39 @@
     </div>
   </section>
 
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div><h2 class="font-bold text-slate-900">Sales per month</h2><p class="mt-1 text-xs text-slate-500">Completed and released orders over the last 12 months.</p></div>
+      <span class="text-xs font-semibold text-slate-400">{{ metrics.sales }} total sales</span>
+    </div>
+    <div class="mt-5 overflow-x-auto">
+      <svg viewBox="0 0 200 105" class="h-56 min-w-[620px] w-full" role="img" aria-label="Line graph showing completed sales per month">
+        <line x1="10" y1="88" x2="190" y2="88" stroke="#cbd5e1" stroke-width="1" />
+        <line x1="10" y1="20" x2="10" y2="88" stroke="#e2e8f0" stroke-width="1" />
+        <polyline points="{{ sales_graph_points }}" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        {% for month in monthly_sales %}
+          <circle cx="{{ month.x }}" cy="{{ month.y }}" r="2.5" fill="#0f766e"><title>{{ month.label }}: {{ month.sales }} sales</title></circle>
+        {% endfor %}
+      </svg>
+    </div>
+    <div class="grid grid-cols-4 gap-2 border-t border-slate-100 pt-3 sm:grid-cols-6 lg:grid-cols-12">
+      {% for month in monthly_sales %}<div class="min-w-0 text-center"><p class="truncate text-[10px] text-slate-400">{{ month.label }}</p><p class="mt-1 text-sm font-bold text-slate-800">{{ month.sales }}</p></div>{% endfor %}
+    </div>
+  </section>
+
   {% if not products %}
   <section class="rounded-xl border border-dashed border-indigo-300 bg-indigo-50 p-6"><p class="text-sm font-semibold text-indigo-900">Step 1: Add your first product</p><p class="mt-1 text-sm text-indigo-700">Your inventory and analytics will appear here after you publish a listing.</p><a href="{% url 'eshop:add_product' %}" class="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700">Add your first product</a></section>
   {% endif %}
 
   <section class="rounded-xl border border-slate-200 bg-white p-5">
-    <details>
-      <summary class="cursor-pointer list-none"><div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-bold text-slate-900">Seller verification</h2><p class="mt-1 text-sm text-slate-500">Verify your seller profile to build trust and qualify for a verified badge.</p></div><span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">{{ social_profile.verification_status|default:"unsubmitted"|capfirst }}</span></div></summary>
-      <form method="post" action="{% url 'eshop:submit_verification' %}" class="mt-5 grid gap-3 border-t border-slate-100 pt-5 sm:grid-cols-2">
-        {% csrf_token %}<label class="text-sm font-semibold text-slate-700">National ID last 4 digits<input name="national_id_last4" inputmode="numeric" maxlength="4" placeholder="e.g. 1234" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><span class="mt-1 block text-xs font-normal text-slate-500">Only the final four digits are required.</span></label>
-        <label class="text-sm font-semibold text-slate-700">Business registration reference<input name="business_registration_ref" maxlength="100" placeholder="Registration reference" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><span class="mt-1 block text-xs font-normal text-slate-500">Use the reference exactly as shown on your registration document.</span></label>
-        <button class="w-fit rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white hover:bg-teal-800 sm:col-span-2">Submit verification</button>
-      </form>
-    </details>
+    <div class="flex flex-wrap items-end justify-between gap-3"><div><h2 class="font-bold text-slate-900">Setup progress</h2><p class="mt-1 text-sm text-slate-500">Complete these steps to unlock a stronger seller profile.</p></div><span class="text-sm font-bold text-indigo-600">{% if products %}2{% else %}0{% endif %} of 4 complete</span></div>
+    <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-indigo-600 {% if products %}w-1/2{% else %}w-0{% endif %}"></div></div>
+    <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <a href="{% url 'eshop:add_product' %}" class="rounded-lg border border-slate-200 p-3 hover:border-indigo-300"><span class="text-xs font-bold text-emerald-600">{% if products %}Done{% else %}Step 1{% endif %}</span><p class="mt-1 text-sm font-semibold text-slate-800">Add a product</p></a>
+      <a href="#inventory" class="rounded-lg border border-slate-200 p-3 hover:border-indigo-300"><span class="text-xs font-bold text-emerald-600">{% if products %}Done{% else %}Step 2{% endif %}</span><p class="mt-1 text-sm font-semibold text-slate-800">Check inventory</p></a>
+      <a href="{% url 'users:profile' %}#seller-verification" class="rounded-lg border border-slate-200 p-3 hover:border-indigo-300"><span class="text-xs font-bold text-slate-500">Step 3</span><p class="mt-1 text-sm font-semibold text-slate-800">Verify seller profile</p></a>
+      <a href="#orders" class="rounded-lg border border-slate-200 p-3 hover:border-indigo-300"><span class="text-xs font-bold text-slate-500">Step 4</span><p class="mt-1 text-sm font-semibold text-slate-800">Fulfill your first order</p></a>
+    </div>
   </section>
 
   <section id="inventory" class="overflow-hidden rounded-xl border border-slate-200 bg-white">

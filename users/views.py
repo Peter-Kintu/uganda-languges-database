@@ -884,6 +884,11 @@ def user_profile(request):
         month['x'] = round(x, 2)
         month['y'] = round(y, 2)
         graph_points.append(f"{month['x']},{month['y']}")
+    try:
+        from social.models import SocialProfile
+        social_profile = SocialProfile.objects.filter(user=user).first()
+    except Exception:
+        social_profile = None
     context = {
         'user': user, 'experiences': experiences, 'educations': educations,
         'skills': skills, 'social_connections': social_connections,
@@ -908,6 +913,7 @@ def user_profile(request):
         'graph_points': ' '.join(graph_points),
         'graph_max': graph_max,
         'monthly_impressions': months,
+        'social_profile': social_profile,
     }
     try:
         return render(request, 'users/profile.html', context)

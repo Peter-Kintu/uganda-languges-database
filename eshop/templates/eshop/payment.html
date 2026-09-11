@@ -18,6 +18,7 @@
     </div>
 
     <div id="payment-status" class="mt-5 text-center text-sm text-slate-500" aria-live="polite"></div>
+    {% csrf_token %}
     <button id="pay-button" type="button" class="mt-6 w-full rounded-2xl bg-emerald-600 px-5 py-4 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60">
       Continue to payment
     </button>
@@ -28,6 +29,7 @@
 <script>
   const payButton = document.getElementById('pay-button');
   const paymentStatus = document.getElementById('payment-status');
+  const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]')?.value || '';
 
   function getCookie(name) {
     const cookies = document.cookie ? document.cookie.split(';') : [];
@@ -44,9 +46,22 @@
     try {
       const response = await fetch('{% url "eshop:start_commerce_payment" %}', {
         method: 'POST',
-        headers: {'X-CSRFToken': getCookie('csrftoken')}
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json',
+          'X-CSRFToken': csrfToken || getCookie('csrftoken')
+        }
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        if (response.redirected || responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
+          throw new Error('Your session or payment security check expired. Refresh the page and try again.');
+        }
+        throw new Error('Payment service returned an invalid response. Please try again.');
+      }
       if (!response.ok || !data.redirect_url) throw new Error(data.error || 'Payment could not be started.');
       window.location.assign(data.redirect_url);
     } catch (error) {

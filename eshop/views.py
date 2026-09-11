@@ -4,7 +4,8 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
-from django.db.models import F, Sum, Max, Q
+from django.db.models import F, Sum, Max, Q, Count
+from django.db.models.functions import TruncMonth
 from django.db.models.deletion import ProtectedError
 from decimal import Decimal, InvalidOperation # Import InvalidOperation for robust number handling
 from django.contrib.auth.decorators import login_required
@@ -16,7 +17,7 @@ from .models import (
     AffiliateEvent, AffiliatePayout, LiveShoppingSession, LivePinnedProduct,
 )
 from django.utils import timezone
-from datetime import timedelta
+from datetime import date, timedelta
 import re 
 import os
 import json
@@ -210,18 +211,33 @@ def merchant_dashboard(request):
     products = Product.objects.filter(vendor_user=request.user).select_related('inventory')
     all_orders = Order.objects.filter(order_items__product__vendor_user=request.user).distinct()
     orders = all_orders.order_by('-created_at')[:25]
-    from django.db.models import Count, Sum
     from social.models import MerchantAnalyticsEvent, SocialProfile
     analytics = MerchantAnalyticsEvent.objects.filter(merchant=request.user)
     profile = SocialProfile.objects.filter(user=request.user).first()
+    completed_orders = all_orders.filter(status__in={'released', 'Completed'})
+    monthly_counts = {
+        row['month'].date().replace(day=1): row['sales']
+        for row in completed_orders.annotate(month=TruncMonth('created_at')).values('month').annotate(sales=Count('id'))
+    }
+    current_month = timezone.localdate().replace(day=1)
+    monthly_sales = []
+    for offset in range(11, -1, -1):
+        month_index = current_month.year * 12 + current_month.month - 1 - offset
+        month_start = date(month_index // 12, month_index % 12 + 1, 1)
+        monthly_sales.append({'label': month_start.strftime('%b %Y'), 'sales': monthly_counts.get(month_start, 0)})
+    max_sales = max((month['sales'] for month in monthly_sales), default=0)
+    for index, month in enumerate(monthly_sales):
+        month['x'] = 10 + (index * 180 / max(len(monthly_sales) - 1, 1))
+        month['y'] = 88 - ((month['sales'] / max(max_sales, 1)) * 68)
+    sales_graph_points = ' '.join(f"{month['x']:.1f},{month['y']:.1f}" for month in monthly_sales)
     metrics = {
         'product_views': analytics.filter(event_type='product_view').count(),
         'reel_views': analytics.filter(event_type='reel_view').count(),
         'cart_adds': analytics.filter(event_type='cart_add').count(),
-        'sales': all_orders.filter(status__in={'released', 'Completed'}).count(),
-        'revenue': all_orders.filter(status__in={'released', 'Completed'}).aggregate(total=Sum('total_amount'))['total'] or 0,
+        'sales': completed_orders.count(),
+        'revenue': completed_orders.aggregate(total=Sum('total_amount'))['total'] or 0,
     }
-    return render(request, 'eshop/merchant_dashboard.html', {'products': products, 'orders': orders, 'metrics': metrics, 'social_profile': profile})
+    return render(request, 'eshop/merchant_dashboard.html', {'products': products, 'orders': orders, 'metrics': metrics, 'social_profile': profile, 'monthly_sales': monthly_sales, 'sales_graph_points': sales_graph_points})
 
 
 @login_required

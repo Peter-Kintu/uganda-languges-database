@@ -170,6 +170,23 @@
             </div>
         </div>
 
+        <section id="seller-verification" class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.18)]">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-teal-700">Account settings</p>
+                    <h2 class="mt-2 text-2xl font-bold text-slate-900">Seller verification</h2>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Verify your seller profile to build buyer trust and qualify for a verified badge.</p>
+                </div>
+                <span class="rounded-full bg-amber-100 px-3 py-2 text-xs font-bold text-amber-800">{{ social_profile.verification_status|default:"unsubmitted"|capfirst }}</span>
+            </div>
+            <form method="post" action="{% url 'eshop:submit_verification' %}" class="mt-6 grid gap-4 border-t border-slate-100 pt-6 sm:grid-cols-2">
+                {% csrf_token %}
+                <label class="text-sm font-semibold text-slate-700">National ID last 4 digits<input name="national_id_last4" inputmode="numeric" maxlength="4" placeholder="e.g. 1234" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><span class="mt-1 block text-xs font-normal text-slate-500">Only the final four digits are required.</span></label>
+                <label class="text-sm font-semibold text-slate-700">Business registration reference<input name="business_registration_ref" maxlength="100" placeholder="Registration reference" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><span class="mt-1 block text-xs font-normal text-slate-500">Use the reference exactly as shown on your registration document.</span></label>
+                <button class="w-fit rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white hover:bg-teal-800 sm:col-span-2">Submit verification</button>
+            </form>
+        </section>
+
         <div class="grid gap-8 xl:grid-cols-[1.4fr_0.9fr]">
             <div class="space-y-8">
                 <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.18)]">
