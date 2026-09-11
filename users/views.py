@@ -310,6 +310,25 @@ def _pesapal_request(method, path, json_data=None, timeout=20, access_token=None
         raise RuntimeError(f'Pesapal request failed for {path}: {exc}') from exc
 
 
+def _pesapal_notification_id(notification_url, access_token=None):
+    """Return the configured IPN id, registering the callback when needed."""
+    configured_id = os.getenv('PESAPAL_IPN_ID', '').strip()
+    if configured_id:
+        return configured_id
+
+    token = access_token or _pesapal_access_token()
+    response = _pesapal_request(
+        'post',
+        'URLSetup/RegisterIPN',
+        json_data={'url': notification_url, 'ipn_notification_type': 'POST'},
+        access_token=token,
+    )
+    ipn_id = response.get('ipn_id') or response.get('ipnId') or response.get('id')
+    if not ipn_id:
+        raise ValueError('Pesapal did not return an IPN id for the marketplace callback.')
+    return str(ipn_id)
+
+
 # Google auth token verification
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests

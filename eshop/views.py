@@ -131,19 +131,27 @@ def start_commerce_payment(request):
             OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price_at_purchase=item.product.negotiated_price or item.product.price, commission_at_purchase=item.product.referral_commission)
         payment = CommercePayment.objects.create(order=order, pesapal_order_id=f'eshop-{order.id}-{uuid.uuid4().hex[:8]}', amount=order.total_amount, currency=order.currency)
     try:
-        from users.views import _pesapal_request
+        from users.views import _pesapal_notification_id, _pesapal_request
         callback_url = request.build_absolute_uri(reverse('eshop:payment_callback'))
         notification_url = request.build_absolute_uri(reverse('pesapal_ipn'))
         token = _pesapal_request('post', 'Auth/RequestToken').get('token')
-        response = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={'id': payment.pesapal_order_id, 'currency': payment.currency, 'amount': f'{payment.amount:.2f}', 'description': f'Africana AI order #{order.id}', 'callback_url': callback_url, 'notification_id': notification_url, 'billing_address': {'email_address': request.user.email or f'{request.user.username}@example.com', 'phone_number': order.delivery_phone, 'country_code': 'UG', 'first_name': request.user.first_name or request.user.username, 'last_name': request.user.last_name or 'User'}}, access_token=token)
+        notification_id = _pesapal_notification_id(notification_url, token)
+        response = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={'id': payment.pesapal_order_id, 'currency': payment.currency, 'amount': f'{payment.amount:.2f}', 'description': f'Africana AI order #{order.id}', 'callback_url': callback_url, 'notification_id': notification_id, 'billing_address': {'email_address': request.user.email or f'{request.user.username}@example.com', 'phone_number': order.delivery_phone, 'country_code': 'UG', 'first_name': request.user.first_name or request.user.username, 'last_name': request.user.last_name or 'User'}}, access_token=token)
     except Exception as exc:
         payment.status = 'failed'
         payment.save(update_fields=['status', 'updated_at'])
         logger.exception('Commerce Pesapal checkout failed: %s', exc)
         return JsonResponse({'error': 'Unable to start payment.'}, status=502)
+    redirect_url = response.get('redirect_url') or response.get('RedirectUrl')
     payment.tracking_id = response.get('order_tracking_id') or response.get('OrderTrackingId')
+    if not payment.tracking_id or not redirect_url:
+        payment.status = 'failed'
+        payment.raw_status = 'INVALID_PROVIDER_RESPONSE'
+        payment.save(update_fields=['status', 'raw_status', 'updated_at'])
+        logger.error('Pesapal returned an incomplete commerce checkout response: %s', response)
+        return JsonResponse({'error': 'Payment provider did not return a valid checkout link.'}, status=502)
     payment.save(update_fields=['tracking_id', 'updated_at'])
-    return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'redirect_url': response.get('redirect_url') or response.get('RedirectUrl'), 'delivery_pin': delivery_pin, 'delivery_qr_token': str(order.delivery_qr_token)})
+    return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'redirect_url': redirect_url, 'delivery_pin': delivery_pin, 'delivery_qr_token': str(order.delivery_qr_token)})
 
 
 @login_required
