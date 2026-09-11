@@ -146,6 +146,14 @@ def start_commerce_payment(request):
         return JsonResponse({'error': 'Unable to start payment.'}, status=502)
     redirect_url = response.get('redirect_url') or response.get('RedirectUrl')
     payment.tracking_id = response.get('order_tracking_id') or response.get('OrderTrackingId')
+    provider_error = response.get('error') if isinstance(response, dict) else None
+    if isinstance(provider_error, dict):
+        payment.status = 'failed'
+        payment.raw_status = str(provider_error.get('code') or 'PROVIDER_ERROR')[:50]
+        payment.save(update_fields=['status', 'raw_status', 'updated_at'])
+        provider_message = provider_error.get('message') or 'The payment provider rejected this transaction.'
+        logger.warning('Pesapal rejected commerce checkout for order %s: %s', order.id, provider_error)
+        return JsonResponse({'error': provider_message}, status=422)
     if not payment.tracking_id or not redirect_url:
         payment.status = 'failed'
         payment.raw_status = 'INVALID_PROVIDER_RESPONSE'
