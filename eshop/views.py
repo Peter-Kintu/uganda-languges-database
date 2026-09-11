@@ -116,6 +116,8 @@ def start_commerce_payment(request):
     if not cart.items.exists():
         return JsonResponse({'error': 'Cart is empty.'}, status=400)
     delivery = request.session.get('delivery_details', {})
+    if not all(delivery.get(field) for field in ('address', 'city', 'phone')):
+        return JsonResponse({'error': 'Please provide delivery details before payment.'}, status=400)
     first_item = cart.items.select_related('product').first()
     with transaction.atomic():
         delivery_pin = f'{secrets.randbelow(1000000):06d}'
@@ -130,7 +132,7 @@ def start_commerce_payment(request):
         payment = CommercePayment.objects.create(order=order, pesapal_order_id=f'eshop-{order.id}-{uuid.uuid4().hex[:8]}', amount=order.total_amount, currency=order.currency)
     try:
         from users.views import _pesapal_request
-        callback_url = request.build_absolute_uri(reverse('users:pesapal_callback'))
+        callback_url = request.build_absolute_uri(reverse('eshop:payment_callback'))
         notification_url = request.build_absolute_uri(reverse('pesapal_ipn'))
         token = _pesapal_request('post', 'Auth/RequestToken').get('token')
         response = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={'id': payment.pesapal_order_id, 'currency': payment.currency, 'amount': f'{payment.amount:.2f}', 'description': f'Africana AI order #{order.id}', 'callback_url': callback_url, 'notification_id': notification_url, 'billing_address': {'email_address': request.user.email or f'{request.user.username}@example.com', 'phone_number': order.delivery_phone, 'country_code': 'UG', 'first_name': request.user.first_name or request.user.username, 'last_name': request.user.last_name or 'User'}}, access_token=token)
@@ -142,6 +144,21 @@ def start_commerce_payment(request):
     payment.tracking_id = response.get('order_tracking_id') or response.get('OrderTrackingId')
     payment.save(update_fields=['tracking_id', 'updated_at'])
     return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'redirect_url': response.get('redirect_url') or response.get('RedirectUrl'), 'delivery_pin': delivery_pin, 'delivery_qr_token': str(order.delivery_qr_token)})
+
+
+@login_required
+def payment_callback(request):
+    tracking_id = request.GET.get('OrderTrackingId') or request.GET.get('orderTrackingId')
+    payment = CommercePayment.objects.select_related('order').filter(tracking_id=tracking_id, order__buyer=request.user).first()
+    if not payment:
+        return render(request, 'eshop/payment_result.html', {'payment': None, 'error': 'Payment reference was not found.'})
+
+    ipn_response = commerce_payment_ipn(request)
+    payment.refresh_from_db()
+    payment.order.refresh_from_db()
+    if ipn_response.status_code >= 400:
+        return render(request, 'eshop/payment_result.html', {'payment': payment, 'error': 'We could not verify the payment yet. Please refresh shortly.'})
+    return render(request, 'eshop/payment_result.html', {'payment': payment, 'error': None})
 
 
 @csrf_exempt
@@ -278,6 +295,11 @@ def confirm_delivery(request, order_id):
         )
         if is_vendor and not has_valid_credential:
             return JsonResponse({'error': 'A valid delivery PIN or QR token is required.'}, status=400)
+        if is_vendor and not is_buyer:
+            order.status = 'delivered'
+            order.save(update_fields=['status'])
+            return JsonResponse({'order_id': order.id, 'status': order.status, 'escrow_status': order.escrow_status})
+
         order.status = 'released'
         order.escrow_status = 'released'
         order.buyer_confirmed_at = timezone.now()

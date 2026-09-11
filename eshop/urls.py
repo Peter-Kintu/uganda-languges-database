@@ -24,6 +24,7 @@ urlpatterns = [
     path('delivery-location/', views.delivery_location_view, name='delivery_location'),
     path('process-delivery/', views.process_delivery_location, name='process_delivery'), 
     path('payment/', views.payment_view, name='payment'),
+    path('payment/callback/', views.payment_callback, name='payment_callback'),
     path('confirm-order/', views.confirm_order_whatsapp, name='confirm_order_whatsapp'), 
     
     # Negotiation Feature URLs
