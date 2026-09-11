@@ -182,7 +182,8 @@ def commerce_payment_ipn(request):
 @login_required
 def merchant_dashboard(request):
     products = Product.objects.filter(vendor_user=request.user).select_related('inventory')
-    orders = Order.objects.filter(order_items__product__vendor_user=request.user).distinct().order_by('-created_at')[:25]
+    all_orders = Order.objects.filter(order_items__product__vendor_user=request.user).distinct()
+    orders = all_orders.order_by('-created_at')[:25]
     from django.db.models import Count, Sum
     from social.models import MerchantAnalyticsEvent, SocialProfile
     analytics = MerchantAnalyticsEvent.objects.filter(merchant=request.user)
@@ -191,8 +192,8 @@ def merchant_dashboard(request):
         'product_views': analytics.filter(event_type='product_view').count(),
         'reel_views': analytics.filter(event_type='reel_view').count(),
         'cart_adds': analytics.filter(event_type='cart_add').count(),
-        'sales': orders.filter(status__in={'released', 'Completed'}).count(),
-        'revenue': orders.filter(status__in={'released', 'Completed'}).aggregate(total=Sum('total_amount'))['total'] or 0,
+        'sales': all_orders.filter(status__in={'released', 'Completed'}).count(),
+        'revenue': all_orders.filter(status__in={'released', 'Completed'}).aggregate(total=Sum('total_amount'))['total'] or 0,
     }
     return render(request, 'eshop/merchant_dashboard.html', {'products': products, 'orders': orders, 'metrics': metrics, 'social_profile': profile})
 
