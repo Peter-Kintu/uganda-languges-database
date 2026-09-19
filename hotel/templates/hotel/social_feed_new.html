@@ -34,9 +34,7 @@
         --gray-900: #111827;
     }
 
-    html {
-        scroll-behavior: smooth;
-    }
+    html { scroll-behavior: auto; }
 
     @media (prefers-reduced-motion: reduce) {
         html {
@@ -59,6 +57,11 @@
         touch-action: pan-y;
         overscroll-behavior-y: contain;
         -webkit-text-size-adjust: 100%;
+    }
+
+    @media (pointer: coarse) {
+        *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+        .header, .create-post-card, .post-card, .sidebar-card { backdrop-filter: none; box-shadow: 0 1px 4px rgba(15, 23, 42, .08); }
     }
 
     /* ═════════════════════════════════════════════════════════════════ */
@@ -2299,7 +2302,7 @@
                             <div class="post-author">
                                 <div class="avatar" style="width: 40px; height: 40px;">
                                     {% if post.author.profile_image %}
-                                        <img src="{{ post.author.profile_image.url }}" alt="{{ post.author.username }}" class="w-full h-full object-cover rounded-full">
+                                        <img src="{{ post.author.profile_image.url }}" alt="{{ post.author.username }}" class="w-full h-full object-cover rounded-full" loading="lazy" decoding="async">
                                     {% else %}
                                         {{ post.author.first_name|slice:':1'|upper }}
                                     {% endif %}

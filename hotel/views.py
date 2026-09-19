@@ -1,8 +1,10 @@
+from django.db.models import Count, Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
-from django.db.models import Q, Count, F
+from django.db.models import F
+from django.db.models.query import prefetch_related_objects
 from django.utils import timezone
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -174,9 +176,7 @@ def _build_hybrid_feed(
     """Rank posts using relevance, freshness, novelty, and light exploration."""
     now = timezone.now()
 
-    posts_query = Post.objects.all().select_related('author').prefetch_related(
-        'comments', 'likes'
-    ).annotate(
+    posts_query = Post.objects.all().select_related('author').annotate(
         like_count=Count('likes', distinct=True),
         comment_count=Count('comments', distinct=True),
         share_count=Count('shares', distinct=True),
@@ -405,6 +405,7 @@ def social_feed(request):
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.page(1)
     posts = list(page_obj.object_list)
+    prefetch_related_objects(posts, 'comments', 'likes')
     market_positions, job_position = _feed_insert_positions(len(posts), feed_seed)
 
     # Translate posts if requested
@@ -448,28 +449,25 @@ def social_feed(request):
         following_count = Connection.objects.filter(sender=request.user, status='accepted').count()
         all_users = CustomUser.objects.exclude(id=request.user.id)
     
-    # Add follower count and following status to each post author
+    # Resolve author relationship data in batches instead of querying once per author.
     author_ids = set(post.author.id for post in posts)
-    follower_counts = {}
-    following_status = {}
-    
-    for author_id in author_ids:
-        follower_counts[author_id] = Connection.objects.filter(
-            receiver_id=author_id,
-            status='accepted'
-        ).count()
-        if is_adsense_crawler:
-            following_status[author_id] = False
-        else:
-            following_status[author_id] = Connection.objects.filter(
-                sender=request.user,
-                receiver_id=author_id,
-                status='accepted'
-            ).exists()
+    follower_counts = dict(
+        Connection.objects.filter(receiver_id__in=author_ids, status='accepted')
+        .values('receiver_id')
+        .annotate(total=Count('id'))
+        .values_list('receiver_id', 'total')
+    )
+    following_ids = set()
+    if not is_adsense_crawler:
+        following_ids = set(Connection.objects.filter(
+            sender=request.user,
+            receiver_id__in=author_ids,
+            status='accepted',
+        ).values_list('receiver_id', flat=True))
     
     for post in posts:
         post.author.follower_count = follower_counts.get(post.author.id, 0)
-        post.author.is_following = following_status.get(post.author.id, False)
+        post.author.is_following = post.author.id in following_ids
     
     context = {
         'posts': posts,
@@ -1199,7 +1197,7 @@ def inbox(request):
 @login_required
 def inbox_messages(request):
     # Defer `attachment` to avoid database errors if migrations haven't been applied yet
-    messages_list = Message.objects.defer('attachment').filter(
+    messages_list = Message.objects.select_related('sender', 'receiver').defer('attachment').filter(
         Q(sender=request.user) | Q(receiver=request.user)
     ).order_by('-created_at')
 
@@ -1215,8 +1213,8 @@ def inbox_messages(request):
 
     message_groups = list(conversations.values())
     unread_messages = messages_list.filter(receiver=request.user, is_read=False)[:5]
-    unread_messages_count = messages_list.filter(receiver=request.user, is_read=False).count()
-    communities = Community.objects.filter(members=request.user).order_by('-created_at')
+    unread_messages_count = Message.objects.filter(receiver=request.user, is_read=False).count()
+    communities = Community.objects.filter(members=request.user).annotate(member_count=Count('members')).order_by('-created_at')
     notifications = Message.objects.none()
 
     return render(request, 'hotel/inbox.html', {
@@ -1411,7 +1409,7 @@ def conversation(request, user_id):
         return redirect('hotel:conversation', user_id=user_id)
     
     # Get messages between the two users
-    messages = Message.objects.defer('attachment').filter(
+    messages = Message.objects.select_related('sender', 'receiver').filter(
         (Q(sender=request.user) & Q(receiver=other_user)) |
         (Q(sender=other_user) & Q(receiver=request.user))
     ).order_by('created_at')
