@@ -115,3 +115,17 @@ class NegotiationFlowTests(TestCase):
 
         self.assertContains(cart_page, '9,000')
         self.assertContains(delivery_page, '9000')
+
+    def test_repeated_low_offer_holds_price_and_suggests_bulk_option(self):
+        self.client.post(
+            reverse('eshop:ai_negotiation', args=[self.product.slug]),
+            {'user_message': 'I can offer UGX 2000'},
+        )
+        self.client.post(
+            reverse('eshop:ai_negotiation', args=[self.product.slug]),
+            {'user_message': 'I can offer UGX 2000'},
+        )
+
+        page = self.client.get(reverse('eshop:ai_negotiation', args=[self.product.slug]))
+        self.assertContains(page, 'bulk order')
+        self.assertContains(page, 'Feed, transport, and handling costs')

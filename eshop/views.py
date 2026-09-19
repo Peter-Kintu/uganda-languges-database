@@ -1195,6 +1195,8 @@ def get_luganda_response(stage, price_str, curr, offer_text="omusaala gwo"):
         return f"Omutindo gw'okuwa kwo guli kumpi. Nkukendeezezza ku {curr} {price_str}; guno gwe muwendo gwange ogusembayo ogw'obwenkanya. Tuggalewo endagaano?"
     elif stage == 'final_offer': 
         return f"Nkoze ekisoboka kyonna. Omuwendo ogw'oluvannyuma gwe {curr} {price_str}. Okkiriza nkuggalire endagaano eno?"
+    elif stage == 'holdout':
+        return f"Eyy, {offer_text} ekyali wansi nnyo, mukwano. Ebeeyi y'emmere, entambula n'okukwata ebintu eri waggulu kati. Sisobola kugenda mu maaso n'okukendeeza nga omuwendo gwo gusigadde gumu. Bw'oba osobola okusigala ku {offer_text}, ogula bingi bimeka? Ku bulk order nsobola okubuuza omukulembeze w'ekifo."
     return "Error in translation simulation."
 
 def get_gemini_negotiation_response(request, product, user_message, chat_history, negotiation_state=None):
@@ -1240,7 +1242,8 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
             'too_high_offer': f"{acknowledgement} That is more than the listed price, so I would rather keep it at the original {curr} {price_str}. Would you like me to reserve it for you? 😊",
             'stage_one_offer': f"{acknowledgement} I can reduce it for you to {curr} {price_str}. It is a modest first reduction, but I can still arrange the order properly. What do you think?",
             'stage_two_offer': f"{acknowledgement} I can reduce it again to {curr} {price_str}. This is a smaller move because we are nearly at the seller's limit. Would that be acceptable?",
-            'final_offer': f"{acknowledgement} I have reached {curr} {price_str}, my final fair price. I would rather be honest than promise a price that affects quality. Shall we lock it in? 🤝"
+            'final_offer': f"{acknowledgement} I have reached {curr} {price_str}, my final fair price. I would rather be honest than promise a price that affects quality. Shall we lock it in? 🤝",
+            'holdout': f"Eyy, {raw_offer_text} is still too low for the full item, my friend. Feed, transport, and handling costs are high right now. I cannot keep reducing the price while the offer stays the same. If your budget is fixed at {raw_offer_text}, how many are you buying? For a bulk order, I can ask the farm manager to approve a better arrangement."
         }
         return eng_responses.get(stage_key, "An internal error occurred.")
 
@@ -1252,6 +1255,7 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
 
     session_price = get_session_negotiated_price(request, product)
     last_ai_offer = session_price or product_price
+    previous_buyer_offer = request.session.get(f'last_buyer_offer_{product.slug}')
 
     if session_price and session_price <= FINAL_FLOOR and session_price < product_price:
         return generate_response('already_agreed', round_price(session_price, product_price))
@@ -1287,6 +1291,13 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
             set_session_negotiated_price(request, product, new_price)
             return generate_response('initial_ask_counter' if new_price == STAGE_ONE_PRICE else ('mid_ask_counter' if new_price == STAGE_TWO_PRICE else 'final_ask_counter'), new_price)
         return generate_response('default_query')
+
+    repeated_offer = previous_buyer_offer is not None and Decimal(str(previous_buyer_offer)) == offer
+    request.session[f'last_buyer_offer_{product.slug}'] = str(offer)
+    request.session.modified = True
+
+    if repeated_offer and offer < FINAL_FLOOR:
+        return generate_response('holdout', last_ai_offer, raw_offer_text)
 
     if offer < VENDOR_MIN_ENGAGEMENT:
         if last_ai_offer >= product_price * Decimal('0.99'):
@@ -1359,6 +1370,7 @@ def clear_session_negotiation(request, slug):
         f'negotiated_price_{slug}',
         f'accepted_price_{slug}',
         f'negotiation_language_{slug}',
+        f'last_buyer_offer_{slug}',
     ]:
         request.session.pop(key, None)
 
