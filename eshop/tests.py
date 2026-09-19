@@ -129,3 +129,58 @@ class NegotiationFlowTests(TestCase):
         page = self.client.get(reverse('eshop:ai_negotiation', args=[self.product.slug]))
         self.assertContains(page, 'bulk order')
         self.assertContains(page, 'Feed, transport, and handling costs')
+
+    def test_extreme_low_offer_gets_firm_local_response(self):
+        product = Product.objects.create(
+            name='Cassava',
+            description='Fresh cassava from the farm',
+            price=Decimal('3000'),
+            country='Uganda',
+            vendor_user=self.creator,
+            is_negotiable=True,
+        )
+        self.client.post(
+            reverse('eshop:ai_negotiation', args=[product.slug]),
+            {'user_message': 'I can offer UGX 290'},
+        )
+
+        page = self.client.get(reverse('eshop:ai_negotiation', args=[product.slug]))
+        self.assertContains(page, 'Haba!')
+        self.assertContains(page, 'too little')
+        self.assertContains(page, 'fresh from the farm')
+        self.assertNotContains(page, 'makes sense if you are trying to stay within budget')
+
+    def test_extra_zero_is_checked_before_treating_offer_as_real(self):
+        product = Product.objects.create(
+            name='Cassava',
+            description='Fresh cassava from the farm',
+            price=Decimal('3000'),
+            country='Uganda',
+            vendor_user=self.creator,
+            is_negotiable=True,
+        )
+        self.client.post(
+            reverse('eshop:ai_negotiation', args=[product.slug]),
+            {'user_message': '20000'},
+        )
+
+        page = self.client.get(reverse('eshop:ai_negotiation', args=[product.slug]))
+        self.assertContains(page, 'did you mean')
+        self.assertContains(page, 'extra zero')
+
+    def test_counteroffer_does_not_drop_after_a_firm_counter(self):
+        product = Product.objects.create(
+            name='Cassava',
+            description='Fresh cassava from the farm',
+            price=Decimal('3000'),
+            country='Uganda',
+            vendor_user=self.creator,
+            is_negotiable=True,
+        )
+        url = reverse('eshop:ai_negotiation', args=[product.slug])
+        self.client.post(url, {'user_message': '2000'})
+        self.client.post(url, {'user_message': '2300'})
+
+        page = self.client.get(url)
+        self.assertContains(page, 'UGX 2,900')
+        self.assertNotContains(page, 'UGX 2,800')
