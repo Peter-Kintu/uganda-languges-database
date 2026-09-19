@@ -4,349 +4,69 @@
 {% block title %}Conversation with {{ other_user.get_full_name|default:other_user.username }} | MyUganda{% endblock %}
 
 {% block content %}
-<div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen py-4 md:py-8 px-2 md:px-4 flex flex-col">
-    <div class="max-w-4xl mx-auto w-full flex-1 flex flex-col">
-        <!-- Header -->
-        <div class="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-            <div class="flex items-center justify-between gap-3 md:gap-4">
-                <div class="flex items-center space-x-3 md:space-x-4 min-w-0 flex-1">
-                    <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800 flex-shrink-0 transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                        </svg>
-                    </a>
-                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span class="text-indigo-600 font-semibold text-lg">{{ other_user.username|first|upper }}</span>
-                    </div>
-                    <div class="min-w-0">
-                        <h1 class="text-xl md:text-2xl font-bold text-gray-900 truncate">{{ other_user.get_full_name|default:other_user.username }}</h1>
-                        <p class="text-gray-500 text-xs md:text-sm">Active now</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<style>
+    .direct-chat { min-height: calc(100vh - 4rem); background: #eef5f3; }
+    .direct-shell { height: calc(100vh - 5.5rem); min-height: 38rem; }
+    .message-copy { overflow-wrap: anywhere; white-space: pre-wrap; }
+    .composer-shadow { box-shadow: 0 -18px 45px rgba(18, 45, 40, .08); }
+    .chat-scroll { scrollbar-color: #b8d9d2 transparent; }
+    .media-preview video, .media-preview img, .message-media video, .message-media img { max-height: 18rem; }
+    @media (max-width: 640px) {
+        .direct-shell { height: calc(100vh - 4.5rem); min-height: 32rem; }
+        .message-media video, .message-media img { max-height: 14rem; }
+    }
+</style>
 
-        <div id="messages-container" class="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+<main class="direct-chat px-2 py-2 sm:px-4 sm:py-5">
+    <section class="direct-shell mx-auto flex max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#dce8e4] bg-white shadow-[0_20px_60px_rgba(18,45,40,.10)] sm:rounded-3xl">
+        <header class="flex items-center gap-3 border-b border-slate-100 bg-white px-4 py-3 sm:px-6">
+            <a href="{% url 'hotel:inbox' %}" aria-label="Back to inbox" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#007c83] transition hover:bg-[#e4f1ee]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></a>
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e4f1ee] text-lg font-black text-[#007c83]">{{ other_user.username|first|upper }}</div>
+            <div class="min-w-0 flex-1"><h1 class="truncate text-base font-black text-slate-900 sm:text-lg">{{ other_user.get_full_name|default:other_user.username }}</h1><p class="flex items-center gap-1.5 text-xs text-slate-500"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Available to chat</p></div>
+            <button type="button" aria-label="Conversation details" class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-[#007c83]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button>
+        </header>
+
+        <div id="messages-container" class="chat-scroll flex-1 space-y-4 overflow-y-auto bg-[#f8fbfa] p-4 sm:p-7">
             {% for message in messages %}
-            <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
-                <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-lg {% if message.sender == request.user %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-900{% endif %}">
-                    {% if message.attachment %}
-                        {% with filename=message.attachment.name|lower %}
-                            {% if filename|slice:"-4:" == ".png" or filename|slice:"-4:" == ".jpg" or filename|slice:"-5:" == ".jpeg" or filename|slice:"-4:" == ".gif" %}
-                                <img src="{{ message.attachment.url }}" alt="Photo" class="max-w-full rounded-xl border border-slate-200" />
-                            {% elif filename|slice:"-4:" == ".mp4" or filename|slice:"-5:" == ".webm" or filename|slice:"-4:" == ".mov" %}
-                                <video controls class="max-w-full rounded-xl border border-slate-200" style="max-height: 300px;">
-                                    <source src="{{ message.attachment.url }}">
-                                    Your browser does not support the video tag.
-                                </video>
-                            {% else %}
-                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 inline-flex items-center gap-2 text-slate-700">
-                                    <span class="text-xl">📎</span>
-                                    <a href="{{ message.attachment.url }}" download class="font-semibold text-indigo-700 hover:text-indigo-900">{{ message.attachment.name|slice:"-50:" }}</a>
-                                </div>
-                            {% endif %}
-                        {% endwith %}
-                        {% if message.content %}
-                            <p class="text-sm mt-2">{{ message.content }}</p>
-                        {% endif %}
-                    {% else %}
-                        {% with lower=message.content|lower %}
-                            {% if "data:image" in lower %}
-                                <img src="{{ message.content }}" alt="Photo" class="max-w-xs rounded-xl" />
-                            {% elif "data:video" in lower %}
-                                <video controls class="max-w-xs rounded-xl" style="max-height: 300px;">
-                                    <source src="{{ message.content }}">
-                                    Your browser does not support the video tag.
-                                </video>
-                            {% elif "data:application/pdf" in lower %}
-                                <div class="bg-red-50 border border-red-200 rounded-lg p-3 inline-block">
-                                    <a href="{{ message.content }}" download="document.pdf" class="inline-flex items-center gap-2 text-red-700 hover:text-red-900 font-semibold">
-                                        <span>📄 PDF Document</span>
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    </a>
-                                </div>
-                            {% elif "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document" in lower or "data:application/msword" in lower %}
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 inline-block">
-                                    <a href="{{ message.content }}" download="document.docx" class="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold">
-                                        <span>📋 Word Document</span>
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    </a>
-                                </div>
-                            {% elif "http" in lower %}
-                                {% if "gif" in lower or "png" in lower or "jpg" in lower or "jpeg" in lower or "mp4" in lower or "webm" in lower %}
-                                    {% if "mp4" in lower or "webm" in lower or "video" in lower %}
-                                        <video controls class="max-w-xs rounded-xl" style="max-height: 300px;">
-                                            <source src="{{ message.content }}">
-                                            Your browser does not support the video tag.
-                                        </video>
-                                    {% else %}
-                                        <img src="{{ message.content }}" alt="GIF" class="max-w-full rounded-xl" />
-                                    {% endif %}
-                                {% else %}
-                                    <p class="text-sm">{{ message.content }}</p>
-                                {% endif %}
-                            {% else %}
-                                <p class="text-sm">{{ message.content }}</p>
-                            {% endif %}
-                        {% endwith %}
-                    {% endif %}
-                    <p class="text-xs mt-1 opacity-70"><time class="message-time" datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:"M j, H:i" }}</time></p>
-                </div>
-            </div>
-            {% endfor %}
+            <article class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-[88%] sm:max-w-[70%]"><div class="rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm {% if message.sender == request.user %}rounded-br-md bg-[#007c83] text-white{% else %}rounded-bl-md border border-slate-100 bg-white text-slate-700{% endif %}">
+                    {% if message.attachment %}<div class="message-media mb-2" data-media-url="{{ message.attachment.url }}" data-media-name="{{ message.attachment.name }}"><a href="{{ message.attachment.url }}" download class="inline-flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 font-semibold underline">Download {{ message.attachment.name|slice:"-40:" }}</a></div>{% endif %}
+                    {% if message.content %}<p class="message-copy">{{ message.content }}</p>{% endif %}
+                </div><time class="mt-1 block px-1 text-[11px] text-slate-400 {% if message.sender == request.user %}text-right{% endif %}">{{ message.created_at|date:"M j, H:i" }}</time></div>
+            </article>
+            {% empty %}<div id="empty-state" class="flex h-full min-h-64 items-center justify-center text-center"><div><div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#e4f1ee] text-2xl text-[#007c83]"><svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.8 8.8 0 0 1-3.6-.75L4 19l1.1-3.3A7.4 7.4 0 0 1 4.5 12 7.5 7.5 0 0 1 12 4.5c4.4 0 8 3.1 8 7Z"/></svg></div><p class="mt-4 font-black text-slate-800">Start the conversation</p><p class="mt-1 text-sm text-slate-500">Send a message, photo, or video.</p></div></div>{% endfor %}
         </div>
 
-        <div class="bg-white p-3 md:p-4 border border-gray-200 rounded-lg shadow-sm">
-            <form id="chatForm" action="{% url 'hotel:send_message' other_user.id %}" method="post" enctype="multipart/form-data" class="flex flex-col gap-4">
-                {% csrf_token %}
-                <!-- Action Buttons Bar - Responsive Layout -->
-                <div class="flex flex-wrap gap-2 md:gap-3">
-                    <!-- Emoji: Full text on md+, icon only on mobile -->
-                    <button type="button" onclick="toggleEmojiPicker()" title="Emoji" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-sm md:text-base">
-                        <span class="text-lg">😀</span>
-                        <span class="hidden md:inline">Emoji</span>
-                    </button>
-                    <!-- GIF: Full text on md+, icon only on mobile -->
-                    <button type="button" onclick="toggleGifPanel()" title="GIF" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 transition-colors text-sm md:text-base font-medium">
-                        <span>GIF</span>
-                    </button>
-                    <!-- Photo: Full text on sm+, icon only on mobile -->
-                    <label title="Photo" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
-                        <span class="text-lg">📷</span>
-                        <span class="hidden sm:inline">Photo</span>
-                        <input type="file" id="photo-input" name="attachment" accept="image/*" class="hidden" onchange="showAttachmentName()">
-                    </label>
-                    <!-- Video: Full text on sm+, icon only on mobile -->
-                    <label title="Video" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
-                        <span class="text-lg">🎥</span>
-                        <span class="hidden sm:inline">Video</span>
-                        <input type="file" id="video-input" name="attachment" accept="video/*" class="hidden" onchange="showAttachmentName()">
-                    </label>
-                    <!-- Attach: PDF, Word, Excel, APK, code and more -->
-                    <label title="Attach File" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-2.5 md:px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors text-sm md:text-base">
-                        <span class="text-lg">📎</span>
-                        <span class="hidden sm:inline">Attach</span>
-                        <input type="file" id="attachment-input" name="attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.apk,.zip,.txt,.py,.js,.java,.kt,.xml,.json,image/*,video/*" class="hidden" onchange="showAttachmentName()">
-                    </label>
+        <div class="composer-shadow border-t border-slate-100 bg-white p-3 sm:p-4"><div id="chat-status" class="mb-2 hidden rounded-xl px-3 py-2 text-xs font-semibold" role="status"></div><div id="media-preview" class="media-preview mb-3 hidden rounded-2xl border border-[#b8d9d2] bg-[#f4f9f7] p-3"></div>
+            <form id="chatForm" action="{% url 'hotel:send_message' other_user.id %}" method="post" enctype="multipart/form-data" class="flex items-end gap-2">{% csrf_token %}
+                <div class="flex shrink-0 items-center gap-1">
+                    <button type="button" data-picker-mode="image" aria-label="Add photo" title="Photo" class="flex h-11 w-11 items-center justify-center rounded-xl text-[#007c83] transition hover:bg-[#e4f1ee]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 4.5-4 3 2.5 2.5-2 6 4.5"/></svg></button>
+                    <button type="button" data-picker-mode="camera" aria-label="Take a photo" title="Camera" class="hidden h-11 w-11 items-center justify-center rounded-xl text-[#007c83] transition hover:bg-[#e4f1ee] sm:flex"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+                    <button type="button" data-picker-mode="video" aria-label="Add video" title="Video" class="flex h-11 w-11 items-center justify-center rounded-xl text-[#007c83] transition hover:bg-[#e4f1ee]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg></button>
+                    <button type="button" id="emoji-toggle" aria-label="Add emoji" title="Emoji" class="flex h-11 w-11 items-center justify-center rounded-xl text-[#007c83] transition hover:bg-[#e4f1ee]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button>
+                    <input id="media-input" type="file" name="attachment" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.zip,.txt" class="hidden">
                 </div>
-                <p id="attachment-name" class="text-slate-500 text-xs sm:text-sm"></p>
-                <div id="emoji-picker" class="hidden flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-32 overflow-y-auto">
-                    <button type="button" onclick="insertEmoji('😀')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😀</button>
-                    <button type="button" onclick="insertEmoji('😍')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😍</button>
-                    <button type="button" onclick="insertEmoji('😂')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😂</button>
-                    <button type="button" onclick="insertEmoji('😎')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😎</button>
-                    <button type="button" onclick="insertEmoji('😢')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">😢</button>
-                    <button type="button" onclick="insertEmoji('🎉')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🎉</button>
-                    <button type="button" onclick="insertEmoji('🙌')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🙌</button>
-                    <button type="button" onclick="insertEmoji('💬')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">💬</button>
-                    <button type="button" onclick="insertEmoji('❤️')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">❤️</button>
-                    <button type="button" onclick="insertEmoji('🔥')" class="rounded-full bg-white px-3 py-2 text-lg hover:bg-slate-100">🔥</button>
-                </div>
-                <div id="gif-panel" class="hidden flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:p-4">
-                    <div class="flex gap-2 flex-col sm:flex-row">
-                        <input id="gif-search" type="text" placeholder="Search GIFs..." class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button type="button" onclick="searchGif()" class="rounded-lg bg-indigo-600 px-4 py-2 text-white text-sm hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap">Search</button>
-                    </div>
-                    <div id="gif-results" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto"></div>
-                </div>
-                <div class="flex items-center gap-2 md:gap-4">
-                    <input id="message-input" type="text" name="content" placeholder="Type a message..." class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-3 md:px-4 py-2 md:h-12 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-10" required>
-                    <button type="submit" class="bg-indigo-600 text-white px-4 md:px-6 py-2 md:h-12 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm md:text-base font-medium transition-colors whitespace-nowrap">Send</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const container = document.getElementById('messages-container');
-        if (container) container.scrollTop = container.scrollHeight;
-    });
-
-    // Convert server timestamps (ISO) to user's local time display
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.message-time').forEach(function(el) {
-            try {
-                const iso = el.getAttribute('datetime');
-                if (!iso) return;
-                const d = new Date(iso);
-                if (isNaN(d.getTime())) return;
-                const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                const text = d.toLocaleString(undefined, options);
-                el.textContent = text;
-            } catch (e) {
-                console.error('Failed to parse message time', e);
-            }
-        });
-    });
-
-    function toggleEmojiPicker() {
-        const picker = document.getElementById('emoji-picker');
-        picker.classList.toggle('hidden');
-        const panel = document.getElementById('gif-panel');
-        if (panel) panel.classList.add('hidden');
-    }
-
-    function toggleGifPanel() {
-        const panel = document.getElementById('gif-panel');
-        panel.classList.toggle('hidden');
-        const picker = document.getElementById('emoji-picker');
-        if (picker) picker.classList.add('hidden');
-    }
-
-    function insertEmoji(emoji) {
-        const input = document.getElementById('message-input');
-        input.value += emoji;
-        input.focus();
-    }
-
-    function searchGif() {
-        const query = document.getElementById('gif-search').value.trim();
-        const results = document.getElementById('gif-results');
-        if (!query) {
-            results.innerHTML = '<p class="text-sm text-slate-500">Type something to search GIFs.</p>';
-            return;
-        }
-        results.innerHTML = '<p class="text-sm text-slate-500">Loading GIFs…</p>';
-        fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=LIVDSRZULELA&limit=8`)
-            .then(res => res.json())
-            .then(data => {
-                results.innerHTML = '';
-                (data.results || []).forEach(item => {
-                    const media = item.media[0];
-                    const gifUrl = media?.gif?.url || media?.tinygif?.url || media?.mediumgif?.url;
-                    if (!gifUrl) return;
-                    const button = document.createElement('button');
-                    button.type = 'button';
-                    button.className = 'overflow-hidden rounded-xl border border-slate-200 bg-white';
-                    button.innerHTML = `<img src="${gifUrl}" alt="GIF" class="h-24 w-full object-cover" />`;
-                    button.onclick = () => chooseGif(gifUrl);
-                    results.appendChild(button);
-                });
-                if (!results.children.length) {
-                    results.innerHTML = '<p class="text-sm text-slate-500">No GIFs found.</p>';
-                }
-            })
-            .catch(() => {
-                results.innerHTML = '<p class="text-sm text-red-500">Unable to load GIFs. Try again later.</p>';
-            });
-    }
-
-    function chooseGif(url) {
-        const input = document.getElementById('message-input');
-        input.value = url;
-        const panel = document.getElementById('gif-panel');
-        if (panel) panel.classList.add('hidden');
-        input.focus();
-    }
-
-    function showAttachmentName() {
-        const fileInput = document.getElementById('attachment-input');
-        const photoInput = document.getElementById('photo-input');
-        const videoInput = document.getElementById('video-input');
-        const nameElement = document.getElementById('attachment-name');
-        const selected = photoInput.files[0] || videoInput.files[0] || fileInput.files[0];
-        if (selected) {
-            nameElement.textContent = `Selected file: ${selected.name}`;
-        } else {
-            nameElement.textContent = '';
-        }
-    }
-
-    function createLocalMessageBubble(text) {
-        const container = document.getElementById('messages-container');
-        if (!container) return;
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'flex justify-end';
-
-        const bubble = document.createElement('div');
-        bubble.className = 'max-w-xs lg:max-w-md px-4 py-3 rounded-lg bg-indigo-600 text-white';
-        bubble.style.wordBreak = 'break-word';
-        bubble.style.whiteSpace = 'pre-wrap';
-
-        const content = document.createElement('div');
-        content.textContent = text;
-        bubble.appendChild(content);
-
-        const time = document.createElement('p');
-        time.className = 'text-xs mt-1 opacity-70';
-        const now = new Date();
-        time.textContent = now.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        bubble.appendChild(time);
-
-        wrapper.appendChild(bubble);
-        container.appendChild(wrapper);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function getCsrfToken() {
-        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
-        return input ? input.value : '';
-    }
-
-    function sendChatMessage(event) {
-        event.preventDefault();
-        const form = document.getElementById('chatForm');
-        const input = document.getElementById('message-input');
-        const content = input.value.trim();
-        const photoInput = document.getElementById('photo-input');
-        const videoInput = document.getElementById('video-input');
-        const attachmentInput = document.getElementById('attachment-input');
-        const hasAttachment = (photoInput && photoInput.files.length) || (videoInput && videoInput.files.length) || (attachmentInput && attachmentInput.files.length);
-
-        if (!content && !hasAttachment) {
-            return;
-        }
-
-        if (hasAttachment) {
-            form.submit();
-            return;
-        }
-
-        const button = form.querySelector('button[type="submit"]');
-        if (button) {
-            button.disabled = true;
-            button.classList.add('opacity-70', 'cursor-not-allowed');
-        }
-
-        createLocalMessageBubble(content);
-        input.value = '';
-        input.focus();
-        document.getElementById('attachment-name').textContent = '';
-
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken(),
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ content })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (!data || !data.success) {
-                console.error('Message send failed', data);
-            }
-        })
-        .catch(error => {
-            console.error('Message send error', error);
-        })
-        .finally(() => {
-            if (button) {
-                button.disabled = false;
-                button.classList.remove('opacity-70', 'cursor-not-allowed');
-            }
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('chatForm');
-        if (form) {
-            form.addEventListener('submit', sendChatMessage);
-        }
-    });
-</script>
-{% endblock %}
+                <div class="relative min-w-0 flex-1"><div id="emoji-panel" class="absolute bottom-14 left-0 z-10 hidden w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl"><div class="grid grid-cols-8 gap-1"><button type="button" class="rounded-lg p-1 text-xl hover:bg-slate-100" data-emoji="😀">😀</button><button type="button" class="rounded-lg p-1 text-xl hover:bg-slate-100" data-emoji="😍">😍</button><button type="button" class="rounded-lg p-1 text-xl hover:bg-slate-100" data-emoji="😂">😂</button><button type="button" class="rounded-lg p-1 text-xl hover:bg-slate-100" data-emoji="😎">😎</button><button type="button" class="rounded-lg p-1 text-xl hover:bg-slate-100" data-emoji="🎉">🎉</button><button type="button" class="rounded-lg p-1 text-xl hover:bg-slate-100" data-emoji="🙌">🙌</button><button type="button" class="rounded-lg p-1 text-xl hover:bg-slate-100" data-emoji="❤️">❤️</button><button type="button" class="rounded-lg p-1 text-xl hover:bg-slate-100" data-emoji="🔥">🔥</button></div></div><input id="message-input" type="text" name="content" autocomplete="off" placeholder="Write a message..." class="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#007c83] focus:ring-4 focus:ring-[#007c83]/10"></div>
+                <button id="send-button" type="submit" class="flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#007c83] px-4 text-sm font-black text-white transition hover:bg-[#005f63] disabled:cursor-wait disabled:opacity-60"><span class="hidden sm:inline">Send</span><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 4 16 8-16 8 3-8-3-8Z"/><path d="M7 12h13"/></svg></button>
++            </form>
++        </div>
++    </section>
++</main>
++
++<script>
++(() => {
++    const form = document.getElementById('chatForm'), input = document.getElementById('message-input'), mediaInput = document.getElementById('media-input'), container = document.getElementById('messages-container'), preview = document.getElementById('media-preview'), status = document.getElementById('chat-status'), sendButton = document.getElementById('send-button'), csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
++    const scrollBottom = () => { container.scrollTop = container.scrollHeight; };
++    const setStatus = (text, error = false) => { status.textContent = text; status.className = `mb-2 rounded-xl px-3 py-2 text-xs font-semibold ${error ? 'bg-rose-50 text-rose-700' : 'bg-[#e4f1ee] text-[#005f63]'}`; status.classList.remove('hidden'); if (!error) setTimeout(() => status.classList.add('hidden'), 2200); };
++    const renderMedia = (host, url, name) => { const lower = (name || url).toLowerCase(); host.innerHTML = ''; if (/\.(png|jpe?g|gif|webp|avif)(\?|$)/.test(lower)) { const image = document.createElement('img'); image.src = url; image.alt = 'Shared photo'; image.className = 'max-w-full rounded-xl'; host.appendChild(image); } else if (/\.(mp4|webm|mov|m4v|ogg)(\?|$)/.test(lower)) { const video = document.createElement('video'); video.src = url; video.controls = true; video.preload = 'metadata'; video.className = 'max-w-full rounded-xl'; host.appendChild(video); } else { const link = document.createElement('a'); link.href = url; link.download = ''; link.textContent = `Download ${name || 'attachment'}`; link.className = 'inline-flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 font-semibold underline'; host.appendChild(link); } };
++    document.querySelectorAll('[data-media-url]').forEach(item => renderMedia(item, item.dataset.mediaUrl, item.dataset.mediaName));
++    const appendMessage = data => { document.getElementById('empty-state')?.remove(); const article = document.createElement('article'); article.className = 'flex justify-end'; const wrap = document.createElement('div'); wrap.className = 'max-w-[88%] sm:max-w-[70%]'; const bubble = document.createElement('div'); bubble.className = 'rounded-2xl rounded-br-md bg-[#007c83] px-4 py-3 text-sm leading-6 text-white shadow-sm'; if (data.attachment_url) { const media = document.createElement('div'); media.className = 'message-media mb-2'; renderMedia(media, data.attachment_url, data.attachment_name); bubble.appendChild(media); } if (data.content) { const copy = document.createElement('p'); copy.className = 'message-copy'; copy.textContent = data.content; bubble.appendChild(copy); } const time = document.createElement('time'); time.className = 'mt-1 block px-1 text-right text-[11px] text-slate-400'; time.textContent = new Date(data.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); wrap.append(bubble, time); article.appendChild(wrap); container.appendChild(article); scrollBottom(); };
++    document.querySelectorAll('[data-picker-mode]').forEach(button => button.addEventListener('click', () => { const mode = button.dataset.pickerMode; mediaInput.accept = mode === 'video' ? 'video/*' : 'image/*'; if (mode === 'camera') mediaInput.setAttribute('capture', 'environment'); else mediaInput.removeAttribute('capture'); mediaInput.click(); }));
++    mediaInput.addEventListener('change', () => { const file = mediaInput.files[0]; preview.innerHTML = ''; if (!file) { preview.classList.add('hidden'); return; } preview.classList.remove('hidden'); const label = document.createElement('p'); label.className = 'mb-2 text-xs font-bold text-[#005f63]'; label.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`; preview.appendChild(label); if (file.type.startsWith('image/')) { const image = document.createElement('img'); image.src = URL.createObjectURL(file); image.className = 'max-w-full rounded-xl'; preview.appendChild(image); } else if (file.type.startsWith('video/')) { const video = document.createElement('video'); video.src = URL.createObjectURL(file); video.controls = true; video.className = 'max-w-full rounded-xl'; preview.appendChild(video); } });
++    document.getElementById('emoji-toggle').addEventListener('click', () => document.getElementById('emoji-panel').classList.toggle('hidden'));
++    document.querySelectorAll('[data-emoji]').forEach(button => button.addEventListener('click', () => { input.value += button.dataset.emoji; input.focus(); document.getElementById('emoji-panel').classList.add('hidden'); }));
++    form.addEventListener('submit', async event => { event.preventDefault(); const content = input.value.trim(); if (!content && !mediaInput.files.length) { input.focus(); return; } sendButton.disabled = true; setStatus(mediaInput.files.length ? 'Uploading securely...' : 'Sending...'); try { const response = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' } }); const data = await response.json(); if (!response.ok || !data.success) throw new Error(data.message || 'Unable to send message.'); appendMessage(data); input.value = ''; mediaInput.value = ''; preview.classList.add('hidden'); } catch (error) { setStatus(error.message, true); } finally { sendButton.disabled = false; input.focus(); } });
++    scrollBottom(); input.focus();
++})();
++</script>
++{% endblock %}

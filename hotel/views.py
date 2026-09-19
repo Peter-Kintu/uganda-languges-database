@@ -1167,7 +1167,7 @@ def send_message(request, user_id):
             attachment = request.FILES.get('attachment')
 
         if content or attachment:
-            Message.objects.create(
+            message = Message.objects.create(
                 sender=request.user,
                 receiver=receiver,
                 content=content,
@@ -1175,10 +1175,18 @@ def send_message(request, user_id):
             )
             is_ajax = (
                 request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
-                'application/json' in request.headers.get('Content-Type', '')
+                'application/json' in request.headers.get('Accept', '')
             )
             if is_ajax:
-                return JsonResponse({'success': True, 'message': f'Message sent to {receiver.username}!'})
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Message sent to {receiver.username}!',
+                    'message_id': message.id,
+                    'content': message.content,
+                    'created_at': message.created_at.isoformat(),
+                    'attachment_url': message.attachment.url if message.attachment else '',
+                    'attachment_name': message.attachment.name.rsplit('/', 1)[-1] if message.attachment else '',
+                })
             else:
                 # messages.success(request, f'Message sent to {receiver.username}!')
                 return redirect('hotel:inbox')
@@ -1466,8 +1474,9 @@ def community_conversation(request, community_id):
         if not allowed:
             return JsonResponse({'success': False, 'message': reason}, status=403) if request.headers.get('X-Requested-With') == 'XMLHttpRequest' else redirect('hotel:community_conversation', community_id=community_id)
         moderation_status, moderation_reason = moderate_community_content(community, content)
+        community_message = None
         if content or attachment:
-            CommunityMessage.objects.create(
+            community_message = CommunityMessage.objects.create(
                 community=community,
                 sender=request.user,
                 content=content,
@@ -1479,13 +1488,18 @@ def community_conversation(request, community_id):
 
         is_ajax = (
             request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
-            'application/json' in request.headers.get('Content-Type', '')
+            'application/json' in request.headers.get('Accept', '')
         )
         if is_ajax:
             return JsonResponse({
                 'success': True,
                 'status': moderation_status,
                 'message': 'Message is awaiting moderator review.' if moderation_status == 'held' else 'Message sent.',
+                'message_id': community_message.id if community_message else None,
+                'content': content,
+                'created_at': community_message.created_at.isoformat() if community_message else '',
+                'attachment_url': community_message.attachment.url if community_message and community_message.attachment else '',
+                'attachment_name': community_message.attachment.name.rsplit('/', 1)[-1] if community_message and community_message.attachment else '',
             })
 
         if moderation_status == 'held':

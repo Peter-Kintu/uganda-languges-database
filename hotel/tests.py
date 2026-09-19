@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
@@ -7,6 +8,7 @@ from languages.models import JobPost
 from .models import (
 	Community, CommunityChannel, CommunityMessage, CommunityModerationRule,
 	CommunityRole, Connection, FeedImpression, Like, Post,
+	Message,
 )
 from .views import _build_hybrid_feed, _build_market_feed_items, _feed_insert_positions
 
@@ -169,5 +171,34 @@ class CommunityArchitectureTests(TestCase):
 		response = self.client.post(f'/hotel/send_message/{self.member.id}/', {'content': 'Hello'})
 
 		self.assertEqual(response.status_code, 403)
+
+	def test_direct_ajax_attachment_returns_saved_message_metadata(self):
+		attachment = SimpleUploadedFile('photo.png', b'not-a-real-image', content_type='image/png')
+		response = self.client.post(
+			f'/hotel/send_message/{self.member.id}/',
+			{'content': 'See this', 'attachment': attachment},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+			HTTP_ACCEPT='application/json',
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(response.json()['success'])
+		self.assertTrue(response.json()['attachment_url'])
+		self.assertEqual(Message.objects.count(), 1)
+
+	def test_community_ajax_attachment_returns_saved_message_metadata(self):
+		self.client.force_login(self.member)
+		attachment = SimpleUploadedFile('clip.mp4', b'not-a-real-video', content_type='video/mp4')
+		response = self.client.post(
+			f'/hotel/community/{self.community.id}/',
+			{'content': 'Watch this', 'attachment': attachment, 'channel': ''},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+			HTTP_ACCEPT='application/json',
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(response.json()['success'])
+		self.assertTrue(response.json()['attachment_url'])
+		self.assertEqual(CommunityMessage.objects.count(), 1)
 
 # Create your tests here.
