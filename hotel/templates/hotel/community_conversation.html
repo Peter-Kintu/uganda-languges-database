@@ -21,11 +21,11 @@
 
 <main class="community-page px-2 py-2 sm:px-4 sm:py-5">
     <section class="community-shell mx-auto flex max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#dce8e4] bg-white shadow-[0_20px_60px_rgba(18,45,40,.10)] sm:rounded-3xl">
-        <header class="flex items-center justify-between gap-3 bg-gradient-to-br from-[#005f63] to-[#007c83] px-4 py-3 text-white sm:px-6">
+        <header class="flex items-center justify-between gap-3 bg-white px-4 py-3 text-slate-900 shadow-sm sm:px-6">
             <div class="flex min-w-0 items-center gap-3">
-                <a href="{% url 'hotel:inbox' %}" aria-label="Back to inbox" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white transition hover:bg-white/10"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></a>
+                <a href="{% url 'hotel:inbox' %}" aria-label="Back to inbox" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#007c83] transition hover:bg-[#e4f1ee]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/><path d="M9 12h10"/></svg></a>
                 <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f2b544] text-lg font-black text-[#005f63]">⌁</div>
-                <div class="min-w-0"><h1 class="truncate font-black text-white sm:text-lg">{{ community.name }}</h1><p class="truncate text-xs text-teal-100">{{ community.members.count }} members{% if community.description %} · {{ community.description|truncatechars:55 }}{% endif %}</p></div>
+                <div class="min-w-0"><h1 class="truncate font-black text-slate-900 sm:text-lg">{{ community.name }}</h1><p class="truncate text-xs text-slate-500">{{ community.members.count }} members{% if community.description %} · {{ community.description|truncatechars:55 }}{% endif %}</p></div>
             </div>
             <div class="flex items-center gap-2"><select id="notification-mode" aria-label="Notification settings" class="hidden rounded-xl border-0 bg-white/10 px-2 py-2 text-xs text-white outline-none sm:block"><option value="all">All updates</option><option value="mentions">Mentions only</option><option value="muted">Mute 8 hours</option></select><button type="button" onclick="openShareSheet()" class="flex h-10 items-center gap-2 rounded-xl bg-white/10 px-3 text-sm font-bold text-white transition hover:bg-white/20"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="m8 11 8-5M8 13l8 5"/></svg><span class="hidden sm:inline">Share</span></button></div>
         </header>
