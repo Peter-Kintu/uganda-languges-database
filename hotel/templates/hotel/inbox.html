@@ -31,7 +31,7 @@
             <header class="border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
                 <div class="flex items-center justify-between gap-4">
                     <div><p class="text-[11px] font-bold uppercase tracking-[.2em] text-[#007c83]">MyUganda / Connect</p><h1 class="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Your conversations</h1></div>
-                    <a href="{% url 'hotel:social_feed' %}" class="inline-flex h-10 items-center gap-2 rounded-xl bg-[#007c83] px-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#005f63] focus:outline-none focus:ring-2 focus:ring-[#f2b544] sm:px-4"><span aria-hidden="true">+</span> <span class="hidden sm:inline">Find people</span></a>
+                    <a href="{% url 'hotel:social_feed' %}" class="inline-flex h-10 items-center gap-2 rounded-xl bg-[#007c83] px-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#005f63] focus:outline-none focus:ring-2 focus:ring-[#f2b544] sm:px-4" style="background-color: #007c83 !important; color: #ffffff !important;"><span aria-hidden="true">+</span> <span class="hidden sm:inline">Find people</span></a>
                 </div>
                 <div class="mt-5 flex gap-2 overflow-x-auto" role="tablist" aria-label="Inbox sections">
                     <button type="button" class="inbox-tab rounded-xl border-b-2 border-transparent px-3 py-2 text-sm font-bold text-slate-500 transition" aria-selected="true" data-pane="messages" role="tab">Messages{% if unread_messages_count > 0 %}<span class="ml-2 rounded-full bg-[#f2b544] px-2 py-0.5 text-[11px] text-slate-900">{{ unread_messages_count }}</span>{% endif %}</button>
