@@ -4,60 +4,31 @@
 {% block title %}Create Community | MyUganda{% endblock %}
 
 {% block content %}
-<div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen py-8 md:py-16 px-3 md:px-4">
-    <div class="max-w-2xl mx-auto">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8">
-            <div class="flex items-center space-x-3 md:space-x-4 mb-6">
-                <a href="{% url 'hotel:inbox' %}" class="text-indigo-600 hover:text-indigo-800 transition-colors flex-shrink-0">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </a>
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Create Community</h1>
-            </div>
-
-            <form method="post" class="space-y-6">
-                {% csrf_token %}
-                
-                <div>
-                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Community Name <span class="text-red-600">*</span></label>
-                    <input type="text" id="name" name="name" required 
-                           class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                           placeholder="e.g., Tech Entrepreneurs, Photography Lovers">
-                </div>
-
-                <div>
-                    <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
-                    <textarea id="description" name="description" rows="4"
-                              class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all"
-                              placeholder="Describe your community (optional) - what's it about?"></textarea>
-                </div>
-
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="flex items-start space-x-3">
-                        <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <div>
-                            <h3 class="text-sm font-semibold text-blue-900">Community Features</h3>
-                            <ul class="mt-2 text-sm text-blue-800 space-y-1">
-                                <li>✓ Invite others via shareable link</li>
-                                <li>✓ Group conversations</li>
-                                <li>✓ Connect with like-minded people</li>
-                                <li>✓ Build communities around your interests</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-end space-x-3 pt-4">
-                    <a href="{% url 'hotel:inbox' %}" class="px-6 py-2.5 text-gray-700 font-medium hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">Cancel</a>
-                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-semibold transition-colors">
-                        Create Community
-                    </button>
-                </div>
-            </form>
+<style>
+    .create-community-page { min-height: calc(100vh - 4rem); background: radial-gradient(circle at 10% 10%, #e4f1ee 0, transparent 32%), #f7faf9; }
+    .create-community-card { box-shadow: 0 24px 70px rgba(18, 45, 40, .1); }
+    .community-input:focus { border-color: #007c83; box-shadow: 0 0 0 4px rgba(0, 124, 131, .1); outline: none; }
+</style>
+<div class="create-community-page px-4 py-6 sm:py-12">
+    <main class="create-community-card mx-auto max-w-3xl overflow-hidden rounded-3xl border border-[#dce8e4] bg-white">
+        <div class="grid md:grid-cols-[.82fr_1.18fr]">
+            <aside class="bg-[#005f63] p-6 text-white sm:p-8 md:p-10">
+                <a href="{% url 'hotel:inbox' %}" class="inline-flex items-center gap-2 text-sm font-bold text-[#f9d477] transition hover:text-white">← Back to inbox</a>
+                <div class="mt-16 hidden md:block"><div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f2b544] text-2xl text-[#005f63]">⌁</div><p class="mt-8 text-[11px] font-bold uppercase tracking-[.22em] text-[#f9d477]">Make room for belonging</p><h1 class="mt-3 text-4xl font-black leading-tight">Your people deserve a home.</h1><p class="mt-5 text-sm leading-7 text-teal-50">Bring together neighbors, language learners, builders, creators, and friends around something that matters.</p></div>
+                <div class="md:hidden"><p class="mt-8 text-[11px] font-bold uppercase tracking-[.2em] text-[#f9d477]">New community</p><h1 class="mt-2 text-3xl font-black">Create your space.</h1></div>
+            </aside>
+            <section class="p-6 sm:p-10">
+                <div class="mb-8"><p class="text-[11px] font-bold uppercase tracking-[.2em] text-[#007c83]">Start something local</p><h2 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Tell people what this is about</h2><p class="mt-2 text-sm leading-6 text-slate-500">A clear name and description help the right people find you.</p></div>
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    <div><label for="name" class="mb-2 block text-sm font-bold text-slate-800">Community name <span class="text-rose-500">*</span></label><input type="text" id="name" name="name" required maxlength="100" autofocus class="community-input w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 transition" placeholder="e.g. Kampala Creators, Luganda Learners"></div>
+                    <div><div class="flex items-center justify-between"><label for="description" class="mb-2 block text-sm font-bold text-slate-800">What brings people together?</label><span id="description-count" class="text-xs text-slate-400">0 / 280</span></div><textarea id="description" name="description" maxlength="280" rows="5" class="community-input w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 transition" placeholder="Share the purpose, tone, or first thing members should know..."></textarea></div>
+                    <div class="rounded-2xl border border-[#f0dfb5] bg-[#fffaf0] p-4"><p class="text-sm font-bold text-slate-800">What you can do together</p><div class="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2"><span>✓ Share ideas and updates</span><span>✓ Invite trusted people</span><span>✓ Support local opportunities</span><span>✓ Build in your language</span></div></div>
+                    <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end"><a href="{% url 'hotel:inbox' %}" class="rounded-xl px-4 py-3 text-center text-sm font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900">Cancel</a><button type="submit" class="rounded-xl bg-[#007c83] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#005f63] focus:outline-none focus:ring-2 focus:ring-[#f2b544]">Create community <span aria-hidden="true">→</span></button></div>
+                </form>
+            </section>
         </div>
-    </div>
+    </main>
 </div>
+<script>const description = document.getElementById('description'); const count = document.getElementById('description-count'); description?.addEventListener('input', () => { count.textContent = `${description.value.length} / 280`; });</script>
 {% endblock %}

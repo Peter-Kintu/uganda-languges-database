@@ -1,255 +1,69 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Messages & Communities | MyUganda{% endblock %}
+{% block title %}Inbox | MyUganda{% endblock %}
 
 {% block content %}
 <style>
-    /* Premium Container Styling */
-    .inbox-wrapper {
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        min-height: 100vh;
-        padding: 1rem;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-
-    @media (min-width: 640px) {
-        .inbox-wrapper {
-            padding: 1.5rem;
-        }
-    }
-
-    /* Main Card Layout */
-    .inbox-card {
-        max-width: 900px;
-        margin: 0 auto;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-    }
-
-    @media (min-width: 640px) {
-        .inbox-card {
-            border-radius: 16px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-    }
-
-    /* Tab Navigation Style */
-    .inbox-tabs {
-        display: flex;
-        overflow-x: auto;
-        white-space: nowrap;
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-        background: #ffffff;
-        border-bottom: 2px solid #f1f5f9;
-    }
-
-    .inbox-tabs::-webkit-scrollbar {
-        display: none;
-    }
-
-    .tab-btn {
-        flex: 1;
-        min-width: auto;
-        padding: 1rem 0.75rem;
-        text-align: center;
-        font-weight: 600;
-        font-size: 0.875rem;
-        color: #64748b;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -2px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-
-    .tab-btn:hover {
-        color: #4f46e5;
-        background-color: #f8fafc;
-    }
-
-    .tab-btn.active {
-        color: #4f46e5;
-        border-bottom-color: #4f46e5;
-    }
-
-    .tab-label {
-        display: none;
-    }
-
-    @media (min-width: 640px) {
-        .tab-btn {
-            padding: 1rem 1.25rem;
-            font-size: 0.9375rem;
-        }
-        .tab-label {
-            display: inline;
-        }
-    }
-
-    /* Content Panes */
-    .tab-pane {
-        display: none;
-        animation: fadeIn 0.3s ease-in-out;
-    }
-
-    .tab-pane.active {
-        display: block;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .unread-badge {
-        background: #ef4444;
-        color: white;
-        font-size: 0.65rem;
-        padding: 2px 5px;
-        border-radius: 99px;
-        min-width: fit-content;
-        flex-shrink-0;
-    }
+    .inbox-page { min-height: calc(100vh - 4rem); background: #f4f7f6; color: #12211f; }
+    .inbox-shell { max-width: 1180px; margin: 0 auto; padding: 1rem; }
+    .inbox-panel { background: #fff; border: 1px solid #dce8e4; box-shadow: 0 18px 55px rgba(18, 45, 40, .08); }
+    .inbox-sidebar { width: 340px; border-right: 1px solid #e5eeeb; }
+    .inbox-tab[aria-selected="true"] { color: #007c83; border-bottom-color: #f2b544; background: #f7fbfa; }
+    .conversation-row { border-left: 3px solid transparent; }
+    .conversation-row:hover, .conversation-row:focus-visible { background: #f5faf8; border-left-color: #007c83; outline: none; }
+    .avatar { background: linear-gradient(145deg, #007c83, #005f63); color: #fff; }
+    .community-tile { background: linear-gradient(145deg, #fffaf0, #fff); border: 1px solid #f0dfb5; }
+    .community-tile:hover { border-color: #f2b544; transform: translateY(-2px); }
+    .sr-only-focus:focus { position: static; width: auto; height: auto; padding: .5rem; margin: .5rem; overflow: visible; clip: auto; white-space: normal; }
+    @media (max-width: 767px) { .inbox-shell { padding: .5rem; } .inbox-sidebar { width: 100%; border-right: 0; } .inbox-panel { border-radius: 18px; } }
 </style>
 
-<div class="inbox-wrapper">
-    <div class="inbox-card">
-        <div class="inbox-tabs flex overflow-x-auto whitespace-nowrap scrollbar-hide border-b-2 border-f1f5f9">
-            <div class="tab-btn active flex-1" onclick="switchPane(event, 'messages')">
-                <span title="Messages">💬</span>
-                <span class="tab-label">Messages</span>
-                {% if unread_messages_count > 0 %}
-                    <span class="unread-badge">{{ unread_messages_count }}</span>
-                {% endif %}
-            </div>
-            <div class="tab-btn flex-1" onclick="switchPane(event, 'communities')">
-                <span title="Communities">👥</span>
-                <span class="tab-label">Communities</span>
-            </div>
-            <div class="tab-btn flex-1 relative" onclick="switchPane(event, 'notifications')">
-                <span title="Notifications">🔔</span>
-                <span class="tab-label">Notifications</span>
-                {% if notifications.count > 0 %}
-                    <span class="absolute top-2 right-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">
-                        {{ notifications.count }}
-                    </span>
-                {% endif %}
-            </div>
-        </div>
+<div class="inbox-page">
+    <a href="#inbox-content" class="sr-only sr-only-focus">Skip to inbox</a>
+    <div class="inbox-shell">
+        <section class="inbox-panel overflow-hidden rounded-2xl md:rounded-3xl">
+            <header class="border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
+                <div class="flex items-center justify-between gap-4">
+                    <div><p class="text-[11px] font-bold uppercase tracking-[.2em] text-[#007c83]">MyUganda / Connect</p><h1 class="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Your conversations</h1></div>
+                    <a href="{% url 'hotel:social_feed' %}" class="inline-flex h-10 items-center gap-2 rounded-xl bg-[#007c83] px-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#005f63] focus:outline-none focus:ring-2 focus:ring-[#f2b544] sm:px-4"><span aria-hidden="true">+</span> <span class="hidden sm:inline">Find people</span></a>
+                </div>
+                <div class="mt-5 flex gap-2 overflow-x-auto" role="tablist" aria-label="Inbox sections">
+                    <button type="button" class="inbox-tab rounded-xl border-b-2 border-transparent px-3 py-2 text-sm font-bold text-slate-500 transition" aria-selected="true" data-pane="messages" role="tab">Messages{% if unread_messages_count > 0 %}<span class="ml-2 rounded-full bg-[#f2b544] px-2 py-0.5 text-[11px] text-slate-900">{{ unread_messages_count }}</span>{% endif %}</button>
+                    <button type="button" class="inbox-tab rounded-xl border-b-2 border-transparent px-3 py-2 text-sm font-bold text-slate-500 transition" aria-selected="false" data-pane="communities" role="tab">Communities</button>
+                    <button type="button" class="inbox-tab rounded-xl border-b-2 border-transparent px-3 py-2 text-sm font-bold text-slate-500 transition" aria-selected="false" data-pane="notifications" role="tab">Notifications{% if notifications.count > 0 %}<span class="ml-2 rounded-full bg-rose-500 px-2 py-0.5 text-[11px] text-white">{{ notifications.count }}</span>{% endif %}</button>
+                </div>
+            </header>
 
-        <div id="messages" class="tab-pane active">
-            {% if message_groups %}
-                <div class="divide-y divide-slate-100">
-                    {% for group in message_groups %}
-                        {% with message=group.list.0 %}
-                        <a href="{% url 'hotel:conversation' group.grouper.id %}" class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-slate-50 transition-colors min-w-0">
-                            <div class="w-10 sm:w-12 h-10 sm:h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold flex-shrink-0 text-sm sm:text-base">
-                                {{ group.grouper.username|first|upper }}
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-baseline gap-2">
-                                    <h3 class="font-semibold text-slate-900 truncate text-sm sm:text-base">{{ group.grouper.username }}</h3>
-                                    <span class="text-xs text-slate-400 flex-shrink-0">{{ message.created_at|timesince }} ago</span>
-                                </div>
-                                <p class="text-xs sm:text-sm text-slate-500 truncate">{{ message.content }}</p>
-                            </div>
-                        </a>
-                        {% endwith %}
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="py-16 sm:py-20 text-center px-4">
-                    <p class="text-slate-400 text-sm sm:text-base">No conversations yet.</p>
-                    <a href="{% url 'hotel:social_feed' %}" class="text-indigo-600 font-medium mt-2 inline-block text-sm sm:text-base hover:text-indigo-700">Find people to message</a>
-                </div>
-            {% endif %}
-        </div>
-
-        <div id="communities" class="tab-pane p-3 sm:p-4">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-                <h2 class="text-lg font-bold text-slate-800">Your Communities</h2>
-                <a href="{% url 'hotel:create_community' %}" title="Create New Community" class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 h-10 sm:h-auto bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-lg sm:rounded-xl text-indigo-600 font-medium hover:border-indigo-400 transition-all text-sm sm:text-base whitespace-nowrap">
-                    <span class="text-lg sm:text-base">➕</span>
-                    <span class="hidden sm:inline">Create Community</span>
-                </a>
-            </div>
-            {% if communities %}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                    {% for community in communities %}
-                    <a href="{% url 'hotel:community_conversation' community.id %}" class="block p-3 sm:p-4 border border-slate-200 rounded-lg sm:rounded-xl hover:border-indigo-300 hover:shadow-sm transition-all">
-                        <h3 class="font-bold text-indigo-600 text-sm sm:text-base truncate">{{ community.name }}</h3>
-                        <p class="text-xs text-slate-500 mt-1">{{ community.members.count }} members</p>
-                    </a>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="py-12 text-center border-2 border-dashed border-slate-200 rounded-xl px-4">
-                    <p class="text-slate-400 text-sm sm:text-base">You haven't joined any communities.</p>
-                </div>
-            {% endif %}
-        </div>
-
-        <div id="notifications" class="tab-pane">
-            {% if notifications %}
-                <div class="divide-y divide-slate-100">
-                    {% for n in notifications %}
-                    <div id="notif-{{ n.id }}" class="p-3 sm:p-4 flex justify-between items-start gap-3 hover:bg-slate-50 transition-all">
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs sm:text-sm text-slate-800">{{ n.content }}</p>
-                            <span class="text-xs text-slate-400">{{ n.created_at|timesince }} ago</span>
+            <div id="inbox-content">
+                <div id="messages" class="inbox-pane grid md:grid-cols-[340px_1fr]">
+                    <aside class="inbox-sidebar p-4 sm:p-5">
+                        <label for="conversation-search" class="sr-only">Search conversations</label>
+                        <div class="relative"><span class="pointer-events-none absolute left-3 top-2.5 text-slate-400" aria-hidden="true">⌕</span><input id="conversation-search" type="search" placeholder="Search conversations" class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-[#007c83] focus:ring-2 focus:ring-[#007c83]/10"></div>
+                        <div class="mt-4 flex gap-2 text-xs font-bold"><button type="button" class="message-filter rounded-full bg-[#007c83] px-3 py-1.5 text-white" data-filter="all">All</button><button type="button" class="message-filter rounded-full bg-slate-100 px-3 py-1.5 text-slate-500" data-filter="unread">Unread</button></div>
+                        <div id="conversation-list" class="mt-4 divide-y divide-slate-100">
+                            {% for group in message_groups %}{% with message=group.list.0 %}<a href="{% url 'hotel:conversation' group.grouper.id %}" class="conversation-row conversation-item flex gap-3 px-2 py-4 transition" data-name="{{ group.grouper.username|lower }} {{ message.content|lower }}" data-unread="{% if message.receiver == request.user and not message.is_read %}true{% else %}false{% endif %}"><div class="avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black">{{ group.grouper.username|first|upper }}</div><div class="min-w-0 flex-1"><div class="flex items-baseline justify-between gap-2"><h2 class="truncate text-sm font-bold text-slate-900">{{ group.grouper.get_full_name|default:group.grouper.username }}</h2><time class="shrink-0 text-[11px] text-slate-400">{{ message.created_at|timesince }}</time></div><p class="mt-1 truncate text-xs {% if message.receiver == request.user and not message.is_read %}font-bold text-slate-700{% else %}text-slate-500{% endif %}">{% if message.attachment and not message.content %}Attachment{% else %}{{ message.content|default:'Sent a file' }}{% endif %}</p></div>{% if message.receiver == request.user and not message.is_read %}<span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#f2b544]" title="Unread"></span>{% endif %}</a>{% endwith %}{% empty %}<div class="py-12 text-center"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e4f1ee] text-2xl">✦</div><p class="mt-4 text-sm font-bold text-slate-800">Your inbox is ready</p><p class="mt-1 text-xs text-slate-500">Start a conversation from the community.</p></div>{% endfor %}
                         </div>
-                        <button onclick="dismissNotification({{ n.id }})" title="Dismiss" class="text-slate-400 hover:text-red-500 flex-shrink-0 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    {% endfor %}
+                    </aside>
+                    <div class="hidden min-h-[470px] items-center justify-center bg-[#fbfdfc] p-8 text-center md:flex"><div class="max-w-sm"><div class="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#e4f1ee] text-3xl text-[#007c83]">◌</div><h2 class="mt-5 text-xl font-black text-slate-900">Pick a conversation</h2><p class="mt-2 text-sm leading-6 text-slate-500">Your messages, community moments, and local opportunities belong in one calm place.</p></div></div>
                 </div>
-            {% else %}
-                <div class="py-16 sm:py-20 text-center text-slate-400 text-sm sm:text-base">No new notifications.</div>
-            {% endif %}
-        </div>
+
+                <div id="communities" class="inbox-pane hidden p-4 sm:p-6"><div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p class="text-[11px] font-bold uppercase tracking-[.2em] text-[#007c83]">Belong somewhere</p><h2 class="mt-1 text-2xl font-black text-slate-900">Your communities</h2><p class="mt-1 text-sm text-slate-500">Find your people, your language, your next opportunity.</p></div><a href="{% url 'hotel:create_community' %}" class="inline-flex items-center justify-center rounded-xl bg-[#f2b544] px-4 py-2.5 text-sm font-black text-slate-900 transition hover:bg-[#e5a72f]">Create community</a></div>{% if communities %}<div class="mt-6 grid gap-3 sm:grid-cols-2">{% for community in communities %}<a href="{% url 'hotel:community_conversation' community.id %}" class="community-tile rounded-2xl p-4 transition"><div class="flex items-center gap-3"><div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#007c83] text-lg text-white">⌁</div><div class="min-w-0"><h3 class="truncate font-black text-slate-900">{{ community.name }}</h3><p class="text-xs text-slate-500">{{ community.members.count }} members</p></div><span class="ml-auto text-lg text-[#007c83]">→</span></div>{% if community.description %}<p class="mt-3 line-clamp-2 text-sm leading-5 text-slate-500">{{ community.description }}</p>{% endif %}</a>{% endfor %}</div>{% else %}<div class="mt-8 rounded-2xl border border-dashed border-[#e4c979] bg-[#fffaf0] px-6 py-12 text-center"><p class="font-bold text-slate-800">Your next community starts here.</p><p class="mt-1 text-sm text-slate-500">Create a space for your district, language, work, or passion.</p><a href="{% url 'hotel:create_community' %}" class="mt-5 inline-flex rounded-xl bg-[#007c83] px-4 py-2.5 text-sm font-bold text-white">Create your first community</a></div>{% endif %}</div>
+
+                <div id="notifications" class="inbox-pane hidden"><div class="divide-y divide-slate-100">{% for n in notifications %}<div id="notif-{{ n.id }}" class="flex items-start justify-between gap-4 px-4 py-5 transition sm:px-6"><div><p class="text-sm font-semibold text-slate-800">{{ n.content }}</p><time class="mt-1 block text-xs text-slate-400">{{ n.created_at|timesince }} ago</time></div><button type="button" onclick="dismissNotification({{ n.id }})" aria-label="Dismiss notification" class="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500">×</button></div>{% empty %}<div class="px-6 py-16 text-center"><div class="text-3xl">✓</div><p class="mt-3 font-bold text-slate-800">You are all caught up</p><p class="mt-1 text-sm text-slate-500">New activity will appear here.</p></div>{% endfor %}</div></div>
+            </div>
+        </section>
     </div>
 </div>
 
+<div id="inbox-toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-4 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white opacity-0 shadow-xl transition" role="status"></div>
 <script>
-    // Tab switching logic
-    function switchPane(evt, paneId) {
-        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        
-        document.getElementById(paneId).classList.add('active');
-        evt.currentTarget.classList.add('active');
-    }
-
-    // AJAX Dismiss notification
-    function dismissNotification(id) {
-        fetch(`/mark-message-read/${id}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                const element = document.getElementById(`notif-${id}`);
-                element.style.opacity = '0';
-                element.style.transform = 'translateX(20px)';
-                setTimeout(() => element.remove(), 300);
-            }
-        })
-        .catch(err => console.error('Error:', err));
-    }
+    const inboxToast = (message) => { const toast = document.getElementById('inbox-toast'); toast.textContent = message; toast.classList.remove('opacity-0', 'translate-y-4'); setTimeout(() => toast.classList.add('opacity-0', 'translate-y-4'), 2200); };
+    document.querySelectorAll('.inbox-tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.inbox-tab').forEach(item => item.setAttribute('aria-selected', item === tab ? 'true' : 'false')); document.querySelectorAll('.inbox-pane').forEach(pane => pane.classList.toggle('hidden', pane.id !== tab.dataset.pane)); }));
+    const search = document.getElementById('conversation-search');
+    const filterRows = () => { const query = (search.value || '').toLowerCase().trim(); const activeFilter = document.querySelector('.message-filter.bg-\\[\\#007c83\\]')?.dataset.filter || 'all'; document.querySelectorAll('.conversation-item').forEach(row => row.classList.toggle('hidden', (!row.dataset.name.includes(query)) || (activeFilter === 'unread' && row.dataset.unread !== 'true'))); };
+    search?.addEventListener('input', filterRows);
+    document.querySelectorAll('.message-filter').forEach(button => button.addEventListener('click', () => { document.querySelectorAll('.message-filter').forEach(item => item.className = 'message-filter rounded-full bg-slate-100 px-3 py-1.5 text-slate-500'); button.className = 'message-filter rounded-full bg-[#007c83] px-3 py-1.5 text-white'; filterRows(); }));
+    function dismissNotification(id) { fetch(`/mark-message-read/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' } }).then(response => response.json()).then(data => { if (data.success) { const item = document.getElementById(`notif-${id}`); item.style.opacity = '0'; setTimeout(() => item.remove(), 240); inboxToast('Notification dismissed'); } }).catch(() => inboxToast('Could not dismiss notification')); }
 </script>
 {% endblock %}
