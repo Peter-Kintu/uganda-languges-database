@@ -22,6 +22,16 @@ class CustomUser(AbstractUser):
     language = models.CharField(_("Preferred Language"), max_length=10, default='en', 
                                 help_text=_("User's preferred language for content, e.g., 'en', 'sw', 'fr'"))
 
+    DIRECT_MESSAGE_CHOICES = [
+        ('everyone', 'Everyone'),
+        ('connections', 'Accepted connections only'),
+        ('nobody', 'Nobody'),
+    ]
+    direct_message_privacy = models.CharField(max_length=20, choices=DIRECT_MESSAGE_CHOICES, default='everyone')
+    allow_channel_invites = models.BooleanField(default=True)
+    show_online_status = models.BooleanField(default=True)
+    discoverable_by_handle = models.BooleanField(default=True)
+
     profile_image = CloudinaryField('profile_image', blank=True, null=True, 
                                     help_text=_("Upload a professional profile picture."))
 

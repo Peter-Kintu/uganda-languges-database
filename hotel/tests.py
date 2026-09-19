@@ -4,7 +4,10 @@ from django.utils import timezone
 
 from languages.models import JobPost
 
-from .models import Connection, FeedImpression, Like, Post
+from .models import (
+	Community, CommunityChannel, CommunityMessage, CommunityModerationRule,
+	CommunityRole, Connection, FeedImpression, Like, Post,
+)
 from .views import _build_hybrid_feed, _build_market_feed_items, _feed_insert_positions
 
 
@@ -116,5 +119,55 @@ class HybridFeedTests(TestCase):
 		self.assertEqual(len(first_products), 3)
 		self.assertEqual(len(second_products), 3)
 		self.assertNotEqual(first_job, second_job)
+
+
+class CommunityArchitectureTests(TestCase):
+	def setUp(self):
+		self.owner = User.objects.create_user(username='community_owner', password='secret123')
+		self.member = User.objects.create_user(username='community_member', password='secret123')
+		self.community = Community.objects.create(
+			name='Kampala Builders', creator=self.owner, description='Build together'
+		)
+		self.community.members.add(self.owner, self.member)
+		self.client.force_login(self.owner)
+
+	def test_community_page_provisions_general_channel_and_roles(self):
+		response = self.client.get(f'/hotel/community/{self.community.id}/')
+
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(CommunityChannel.objects.filter(community=self.community, slug='general').exists())
+		self.assertTrue(CommunityRole.objects.filter(community=self.community, name='Admin').exists())
+
+	def test_only_moderator_can_create_channel(self):
+		self.client.force_login(self.member)
+		response = self.client.post(f'/hotel/community/{self.community.id}/channels/create/', {'name': 'Jobs'})
+
+		self.assertEqual(response.status_code, 403)
+		self.client.force_login(self.owner)
+		response = self.client.post(f'/hotel/community/{self.community.id}/channels/create/', {'name': 'Jobs'})
+
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(CommunityChannel.objects.filter(community=self.community, slug='jobs').exists())
+
+	def test_moderation_holds_matching_content_out_of_visible_messages(self):
+		CommunityModerationRule.objects.create(community=self.community, phrase='fake giveaway', action='hold')
+		response = self.client.post(
+			f'/hotel/community/{self.community.id}/',
+			{'content': 'This is a fake giveaway', 'channel': ''},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.json()['status'], 'held')
+		message = CommunityMessage.objects.get(community=self.community)
+		self.assertEqual(message.moderation_status, 'held')
+		self.assertFalse(CommunityMessage.objects.filter(community=self.community, moderation_status='visible').exists())
+
+	def test_direct_message_privacy_blocks_unwanted_message(self):
+		self.member.direct_message_privacy = 'nobody'
+		self.member.save(update_fields=['direct_message_privacy'])
+		response = self.client.post(f'/hotel/send_message/{self.member.id}/', {'content': 'Hello'})
+
+		self.assertEqual(response.status_code, 403)
 
 # Create your tests here.

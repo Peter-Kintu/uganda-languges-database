@@ -106,11 +106,84 @@ class Community(models.Model):
             self.invite_link = str(uuid.uuid4())[:8]
         super().save(*args, **kwargs)
 
+
+class CommunityRole(models.Model):
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='roles')
+    name = models.CharField(max_length=60)
+    can_post = models.BooleanField(default=True)
+    can_create_threads = models.BooleanField(default=True)
+    can_pin = models.BooleanField(default=False)
+    can_moderate = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['community', 'name'], name='unique_community_role_name'),
+        ]
+        ordering = ['name']
+
+    def __str__(self):
+        return f'{self.community.name}: {self.name}'
+
+
+class CommunityMembership(models.Model):
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='memberships')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='community_memberships')
+    role = models.ForeignKey(CommunityRole, on_delete=models.SET_NULL, null=True, blank=True, related_name='memberships')
+    directory_visible = models.BooleanField(default=True)
+    mentions_only = models.BooleanField(default=False)
+    muted_until = models.DateTimeField(null=True, blank=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['community', 'user'], name='unique_community_membership'),
+        ]
+
+
+class CommunityChannel(models.Model):
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='channels')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subchannels')
+    name = models.CharField(max_length=80)
+    description = models.CharField(max_length=255, blank=True)
+    slug = models.SlugField(max_length=90)
+    is_announcement = models.BooleanField(default=False)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_community_channels')
+    created_at = models.DateTimeField(auto_now_add=True)
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['community', 'slug'], name='unique_community_channel_slug'),
+        ]
+        ordering = ['position', 'name']
+
+    def __str__(self):
+        return f'{self.community.name} / {self.name}'
+
+
+class CommunityModerationRule(models.Model):
+    ACTION_CHOICES = [('hold', 'Hold for review'), ('reject', 'Reject')]
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='moderation_rules')
+    phrase = models.CharField(max_length=120)
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES, default='hold')
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['community', 'phrase'], name='unique_community_moderation_phrase'),
+        ]
+
+
 class CommunityMessage(models.Model):
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='messages')
+    channel = models.ForeignKey(CommunityChannel, on_delete=models.SET_NULL, null=True, blank=True, related_name='messages')
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='replies')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField(blank=True)
     attachment = models.FileField(upload_to='message_attachments/', blank=True, null=True)
+    moderation_status = models.CharField(max_length=10, choices=[('visible', 'Visible'), ('held', 'Held'), ('rejected', 'Rejected')], default='visible')
+    moderation_reason = models.CharField(max_length=255, blank=True)
+    is_pinned = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

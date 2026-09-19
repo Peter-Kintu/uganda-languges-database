@@ -43,7 +43,11 @@ class ProfileEditForm(forms.ModelForm):
     """
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'headline', 'about', 'location', 'profile_image')
+        fields = (
+            'first_name', 'last_name', 'headline', 'about', 'location', 'profile_image',
+            'direct_message_privacy', 'allow_channel_invites', 'show_online_status',
+            'discoverable_by_handle',
+        )
         widgets = {
             'about': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Tell us about your professional journey...'}),
         }

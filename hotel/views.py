@@ -7,7 +7,14 @@ from django.utils import timezone
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from urllib.parse import quote
-from .models import Post, Comment, Like, Connection, Message, Share, Community, CommunityMessage, FeedImpression
+from .models import (
+    Post, Comment, Like, Connection, Message, Share, Community, CommunityMessage,
+    CommunityChannel, CommunityMembership, FeedImpression,
+)
+from .services import (
+    can_post_to_community, ensure_community_defaults, get_membership,
+    moderate_community_content, visible_community_messages,
+)
 from .forms import PostForm
 from .tasks import warm_hotel_feed_cache, rebuild_hotel_feed_cache
 from users.models import CustomUser
@@ -1137,6 +1144,12 @@ def translate_text(request):
 @login_required
 def send_message(request, user_id):
     receiver = get_object_or_404(CustomUser, id=user_id)
+    if receiver.direct_message_privacy == 'nobody' and receiver != request.user:
+        return JsonResponse({'success': False, 'message': 'This user is not accepting direct messages.'}, status=403)
+    if receiver.direct_message_privacy == 'connections' and not Connection.objects.filter(
+        sender=request.user, receiver=receiver, status='accepted'
+    ).exists():
+        return JsonResponse({'success': False, 'message': 'Connect with this user before sending a message.'}, status=403)
     if request.method == 'POST':
         content = ''
         attachment = None
@@ -1411,6 +1424,7 @@ def create_community(request):
         if name:
             community = Community.objects.create(name=name, description=description, creator=request.user)
             community.members.add(request.user)
+            ensure_community_defaults(community, request.user)
             messages.success(request, f'Community "{name}" created successfully!')
             return redirect('hotel:community_conversation', community_id=community.id)
     return render(request, 'hotel/create_community.html')
@@ -1422,12 +1436,16 @@ def join_community(request, invite_link):
         return redirect(f"{settings.LOGIN_URL}?next={next_url}")
     if request.user not in community.members.all():
         community.members.add(request.user)
+        ensure_community_defaults(community, request.user)
         messages.success(request, f'Joined community "{community.name}"!')
     return redirect('hotel:community_conversation', community_id=community.id)
 
 @login_required
 def community_conversation(request, community_id):
     community = get_object_or_404(Community, id=community_id, members=request.user)
+    default_channel = ensure_community_defaults(community, request.user)
+    channel_id = request.GET.get('channel') or request.POST.get('channel')
+    channel = get_object_or_404(CommunityChannel, id=channel_id, community=community) if channel_id else default_channel
     if request.method == 'POST':
         content = ''
         attachment = None
@@ -1444,12 +1462,19 @@ def community_conversation(request, community_id):
             content = request.POST.get('content', '') or ''
             attachment = request.FILES.get('attachment')
 
+        allowed, reason = can_post_to_community(community, request.user, channel)
+        if not allowed:
+            return JsonResponse({'success': False, 'message': reason}, status=403) if request.headers.get('X-Requested-With') == 'XMLHttpRequest' else redirect('hotel:community_conversation', community_id=community_id)
+        moderation_status, moderation_reason = moderate_community_content(community, content)
         if content or attachment:
             CommunityMessage.objects.create(
                 community=community,
                 sender=request.user,
                 content=content,
                 attachment=attachment
+                , channel=channel,
+                moderation_status=moderation_status,
+                moderation_reason=moderation_reason,
             )
 
         is_ajax = (
@@ -1457,15 +1482,68 @@ def community_conversation(request, community_id):
             'application/json' in request.headers.get('Content-Type', '')
         )
         if is_ajax:
-            return JsonResponse({'success': True})
+            return JsonResponse({
+                'success': True,
+                'status': moderation_status,
+                'message': 'Message is awaiting moderator review.' if moderation_status == 'held' else 'Message sent.',
+            })
+
+        if moderation_status == 'held':
+            messages.warning(request, 'Your message was sent to moderators for review.')
+        elif moderation_status == 'rejected':
+            messages.error(request, 'Your message could not be posted because it matched a community safety rule.')
 
         return redirect('hotel:community_conversation', community_id=community_id)
     
-    messages = community.messages.all().order_by('created_at')
+    messages = visible_community_messages(community, channel)
+    channels = community.channels.filter(parent__isnull=True)
+    membership = get_membership(community, request.user)
     return render(request, 'hotel/community_conversation.html', {
         'community': community,
         'messages': messages
+        , 'channels': channels,
+        'active_channel': channel,
+        'membership': membership,
     })
+
+
+@login_required
+def create_community_channel(request, community_id):
+    community = get_object_or_404(Community, id=community_id, members=request.user)
+    ensure_community_defaults(community, community.creator)
+    membership = get_membership(community, request.user)
+    if not membership or not membership.role or not membership.role.can_moderate:
+        return JsonResponse({'success': False, 'message': 'Only community moderators can create channels.'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'POST required.'}, status=405)
+    from django.utils.text import slugify
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'message': 'Channel name is required.'}, status=400)
+    slug = slugify(name)
+    if not slug:
+        return JsonResponse({'success': False, 'message': 'Choose a channel name with letters or numbers.'}, status=400)
+    channel, created = CommunityChannel.objects.get_or_create(
+        community=community,
+        slug=slug,
+        defaults={'name': name, 'description': request.POST.get('description', '').strip(), 'created_by': request.user},
+    )
+    return JsonResponse({'success': True, 'created': created, 'channel': {'id': channel.id, 'name': channel.name, 'slug': channel.slug}})
+
+
+@login_required
+def toggle_community_notifications(request, community_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    community = get_object_or_404(Community, id=community_id, members=request.user)
+    membership = get_membership(community, request.user)
+    mode = request.POST.get('mode', 'mentions')
+    if mode not in {'all', 'mentions', 'muted'}:
+        return JsonResponse({'success': False, 'message': 'Invalid notification mode.'}, status=400)
+    membership.mentions_only = mode == 'mentions'
+    membership.muted_until = timezone.now() + timedelta(hours=8) if mode == 'muted' else None
+    membership.save(update_fields=['mentions_only', 'muted_until'])
+    return JsonResponse({'success': True, 'mode': mode})
 
 @login_required
 def follow_user(request, user_id):
