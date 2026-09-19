@@ -271,47 +271,65 @@
         }
 
         // HTTPS Check
-        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-            alert("Security Error: GPS requires a secure HTTPS connection.");
-            mapMessage.textContent = "Secure connection required for GPS.";
+        if (!window.isSecureContext && location.hostname !== 'localhost') {
+            alert("Location access requires a secure HTTPS connection.");
+            mapMessage.textContent = "Open this page over HTTPS, then allow location access.";
             mapMessage.classList.remove('loading-pulse');
             return;
         }
 
-        // Execution of Geolocation Request
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
+        function handleLocation(position) {
                 const lat = position.coords.latitude.toFixed(6);
                 const lng = position.coords.longitude.toFixed(6);
-                
                 latInput.value = lat;
                 lngInput.value = lng;
-                
-                // Update UI upon success
                 coordsDisplay.textContent = `${lat}° N, ${lng}° E`;
                 signalStatus.textContent = 'Secured';
-                signalStatus.className = 'text-xs font-bold text-green-400 uppercase tracking-tighter';
-                
+                signalStatus.className = 'text-xs font-bold text-green-600 uppercase tracking-tighter';
                 mapMessage.classList.remove('loading-pulse');
-                mapMessage.innerHTML = '<span class="text-white font-bold">Location found!</span><br>Your coordinates have been recorded.';
+                mapMessage.innerHTML = '<span class="text-green-600 font-bold">Location found!</span><br>Your coordinates have been recorded.';
                 statusIcon.innerHTML = `<svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
                 btnText.textContent = 'Re-sync Location';
-            },
-            function(error) {
-                console.error(error);
-                mapMessage.classList.remove('loading-pulse');
-                let errorMsg = "We couldn't get your device location.";
+                locateButton.disabled = false;
+        }
 
-                if(error.code === 1) errorMsg = "Location access denied. Please enable location permissions or enter your address manually.";
-                if(error.code === 2) errorMsg = "Couldn't locate you. Try moving outdoors or enter address manually.";
-                if(error.code === 3) errorMsg = "Location request timed out. Try again.";
+        function handleLocationError(error, retryWithNetworkLocation = true) {
+            if (retryWithNetworkLocation && (error.code === 2 || error.code === 3)) {
+                mapMessage.textContent = 'Trying a network-based location...';
+                navigator.geolocation.getCurrentPosition(handleLocation, finalLocationError, {
+                    enableHighAccuracy: false,
+                    timeout: 20000,
+                    maximumAge: 300000
+                });
+                return;
+            }
+            finalLocationError(error);
+        }
 
-                mapMessage.innerHTML = `<span class="text-amber-600 font-bold">${errorMsg}</span><br><span class="text-slate-500">Manual address entry is available below.</span>`;
-                btnText.textContent = 'Try GPS Again';
-                signalStatus.textContent = 'Manual mode';
-                signalStatus.className = 'text-xs font-bold text-amber-600 uppercase tracking-tighter';
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        function finalLocationError(error) {
+            console.error('Geolocation error', error);
+            mapMessage.classList.remove('loading-pulse');
+            let errorMsg = "We couldn't get your device location.";
+            if (error.code === 1) errorMsg = "Location permission was denied. Enable it in browser settings, then try again.";
+            if (error.code === 2) errorMsg = "Your device could not determine a location. Check GPS, Wi-Fi, or mobile data.";
+            if (error.code === 3) errorMsg = "Location timed out. Try again or continue with your address.";
+            mapMessage.innerHTML = `<span class="text-amber-600 font-bold">${errorMsg}</span><br><span class="text-slate-500">You can still enter your address manually.</span>`;
+            btnText.textContent = 'Try GPS Again';
+            signalStatus.textContent = 'Manual mode';
+            signalStatus.className = 'text-xs font-bold text-amber-600 uppercase tracking-tighter';
+            locateButton.disabled = false;
+        }
+
+        const locateButton = this;
+        locateButton.disabled = true;
+        navigator.geolocation.getCurrentPosition(
+            handleLocation,
+            (error) => handleLocationError(error, true),
+            {
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 60000
+            }
         );
     });
 
