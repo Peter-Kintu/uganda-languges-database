@@ -1223,7 +1223,10 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
     else:
         product_context = f"This {product.name} is carefully sourced and well-handled."
 
-    def generate_response(stage_key, price=None, raw_offer_text=None, offer=None):
+    response_variant_key = f'negotiation_response_variant_{product.slug}'
+    response_variant = int(request.session.get(response_variant_key, 0))
+
+    def generate_response(stage_key, price=None, raw_offer_text=None, offer=None, buyer_raised=False):
         price_str = f"{price:,.0f}" if price is not None else "N/A"
         if is_luganda_session:
             return get_luganda_response(stage_key, price_str, curr, raw_offer_text)
@@ -1232,23 +1235,39 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
             acknowledgement = f"Haba! {raw_offer_text} is too little for this item, my friend."
         elif offer is not None and offer < product_price * Decimal('0.80'):
             acknowledgement = f"Aha, {raw_offer_text} is a bit tight."
+        elif buyer_raised:
+            acknowledgement = [
+                "You're getting closer, my friend.",
+                "Okay, you're moving closer.",
+                "You're squeezing me! But let me see...",
+            ][response_variant % 3]
         elif offer is not None:
-            acknowledgement = f"{raw_offer_text}? You are driving a hard bargain!"
+            acknowledgement = [
+                f"{raw_offer_text}? You are driving a hard bargain!",
+                f"Aah, you want a good price, but feed costs are high!",
+                f"Okay, I have heard your offer of {raw_offer_text}.",
+            ][response_variant % 3]
         else:
             acknowledgement = "Aha, let me see what I can do."
         consultation = "Give me a moment to check with the seller" if len(chat_history) % 3 == 0 else "I have checked what I can do"
+        seller_reasons = [
+            "Feed costs are high, especially for these heavy birds.",
+            "The farm pickup and transport are adding to the cost.",
+            "These are well-raised birds, and the feed bill has not come down.",
+        ]
+        seller_reason = seller_reasons[response_variant % len(seller_reasons)]
         eng_responses = {
             'accept': f"{acknowledgement} I can agree to {curr} {price_str}. {product_context} Shall we lock it in? 🎉",
             'final_floor_rejection': f"{acknowledgement} {consultation}; the best I can do is {curr} {price_str}. {product_context} Can you manage that?",
             'initial_ask_counter': f"{acknowledgement} I can bring it down to {curr} {price_str}. {product_context} How does that sound?",
-            'mid_ask_counter': f"{acknowledgement} I can move a little more and do {curr} {price_str}. We are close to the seller's limit now. Would you like it at that price?",
+            'mid_ask_counter': f"{acknowledgement} I can move a little more and do {curr} {price_str}. {seller_reason} Would you like it at that price?",
             'final_ask_counter': f"{acknowledgement} The last price I can offer is {curr} {price_str}. I cannot go below that and still make the sale worthwhile. Shall we close it there?",
             'default_query': f"I'm not sure how to process that. Please make a clear offer (e.g., '{curr} 80,000').",
             'already_agreed': f"Yes, we settled on {curr} {price_str}. I have kept that price for you. Shall I lock the order in? 🔒",
             'too_low_initial_counter': f"{acknowledgement} {product_context} Give me a serious offer. I can start at {curr} {price_str}, but I cannot take {raw_offer_text}.",
             'too_high_offer': f"{acknowledgement} That is above the listed price. The price is {curr} {price_str}; I would rather keep it there.",
             'stage_one_offer': f"{acknowledgement} I can bring it down to {curr} {price_str}. What do you think?",
-            'stage_two_offer': f"{acknowledgement} I can do {curr} {price_str}. This is close to the seller's limit now.",
+            'stage_two_offer': f"{acknowledgement} I can do {curr} {price_str}. {seller_reason} What do you say?",
             'final_offer': f"{acknowledgement} I have reached {curr} {price_str}, my final fair price. Shall we lock it in? 🤝",
             'holdout': f"Eyy, {raw_offer_text} is still too low for the full item, my friend. Feed, transport, and handling costs are high right now. I cannot keep reducing the price while the offer stays there. If your budget is fixed, how many are you buying? For a bulk order, I can ask the farm manager about a better arrangement.",
             'possible_typo': f"Eh, did you mean {curr} {price_str}? {raw_offer_text} is far above the listed price of {curr} {price_str}. Please check the extra zero and send your offer again."
@@ -1304,7 +1323,9 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
         return generate_response('possible_typo', product_price, raw_offer_text, offer)
 
     repeated_offer = previous_buyer_offer is not None and Decimal(str(previous_buyer_offer)) == offer
+    buyer_raised = previous_buyer_offer is not None and offer > Decimal(str(previous_buyer_offer))
     request.session[f'last_buyer_offer_{product.slug}'] = str(offer)
+    request.session[response_variant_key] = response_variant + 1
     request.session.modified = True
 
     if repeated_offer and offer < FINAL_FLOOR:
@@ -1313,35 +1334,37 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
     if offer < VENDOR_MIN_ENGAGEMENT:
         if last_ai_offer >= product_price * Decimal('0.99'):
             set_session_negotiated_price(request, product, STAGE_ONE_PRICE)
-            return generate_response('too_low_initial_counter', STAGE_ONE_PRICE, raw_offer_text, offer)
-        return generate_response('final_floor_rejection', last_ai_offer, raw_offer_text)
+            return generate_response('too_low_initial_counter', STAGE_ONE_PRICE, raw_offer_text, offer, buyer_raised)
+        return generate_response('final_floor_rejection', last_ai_offer, raw_offer_text, offer, buyer_raised)
 
     if offer > product_price:
         set_session_negotiated_price(request, product, product_price)
-        return generate_response('too_high_offer', product_price, raw_offer_text, offer)
+        return generate_response('too_high_offer', product_price, raw_offer_text, offer, buyer_raised)
 
     if offer >= FINAL_FLOOR:
         final_p = round_price(offer if offer < product_price else product_price, product_price)
         set_session_negotiated_price(request, product, final_p)
-        return generate_response('accept', final_p)
+        return generate_response('accept', final_p, raw_offer_text, offer, buyer_raised)
 
     if last_ai_offer >= product_price * Decimal('0.99'):
         new_price = STAGE_ONE_PRICE
-        if last_ai_offer < product_price and offer < last_ai_offer * Decimal('0.90'):
-            new_price = last_ai_offer
+        if buyer_raised and offer < last_ai_offer:
+            new_price = max(FINAL_FLOOR + round_price(product_price * Decimal('0.01'), product_price), (last_ai_offer + offer) / Decimal('2'))
+            new_price = round_price(new_price, product_price)
         set_session_negotiated_price(request, product, new_price)
-        return generate_response('stage_one_offer', new_price, raw_offer_text, offer)
+        return generate_response('stage_one_offer', new_price, raw_offer_text, offer, buyer_raised)
     elif last_ai_offer > STAGE_TWO_PRICE + Decimal('1'):
         new_price = STAGE_TWO_PRICE
-        if offer < last_ai_offer * Decimal('0.90'):
-            new_price = last_ai_offer
+        if buyer_raised and offer < last_ai_offer:
+            new_price = max(FINAL_FLOOR + round_price(product_price * Decimal('0.01'), product_price), (last_ai_offer + offer) / Decimal('2'))
+            new_price = round_price(new_price, product_price)
         set_session_negotiated_price(request, product, new_price)
-        return generate_response('stage_two_offer', new_price, raw_offer_text, offer)
+        return generate_response('stage_two_offer', new_price, raw_offer_text, offer, buyer_raised)
     elif last_ai_offer > FINAL_FLOOR + Decimal('1'):
         set_session_negotiated_price(request, product, FINAL_FLOOR)
-        return generate_response('final_offer', FINAL_FLOOR, raw_offer_text, offer)
+        return generate_response('final_offer', FINAL_FLOOR, raw_offer_text, offer, buyer_raised)
     else:
-        return generate_response('final_floor_rejection', FINAL_FLOOR, raw_offer_text)
+        return generate_response('final_floor_rejection', FINAL_FLOOR, raw_offer_text, offer, buyer_raised)
 
 
 def get_session_negotiated_price(request, product):
@@ -1386,6 +1409,7 @@ def clear_session_negotiation(request, slug):
         f'accepted_price_{slug}',
         f'negotiation_language_{slug}',
         f'last_buyer_offer_{slug}',
+        f'negotiation_response_variant_{slug}',
     ]:
         request.session.pop(key, None)
 

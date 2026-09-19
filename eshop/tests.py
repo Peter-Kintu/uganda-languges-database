@@ -184,3 +184,25 @@ class NegotiationFlowTests(TestCase):
         page = self.client.get(url)
         self.assertContains(page, 'UGX 2,900')
         self.assertNotContains(page, 'UGX 2,800')
+
+    def test_raising_offers_move_the_counter_and_rotate_response_copy(self):
+        product = Product.objects.create(
+            name='Broilers',
+            description='Heavy farm-raised broilers',
+            price=Decimal('30000'),
+            country='Uganda',
+            vendor_user=self.creator,
+            is_negotiable=True,
+        )
+        url = reverse('eshop:ai_negotiation', args=[product.slug])
+        self.client.post(url, {'user_message': '23000'})
+        self.client.post(url, {'user_message': '24000'})
+        self.client.post(url, {'user_message': '25000'})
+
+        page = self.client.get(url)
+        body = page.content.decode()
+        self.assertIn('UGX 27,300', body)
+        self.assertIn('Okay, you', body)
+        self.assertIn('squeezing me! But let me see', body)
+        self.assertIn('farm pickup and transport', body)
+        self.assertNotIn("This is close to the seller's limit now.", body)
