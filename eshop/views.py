@@ -1170,33 +1170,34 @@ def is_luganda(text):
 def get_luganda_response(stage, price_str, curr, offer_text="omusaala gwo"):
     """Provides translated Luganda strings for the AI negotiator."""
     if stage == 'accept':
-        return f"Wewawo! **{curr} {price_str}** tukoze endagaano. Twagasseeko ogubadde ogw'oluvannyuma. Kanda ku 'Lock In' wansi ofune eky'omuzingo kino. 🎉"
+        return f"Wewawo! {curr} {price_str} tukoze endagaano. Omuwendo guno gubaliriddwamu omutindo n'empeereza. Kanda ku 'Lock In' wansi tuggalewo endagaano. 🎉"
     elif stage == 'final_floor_rejection':
-        return f"Mpulidde {offer_text}, naye nsonyiwa, **{curr} {price_str}** ogwo gwe musaala ogw'oluvannyuma nzekka gwe nsobola okuwa. Fuba okutuukirira. 🤝"
+        return f"Mpulidde {offer_text}, era ntegeera nti oyagala okusigala mu mbalirira yo. Naye {curr} {price_str} gwe musaala ogusembayo gwe nsobola okuwa olw'omutindo n'empeereza. Okkiriza tuggalewo? 🤝"
     elif stage == 'initial_ask_counter': 
-        return f"Mpulidde ekirowoozo kyo. Okusooka, nina okuwa **{curr} {price_str}** (ekya 2% kiggyiddwako). Kiki eky'oluvannyuma ky’olina okuwa?"
+        return f"Ntegeera nti oyagala omuwendo ogusinga obusa. Mmanyidde nti ennaku zino si nnyangu, naddala olw'ebbeeyi y'entambula n'ebintu ebirala. Olw'okuba oli mukozesa wa Africana AI, nkukendeezezza ku {curr} {price_str} ng'obuyambi obw'enjawulo. Kino kikuyamba?"
     elif stage == 'mid_ask_counter':
-        return f"Kuba nti obadde osaba, nkukendeezezzaako ku **{curr} {price_str}** (ekya 5% kiggyiddwako). Oli kumpi n'omusaala ogw'oluvannyuma. Wandiwadde omuwendo ogusinga guno?"
+        return f"Ntegeera okusaba kwo. Olw'okukuyamba, nkukendeezezzaako ku {curr} {price_str}; eno ye nteekateeka yange ey'okubiri. Osobola okutuuka ku muwendo guno?"
     elif stage == 'final_ask_counter':
-        return f"Kino kye kiggya eky'oluvannyuma! Omuwendo ogusembayo gw'oyinza okufuna gwe **{curr} {price_str}** (ekya 10% kiggyiddwako). Gwe musaala ogw'oluvannyuma. Nzikiriza?"
+        return f"Kino kye kiggya kyange eky'oluvannyuma. Omuwendo ogusembayo gwe {curr} {price_str}; nteekamu omutindo, empeereza n'omugabo gw'omutunzi. Okkiriza tuggalewo?"
     elif stage == 'too_low_initial_counter':
-        return f"Nsonyiwa, {offer_text} guli wansi nnyo. Kyokka, nina okutandikira ku **{curr} {price_str}** (2% off) okutandika endagaano. Fuba okukuwa omuwendo ogusinga."
+        return f"Nsonyiwa, ntegeera nti ebbeeyi y'entambula n'ebintu ebirala bisusse ennaku zino. {offer_text} guli wansi nnyo ku mutunzi, naye olw'okuba oli mukozesa wa Africana AI nsobola okukukendeeza ku {curr} {price_str}. Oyinza okweyongerako katono?"
     elif stage == 'default_query':
         return f"Nkyasobola okutegeera kye wategeeza. Fuba okuwa omusaala ogw'enkyukakyuka (nga '{curr} 80,000') oba nsaba nkukendeezeeko omuwendo. Genda mu maaso."
     elif stage == 'already_agreed':
-        return f"Tugenze! Twakkiriziganyizza ku **{curr} {price_str}**. Kanda ku 'Lock In' wansi."
+        return f"Tugenze! Twakkiriziganyizza ku {curr} {price_str}. Kanda ku 'Lock In' wansi tuggalewo."
     elif stage == 'too_high_offer':
-        return f"{offer_text} ogwo guli waggulu nnyo! Nnina okukuguliza ku **{curr} {price_str}** ogw'oluvannyuma. Kanda ku 'Lock In' ofune eky'omuzingo. 😊"
+        return f"{offer_text} guli waggulu okusinga omuwendo ogwasooka. Naye nkukkiriza ku {curr} {price_str}; guno gwe muwendo ogw'obwenkanya. Kanda ku 'Lock In'. 😊"
     elif stage == 'stage_one_offer': 
-        return f"Mpulidde {offer_text}. Nga bwe tusalira, nina okuwa **{curr} {price_str}** (2% off). Omusango gw’olina okuddamu?"
+        return f"Mpulidde {offer_text}, era ntegeera nti embeera y'ebyenfuna si nnyangu. Olw'ebbeeyi y'entambula n'okuba oli mukozesa wa Africana AI, nkukendeezezza ku {curr} {price_str}. Okkiriza?"
     elif stage == 'stage_two_offer': 
-        return f"Endagaano ennungi! Nkubuusa ku **{curr} {price_str}** (5% off). Oli kumpi n'omusaala ogw'oluvannyuma. Omuwendo gwo oguddako gwa ssente mmeka?"
+        return f"Omutindo gw'okuwa kwo guli kumpi. Nkukendeezezza ku {curr} {price_str}; guno gwe muwendo gwange ogusembayo ogw'obwenkanya. Tuggalewo endagaano?"
     elif stage == 'final_offer': 
-        return f"Nzigidde ebyo byonna byange! Omuwendo ogw'oluvannyuma gw'oyinza okufuna gwe **{curr} {price_str}**. Gwe musaala ogw'oluvannyuma. Nzikiriza?"
+        return f"Nkoze ekisoboka kyonna. Omuwendo ogw'oluvannyuma gwe {curr} {price_str}. Okkiriza nkuggalire endagaano eno?"
     return "Error in translation simulation."
 
-def get_gemini_negotiation_response(request, product, user_message, chat_history):
+def get_gemini_negotiation_response(request, product, user_message, chat_history, negotiation_state=None):
     """Main negotiation engine handling logic for price drops and deal closures."""
+    negotiation_state = negotiation_state or {}
     product_price = product.price
     curr = product.get_currency_code()
     lang_key = f'negotiation_language_{product.slug}'
@@ -1216,20 +1217,27 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
         price_str = f"{price:,.0f}" if price is not None else "N/A"
         if is_luganda_session:
             return get_luganda_response(stage_key, price_str, curr, raw_offer_text)
-        
+
+        offer_context = f" about {raw_offer_text}" if raw_offer_text else ""
+        acknowledgements = [
+            f"I understand you are trying to stay within budget{offer_context}.",
+            f"I hear you{offer_context}, and I want to keep this fair for you.",
+            f"That makes sense{offer_context}. Let me see what I can do without cutting into a fair seller price.",
+        ]
+        acknowledgement = acknowledgements[len(chat_history) % len(acknowledgements)]
         eng_responses = {
-            'accept': f"Yes! {curr} {price_str} is an agreement. We have a deal! 🎉",
-            'final_floor_rejection': f"I appreciate the offer of {raw_offer_text}, but it's too low. My price remains **{curr} {price_str}**.",
-            'initial_ask_counter': f"I hear you! I can start at {curr} {price_str} (2% drop). What's your counter?",
-            'mid_ask_counter': f"I will drop it again to {curr} {price_str} (5% drop). I have one final move left.",
-            'final_ask_counter': f"Last chance! The lowest I can go is {curr} {price_str} (10% floor). What do you say?",
+            'accept': f"{acknowledgement} We have a deal at {curr} {price_str}. Shall I lock it in for you? 🎉",
+            'final_floor_rejection': f"{acknowledgement} {raw_offer_text} is below what I can sustainably accept. My best price is {curr} {price_str}, which protects the seller's margin and keeps the quality promise. Could you meet me there?",
+            'initial_ask_counter': f"{acknowledgement} I know things are not easy these days, especially with transport costs and everyday expenses. Since you are part of the Africana AI community, I can help with {curr} {price_str} as a goodwill discount. Would that make it easier for you?",
+            'mid_ask_counter': f"{acknowledgement} I can move to {curr} {price_str}. That is my second and stronger discount, while still covering quality and delivery. Would that work for you?",
+            'final_ask_counter': f"{acknowledgement} My final fair price is {curr} {price_str}. I cannot go lower without affecting the seller's margin. Shall we close the deal at that amount?",
             'default_query': f"I'm not sure how to process that. Please make a clear offer (e.g., '{curr} 80,000').",
-            'already_agreed': f"We've already agreed on {curr} {price_str}! Click 'Lock In' below. 🔒",
-            'too_low_initial_counter': f"Offer of {raw_offer_text} is far too low. I'll drop to {curr} {price_str} to start.",
-            'too_high_offer': f"That's higher than the original! We'll sell it for {curr} {price_str}. 😊",
-            'stage_one_offer': f"I appreciate the offer of {raw_offer_text}. I can drop it to {curr} {price_str} (2% off).",
-            'stage_two_offer': f"Good move! I will drop it to {curr} {price_str} (5% off). One final move left.",
-            'final_offer': f"I'm going to my final floor! The lowest is {curr} {price_str}. Ready to lock it in? 🤝"
+            'already_agreed': f"We have already agreed on {curr} {price_str}. The price is held for you. Click Lock In below when you are ready. 🔒",
+            'too_low_initial_counter': f"{acknowledgement} I know the economy is putting pressure on people, and transport is expensive too. Your offer of {raw_offer_text} is below the seller's fair range, but because you are an Africana AI user I can make a goodwill move to {curr} {price_str}. Could you come a little closer?",
+            'too_high_offer': f"{acknowledgement} That offer is above the original price, so you can have it at the original {curr} {price_str}. Would you like to lock it in? 😊",
+            'stage_one_offer': f"{acknowledgement} With transport and other costs rising, I do not want to make things harder for you. As an Africana AI user, I can meet you at {curr} {price_str} while still protecting the seller's margin. What do you think?",
+            'stage_two_offer': f"{acknowledgement} I can move again to {curr} {price_str}. This is a stronger discount and leaves one final move. Would you like to make that your offer?",
+            'final_offer': f"{acknowledgement} I have reached my final fair price of {curr} {price_str}. It is the lowest amount that keeps the quality and delivery promise. Shall I lock it in? 🤝"
         }
         return eng_responses.get(stage_key, "An internal error occurred.")
 
@@ -1330,9 +1338,9 @@ def clear_session_negotiation(request, slug):
         request.session.pop(key, None)
 
 
-def get_ai_response(request, product, user_message, chat_history):
+def get_ai_response(request, product, user_message, chat_history, negotiation_state=None):
     """Wrapper function to trigger the AI negotiation response."""
-    return get_gemini_negotiation_response(request, product, user_message, chat_history)
+    return get_gemini_negotiation_response(request, product, user_message, chat_history, negotiation_state)
 
 @login_required
 def ai_negotiation_view(request, slug):
@@ -1347,13 +1355,22 @@ def ai_negotiation_view(request, slug):
     chat_history = request.session.get(f'chat_history_{slug}', None)
     
     if chat_history is None:
-        initial_greeting = f"Hello! I'm the AI Negotiator, and I'm ready to find you a great price. The original price for **{product.name}** is {curr} {product.price:,.0f}. What is your first offer?"
+        initial_greeting = f"Hello! I'm Nakintu. I can help you find a fair price for {product.name}. The listed price is {curr} {product.price:,.0f}. What would feel comfortable for you?"
         chat_history = [{'role': 'ai', 'text': initial_greeting}]
 
     if request.method == 'POST' and form.is_valid():
         user_message = form.cleaned_data['user_message']
         chat_history.append({'role': 'user', 'text': user_message})
-        ai_response_text = get_ai_response(request, product, user_message, chat_history)
+        current_price = get_session_negotiated_price(request, product)
+        negotiation_state = {
+            'original_price': str(product.price),
+            'latest_offer': user_message,
+            'current_counteroffer': str(current_price or product.price),
+            'minimum_price': str(round_price(product.price * Decimal('0.90'), product.price)),
+            'language': request.session.get(f'negotiation_language_{slug}', 'english'),
+            'accepted': bool(current_price and current_price <= product.price * Decimal('0.90')),
+        }
+        ai_response_text = get_ai_response(request, product, user_message, chat_history, negotiation_state)
         chat_history.append({'role': 'ai', 'text': ai_response_text})
         request.session[f'chat_history_{slug}'] = chat_history
         return redirect('eshop:ai_negotiation', slug=slug)
@@ -1366,7 +1383,8 @@ def ai_negotiation_view(request, slug):
         'form': form,
         'chat_history': chat_history,
         'is_negotiation_active': is_negotiation_active,
-        'final_price': negotiated_price
+        'negotiated_price': negotiated_price,
+        'final_price': negotiated_price,
     }
     return render(request, 'eshop/ai_negotiation.html', context)
 

@@ -75,3 +75,29 @@ class EscrowOrderTests(TestCase):
         self.assertEqual(payment.status, 'paid')
         self.assertEqual(self.order.escrow_status, 'funded')
         self.assertEqual(self.order.status, 'escrowed')
+
+
+class NegotiationFlowTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username='negotiator', password='test-pass')
+        self.creator = get_user_model().objects.create_user(username='seller', password='test-pass')
+        self.product = Product.objects.create(
+            name='Negotiable basket',
+            description='Handmade basket',
+            price=Decimal('10000'),
+            country='Uganda',
+            vendor_user=self.creator,
+            is_negotiable=True,
+        )
+        self.client.force_login(self.user)
+
+    def test_accepted_offer_shows_negotiated_price_and_close_action(self):
+        response = self.client.post(
+            reverse('eshop:ai_negotiation', args=[self.product.slug]),
+            {'user_message': 'I can offer UGX 9000'},
+        )
+
+        self.assertRedirects(response, reverse('eshop:ai_negotiation', args=[self.product.slug]))
+        page = self.client.get(reverse('eshop:ai_negotiation', args=[self.product.slug]))
+        self.assertContains(page, 'Accept UGX 9,000')
+        self.assertNotContains(page, 'Accept UGX 10,000')

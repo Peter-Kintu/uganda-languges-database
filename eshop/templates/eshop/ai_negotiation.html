@@ -41,23 +41,12 @@
             {# Chat Window #}
             <div id="chat-window" 
                  class="h-[420px] sm:h-[480px] lg:h-[600px] overflow-y-auto p-4 space-y-6 mb-6 bg-white rounded-2xl custom-scrollbar">
-                {# Initial Bot Greeting #}
-                <div class="flex justify-start">
-                    <div class="max-w-[85%] chat-bubble-bot p-4 rounded-2xl rounded-tl-none shadow-sm">
-                        <div class="flex items-center gap-3 mb-1">
-                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-100 text-indigo-500">🧕🏾</span>
-                            <span class="text-xs font-bold text-indigo-500">Nakintu</span>
-                        </div>
-                        <p class="text-sm md:text-base italic">Hello! I'm Nakintu — I help you bargain for a fair price. Try typing: "I can offer {{ product.get_currency_code }} {{ product.price|floatformat:0|intcomma }}" or write in your language.</p>
-                    </div>
-                </div>
-
                 {% for message in chat_history %}
                     {% if message.role == 'user' %}
                         <div class="flex justify-end">
                             <div class="max-w-[85%] chat-bubble-user p-4 rounded-2xl rounded-tr-none shadow-xl transform transition hover:scale-[1.01]">
                                 <p class="text-xs font-bold mb-1 opacity-70 text-right">You</p>
-                                <p class="text-sm md:text-base leading-relaxed">{{ message.text|safe }}</p>
+                                <p class="text-sm md:text-base leading-relaxed">{{ message.text|linebreaksbr }}</p>
                             </div>
                         </div>
                     {% else %}
@@ -67,7 +56,7 @@
                                     <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-500">🧕🏾</span>
                                     <span class="text-xs font-bold text-indigo-500">Nakintu</span>
                                 </div>
-                                <p class="text-sm md:text-base leading-relaxed">{{ message.text|safe }}</p>
+                                <p class="text-sm md:text-base leading-relaxed">{{ message.text|linebreaksbr }}</p>
                             </div>
                         </div>
                     {% endif %}
@@ -86,7 +75,6 @@
                         {{ form.user_message }}
                     </div>
                     <button type="submit" 
-                            onclick="showTyping()"
                             class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <span>Make My Offer 🤝</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -625,14 +613,23 @@
     }
 
     function showTyping() {
-        const input = document.querySelector('input[name="user_message"]');
+        const input = document.getElementById('id_user_message');
         if (input && input.value.trim() !== "") {
-            document.getElementById('typing-indicator').classList.remove('hidden');
+            const indicator = document.getElementById('typing-indicator');
+            const submitButton = negotiationForm ? negotiationForm.querySelector('button[type="submit"]') : null;
+            if (indicator) indicator.classList.remove('hidden');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.querySelector('span').textContent = 'Nakintu is thinking...';
+            }
             scrollToBottom();
         }
     }
 
     const negotiationForm = document.getElementById('negotiation-form');
+    if (negotiationForm) {
+        negotiationForm.addEventListener('submit', showTyping);
+    }
     const pagePositionKey = 'ai_negotiator_page_position';
 
     window.addEventListener('load', () => {
