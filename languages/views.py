@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.conf import settings
+from django.core.cache import cache
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -225,6 +226,14 @@ else:
 # Simple in-memory cache for API results (5 minutes)
 api_cache = {}
 CACHE_DURATION = 300  # 5 minutes
+CAREERJET_RESULT_CACHE_DURATION = 60 * 60 * 24
+
+
+def get_careerjet_result_cache_key(keywords, location):
+    """Key successful results by search, never by the visitor's IP address."""
+    normalized_keywords = re.sub(r'\s+', '_', (keywords or 'jobs').strip().lower())
+    normalized_location = re.sub(r'\s+', '_', (location or 'global').strip().lower())
+    return f'careerjet:stable:{normalized_keywords}:{normalized_location}'
 
 def get_cache_key(api_name, keywords, location):
     """Generate cache key for API results"""
@@ -496,7 +505,12 @@ def fetch_careerjet_data(request, keywords, location=""):
         print("CareerJet: Disabled via environment variable CAREERJET_ENABLED")
         return []
 
-    # Check cache first
+    stable_cache_key = get_careerjet_result_cache_key(keywords, location or 'global')
+    stable_cached_result = cache.get(stable_cache_key)
+    if stable_cached_result is not None:
+        return stable_cached_result
+
+    # Check the short-lived local cache for compatibility with existing API callers.
     cache_key = get_cache_key("careerjet", keywords or "jobs", location or "global")
     cached_result = get_cached_result(cache_key)
     if cached_result is not None:
@@ -595,6 +609,8 @@ def fetch_careerjet_data(request, keywords, location=""):
 
                 print(f"CareerJet: Returning {len(processed_jobs)} valid jobs")
                 set_cache_result(cache_key, processed_jobs)
+                if processed_jobs:
+                    cache.set(stable_cache_key, processed_jobs, CAREERJET_RESULT_CACHE_DURATION)
                 return processed_jobs
 
             elif response_type == 'LOCATIONS':
@@ -645,6 +661,8 @@ def fetch_careerjet_data(request, keywords, location=""):
 
                         print(f"CareerJet: Global search found {len(processed_jobs)} jobs")
                         set_cache_result(cache_key, processed_jobs)
+                        if processed_jobs:
+                            cache.set(stable_cache_key, processed_jobs, CAREERJET_RESULT_CACHE_DURATION)
                         return processed_jobs
         
         # For 403/429 errors, return empty gracefully
@@ -653,25 +671,25 @@ def fetch_careerjet_data(request, keywords, location=""):
                 print("[CareerJet] 403 - Access denied (IP/auth issue). Falling back to Jooble.")
             else:
                 print("[CareerJet] 429 - Rate limited. Falling back to Jooble.")
-            return []
+            return cache.get(stable_cache_key, [])
         elif response.status_code == 401:
             print("[CareerJet] 401 Unauthorized - API key is invalid or expired")
             print(f"Response: {response.text[:200]}")
             print("ACTION: Update CAREERJET_API_KEY or CAREERJET_PUBLISHER_ID in your .env file\n")
-            return []
+            return cache.get(stable_cache_key, [])
         else:
             print(f"CareerJet: Error {response.status_code} - {response.text[:100]}")
-            return []
+            return cache.get(stable_cache_key, [])
 
     except requests.exceptions.Timeout:
         print("[CareerJet] Request timeout - server not responding")
-        return []
+        return cache.get(stable_cache_key, [])
     except requests.exceptions.ConnectionError as e:
         print(f"[CareerJet] Connection error: {str(e)[:100]}")
-        return []
+        return cache.get(stable_cache_key, [])
     except Exception as e:
         print(f"[CareerJet] Unexpected error: {str(e)[:100]}")
-        return []
+        return cache.get(stable_cache_key, [])
 
 
 def get_exchange_rate(from_curr, to_curr="UGX"):
