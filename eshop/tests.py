@@ -101,3 +101,17 @@ class NegotiationFlowTests(TestCase):
         page = self.client.get(reverse('eshop:ai_negotiation', args=[self.product.slug]))
         self.assertContains(page, 'Accept UGX 9,000')
         self.assertNotContains(page, 'Accept UGX 10,000')
+
+    def test_accepted_price_flows_into_cart_and_delivery_total(self):
+        self.client.post(
+            reverse('eshop:ai_negotiation', args=[self.product.slug]),
+            {'user_message': 'I can offer UGX 9000'},
+        )
+        self.client.get(reverse('eshop:accept_negotiated_price', args=[self.product.slug]))
+        self.client.post(reverse('eshop:add_to_cart', args=[self.product.id]))
+
+        cart_page = self.client.get(reverse('eshop:view_cart'))
+        delivery_page = self.client.get(reverse('eshop:delivery_location'))
+
+        self.assertContains(cart_page, '9,000')
+        self.assertContains(delivery_page, '9000')

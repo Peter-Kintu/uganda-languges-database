@@ -43,12 +43,12 @@
                     <div class="text-left flex flex-col items-start mt-4 sm:mt-0 sm:text-right sm:items-end">
                         <div class="mb-2">
                             <p class="text-2xl font-extrabold text-blue-600">
-                                <span class="text-xs opacity-70">{{ item.product.get_currency_code }}</span> {{ item.total_price|floatformat:0|intcomma }}
+                                <span class="text-xs opacity-70">{{ item.product.get_currency_code }}</span> {{ item.effective_total_price|default:item.total_price|floatformat:0|intcomma }}
                             </p>
     
                             <p class="text-xs text-gray-500 mt-1">
-                                {% if item.product.negotiated_price %}
-                                    ({{ item.product.get_currency_code }} {{ item.product.negotiated_price|floatformat:0|intcomma }} per unit)
+                                {% if item.effective_unit_price %}
+                                    ({{ item.product.get_currency_code }} {{ item.effective_unit_price|floatformat:0|intcomma }} per unit)
                                 {% else %}
                                     ({{ item.product.get_currency_code }} {{ item.product.price|floatformat:0|intcomma }} per unit)
                                 {% endif %}

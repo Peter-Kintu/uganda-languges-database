@@ -175,7 +175,7 @@
                             </div>
                             <span class="text-sm font-mono text-white">
                                 {{ item.product.get_currency_code }} 
-                                {% if item.product.negotiated_price %}{{ item.product.negotiated_price|floatformat:0 }}{% else %}{{ item.product.price|floatformat:0 }}{% endif %}
+                                {{ item.effective_unit_price|default:item.product.price|floatformat:0 }}
                             </span>
                         </div>
                         {% endfor %}

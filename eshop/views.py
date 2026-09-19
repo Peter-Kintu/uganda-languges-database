@@ -123,14 +123,15 @@ def start_commerce_payment(request):
     first_item = cart.items.select_related('product').first()
     with transaction.atomic():
         delivery_pin = f'{secrets.randbelow(1000000):06d}'
+        cart_total = prepare_cart_pricing(request, cart)
         order = Order.objects.create(
-            buyer=request.user, total_amount=cart.cart_total, currency=first_item.product.get_currency_code(),
+            buyer=request.user, total_amount=cart_total, currency=first_item.product.get_currency_code(),
             status='payment_pending', delivery_address=delivery.get('address', ''), delivery_city=delivery.get('city', ''),
             delivery_phone=delivery.get('phone', ''), delivery_latitude=delivery.get('latitude') or None, delivery_longitude=delivery.get('longitude') or None,
             delivery_pin_hash=make_password(delivery_pin),
         )
         for item in cart.items.select_related('product'):
-            OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price_at_purchase=item.product.negotiated_price or item.product.price, commission_at_purchase=item.product.referral_commission)
+            OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price_at_purchase=get_effective_product_price(request, item.product), commission_at_purchase=item.product.referral_commission)
         payment = CommercePayment.objects.create(order=order, pesapal_order_id=f'eshop-{order.id}-{uuid.uuid4().hex[:8]}', amount=order.total_amount, currency=order.currency)
     try:
         from users.views import _pesapal_notification_id, _pesapal_request
@@ -766,7 +767,7 @@ def product_list(request):
             pass
 
     cart = get_user_cart(request)
-    cart_total = cart.cart_total if cart and cart.items.exists() else 0
+    cart_total = prepare_cart_pricing(request, cart) if cart and cart.items.exists() else 0
 
     return render(request, 'eshop/product_list.html', {
         'products': products,
@@ -857,7 +858,7 @@ def product_detail(request, slug):
             request.session.set_expiry(172800) 
         
     cart = get_user_cart(request)
-    cart_total = cart.cart_total if cart and cart.items.exists() else 0
+    cart_total = prepare_cart_pricing(request, cart) if cart and cart.items.exists() else 0
     
     return render(request, 'eshop/product_detail.html', {
         'product': product,
@@ -899,7 +900,7 @@ def add_to_cart(request, product_id):
 def view_cart(request):
     """Renders the shopping cart page."""
     cart = get_user_cart(request)
-    cart_total = cart.cart_total if cart and cart.items.exists() else 0
+    cart_total = prepare_cart_pricing(request, cart) if cart and cart.items.exists() else 0
 
     return render(request, 'eshop/cart.html', {
         'cart': cart,
@@ -933,7 +934,7 @@ def checkout_view(request):
 
     first_item = cart.items.first()
     currency_code = first_item.product.get_currency_code() if first_item else "KES"
-    cart_total = cart.cart_total
+    cart_total = prepare_cart_pricing(request, cart)
     total_items_count = cart.items.aggregate(total=Sum('quantity'))['total'] or 0
    
     
@@ -959,7 +960,7 @@ def checkout_view(request):
 
             for item in cart.items.all():
                 # Snapshot the data in case product changes later
-                price = item.product.negotiated_price or item.product.price
+                price = get_effective_product_price(request, item.product)
                 commission = item.product.referral_commission * item.quantity
                 
                 OrderItem.objects.create(
@@ -1029,7 +1030,7 @@ def delivery_location_view(request):
     # We pass the cart and the total so the JavaScript can 'see' them
     context = {
         'cart': cart,
-        'cart_total': cart.cart_total,
+        'cart_total': prepare_cart_pricing(request, cart),
     }
     return render(request, 'eshop/delivery_location.html', context)
 
@@ -1044,7 +1045,7 @@ def payment_view(request):
         return redirect('eshop:delivery_location')
     return render(request, 'eshop/payment.html', {
         'cart': cart,
-        'cart_total': cart.cart_total,
+        'cart_total': prepare_cart_pricing(request, cart),
         'currency': cart.items.first().product.get_currency_code(),
     })
 
@@ -1089,10 +1090,11 @@ def confirm_order_whatsapp(request):
 
     # 2. Database Transaction for Order Consistency
     with transaction.atomic():
+        cart_total = prepare_cart_pricing(request, cart)
         order = Order.objects.create(
             buyer=request.user,
             referrer=referrer,
-            total_amount=cart.cart_total,
+            total_amount=cart_total,
             status='payment_pending'
         )
 
@@ -1108,7 +1110,7 @@ def confirm_order_whatsapp(request):
                 order=order,
                 product=item.product,
                 quantity=item.quantity,
-                price_at_purchase=item.product.negotiated_price or item.product.price,
+                price_at_purchase=get_effective_product_price(request, item.product),
                 commission_at_purchase=comm_per_unit
             )
             order_items_text.append(f"- {item.quantity} x {item.product.name}")
@@ -1218,27 +1220,27 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
         if is_luganda_session:
             return get_luganda_response(stage_key, price_str, curr, raw_offer_text)
 
-        offer_context = f" about {raw_offer_text}" if raw_offer_text else ""
+        offer_context = f"Your offer of {raw_offer_text}" if raw_offer_text else "Your request"
         acknowledgements = [
-            f"I understand you are trying to stay within budget{offer_context}.",
-            f"I hear you{offer_context}; everyone is watching expenses carefully these days.",
-            f"That makes sense{offer_context}. Let me check how far I can reduce it while keeping this fair.",
+            f"I hear you. {offer_context} makes sense if you are trying to stay within budget.",
+            f"I understand where you are coming from with {offer_context}.",
+            f"That is a fair thing to ask. Let me see what I can do for you.",
         ]
         acknowledgement = acknowledgements[len(chat_history) % len(acknowledgements)]
-        consultation = "Let me check with the seller once more" if len(chat_history) % 3 == 0 else "I have checked what I can do"
+        consultation = "Give me a moment to check with the seller" if len(chat_history) % 3 == 0 else "I have checked what I can do"
         eng_responses = {
-            'accept': f"{acknowledgement} We have a deal at {curr} {price_str}. Shall I lock it in for you? 🎉",
-            'final_floor_rejection': f"{acknowledgement} {raw_offer_text} is below what I can sustainably accept. {consultation}, and {curr} {price_str} is my final fair price because it protects quality, delivery, and the seller's margin. Could you stretch to that?",
-            'initial_ask_counter': f"{acknowledgement} I know transport and everyday costs are high. I can reduce it for you to {curr} {price_str} as a first goodwill step for an Africana AI user. If we keep the order simple, would that work for you?",
-            'mid_ask_counter': f"{acknowledgement} I can reduce it again, this time to {curr} {price_str}. I am making a smaller step now because we are getting close to my limit. Could you accept that price?",
-            'final_ask_counter': f"{acknowledgement} I can reduce it one last time to {curr} {price_str}. That is the final amount I can approve without selling at a loss. Shall we close it today?",
+            'accept': f"{acknowledgement} I can agree to {curr} {price_str}. We have a deal, if you are happy with that. Shall I lock it in? 🎉",
+            'final_floor_rejection': f"{acknowledgement} {raw_offer_text} is lower than I can responsibly take. {consultation}; the best I can do is {curr} {price_str}. That keeps the quality and delivery promise intact. Can you manage that?",
+            'initial_ask_counter': f"{acknowledgement} With transport and other costs going up, I can reduce it for you to {curr} {price_str} for this order. I would be glad to make that work for you. How does that sound?",
+            'mid_ask_counter': f"{acknowledgement} I have taken another small step and can reduce it for you to {curr} {price_str}. We are getting close to the seller's limit now. Would you like to go ahead at that price?",
+            'final_ask_counter': f"{acknowledgement} I can reduce it one last time to {curr} {price_str}. I honestly cannot go below that without making the sale unfair to the seller. Shall we close it there?",
             'default_query': f"I'm not sure how to process that. Please make a clear offer (e.g., '{curr} 80,000').",
-            'already_agreed': f"We have already agreed on {curr} {price_str}. The price is held for you. Click Lock In below when you are ready. 🔒",
-            'too_low_initial_counter': f"{acknowledgement} I know the economy is putting pressure on people, and transport is expensive too. Your offer of {raw_offer_text} is too far below the seller's fair range, so I cannot approve it. I can reduce it for you to {curr} {price_str} as a serious starting point. Please come a little closer.",
-            'too_high_offer': f"{acknowledgement} That offer is above the original price, so you can have it at the original {curr} {price_str}. Would you like to lock it in? 😊",
-            'stage_one_offer': f"{acknowledgement} With transport and other costs rising, I do not want to make things harder for you. I can reduce it for you to {curr} {price_str}; I am taking the first small step while keeping delivery reliable. What do you think?",
-            'stage_two_offer': f"{acknowledgement} I can reduce it again to {curr} {price_str}. This second step is smaller because we are nearing the seller's limit. I can also help with a simple pickup arrangement if that suits you. Would you like to proceed?",
-            'final_offer': f"{acknowledgement} I have reached my final fair price of {curr} {price_str}. I can no longer reduce it without affecting quality or the seller's margin. Shall I lock it in for you? 🤝"
+            'already_agreed': f"Yes, we settled on {curr} {price_str}. I have kept that price for you. Shall I lock the order in? 🔒",
+            'too_low_initial_counter': f"{acknowledgement} I know transport is expensive, but {raw_offer_text} is too far below a fair selling price. I can reduce it for you to {curr} {price_str} as a serious first offer. Could you come a little closer?",
+            'too_high_offer': f"{acknowledgement} That is more than the listed price, so I would rather keep it at the original {curr} {price_str}. Would you like me to reserve it for you? 😊",
+            'stage_one_offer': f"{acknowledgement} I can reduce it for you to {curr} {price_str}. It is a modest first reduction, but I can still arrange the order properly. What do you think?",
+            'stage_two_offer': f"{acknowledgement} I can reduce it again to {curr} {price_str}. This is a smaller move because we are nearly at the seller's limit. Would that be acceptable?",
+            'final_offer': f"{acknowledgement} I have reached {curr} {price_str}, my final fair price. I would rather be honest than promise a price that affects quality. Shall we lock it in? 🤝"
         }
         return eng_responses.get(stage_key, "An internal error occurred.")
 
@@ -1324,6 +1326,28 @@ def get_session_negotiated_price(request, product):
         return Decimal(str(value))
     except (InvalidOperation, TypeError):
         return None
+
+
+def get_effective_product_price(request, product):
+    """Return this buyer's accepted/negotiated price without mutating the product."""
+    for key in (f'accepted_price_{product.slug}', f'negotiated_price_{product.slug}'):
+        value = request.session.get(key)
+        if value is not None:
+            try:
+                return Decimal(str(value))
+            except (InvalidOperation, TypeError):
+                pass
+    return product.negotiated_price or product.price or Decimal('0')
+
+
+def prepare_cart_pricing(request, cart):
+    """Attach request-specific unit/total prices and return the cart total."""
+    total = Decimal('0')
+    for item in cart.items.select_related('product').all():
+        item.effective_unit_price = get_effective_product_price(request, item.product)
+        item.effective_total_price = item.effective_unit_price * item.quantity
+        total += item.effective_total_price
+    return total
 
 def set_session_negotiated_price(request, product, price):
     request.session[f'negotiated_price_{product.slug}'] = str(price)
