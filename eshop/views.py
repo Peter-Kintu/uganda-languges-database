@@ -1221,23 +1221,24 @@ def get_gemini_negotiation_response(request, product, user_message, chat_history
         offer_context = f" about {raw_offer_text}" if raw_offer_text else ""
         acknowledgements = [
             f"I understand you are trying to stay within budget{offer_context}.",
-            f"I hear you{offer_context}, and I want to keep this fair for you.",
-            f"That makes sense{offer_context}. Let me see what I can do without cutting into a fair seller price.",
+            f"I hear you{offer_context}; everyone is watching expenses carefully these days.",
+            f"That makes sense{offer_context}. Let me check how far I can reduce it while keeping this fair.",
         ]
         acknowledgement = acknowledgements[len(chat_history) % len(acknowledgements)]
+        consultation = "Let me check with the seller once more" if len(chat_history) % 3 == 0 else "I have checked what I can do"
         eng_responses = {
             'accept': f"{acknowledgement} We have a deal at {curr} {price_str}. Shall I lock it in for you? 🎉",
-            'final_floor_rejection': f"{acknowledgement} {raw_offer_text} is below what I can sustainably accept. My best price is {curr} {price_str}, which protects the seller's margin and keeps the quality promise. Could you meet me there?",
-            'initial_ask_counter': f"{acknowledgement} I know things are not easy these days, especially with transport costs and everyday expenses. Since you are part of the Africana AI community, I can help with {curr} {price_str} as a goodwill discount. Would that make it easier for you?",
-            'mid_ask_counter': f"{acknowledgement} I can move to {curr} {price_str}. That is my second and stronger discount, while still covering quality and delivery. Would that work for you?",
-            'final_ask_counter': f"{acknowledgement} My final fair price is {curr} {price_str}. I cannot go lower without affecting the seller's margin. Shall we close the deal at that amount?",
+            'final_floor_rejection': f"{acknowledgement} {raw_offer_text} is below what I can sustainably accept. {consultation}, and {curr} {price_str} is my final fair price because it protects quality, delivery, and the seller's margin. Could you stretch to that?",
+            'initial_ask_counter': f"{acknowledgement} I know transport and everyday costs are high. I can reduce it for you to {curr} {price_str} as a first goodwill step for an Africana AI user. If we keep the order simple, would that work for you?",
+            'mid_ask_counter': f"{acknowledgement} I can reduce it again, this time to {curr} {price_str}. I am making a smaller step now because we are getting close to my limit. Could you accept that price?",
+            'final_ask_counter': f"{acknowledgement} I can reduce it one last time to {curr} {price_str}. That is the final amount I can approve without selling at a loss. Shall we close it today?",
             'default_query': f"I'm not sure how to process that. Please make a clear offer (e.g., '{curr} 80,000').",
             'already_agreed': f"We have already agreed on {curr} {price_str}. The price is held for you. Click Lock In below when you are ready. 🔒",
-            'too_low_initial_counter': f"{acknowledgement} I know the economy is putting pressure on people, and transport is expensive too. Your offer of {raw_offer_text} is below the seller's fair range, but because you are an Africana AI user I can make a goodwill move to {curr} {price_str}. Could you come a little closer?",
+            'too_low_initial_counter': f"{acknowledgement} I know the economy is putting pressure on people, and transport is expensive too. Your offer of {raw_offer_text} is too far below the seller's fair range, so I cannot approve it. I can reduce it for you to {curr} {price_str} as a serious starting point. Please come a little closer.",
             'too_high_offer': f"{acknowledgement} That offer is above the original price, so you can have it at the original {curr} {price_str}. Would you like to lock it in? 😊",
-            'stage_one_offer': f"{acknowledgement} With transport and other costs rising, I do not want to make things harder for you. As an Africana AI user, I can meet you at {curr} {price_str} while still protecting the seller's margin. What do you think?",
-            'stage_two_offer': f"{acknowledgement} I can move again to {curr} {price_str}. This is a stronger discount and leaves one final move. Would you like to make that your offer?",
-            'final_offer': f"{acknowledgement} I have reached my final fair price of {curr} {price_str}. It is the lowest amount that keeps the quality and delivery promise. Shall I lock it in? 🤝"
+            'stage_one_offer': f"{acknowledgement} With transport and other costs rising, I do not want to make things harder for you. I can reduce it for you to {curr} {price_str}; I am taking the first small step while keeping delivery reliable. What do you think?",
+            'stage_two_offer': f"{acknowledgement} I can reduce it again to {curr} {price_str}. This second step is smaller because we are nearing the seller's limit. I can also help with a simple pickup arrangement if that suits you. Would you like to proceed?",
+            'final_offer': f"{acknowledgement} I have reached my final fair price of {curr} {price_str}. I can no longer reduce it without affecting quality or the seller's margin. Shall I lock it in for you? 🤝"
         }
         return eng_responses.get(stage_key, "An internal error occurred.")
 
