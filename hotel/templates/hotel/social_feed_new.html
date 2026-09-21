@@ -2043,16 +2043,33 @@
     }
 
     @media (prefers-color-scheme: dark) {
+        .post-card,
+        .create-post-card,
+        .sidebar-card,
+        .modal-content {
+            background: #ffffff !important;
+            color: #111827 !important;
+        }
+
         .post-content,
         .post-content p,
         .post-content a,
         #translate-result,
         #translate-result strong {
-            color: #f3f4f6;
+            color: #111827 !important;
         }
 
         #translate-result {
-            background: #1f2937 !important;
+            background: #f3f4f6 !important;
+        }
+
+        .author-name,
+        .comment-author,
+        .comment-text,
+        .modal-title,
+        .sidebar-title,
+        .sidebar-item {
+            color: #111827 !important;
         }
     }
 
@@ -2950,7 +2967,7 @@
     }
 
     // Translate with Gemini
-    function performTranslation() {
+    async function performTranslation() {
         const lang = document.getElementById('translate-lang').value;
         const postElement = document.querySelector(`.post-content[data-post-id="${currentPostId}"]`);
         
@@ -2964,52 +2981,43 @@
         // Show loading indicator
         const resultDiv = document.getElementById('translate-result');
         const loadingDiv = document.getElementById('translate-loading');
+        const originalText = postContent;
         resultDiv.style.display = 'none';
         loadingDiv.style.display = 'block';
-        
-        fetch('/hotel/gemini-translate/', {
-            method: 'POST',
-            body: JSON.stringify({
-                text: postContent,
-                target_language: lang,
-                source_language: 'auto'
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        })
-        .then(async r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            const contentType = r.headers.get('content-type') || '';
-            if (contentType.includes('application/json')) {
-                return r.json();
-            }
-            // Non-JSON response (likely HTML error page). Capture a short snippet for debugging.
-            const text = await r.text();
-            const snippet = text.replace(/\s+/g, ' ').slice(0, 240);
-            throw new Error('Unexpected non-JSON response: ' + snippet);
-        })
-        .then(data => {
-            // Hide loading, show result
+
+        const showResult = (label, text) => {
             loadingDiv.style.display = 'none';
-            if (data.success && data.translated) {
-                resultDiv.innerHTML = `<strong>Translated:</strong><br>${data.translated}`;
-                resultDiv.style.display = 'block';
-            } else if (data.error) {
-                throw new Error(data.error);
-            } else {
-                resultDiv.innerHTML = `<strong>Original:</strong><br>${postContent}`;
-                resultDiv.style.display = 'block';
-            }
-        })
-        .catch(e => {
-            console.error('Translation error:', e);
-            // Hide loading, show original post content instead of error text
-            loadingDiv.style.display = 'none';
-            resultDiv.innerHTML = `<strong>Original:</strong><br>${postContent}`;
+            resultDiv.replaceChildren();
+            const heading = document.createElement('strong');
+            heading.textContent = `${label}:`;
+            resultDiv.append(heading, document.createElement('br'), document.createTextNode(text || originalText));
             resultDiv.style.display = 'block';
-        });
+        };
+
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            try {
+                const response = await fetch('/hotel/gemini-translate/', {
+                    method: 'POST',
+                    body: JSON.stringify({ text: postContent, target_language: lang, source_language: 'auto' }),
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                });
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok || !contentType.includes('application/json')) {
+                    throw new Error(`Translation request failed (${response.status})`);
+                }
+                const data = await response.json();
+                if (data.translated) {
+                    showResult(data.translated === originalText ? 'Original' : 'Translated', data.translated);
+                    return;
+                }
+                throw new Error(data.error || 'No translated text returned');
+            } catch (error) {
+                console.warn(`Translation attempt ${attempt + 1} failed`, error);
+                if (attempt === 0) await new Promise(resolve => window.setTimeout(resolve, 500));
+            }
+        }
+
+        showResult('Original', originalText);
     }
 
     // Translate Post (direct button)
