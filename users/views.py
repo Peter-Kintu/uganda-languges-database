@@ -643,7 +643,12 @@ def nylon_start_checkout(request):
         return redirect('users:profile')
 
     payment.tracking_id = result.transaction_id or result.reference
-    payment.status = 'PAID' if result.status == 'paid' else 'FAILED'
+    payment.status = {
+        'paid': 'PAID',
+        'cancelled': 'CANCELLED',
+        'failed': 'FAILED',
+        'pending': 'PENDING',
+    }.get(result.status, 'PENDING')
     payment.save(update_fields=['tracking_id', 'status', 'redirect_url'])
     if payment.status == 'PAID':
         now = timezone.now()
@@ -653,11 +658,16 @@ def nylon_start_checkout(request):
         subscription.end_date = now + timedelta(days=30)
         subscription.save(update_fields=['status', 'is_active', 'start_date', 'end_date'])
         messages.success(request, 'Your 30-day Pro Business Pass is now active.')
+    elif payment.status == 'PENDING':
+        subscription.status = 'pending'
+        subscription.is_active = False
+        subscription.save(update_fields=['status', 'is_active'])
+        messages.warning(request, 'Nylon is still processing the payment. Please check your profile shortly.')
     else:
         subscription.status = 'failed'
         subscription.is_active = False
         subscription.save(update_fields=['status', 'is_active'])
-        messages.error(request, 'The Nylon payment was not completed.')
+        messages.error(request, result.message or 'The Nylon payment was not completed.')
 
     return redirect('users:profile')
 

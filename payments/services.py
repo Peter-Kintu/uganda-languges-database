@@ -11,6 +11,7 @@ class NylonPaymentResult:
     reference: str
     transaction_id: str = ""
     status: str = "pending"
+    message: str = ""
     raw: Any = None
 
 
@@ -40,9 +41,25 @@ def collect_payment(*, amount, currency, customer_name, customer_phone, descript
         description=description,
         reference=reference,
     )
+    events = []
+    payment.on("failed", lambda event: events.append(event))
+    payment.on("cancelled", lambda event: events.append(event))
+    payment.on("error", lambda event: events.append(event))
     transaction = payment.wait()
     if not transaction:
-        return NylonPaymentResult(reference=reference, status="failed", raw=payment)
+        event = events[-1] if events else None
+        sdk_status = str(getattr(payment, "status", "pending") or "pending").lower()
+        status = {
+            "successful": "paid",
+            "failed": "failed",
+            "cancelled": "cancelled",
+        }.get(sdk_status, "pending")
+        return NylonPaymentResult(
+            reference=reference,
+            status=status,
+            message=str(getattr(event, "error", "") or ""),
+            raw=payment,
+        )
 
     return NylonPaymentResult(
         reference=str(getattr(transaction, "reference", reference) or reference),
