@@ -37,6 +37,9 @@ google-auth
 cerebras-cloud-sdk
 phonenumbers
 requests
+pypdf
+python-docx
+beautifulsoup4
 nylonpay-py
 python-jobspy
 

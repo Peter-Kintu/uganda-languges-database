@@ -8,13 +8,77 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from myuganda.middleware import WordPressProbeBlockMiddleware
-from users.models import EventBooking, PesapalPayment, UserSubscription
+from users.models import AgentMemory, AgentPlan, EventBooking, PesapalPayment, UserSubscription
 from users.tasks import send_user_notification_task
 from users.views import _get_pesapal_config, _pesapal_request, _send_welcome_email
 
 
 User = get_user_model()
 
+
+class AgentCommandTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='agent_user', password='secret1234')
+        self.client.force_login(self.user)
+
+    def test_memory_is_user_scoped_and_persistent(self):
+        response = self.client.post(
+            reverse('users:agent_command'),
+            data={'action': 'remember', 'key': 'target_role', 'value': 'Python developer'},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(AgentMemory.objects.get(user=self.user, key='target_role').value, 'Python developer')
+
+    def test_plan_checkpoint_advances_and_completes(self):
+        response = self.client.post(
+            reverse('users:agent_command'),
+            data={'action': 'plan', 'title': 'Launch portfolio', 'goal': 'Get interviews', 'steps': ['Write CV', 'Apply']},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        plan_id = response.json()['plan_id']
+        checkpoint = self.client.post(
+            reverse('users:agent_command'),
+            data={'action': 'checkpoint', 'plan_id': plan_id, 'step': 0, 'evidence': 'CV drafted'},
+            content_type='application/json',
+        )
+        self.assertEqual(checkpoint.status_code, 200)
+        self.assertEqual(checkpoint.json()['current_step'], 1)
+        self.assertEqual(AgentPlan.objects.get(id=plan_id).steps[0]['status'], 'completed')
+
+    @patch.dict('os.environ', {'BRAVE_SEARCH_API_KEY': ''})
+    @patch('users.views.requests.get')
+    def test_free_research_fallback_returns_empty_results(self, mock_get):
+        mock_get.return_value = SimpleNamespace(text='<html></html>', raise_for_status=lambda: None)
+        response = self.client.post(
+            reverse('users:agent_command'),
+            data={'action': 'research', 'query': 'Uganda software jobs'},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['sources'], [])
+
+    @patch('users.views._brave_research', return_value=[{
+        'title': 'Example Supplier',
+        'url': 'https://example.com/contact',
+        'excerpt': 'Wholesale supplier',
+    }])
+    @patch('users.views.requests.get')
+    def test_research_returns_public_contacts(self, mock_get, mock_search):
+        mock_get.return_value = SimpleNamespace(
+            text='<a href="/contact">Contact us</a> sales@example.com +256 700 123 456',
+            raise_for_status=lambda: None,
+        )
+        response = self.client.post(
+            reverse('users:agent_command'),
+            data={'action': 'research', 'query': 'supplier contact'},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        contacts = response.json()['contact_results'][0]['contacts']
+        self.assertIn('sales@example.com', contacts['emails'])
+        self.assertIn('+256 700 123 456', contacts['phones'])
 
 class ExploitProbeDefenseTests(TestCase):
     def test_rest_route_probe_is_denied_with_404(self):

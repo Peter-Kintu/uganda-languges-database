@@ -4,8 +4,6 @@ import logging
 import requests
 import time
 import base64
-import zipfile
-import xml.etree.ElementTree as ET
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta, date
 from django.template.loader import render_to_string
@@ -20,6 +18,7 @@ from django.core.mail import send_mail
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
+from urllib.parse import urljoin
 from django.db import IntegrityError, models, transaction
 from django.db.models import Q, Count
 from django.db.models.functions import TruncMonth
@@ -27,7 +26,7 @@ from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.template import TemplateDoesNotExist
-from .models import EventBooking
+from .models import AgentMemory, AgentPlan, AgentResearchCitation, EventBooking
 import uuid
 from io import BytesIO
 from pathlib import Path
@@ -1054,6 +1053,256 @@ def profile_ai(request):
     except TemplateDoesNotExist:
         return render(request, 'profile_ai.html', {'user': request.user})
 
+
+def _extract_attachment_text(attachment):
+    content_type = attachment.content_type or ''
+    filename = attachment.name.lower()
+    if content_type == 'application/pdf' or filename.endswith('.pdf'):
+        from pypdf import PdfReader
+        reader = PdfReader(attachment)
+        return '\n\n'.join(page.extract_text() or '' for page in reader.pages)
+    if (
+        content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        or filename.endswith('.docx')
+    ):
+        from docx import Document
+        document = Document(attachment)
+        paragraphs = [paragraph.text for paragraph in document.paragraphs]
+        for table in document.tables:
+            paragraphs.extend(' | '.join(cell.text for cell in row.cells) for row in table.rows)
+        return '\n'.join(paragraphs)
+    if content_type.startswith('text/') or filename.endswith(('.txt', '.md', '.csv', '.json')):
+        return attachment.read().decode('utf-8', errors='ignore')
+    raise ValueError('This file type cannot be read. Upload PDF, DOCX, TXT, CSV, JSON, or an image.')
+
+
+def _gemini_generate_content(instruction, attachment=None, content_type=None):
+    api_key = os.environ.get('GEMINI_API_KEY', '').strip().replace('"', '').replace("'", '')
+    if not api_key:
+        return ''
+    configured_model = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
+    models = list(dict.fromkeys([configured_model, 'gemini-2.5-flash', 'gemini-2.5-flash-lite']))
+    parts = [{'text': instruction}]
+    if attachment is not None:
+        parts.append({
+            'inline_data': {
+                'mime_type': content_type,
+                'data': base64.b64encode(attachment.read()).decode('ascii'),
+            },
+        })
+    for model in models:
+        try:
+            response = requests.post(
+                f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+                params={'key': api_key},
+                json={
+                    'contents': [{'parts': parts}],
+                    'generationConfig': {'temperature': 0.45, 'maxOutputTokens': 1200},
+                },
+                timeout=35,
+            )
+            if response.status_code == 404:
+                logging.warning('Gemini model %s is unavailable; trying the next model.', model)
+                continue
+            response.raise_for_status()
+            candidates = response.json().get('candidates', [])
+            response_parts = candidates[0].get('content', {}).get('parts', []) if candidates else []
+            result = ''.join(part.get('text', '') for part in response_parts).strip()
+            if result:
+                return result
+        except requests.RequestException as error:
+            logging.warning('Gemini request failed for %s: %s', model, str(error)[:200])
+    return ''
+
+
+def _brave_research(query, count=5):
+    api_key = os.environ.get('BRAVE_SEARCH_API_KEY', '').strip()
+    if not api_key:
+        from bs4 import BeautifulSoup
+        response = requests.get(
+            'https://html.duckduckgo.com/html/',
+            params={'q': query},
+            headers={'User-Agent': 'AfricanaAI/1.0 research'},
+            timeout=15,
+        )
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        results = []
+        for item in soup.select('.result')[:min(max(count, 1), 10)]:
+            link = item.select_one('.result__a')
+            excerpt = item.select_one('.result__snippet')
+            if link and link.get('href'):
+                results.append({
+                    'title': link.get_text(' ', strip=True)[:500],
+                    'url': link['href'][:1000],
+                    'excerpt': excerpt.get_text(' ', strip=True)[:2000] if excerpt else '',
+                })
+        return results
+    response = requests.get(
+        'https://api.search.brave.com/res/v1/web/search',
+        headers={'Accept': 'application/json', 'X-Subscription-Token': api_key},
+        params={'q': query, 'count': min(max(count, 1), 10), 'country': 'ug', 'search_lang': 'en'},
+        timeout=15,
+    )
+    response.raise_for_status()
+    results = response.json().get('web', {}).get('results', [])
+    return [
+        {
+            'title': str(item.get('title', 'Untitled'))[:500],
+            'url': str(item.get('url', ''))[:1000],
+            'excerpt': str(item.get('description', ''))[:2000],
+        }
+        for item in results
+        if item.get('url')
+    ]
+
+
+def _agent_research_query(query):
+    lowered = query.lower()
+    employment_terms = ('job', 'jobs', 'career', 'employment', 'vacancy', 'hiring', 'cv', 'resume', 'interview')
+    business_terms = ('business', 'startup', 'market', 'customer', 'competitor', 'pricing', 'entrepreneur')
+    contact_terms = ('supplier', 'suppliers', 'employer', 'employers', 'company contact', 'contact', 'phone', 'email', 'wholesale')
+    if any(term in lowered for term in contact_terms):
+        return f'{query} official website email phone contact address'
+    if any(term in lowered for term in employment_terms):
+        return f'{query} Uganda Africa current opportunities requirements application official'
+    if any(term in lowered for term in business_terms):
+        return f'{query} Uganda Africa market demand competitors pricing evidence 2026'
+    return query
+
+
+def _extract_public_contacts(url):
+    """Extract contact details explicitly published on a public page."""
+    try:
+        response = requests.get(
+            url,
+            headers={'User-Agent': 'AfricanaAI/1.0 public-contact-research'},
+            timeout=8,
+        )
+        response.raise_for_status()
+        from bs4 import BeautifulSoup
+        import re
+        soup = BeautifulSoup(response.text, 'html.parser')
+        text = soup.get_text(' ', strip=True)
+        emails = sorted(set(re.findall(r'[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}', text, re.IGNORECASE)))[:5]
+        phones = sorted(set(re.findall(
+            r'(?<![\d+])(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{2,4}\)?[\s.-]?)?\d{3,4}[\s.-]\d{3,4}(?:[\s.-]\d{2,5})?(?!\d)',
+            text,
+        )))[:5]
+        contact_links = []
+        for link in soup.select('a[href]'):
+            label = f"{link.get_text(' ', strip=True)} {link.get('href', '')}".lower()
+            if 'contact' in label or 'reach us' in label:
+                contact_links.append(urljoin(url, link.get('href')))
+        return {'emails': emails, 'phones': phones, 'contact_links': sorted(set(contact_links))[:3]}
+    except (requests.RequestException, ValueError):
+        return {'emails': [], 'phones': [], 'contact_links': []}
+
+
+@login_required
+def agent_command(request):
+    """Run explicit agent tools while keeping research and memory user-scoped."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+    try:
+        body = json.loads(request.body or '{}')
+        action = str(body.get('action', '')).lower().strip()
+        if action == 'remember':
+            key = str(body.get('key', '')).strip()[:120]
+            value = str(body.get('value', '')).strip()[:2000]
+            if not key or not value:
+                return JsonResponse({'error': 'A memory key and value are required.'}, status=400)
+            memory, _ = AgentMemory.objects.update_or_create(
+                user=request.user,
+                key=key,
+                defaults={'value': value, 'source': 'user-approved'},
+            )
+            return JsonResponse({'ok': True, 'memory_id': memory.id})
+
+        if action == 'research':
+            query = str(body.get('query', '')).strip()[:500]
+            if not query:
+                return JsonResponse({'error': 'A research question is required.'}, status=400)
+            results = _brave_research(_agent_research_query(query))
+            for item in results[:5]:
+                item['contacts'] = _extract_public_contacts(item['url'])
+            citations = [AgentResearchCitation.objects.create(
+                user=request.user,
+                query=query,
+                title=item['title'],
+                url=item['url'],
+                excerpt=item['excerpt'],
+            ) for item in results]
+            return JsonResponse({
+                'query': query,
+                'configured': bool(os.environ.get('BRAVE_SEARCH_API_KEY', '').strip()),
+                'provider': 'brave' if os.environ.get('BRAVE_SEARCH_API_KEY', '').strip() else 'duckduckgo',
+                'sources': [
+                    {'title': citation.title, 'url': citation.url, 'excerpt': citation.excerpt}
+                    for citation in citations
+                ],
+                'contact_results': [
+                    {'title': item['title'], 'url': item['url'], 'contacts': item.get('contacts', {})}
+                    for item in results if any(item.get('contacts', {}).values())
+                ],
+            })
+
+        if action == 'plan':
+            title = str(body.get('title', 'Untitled plan')).strip()[:255]
+            goal = str(body.get('goal', '')).strip()[:4000]
+            supplied_steps = body.get('steps', [])
+            if not goal or not isinstance(supplied_steps, list) or not supplied_steps:
+                return JsonResponse({'error': 'A goal and at least one plan step are required.'}, status=400)
+            steps = []
+            for step in supplied_steps[:20]:
+                if isinstance(step, str) and step.strip():
+                    steps.append({'title': step.strip()[:255], 'status': 'pending', 'evidence': ''})
+                elif isinstance(step, dict) and str(step.get('title', '')).strip():
+                    steps.append({
+                        'title': str(step['title']).strip()[:255],
+                        'status': 'pending',
+                        'evidence': str(step.get('evidence', '')).strip()[:1000],
+                    })
+            if not steps:
+                return JsonResponse({'error': 'Plan steps must contain usable titles.'}, status=400)
+            plan = AgentPlan.objects.create(user=request.user, title=title or goal[:255], goal=goal, steps=steps, status='active')
+            job_id = None
+            if body.get('background_research'):
+                try:
+                    from .tasks import refresh_agent_plan_research
+                    job = refresh_agent_plan_research.delay(plan.id)
+                    job_id = job.id
+                except Exception:
+                    logging.warning('Could not queue plan research for %s.', plan.id, exc_info=True)
+            return JsonResponse({'plan_id': plan.id, 'title': plan.title, 'steps': plan.steps, 'research_job_id': job_id})
+
+        if action == 'checkpoint':
+            plan = AgentPlan.objects.filter(user=request.user, id=body.get('plan_id')).first()
+            if not plan:
+                return JsonResponse({'error': 'Plan not found.'}, status=404)
+            step_index = int(body.get('step', plan.current_step))
+            if step_index < 0 or step_index >= len(plan.steps):
+                return JsonResponse({'error': 'Checkpoint is outside this plan.'}, status=400)
+            steps = list(plan.steps)
+            steps[step_index] = {
+                **steps[step_index],
+                'status': str(body.get('status', 'completed'))[:20],
+                'evidence': str(body.get('evidence', steps[step_index].get('evidence', '')))[:1000],
+            }
+            next_step = min(step_index + 1, len(steps))
+            plan.steps = steps
+            plan.current_step = next_step
+            plan.status = 'completed' if next_step == len(steps) else 'active'
+            plan.save(update_fields=['steps', 'current_step', 'status', 'updated_at'])
+            return JsonResponse({'plan_id': plan.id, 'current_step': plan.current_step, 'status': plan.status, 'steps': plan.steps})
+
+        return JsonResponse({'error': 'Unknown agent action.'}, status=400)
+    except (TypeError, ValueError, json.JSONDecodeError) as error:
+        return JsonResponse({'error': f'Invalid agent request: {error}'}, status=400)
+    except requests.RequestException:
+        return JsonResponse({'error': 'Research provider is temporarily unavailable.'}, status=502)
+
+
 @login_required
 def analyze_ai_attachment(request):
     """Analyze a user-provided image or text document against their selected goal."""
@@ -1063,15 +1312,16 @@ def analyze_ai_attachment(request):
     attachment = request.FILES.get('attachment')
     if not attachment:
         return JsonResponse({'error': 'Please choose a file to analyze.'}, status=400)
-    if attachment.size > 8 * 1024 * 1024:
-        return JsonResponse({'error': 'Files must be 8 MB or smaller.'}, status=400)
+    if attachment.size > 20 * 1024 * 1024:
+        return JsonResponse({'error': 'Files must be 20 MB or smaller.'}, status=400)
 
     allowed_types = {
         'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
-        'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        'text/plain', 'text/csv', 'application/json',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     }
     if attachment.content_type not in allowed_types:
-        return JsonResponse({'error': 'Upload a JPG, PNG, WEBP, PDF, DOCX, or TXT file.'}, status=400)
+        return JsonResponse({'error': 'Upload a JPG, PNG, WEBP, PDF, DOCX, TXT, CSV, or JSON file.'}, status=400)
 
     focus_labels = {
         'career': 'career growth and professional direction',
@@ -1099,40 +1349,16 @@ def analyze_ai_attachment(request):
     )
 
     try:
+        raw_text = ''
         if attachment.content_type.startswith('image/'):
-            api_key = os.environ.get('GEMINI_API_KEY', '').strip().replace('"', '').replace("'", '')
-            if not api_key:
-                return JsonResponse({'error': 'Image analysis is not configured yet.'}, status=503)
-            vision_model = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
-            encoded = base64.b64encode(attachment.read()).decode('ascii')
-            payload = {
-                'contents': [{'parts': [
-                    {'text': instruction},
-                    {'inline_data': {'mime_type': attachment.content_type, 'data': encoded}},
-                ]}],
-                'generationConfig': {'temperature': 0.45, 'maxOutputTokens': 1200},
-            }
-            response = requests.post(
-                f'https://generativelanguage.googleapis.com/v1beta/models/{vision_model}:generateContent',
-                params={'key': api_key}, json=payload, timeout=35,
-            )
-            response.raise_for_status()
-            candidates = response.json().get('candidates', [])
-            parts = candidates[0].get('content', {}).get('parts', []) if candidates else []
-            result = ''.join(part.get('text', '') for part in parts).strip()
+            result = _gemini_generate_content(instruction, attachment, attachment.content_type)
         else:
-            if attachment.content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                with zipfile.ZipFile(attachment) as document_zip:
-                    document_xml = document_zip.read('word/document.xml')
-                root = ET.fromstring(document_xml)
-                raw_text = ' '.join(node.text or '' for node in root.iter() if node.tag.endswith('}t'))
-            else:
-                raw_text = attachment.read().decode('utf-8', errors='ignore')
-            if attachment.content_type == 'application/pdf':
-                return JsonResponse({'error': 'PDF text extraction is not available yet. Upload a DOCX or TXT copy.'}, status=400)
+            raw_text = _extract_attachment_text(attachment)
+            if not raw_text.strip():
+                return JsonResponse({'error': 'No readable text was found in this document.'}, status=400)
             document_messages = [
                 {'role': 'system', 'content': instruction},
-                {'role': 'user', 'content': raw_text[:24000]},
+                {'role': 'user', 'content': raw_text[:60000]},
             ]
             result = None
             api_key = os.environ.get('CEREBRAS_API_KEY', '').strip().replace('"', '').replace("'", '')
@@ -1167,8 +1393,19 @@ def analyze_ai_attachment(request):
                     result = str(result).strip()
 
         if not result:
-            return JsonResponse({'error': 'The AI could not produce feedback for this file.'}, status=502)
-        return JsonResponse({'text': result, 'filename': attachment.name})
+            if raw_text:
+                result = (
+                    'I read this document locally, but the AI providers are temporarily unavailable. '
+                    f'The file contains approximately {len(raw_text):,} characters. '
+                    'Please retry the analysis shortly; your file was not stored.'
+                )
+            else:
+                result = (
+                    'I received this image, but the vision provider is temporarily unavailable. '
+                    'Please retry shortly; your image was not stored.'
+                )
+            return JsonResponse({'text': result, 'filename': attachment.name, 'degraded': True})
+        return JsonResponse({'text': result, 'filename': attachment.name, 'degraded': False})
     except (requests.RequestException, UnicodeDecodeError, ValueError) as error:
         logging.warning('Attachment analysis failed: %s', str(error)[:200])
         return JsonResponse({'error': 'Attachment analysis is temporarily unavailable.'}, status=502)
@@ -1205,6 +1442,16 @@ def cerebras_proxy(request):
             return JsonResponse({'error': 'Conversation content is too large.'}, status=400)
 
         profile = _get_user_profile_data(request.user)
+        memories = list(AgentMemory.objects.filter(user=request.user).values('key', 'value')[:20])
+        active_plans = list(
+            AgentPlan.objects.filter(user=request.user, status='active')
+            .values('title', 'goal', 'current_step', 'steps')[:5]
+        )
+        memory_note = '\n'.join(f"- {item['key']}: {item['value']}" for item in memories) or '- No saved preferences yet.'
+        plan_note = '\n'.join(
+            f"- {plan['title']}: step {plan['current_step'] + 1} of {len(plan['steps'])}"
+            for plan in active_plans
+        ) or '- No active plans yet.'
 
         lang_note_map = {
             'lg': ' Respond in Luganda when discussing with the user in Luganda.',
@@ -1256,8 +1503,24 @@ Name: {profile['full_name']} | Role: {profile['headline']}
 Skills: {', '.join(profile['skills'][:10]) or 'Not specified'}
 Experience: {', '.join(profile['experiences'][:5]) if profile['experiences'] else 'Not specified'}
 
+**DURABLE USER CONTEXT:**
+{memory_note}
+
+**ACTIVE PLANS AND CHECKPOINTS:**
+{plan_note}
+
 **CURRENT USER FOCUS:**
 Prioritize {focus_instruction}. Connect every recommendation to the user's profile and end with one clear next action.
+
+**AGENT OPERATING PROTOCOL:**
+- First identify the user's actual objective, constraints, location, experience level, and missing information.
+- For complex requests, silently make a short plan, then execute it in ordered sections. Do not expose private chain-of-thought.
+- Separate facts, reasonable assumptions, and recommendations. Never invent employers, salaries, laws, statistics, or document contents.
+- Check arithmetic, dates, contradictions, and feasibility before answering. State uncertainty and ask at most one high-value clarifying question when it changes the recommendation; otherwise proceed with explicit assumptions.
+- Prefer practical Uganda and African context: mobile-first, realistic budgets, local hiring practices, remote options, data costs, and accessible next steps.
+- Turn advice into an executable result: concrete examples, templates, priorities, owners, timeframes, and a measurable success check.
+- When reviewing a CV, business idea, image, or plan, identify strengths, risks, missing evidence, and the highest-impact improvements before giving the final actions.
+- Do not claim to have browsed, verified a live opportunity, read an attachment, or used a tool unless that information is present in the request.
 
 **YOUR CORE EXPERTISE:**
 
@@ -1292,23 +1555,25 @@ Prioritize {focus_instruction}. Connect every recommendation to the user's profi
    - Manufacturing and logistics opportunities
 
 **HOW YOU RESPOND:**
-✅ Always answer in clear, polished paragraphs.
+✅ Lead with the answer, then explain only what helps the user act.
 ✅ Keep business and career guidance practical, actionable, and respectful.
 ✅ When asked to create documents, ONLY generate a PDF if the user explicitly requests it.
 ✅ Avoid making claims about your own availability or internal systems.
 ✅ If the user speaks in an African language, respond in that language using natural phrasing.
 ✅ When the user asks for resume, CV, business plan, or export, provide clear next-step advice first.
 ✅ Use professional tone for job search and startup strategy.
-✅ Use bullet lists where it improves readability, but keep the message concise.
+✅ Use headings, tables, checklists, or examples when they improve decisions; avoid generic motivational filler.
 
 **LANGUAGE NOTE:**{lang_note}
 """
         system_instruction = body.get('system_instruction') or default_instruction
 
         messages = [{"role": "system", "content": system_instruction}]
-        for msg in raw_contents[-10:]:
-            role = "assistant" if msg.get("role", "").lower() in ["ai", "model", "assistant"] else "user"
-            text = msg.get("text", "").strip()
+        for msg in raw_contents[-12:]:
+            if not isinstance(msg, dict):
+                continue
+            role = "assistant" if str(msg.get("role", "")).lower() in ["ai", "model", "assistant"] else "user"
+            text = str(msg.get("text", "")).strip()[:6000]
             if text:
                 messages.append({"role": role, "content": text})
 
@@ -1358,27 +1623,34 @@ Prioritize {focus_instruction}. Connect every recommendation to the user's profi
                 'contents': gemini_contents,
                 'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 2000},
             }
-            try:
-                response = requests.post(
-                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-                    params={'key': api_key},
-                    json=payload,
-                    timeout=25,
-                )
-                if response.status_code != 200:
-                    logging.warning("Gemini fallback HTTP %s", response.status_code)
-                    return None, "Gemini service unavailable"
-                data = response.json()
-                candidates = data.get('candidates') or []
-                parts = candidates[0].get('content', {}).get('parts', []) if candidates else []
-                text = ''.join(part.get('text', '') for part in parts).strip()
-                return (text, None) if text else (None, "Gemini returned no content")
-            except requests.RequestException as error:
-                logging.warning("Gemini fallback request failed: %s", str(error))
-                return None, "Gemini service unavailable"
-            except (KeyError, IndexError, TypeError, ValueError) as error:
-                logging.warning("Gemini fallback response was invalid: %s", str(error))
-                return None, "Gemini service unavailable"
+            models = list(dict.fromkeys([
+                getattr(settings, 'GEMINI_CHAT_MODEL', 'gemini-2.5-flash'),
+                'gemini-2.5-flash',
+                'gemini-2.5-flash-lite',
+            ]))
+            for model in models:
+                try:
+                    response = requests.post(
+                        f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+                        params={'key': api_key},
+                        json=payload,
+                        timeout=25,
+                    )
+                    if response.status_code == 404:
+                        logging.warning("Gemini model %s is unavailable; trying the next model.", model)
+                        continue
+                    if response.status_code != 200:
+                        logging.warning("Gemini fallback HTTP %s", response.status_code)
+                        return None, "Gemini service unavailable"
+                    data = response.json()
+                    candidates = data.get('candidates') or []
+                    parts = candidates[0].get('content', {}).get('parts', []) if candidates else []
+                    text = ''.join(part.get('text', '') for part in parts).strip()
+                    if text:
+                        return text, None
+                except requests.RequestException as error:
+                    logging.warning("Gemini fallback request failed for %s: %s", model, str(error)[:200])
+            return None, "Gemini service unavailable"
 
         def try_sunbird():
             """Try Sunbird (fallback) - excellent for African languages"""
@@ -1428,7 +1700,7 @@ Prioritize {focus_instruction}. Connect every recommendation to the user's profi
         if response_text:
             return JsonResponse({
                 "text": response_text,
-                "model_used": "Gemini 2.0 Flash (Fallback)",
+                "model_used": "Gemini configured fallback",
                 "language": user_language,
             })
 

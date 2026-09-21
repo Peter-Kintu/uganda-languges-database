@@ -660,7 +660,7 @@
 
         <div class="chat-input-area">
             <div class="attachment-tools">
-                <input id="attachmentInput" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,.docx" hidden>
+                <input id="attachmentInput" type="file" accept="image/*,application/pdf,text/plain,text/csv,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.docx,.txt,.csv,.json" hidden>
                 <button type="button" class="attachment-button" id="attachmentButton" title="Upload a CV, document, or outfit photo">
                     <span aria-hidden="true">+</span> Add file
                 </button>
@@ -712,6 +712,7 @@
     let currentSessionId = '';
     let lastAiReply = '';
     let speechRecognition = null;
+    let requestInFlight = false;
     let selectedChatLanguage = localStorage.getItem('africana_chat_language') || 'auto';
     let selectedFocus = localStorage.getItem('africana_ai_focus') || 'career';
     chatLanguage.value = selectedChatLanguage;
@@ -752,11 +753,11 @@
         this.disabled = true;
         attachmentStatus.textContent = 'Analyzing...';
         try {
-            const response = await fetch('/api/v1/analyze_ai_attachment/', {
+            const response = await fetchWithRecovery('/api/v1/analyze_ai_attachment/', {
                 method: 'POST',
                 headers: {'X-CSRFToken': getCookie('csrftoken')},
                 body: formData
-            });
+            }, 2);
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Analysis failed.');
             appendMessage('user', `Analyze ${file.name}${chatInput.value.trim() ? `: ${chatInput.value.trim()}` : ''}`);
@@ -897,7 +898,99 @@
         const sessions = getChatSessions();
         if (!sessions[sessionId]) sessions[sessionId] = [];
         sessions[sessionId].push({ role, text, timestamp: Date.now() });
+        sessions[sessionId] = sessions[sessionId].slice(-40);
         localStorage.setItem('chat_sessions', JSON.stringify(sessions));
+    }
+
+    async function fetchWithRecovery(url, options, attempts = 2) {
+        let lastError;
+        for (let attempt = 0; attempt < attempts; attempt += 1) {
+            const controller = new AbortController();
+            const timeout = window.setTimeout(() => controller.abort(), 45000);
+            try {
+                const response = await fetch(url, {...options, signal: controller.signal});
+                if (response.ok || response.status < 500 || attempt === attempts - 1) return response;
+                lastError = new Error(`Service returned ${response.status}`);
+            } catch (error) {
+                lastError = error.name === 'AbortError'
+                    ? new Error('The request timed out. Please try again.')
+                    : error;
+                if (attempt === attempts - 1) throw lastError;
+            } finally {
+                window.clearTimeout(timeout);
+            }
+            await new Promise(resolve => window.setTimeout(resolve, 700 * (attempt + 1)));
+        }
+        throw lastError || new Error('The AI service is unavailable.');
+    }
+
+    async function runAgentCommand(text) {
+        const command = text.trim();
+        if (command.toLowerCase().startsWith('/research ')) {
+            const query = command.slice(10).trim();
+            const response = await fetchWithRecovery('/api/v1/agent/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                body: JSON.stringify({action: 'research', query})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Research failed.');
+            if (!data.sources?.length) {
+                return 'No sources were returned. The free search provider may be rate-limited; please try again shortly.';
+            }
+            const sourceText = data.sources.map((source, index) => `${index + 1}. [${source.title}](${source.url})\n${source.excerpt}`).join('\n\n');
+            const contactText = (data.contact_results || []).map(result => {
+                const contacts = result.contacts || {};
+                const emails = (contacts.emails || []).map(email => `Email: ${email}`).join(' | ');
+                const phones = (contacts.phones || []).map(phone => `Phone: ${phone}`).join(' | ');
+                const links = (contacts.contact_links || []).map(link => `[Contact page](${link})`).join(' | ');
+                return `- **[${result.title}](${result.url})**${emails || phones || links ? `\n  ${[emails, phones, links].filter(Boolean).join(' | ')}` : ''}`;
+            }).join('\n');
+            return `## Web research\n\n${sourceText}${contactText ? `\n\n## Public contacts found\n\n${contactText}` : ''}`;
+        }
+
+        if (command.toLowerCase().startsWith('/remember ')) {
+            const memory = command.slice(10).split(':');
+            const key = memory.shift()?.trim();
+            const value = memory.join(':').trim();
+            const response = await fetchWithRecovery('/api/v1/agent/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                body: JSON.stringify({action: 'remember', key, value})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Memory save failed.');
+            return `Saved that as a durable preference: **${key}**.`;
+        }
+
+        if (command.toLowerCase().startsWith('/plan ')) {
+            const parts = command.slice(6).split('|');
+            const goal = parts.shift().trim();
+            const steps = parts.join('|').split(';').map(step => step.trim()).filter(Boolean);
+            const response = await fetchWithRecovery('/api/v1/agent/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                body: JSON.stringify({action: 'plan', title: goal, goal, steps, background_research: true})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Plan creation failed.');
+            return `## Plan created\n\n**${data.title}**\n\n${data.steps.map((step, index) => `${index + 1}. ${step.title}`).join('\n')}\n\nCheckpoint ID: ${data.plan_id}`;
+        }
+
+        if (command.toLowerCase().startsWith('/checkpoint ')) {
+            const parts = command.slice(12).split('|');
+            const [planId, step] = parts.shift().trim().split(/\s+/);
+            const response = await fetchWithRecovery('/api/v1/agent/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                body: JSON.stringify({action: 'checkpoint', plan_id: planId, step: Number(step), evidence: parts.join('|').trim()})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Checkpoint update failed.');
+            return `Checkpoint saved. Next step: ${data.current_step + 1}. Plan status: **${data.status}**.`;
+        }
+
+        return null;
     }
 
     function getSessionHistory(sessionId) {
@@ -1063,7 +1156,9 @@
 
     async function typeQuery() {
         const text = chatInput.value.trim();
-        if (!text || !currentSessionId) return;
+        if (!text || !currentSessionId || requestInFlight) return;
+        requestInFlight = true;
+        document.getElementById('sendChatButton').disabled = true;
 
         appendMessage('user', text);
         saveMessage(currentSessionId, 'user', text);
@@ -1077,7 +1172,13 @@
         window.lastChatLanguage = detectedLang;
 
         try {
-            const response = await fetch('/api/v1/cerebras_proxy/', {
+            const agentReply = await runAgentCommand(text);
+            if (agentReply) {
+                removeLoadingMessage();
+                appendAssistantReply(agentReply);
+                return;
+            }
+            const response = await fetchWithRecovery('/api/v1/cerebras_proxy/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1152,6 +1253,9 @@
                 selectedFocus
             );
             appendAssistantReply(browserReply || 'I cannot reach the AI services right now. Here is a useful next step: define one clear goal for this week and write down the smallest action you can complete today.');
+        } finally {
+            requestInFlight = false;
+            document.getElementById('sendChatButton').disabled = false;
         }
     }
 

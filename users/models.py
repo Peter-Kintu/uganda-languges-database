@@ -139,6 +139,51 @@ class Skill(models.Model):
         return self.name
 
 
+class AgentMemory(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='agent_memories')
+    key = models.CharField(max_length=120)
+    value = models.TextField()
+    source = models.CharField(max_length=40, default='conversation')
+    confidence = models.DecimalField(max_digits=4, decimal_places=3, default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user', 'key'], name='unique_agent_memory_key')]
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f'{self.user.username}: {self.key}'
+
+
+class AgentPlan(models.Model):
+    STATUS_CHOICES = [('draft', 'Draft'), ('active', 'Active'), ('completed', 'Completed'), ('failed', 'Failed')]
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='agent_plans')
+    title = models.CharField(max_length=255)
+    goal = models.TextField()
+    steps = models.JSONField(default=list)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    current_step = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+
+class AgentResearchCitation(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='agent_research')
+    plan = models.ForeignKey(AgentPlan, on_delete=models.CASCADE, related_name='citations', null=True, blank=True)
+    query = models.CharField(max_length=500)
+    title = models.CharField(max_length=500)
+    url = models.URLField(max_length=1000)
+    excerpt = models.TextField(blank=True)
+    retrieved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-retrieved_at']
+
+
 class SocialConnection(models.Model):
     PLATFORM_CHOICES = (
         ('linkedin', 'LinkedIn (Professional)'),
