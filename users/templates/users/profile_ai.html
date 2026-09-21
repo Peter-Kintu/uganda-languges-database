@@ -792,8 +792,9 @@
             if (!response.ok) throw new Error(data.error || 'Analysis failed.');
             appendMessage('user', `Analyze ${file.name}${chatInput.value.trim() ? `: ${chatInput.value.trim()}` : ''}`);
             saveMessage(currentSessionId, 'user', `Analyze ${file.name}`);
-            appendMessage('ai', data.text);
-            saveMessage(currentSessionId, 'ai', data.text);
+            const safeAnalysisReply = sanitizeAssistantReply(data.text || '');
+            appendAssistantReply(safeAnalysisReply || 'I reviewed the file and can help you turn it into a focused action plan. Share the specific goal or role you want to target next.');
+            saveMessage(currentSessionId, 'ai', safeAnalysisReply || 'I reviewed the file and can help you turn it into a focused action plan. Share the specific goal or role you want to target next.');
             chatInput.value = '';
             attachmentInput.value = '';
             attachmentPreview.style.display = 'none';
@@ -1031,6 +1032,7 @@
     }
 
     function appendMessage(role, text) {
+        text = role === 'user' ? text : sanitizeAssistantReply(text);
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${role === 'user' ? 'user' : 'ai'}`;
         
@@ -1086,7 +1088,43 @@
         });
     }
 
-    function appendLoadingMessage() {
+    function extractUrlFromText(text) {
+        const match = String(text || '').match(/https?:\/\/[^\s]+/i);
+        return match ? match[0] : null;
+    }
+
+    function shouldUseWebResearch(text) {
+        const url = extractUrlFromText(text);
+        if (url) return true;
+        if (selectedMode === 'research') return true;
+        return /search the web|look up|research|find info|check website|analyze.*url|website|web/i.test(String(text || ''));
+    }
+
+    function detectFakeOpportunity(text) {
+        const candidate = String(text || '').trim();
+        if (!candidate) return null;
+        const lower = candidate.toLowerCase();
+        const employmentTerms = /(job|vacancy|hiring|recruiter|employment|contract|freelance|opportunity|position|business deal|partnership)/i;
+        const redFlags = [
+            'pay upfront', 'pay to work', 'registration fee', 'training fee', 'processing fee',
+            'guaranteed income', 'guaranteed salary', 'easy money', 'work from home no skills',
+            'send money first', 'wire transfer', 'bitcoin', 'crypto', 'western union', 'pay by mobile money',
+            'no interview', 'urgent hiring', 'limited slots', 'immediate approval', 'cash app',
+            'whatsapp only', 'telegram only', 'dm me', 'reply to this message', 'contact me privately',
+            'bank account details', 'payment before interview', 'salary before interview', 'send cv to personal email'
+        ];
+        const flags = redFlags.filter(flag => lower.includes(flag));
+        const hasEmailContact = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(candidate) && employmentTerms.test(candidate);
+        if (employmentTerms.test(candidate) && (flags.length >= 1 || hasEmailContact)) {
+            return {
+                fake: true,
+                reasons: flags.length ? flags.slice(0, 4) : ['personal email contact without official company details']
+            };
+        }
+        return null;
+    }
+
+    function appendLoadingMessage(messageText = 'Africana AI is thinking') {
         removeLoadingMessage();
         const wrapper = document.createElement('div');
         wrapper.id = 'loadingMessage';
@@ -1095,7 +1133,7 @@
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
         bubble.innerHTML = `
-            <span style="font-weight: 600;">Africana AI is thinking</span>
+            <span style="font-weight: 600;">${escapeHtml(messageText)}</span>
             <span class="loading-dots">
                 <span class="loading-dot"></span>
                 <span class="loading-dot"></span>
@@ -1154,7 +1192,7 @@
         const browserAi = window.LanguageModel || window.ai?.languageModel;
         if (!browserAi) return null;
 
-        const systemPrompt = `You are Africana AI, a practical career and business companion for African professionals. Respond in ${language || 'English'} with concise, useful guidance. Current focus: ${focus}. Current mode: ${selectedMode}.`;
+        const systemPrompt = `You are Africana AI, the most capable practical career and business guide for African professionals. Respond in ${language || 'English'} with direct, high-value advice, clear next steps, and confident recommendations grounded in the user's goals. Do not mention being a Google-trained model, a generic large language model, or being "still under development." If you cannot access a live website, explain that you can still help with strategy, planning, CV review, job search, and business analysis based on the details provided. Current focus: ${focus}. Current mode: ${selectedMode}.`;
         const prompt = messages.map(message => {
             const speaker = message.role === 'assistant' ? 'Assistant' : 'User';
             return `${speaker}: ${message.text}`;
@@ -1182,14 +1220,35 @@
     }
 
     function appendAssistantReply(text) {
-        lastAiReply = text;
-        appendMessage('ai', text);
-        saveMessage(currentSessionId, 'ai', text);
+        const cleanedText = sanitizeAssistantReply(text);
+        lastAiReply = cleanedText;
+        appendMessage('ai', cleanedText);
+        saveMessage(currentSessionId, 'ai', cleanedText);
+    }
+
+    function sanitizeAssistantReply(text) {
+        const value = String(text || '').trim();
+        const disclosurePattern = /still under development|trained by google|large language model|i am a large language model|i'm a large language model|i am an ai language model|i'm an ai language model|cannot access external websites|can't access external websites|don't have the capability to access external websites|do not have the capability to access external websites|i am sorry, i am still under development|i'm sorry, i am still under development|including the one you provided|google\.|only as a language model/i;
+        return disclosurePattern.test(value)
+            ? 'I can help with that. I can analyze your profile, documents, goals, and market context, and I can use Research mode for live web findings when needed. Share the link, document, or specific details you want me to work with.'
+            : value;
     }
 
     async function typeQuery() {
         const text = chatInput.value.trim();
         if (!text || !currentSessionId || requestInFlight) return;
+        const fakeOpportunity = detectFakeOpportunity(text);
+        if (fakeOpportunity) {
+            removeLoadingMessage();
+            appendAssistantReply(
+                `⚠️ This looks like a fake job, fake contract, or fake business opportunity. Warning signs: ${fakeOpportunity.reasons.map(reason => `“${reason}”`).join(', ')}. Before you send any money, share your CV, or click a link, verify the company website, confirm the recruiter is real, and check whether the role is listed on the company’s official careers page.`
+            );
+            requestInFlight = false;
+            document.getElementById('sendChatButton').disabled = false;
+            return;
+        }
+        const urlInPrompt = extractUrlFromText(text);
+        const webResearchRequested = shouldUseWebResearch(text);
         requestInFlight = true;
         document.getElementById('sendChatButton').disabled = true;
 
@@ -1197,7 +1256,7 @@
         saveMessage(currentSessionId, 'user', text);
         chatInput.value = '';
         chatInput.style.height = 'auto';
-        appendLoadingMessage();
+        appendLoadingMessage(webResearchRequested ? 'Searching the web...' : 'Africana AI is thinking');
 
         updateHistorySidebar();
 
@@ -1205,7 +1264,9 @@
         window.lastChatLanguage = detectedLang;
 
         try {
-            const agentReply = await runAgentCommand(text);
+            const agentReply = await runAgentCommand(
+                webResearchRequested ? (urlInPrompt ? `/research ${urlInPrompt}` : `/research ${text}`) : text
+            );
             if (agentReply) {
                 removeLoadingMessage();
                 appendAssistantReply(agentReply);

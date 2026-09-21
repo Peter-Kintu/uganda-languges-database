@@ -1120,6 +1120,34 @@ def _gemini_generate_content(instruction, attachment=None, content_type=None):
     return ''
 
 
+def _sanitize_ai_response(text):
+    """Remove provider self-disclosures that are not useful to the user."""
+    value = str(text or '').strip()
+    disclosure_markers = (
+        'still under development',
+        'trained by google',
+        'i am a large language model',
+        "i can't access external websites",
+        'i cannot access external websites',
+        "i can't access external websites, including the one you provided",
+        'i cannot access external websites, including the one you provided',
+        'i am sorry, i am still under development',
+        "i'm sorry, i am still under development",
+        "i'm sorry, i am still under development and don't have the capability to access external websites",
+        "i am still under development and don't have the capability to access external websites",
+        'large language model',
+        'google.',
+        'only as a language model',
+    )
+    if any(marker in value.lower() for marker in disclosure_markers):
+        return (
+            'I can help with that. I can analyze your profile, documents, goals, and market context, '
+            'and I can use Research mode for live web findings when needed. Share the link, document, '
+            'or specific details you want me to work with.'
+        )
+    return value
+
+
 def _brave_research(query, count=5):
     api_key = os.environ.get('BRAVE_SEARCH_API_KEY', '').strip()
     if not api_key:
@@ -1176,6 +1204,56 @@ def _agent_research_query(query):
     return query
 
 
+def _detect_fake_opportunity(text):
+    """Flag likely scam or fake opportunity language in business/job requests."""
+    candidate = str(text or '').strip()
+    if not candidate:
+        return None
+    lower = candidate.lower()
+    employment_terms = re.search(r'(job|vacancy|hiring|recruiter|employment|contract|freelance|opportunity|position|business deal|partnership)', lower)
+    red_flags = [
+        'pay upfront', 'pay to work', 'registration fee', 'training fee', 'processing fee',
+        'guaranteed income', 'guaranteed salary', 'easy money', 'work from home no skills',
+        'send money first', 'wire transfer', 'bitcoin', 'crypto', 'western union', 'cash app',
+        'no interview', 'urgent hiring', 'limited slots', 'immediate approval', 'whatsapp only',
+        'telegram only', 'dm me', 'reply to this message', 'contact me privately', 'bank account details',
+        'payment before interview', 'salary before interview', 'send cv to personal email',
+    ]
+    matches = [flag for flag in red_flags if flag in lower]
+    has_email_contact = bool(re.search(r'[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}', candidate)) and bool(employment_terms)
+    if employment_terms and (matches or has_email_contact):
+        return {
+            'fake': True,
+            'reasons': matches[:5] if matches else ['personal email contact without official company details'],
+        }
+    return None
+
+
+def _extract_url_summary(url):
+    """Fetch a public page and turn it into a compact research summary used for URL analysis."""
+    try:
+        response = requests.get(
+            url,
+            headers={'User-Agent': 'AfricanaAI/1.0 url-analysis'},
+            timeout=12,
+        )
+        response.raise_for_status()
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(response.text, 'html.parser')
+        title = (soup.title.get_text(' ', strip=True) if soup.title else '').strip() or urlsplit(url).netloc
+        snippet_text = ' '.join(soup.stripped_strings)[:1500]
+        description = soup.find('meta', attrs={'name': 'description'})
+        meta_desc = description.get('content', '').strip() if description else ''
+        excerpt = meta_desc or re.sub(r'\s+', ' ', snippet_text)[:500]
+        return {
+            'title': title[:500],
+            'url': url,
+            'excerpt': excerpt[:2000],
+        }
+    except Exception:
+        return {'title': urlsplit(url).netloc or 'Web page', 'url': url, 'excerpt': 'The page was reachable, but a summary could not be extracted automatically.'}
+
+
 def _extract_public_contacts(url):
     """Extract contact details explicitly published on a public page."""
     try:
@@ -1228,7 +1306,16 @@ def agent_command(request):
             query = str(body.get('query', '')).strip()[:500]
             if not query:
                 return JsonResponse({'error': 'A research question is required.'}, status=400)
-            results = _brave_research(_agent_research_query(query))
+
+            url_pattern = re.compile(r'https?://[^\s]+', re.I)
+            direct_url = url_pattern.search(query)
+            if direct_url:
+                target_url = direct_url.group(0).rstrip('.,;)]}>"')
+                summary = _extract_url_summary(target_url)
+                results = [summary]
+            else:
+                results = _brave_research(_agent_research_query(query))
+
             for item in results[:5]:
                 item['contacts'] = _extract_public_contacts(item['url'])
             citations = [AgentResearchCitation.objects.create(
@@ -1484,6 +1571,18 @@ def cerebras_proxy(request):
         if sum(len(str(item)) for item in raw_contents) > 30000:
             return JsonResponse({'error': 'Conversation content is too large.'}, status=400)
 
+        fake_opportunity = _detect_fake_opportunity(' '.join(str(msg.get('text', '')) for msg in raw_contents if isinstance(msg, dict)))
+        if fake_opportunity:
+            reasons = ', '.join(f'“{reason}”' for reason in fake_opportunity['reasons'])
+            return JsonResponse({
+                'text': (
+                    '⚠️ This looks like a fake job, fake contract, or fake business opportunity. '
+                    f'Warning signs: {reasons}. Before you send money or share personal details, verify the company on its official website, confirm the recruiter is real, and confirm the role is listed on a business’s verified careers page.'
+                ),
+                'model_used': 'Opportunity Scam Check',
+                'language': user_language,
+            })
+
         profile = _get_user_profile_data(request.user)
         memories = list(AgentMemory.objects.filter(user=request.user).values('key', 'value')[:20])
         active_plans = list(
@@ -1567,6 +1666,7 @@ Work in {mode_instruction}. In research mode, distinguish sourced facts from ass
 - Turn advice into an executable result: concrete examples, templates, priorities, owners, timeframes, and a measurable success check.
 - When reviewing a CV, business idea, image, or plan, identify strengths, risks, missing evidence, and the highest-impact improvements before giving the final actions.
 - Do not claim to have browsed, verified a live opportunity, read an attachment, or used a tool unless that information is present in the request.
+- Never mention your model provider, training origin, internal development status, or generic capability disclaimers. Speak as Africana AI and focus on the user's task. If live web access is needed, direct the user to Research mode without mentioning an inability or provider limitation.
 - For documents and images, inspect all visible and readable content, preserve important numbers and names, identify ambiguity, and say what could not be verified. Never invent missing text.
 - For long conversations, maintain the user's goal and constraints, resolve contradictions explicitly, and carry forward only relevant context.
 
@@ -1739,7 +1839,7 @@ Work in {mode_instruction}. In research mode, distinguish sourced facts from ass
         response_text, error1 = try_cerebras()
         if response_text:
             return JsonResponse({
-                "text": response_text,
+                "text": _sanitize_ai_response(response_text),
                 "model_used": "Cerebras gpt-oss-120b (Primary)",
                 "language": user_language,
             })
@@ -1747,7 +1847,7 @@ Work in {mode_instruction}. In research mode, distinguish sourced facts from ass
         response_text, error2 = try_gemini()
         if response_text:
             return JsonResponse({
-                "text": response_text,
+                "text": _sanitize_ai_response(response_text),
                 "model_used": "Gemini configured fallback",
                 "language": user_language,
             })
@@ -1755,7 +1855,7 @@ Work in {mode_instruction}. In research mode, distinguish sourced facts from ass
         response_text, error3 = try_sunbird()
         if response_text:
             return JsonResponse({
-                "text": response_text,
+                "text": _sanitize_ai_response(response_text),
                 "model_used": "Sunbird AI (Fallback)",
                 "language": user_language,
             })
