@@ -59,6 +59,32 @@ class AgentCommandTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['sources'], [])
 
+    @patch.dict('os.environ', {'BRAVE_SEARCH_API_KEY': ''})
+    @patch('users.views.requests.get')
+    def test_free_research_fallback_parses_duckduckgo_lite_results(self, mock_get):
+        standard = SimpleNamespace(
+            text='<html></html>',
+            raise_for_status=lambda: None,
+        )
+        lite = SimpleNamespace(
+            text='<tr><td class="result-link"><a class="result-link" href="https://example.com/jobs">Example Jobs</a></td><td class="result-snippet">Open roles</td></tr>',
+            raise_for_status=lambda: None,
+        )
+        contact_page = SimpleNamespace(
+            text='<html><title>Example Jobs</title></html>',
+            raise_for_status=lambda: None,
+        )
+        mock_get.side_effect = [standard, lite, contact_page]
+
+        response = self.client.post(
+            reverse('users:agent_command'),
+            data={'action': 'research', 'query': 'Example jobs'},
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['sources'][0]['url'], 'https://example.com/jobs')
+
     @patch('users.views._brave_research', return_value=[{
         'title': 'Example Supplier',
         'url': 'https://example.com/contact',

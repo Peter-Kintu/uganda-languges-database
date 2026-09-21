@@ -1153,25 +1153,57 @@ def _brave_research(query, count=5):
     api_key = os.environ.get('BRAVE_SEARCH_API_KEY', '').strip()
     if not api_key:
         from bs4 import BeautifulSoup
-        response = requests.get(
-            'https://html.duckduckgo.com/html/',
-            params={'q': query},
-            headers={'User-Agent': 'AfricanaAI/1.0 research'},
-            timeout=15,
+        limit = min(max(count, 1), 10)
+        headers = {'User-Agent': 'Mozilla/5.0 (compatible; AfricanaAI/1.0; research)'}
+        endpoints = (
+            ('https://html.duckduckgo.com/html/', '.result', '.result__a', '.result__snippet'),
+            ('https://lite.duckduckgo.com/lite/', 'tr', 'a.result-link', 'td.result-snippet'),
         )
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        results = []
-        for item in soup.select('.result')[:min(max(count, 1), 10)]:
-            link = item.select_one('.result__a')
-            excerpt = item.select_one('.result__snippet')
-            if link and link.get('href'):
-                results.append({
-                    'title': link.get_text(' ', strip=True)[:500],
-                    'url': link['href'][:1000],
-                    'excerpt': excerpt.get_text(' ', strip=True)[:2000] if excerpt else '',
+        for endpoint, item_selector, link_selector, excerpt_selector in endpoints:
+            try:
+                response = requests.get(endpoint, params={'q': query}, headers=headers, timeout=15)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, 'html.parser')
+                results = []
+                for item in soup.select(item_selector):
+                    link = item.select_one(link_selector)
+                    excerpt = item.select_one(excerpt_selector)
+                    if link and link.get('href'):
+                        results.append({
+                            'title': link.get_text(' ', strip=True)[:500],
+                            'url': link['href'][:1000],
+                            'excerpt': excerpt.get_text(' ', strip=True)[:2000] if excerpt else '',
+                        })
+                        if len(results) >= limit:
+                            return results
+                if results:
+                    return results
+            except requests.RequestException:
+                continue
+
+        try:
+            response = requests.get(
+                'https://api.duckduckgo.com/',
+                params={'q': query, 'format': 'json', 'no_html': 1, 'no_redirect': 1},
+                headers=headers,
+                timeout=10,
+            )
+            response.raise_for_status()
+            data = response.json()
+            fallback_results = []
+            for item in data.get('RelatedTopics', []):
+                if not item.get('FirstURL') or not item.get('Text'):
+                    continue
+                fallback_results.append({
+                    'title': item['Text'][:500],
+                    'url': item['FirstURL'][:1000],
+                    'excerpt': item['Text'][:2000],
                 })
-        return results
+                if len(fallback_results) >= limit:
+                    break
+            return fallback_results
+        except (requests.RequestException, AttributeError, ValueError, TypeError):
+            return []
     response = requests.get(
         'https://api.search.brave.com/res/v1/web/search',
         headers={'Accept': 'application/json', 'X-Subscription-Token': api_key},
