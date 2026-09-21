@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
+from unittest.mock import Mock, patch
 
 from languages.models import JobPost
 
@@ -10,7 +11,7 @@ from .models import (
 	CommunityRole, Connection, FeedImpression, Like, Post,
 	Message,
 )
-from .views import _build_hybrid_feed, _build_market_feed_items, _feed_insert_positions
+from .views import _build_hybrid_feed, _build_market_feed_items, _feed_insert_positions, translate_smart
 
 
 User = get_user_model()
@@ -121,6 +122,46 @@ class HybridFeedTests(TestCase):
 		self.assertEqual(len(first_products), 3)
 		self.assertEqual(len(second_products), 3)
 		self.assertNotEqual(first_job, second_job)
+
+	@patch('hotel.views._safe_cache_get', return_value=None)
+	@patch('hotel.views.requests.post')
+	def test_translation_retries_when_configured_gemini_model_is_unavailable(self, post, _cache_get):
+		unavailable = Mock(status_code=404)
+		available = Mock(status_code=200)
+		available.json.return_value = {
+			'candidates': [{'content': {'parts': [{'text': 'Oli otya'}]}}]
+		}
+		post.side_effect = [unavailable, available]
+
+		with patch('hotel.views.GEMINI_API_KEY', 'test-key'), patch(
+			'hotel.views.GEMINI_TRANSLATION_FALLBACK_MODELS',
+			('retired-model', 'working-model'),
+		):
+			translated = translate_smart('How are you?', 'lug')
+
+		self.assertEqual(translated, 'Oli otya')
+		self.assertEqual(post.call_count, 2)
+		self.assertIn('/retired-model:generateContent', post.call_args_list[0].args[0])
+		self.assertIn('/working-model:generateContent', post.call_args_list[1].args[0])
+
+	@patch('hotel.views._safe_cache_get', return_value=None)
+	@patch('hotel.views.requests.post')
+	def test_nllb_uses_self_hosted_language_code_and_optional_auth(self, post, _cache_get):
+		response = Mock(status_code=200)
+		response.json.return_value = {'translated_text': 'Ki kati?'}
+		post.return_value = response
+
+		with patch('hotel.views.GEMINI_API_KEY', None), patch(
+			'hotel.views.SUNBIRD_API_KEY', None,
+		), patch('hotel.views.NLLB_URL', 'https://nllb.example/translate'), patch(
+			'hotel.views.NLLB_API_KEY', 'nllb-test-key',
+		), patch('hotel.views._google_translate', return_value=None):
+			translated = translate_smart('How are you?', 'lg')
+
+		self.assertEqual(translated, 'Ki kati?')
+		request = post.call_args.kwargs
+		self.assertEqual(request['json']['target'], 'lg')
+		self.assertEqual(request['headers']['Authorization'], 'Bearer nllb-test-key')
 
 
 class CommunityArchitectureTests(TestCase):
