@@ -288,72 +288,37 @@ class DailyDigestCommandTests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
-class PesapalIntegrationTests(TestCase):
+class NylonIntegrationTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='pesapal_user',
             email='pesapal@example.com',
             password='secret1234',
+            phone='+256700000000',
         )
 
-    @patch.dict('os.environ', {
-        'PESAPAL_CONSUMER_KEY': 'live-key',
-        'PESAPAL_CONSUMER_SECRET': 'live-secret',
-    })
-    @patch('users.views.requests.post')
-    def test_start_checkout_returns_redirect(self, mock_post):
-        mock_post.side_effect = [
-            SimpleNamespace(status_code=200, ok=True, json=lambda: {'token': 'token-123'}),
-            SimpleNamespace(status_code=200, ok=True, json=lambda: {
-                'order_tracking_id': 'tracking-123',
-                'redirect_url': 'https://pesapal.example/pay/123',
-            }),
-        ]
+    @patch('users.views.collect_payment')
+    def test_start_checkout_activates_subscription_after_nylon_success(self, collect_payment):
+        collect_payment.return_value = SimpleNamespace(
+            reference='550e8400-e29b-41d4-a716-446655440000',
+            transaction_id='transaction-123',
+            status='paid',
+        )
 
         self.client.force_login(self.user)
         response = self.client.post(reverse('users:pesapal_start_checkout'))
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, 'https://pesapal.example/pay/123')
-        self.assertTrue(PesapalPayment.objects.filter(user=self.user).exists())
-        self.assertTrue(UserSubscription.objects.filter(user=self.user).exists())
+        self.assertEqual(response.url, reverse('users:profile'))
+        payment = PesapalPayment.objects.get(user=self.user)
+        subscription = UserSubscription.objects.get(user=self.user)
+        self.assertEqual(payment.status, 'PAID')
+        self.assertEqual(payment.tracking_id, 'transaction-123')
+        self.assertTrue(subscription.is_active)
 
-    @patch.dict('os.environ', {
-        'PESAPAL_CONSUMER_KEY': 'live-key',
-        'PESAPAL_CONSUMER_SECRET': 'live-secret',
-    })
-    @patch('users.views.requests.post')
-    def test_ipn_marks_subscription_active(self, mock_post):
-        payment = PesapalPayment.objects.create(
-            user=self.user,
-            order_id='order-1',
-            tracking_id='tracking-456',
-            amount='30000.00',
-            currency='UGX',
-            description='30-Day Pro Business Pass',
-            status='PENDING',
-        )
-        subscription = UserSubscription.objects.create(user=self.user, status='pending')
-        payment.subscription = subscription
-        payment.save(update_fields=['subscription'])
-
-        mock_post.side_effect = [
-            SimpleNamespace(status_code=200, ok=True, json=lambda: {'token': 'token-456'}),
-            SimpleNamespace(status_code=200, ok=True, json=lambda: {
-                'status': 'COMPLETED',
-                'amount': '30000.00',
-                'currency': 'UGX',
-            }),
-        ]
-
+    def test_legacy_pesapal_ipn_is_disabled(self):
         response = self.client.post(
             reverse('users:pesapal_ipn'),
-            {'OrderTrackingId': 'tracking-456', 'OrderNotificationType': 'CHANGE'},
         )
 
-        self.assertEqual(response.status_code, 200)
-        payment.refresh_from_db()
-        subscription.refresh_from_db()
-        self.assertEqual(payment.status, 'PAID')
-        self.assertTrue(subscription.is_active)
-        self.assertEqual(subscription.status, 'active')
+        self.assertEqual(response.status_code, 410)

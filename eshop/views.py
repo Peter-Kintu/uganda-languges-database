@@ -34,6 +34,7 @@ from aliexpress_api import AliexpressApi, models
 from django.conf import settings
 import logging
 from django.utils.text import slugify
+from payments.services import collect_payment
 
 User = get_user_model()
 
@@ -132,87 +133,52 @@ def start_commerce_payment(request):
         )
         for item in cart.items.select_related('product'):
             OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price_at_purchase=get_effective_product_price(request, item.product), commission_at_purchase=item.product.referral_commission)
-        payment = CommercePayment.objects.create(order=order, pesapal_order_id=f'eshop-{order.id}-{uuid.uuid4().hex[:8]}', amount=order.total_amount, currency=order.currency)
+        payment = CommercePayment.objects.create(order=order, pesapal_order_id=str(uuid.uuid4()), amount=order.total_amount, currency=order.currency)
     try:
-        from users.views import _pesapal_notification_id, _pesapal_request
-        callback_url = request.build_absolute_uri(reverse('eshop:payment_callback'))
-        notification_url = request.build_absolute_uri(reverse('pesapal_ipn'))
-        token = _pesapal_request('post', 'Auth/RequestToken').get('token')
-        notification_id = _pesapal_notification_id(notification_url, token)
-        response = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={'id': payment.pesapal_order_id, 'currency': payment.currency, 'amount': f'{payment.amount:.2f}', 'description': f'Africana AI order #{order.id}', 'callback_url': callback_url, 'notification_id': notification_id, 'billing_address': {'email_address': request.user.email or f'{request.user.username}@example.com', 'phone_number': order.delivery_phone, 'country_code': 'UG', 'first_name': request.user.first_name or request.user.username, 'last_name': request.user.last_name or 'User'}}, access_token=token)
+        customer_phone = order.delivery_phone or getattr(request.user, 'phone', '')
+        result = collect_payment(
+            amount=payment.amount,
+            currency=payment.currency,
+            customer_name=request.user.get_full_name() or request.user.username,
+            customer_phone=customer_phone,
+            description=f'Africana AI order #{order.id}',
+            reference=payment.pesapal_order_id,
+        )
     except Exception as exc:
         payment.status = 'failed'
         payment.save(update_fields=['status', 'updated_at'])
-        logger.exception('Commerce Pesapal checkout failed: %s', exc)
+        logger.exception('Commerce Nylon checkout failed: %s', exc)
         return JsonResponse({'error': 'Unable to start payment.'}, status=502)
-    redirect_url = response.get('redirect_url') or response.get('RedirectUrl')
-    payment.tracking_id = response.get('order_tracking_id') or response.get('OrderTrackingId')
-    provider_error = response.get('error') if isinstance(response, dict) else None
-    if isinstance(provider_error, dict):
-        payment.status = 'failed'
-        payment.raw_status = str(provider_error.get('code') or 'PROVIDER_ERROR')[:50]
-        payment.save(update_fields=['status', 'raw_status', 'updated_at'])
-        provider_message = provider_error.get('message') or 'The payment provider rejected this transaction.'
-        logger.warning('Pesapal rejected commerce checkout for order %s: %s', order.id, provider_error)
-        return JsonResponse({'error': provider_message}, status=422)
-    if not payment.tracking_id or not redirect_url:
-        payment.status = 'failed'
-        payment.raw_status = 'INVALID_PROVIDER_RESPONSE'
-        payment.save(update_fields=['status', 'raw_status', 'updated_at'])
-        logger.error('Pesapal returned an incomplete commerce checkout response: %s', response)
-        return JsonResponse({'error': 'Payment provider did not return a valid checkout link.'}, status=502)
-    payment.save(update_fields=['tracking_id', 'updated_at'])
-    return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'redirect_url': redirect_url, 'delivery_pin': delivery_pin, 'delivery_qr_token': str(order.delivery_qr_token)})
-
-
-@login_required
-def payment_callback(request):
-    tracking_id = request.GET.get('OrderTrackingId') or request.GET.get('orderTrackingId')
-    payment = CommercePayment.objects.select_related('order').filter(tracking_id=tracking_id, order__buyer=request.user).first()
-    if not payment:
-        return render(request, 'eshop/payment_result.html', {'payment': None, 'error': 'Payment reference was not found.'})
-
-    ipn_response = commerce_payment_ipn(request)
-    payment.refresh_from_db()
-    payment.order.refresh_from_db()
-    if ipn_response.status_code >= 400:
-        return render(request, 'eshop/payment_result.html', {'payment': payment, 'error': 'We could not verify the payment yet. Please refresh shortly.'})
-    return render(request, 'eshop/payment_result.html', {'payment': payment, 'error': None})
+    payment.tracking_id = result.transaction_id or result.reference
+    payment.provider_reference = result.reference
+    payment.status = 'paid' if result.status == 'paid' else 'failed'
+    payment.raw_status = result.status.upper()
+    if payment.status == 'paid':
+        order.status = 'escrowed'
+        order.escrow_status = 'funded'
+        order.save(update_fields=['status', 'escrow_status'])
+    payment.save(update_fields=['tracking_id', 'provider_reference', 'status', 'raw_status', 'updated_at'])
+    return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'status': payment.status, 'delivery_pin': delivery_pin, 'delivery_qr_token': str(order.delivery_qr_token)})
 
 
 @csrf_exempt
 def commerce_payment_ipn(request):
-    if request.method not in {'GET', 'POST'}:
-        return JsonResponse({'error': 'GET or POST required.'}, status=405)
-    payload = request.POST if request.method == 'POST' else request.GET
-    tracking_id = payload.get('OrderTrackingId') or payload.get('orderTrackingId')
-    if not tracking_id:
-        return JsonResponse({'error': 'OrderTrackingId is required.'}, status=400)
-    payment = get_object_or_404(CommercePayment.objects.select_related('order'), tracking_id=tracking_id)
-    try:
-        from users.views import _pesapal_request
-        token = _pesapal_request('post', 'Auth/RequestToken').get('token')
-        payload = _pesapal_request('post', 'Transactions/GetTransactionStatus', json_data={'orderTrackingId': tracking_id}, access_token=token)
-        status = str(payload.get('status') or payload.get('Status') or '').upper()
-        with transaction.atomic():
-            payment = CommercePayment.objects.select_for_update().select_related('order').get(pk=payment.pk)
-            if status in {'COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL'}:
-                payment.status = 'paid'
-                payment.raw_status = status
-                payment.provider_reference = str(payload.get('confirmation_code') or payload.get('payment_method') or '')
-                payment.order.status = 'escrowed'
-                payment.order.escrow_status = 'funded'
-                payment.order.save(update_fields=['status', 'escrow_status'])
-            elif status in {'FAILED', 'CANCELLED', 'CANCELED'}:
-                payment.status = 'cancelled' if status != 'FAILED' else 'failed'
-                payment.raw_status = status
-                payment.order.status = 'cancelled'
-                payment.order.save(update_fields=['status'])
-            payment.save(update_fields=['status', 'raw_status', 'provider_reference', 'updated_at'])
-    except Exception:
-        logger.exception('Commerce Pesapal IPN verification failed.')
-        return JsonResponse({'error': 'Unable to verify payment.'}, status=502)
-    return JsonResponse({'status': 'accepted'})
+    return JsonResponse({'error': 'Pesapal notifications are no longer supported.'}, status=410)
+
+
+@login_required
+def payment_callback(request):
+    tracking_id = request.GET.get('tracking_id') or request.GET.get('reference')
+    payment = CommercePayment.objects.select_related('order').filter(
+        tracking_id=tracking_id,
+        order__buyer=request.user,
+    ).first()
+    if not payment:
+        return render(request, 'eshop/payment_result.html', {
+            'payment': None,
+            'error': 'Payment reference was not found.',
+        })
+    return render(request, 'eshop/payment_result.html', {'payment': payment, 'error': None})
 
 
 @login_required
@@ -367,31 +333,7 @@ def disburse_affiliate_payout(request, payout_id):
     payout = get_object_or_404(AffiliatePayout.objects.select_related('creator'), id=payout_id, creator=request.user)
     if payout.status != 'payable':
         return JsonResponse({'error': 'Payout is not payable.'}, status=409)
-    social_profile = getattr(request.user, 'social_profile', None)
-    payout_phone = str(request.POST.get('phone') or getattr(social_profile, 'whatsapp_number', '')).strip()
-    payout_path = os.getenv('PESAPAL_PAYOUT_PATH', '').strip()
-    if not payout_phone or not payout_path:
-        return JsonResponse({'error': 'Configure a payout phone and PESAPAL_PAYOUT_PATH before disbursement.'}, status=503)
-    try:
-        from users.views import _pesapal_request
-        result = _pesapal_request('post', payout_path, json_data={
-            'amount': f'{payout.amount:.2f}',
-            'currency': payout.order.currency,
-            'recipient_phone': payout_phone,
-            'reference': f'africana-affiliate-{payout.id}',
-            'description': f'Affiliate commission for order #{payout.order_id}',
-        })
-    except Exception:
-        logger.exception('Affiliate payout failed for payout %s', payout.id)
-        return JsonResponse({'error': 'Payout provider request failed.'}, status=502)
-    payout.status = 'paid' if str(result.get('status', '')).upper() in {'SUCCESS', 'COMPLETED', 'PAID'} else 'pending'
-    payout.payout_phone = payout_phone
-    payout.provider_reference = str(result.get('reference') or result.get('transaction_id') or result.get('id') or '')
-    payout.provider_status = str(result.get('status') or result.get('message') or '')
-    if payout.status == 'paid':
-        payout.paid_at = timezone.now()
-    payout.save(update_fields=['status', 'payout_phone', 'provider_reference', 'provider_status', 'paid_at'])
-    return JsonResponse({'payout_id': payout.id, 'status': payout.status, 'provider_reference': payout.provider_reference})
+    return JsonResponse({'error': 'Nylon payouts are not enabled yet.'}, status=503)
 
 
 @login_required

@@ -11,7 +11,7 @@ class CustomUserCreationForm(UserCreationForm):
     """
     class Meta(UserCreationForm.Meta):
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'headline', 'location', 'language')
+        fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'headline', 'location', 'language')
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,7 +34,7 @@ class CustomUserChangeForm(UserChangeForm):
     """
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'headline', 'location', 'profile_image')
+        fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'headline', 'location', 'profile_image')
         
         
 class ProfileEditForm(forms.ModelForm):
@@ -44,7 +44,7 @@ class ProfileEditForm(forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = (
-            'first_name', 'last_name', 'headline', 'about', 'location', 'profile_image',
+            'first_name', 'last_name', 'phone', 'headline', 'about', 'location', 'profile_image',
             'direct_message_privacy', 'allow_channel_invites', 'show_online_status',
             'discoverable_by_handle',
         )

@@ -34,47 +34,10 @@ class EscrowOrderTests(TestCase):
         response = self.client.post(reverse('eshop:confirm_delivery', args=[self.order.id]))
         self.assertEqual(response.status_code, 409)
 
-    @patch('users.views._pesapal_notification_id', return_value='ipn-1')
-    @patch('users.views._pesapal_request')
-    def test_pesapal_amount_limit_is_returned_to_buyer(self, pesapal_request, notification_id):
-        self.client.force_login(self.user)
-        session = self.client.session
-        cart = Cart.objects.create(session_key=session.session_key)
-        CartItem.objects.create(cart=cart, product=self.product, quantity=1)
-        session['delivery_details'] = {'address': 'Kampala Road', 'city': 'Kampala', 'phone': '+256700000000'}
-        session.save()
-
-        pesapal_request.side_effect = [
-            {'token': 'test-token'},
-            {'error': {'code': 'amount_exceeds_default_limit', 'message': 'Transaction amount exceeds limit.'}},
-        ]
-        response = self.client.post(reverse('eshop:start_commerce_payment'))
-
-        self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.json()['error'], 'Transaction amount exceeds limit.')
-        self.assertEqual(CommercePayment.objects.latest('id').status, 'failed')
-
-    @patch('users.views._pesapal_request')
-    def test_pesapal_get_ipn_funds_escrow(self, pesapal_request):
-        pesapal_request.side_effect = [
-            {'token': 'test-token'},
-            {'status': 'COMPLETED', 'confirmation_code': 'MOMO-123'},
-        ]
-        self.order.status = 'payment_pending'
-        self.order.escrow_status = 'pending'
-        self.order.save(update_fields=['status', 'escrow_status'])
-        payment = self.order.commerce_payment
-        payment.tracking_id = 'tracking-1'
-        payment.save(update_fields=['tracking_id'])
-
+    def test_legacy_pesapal_ipn_is_disabled(self):
         response = self.client.get(reverse('pesapal_ipn'), {'OrderTrackingId': 'tracking-1'})
 
-        self.assertEqual(response.status_code, 200)
-        self.order.refresh_from_db()
-        payment.refresh_from_db()
-        self.assertEqual(payment.status, 'paid')
-        self.assertEqual(self.order.escrow_status, 'funded')
-        self.assertEqual(self.order.status, 'escrowed')
+        self.assertEqual(response.status_code, 410)
 
 
 class NegotiationFlowTests(TestCase):

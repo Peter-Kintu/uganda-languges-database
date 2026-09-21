@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.utils import timezone
+from payments.services import collect_payment
 from django.contrib import messages
 from django.db.models import F, Q
 from django.urls import reverse
@@ -335,33 +336,26 @@ def issue_invoice(request, partner_id):
         product=product,
         amount=amount,
         currency=product.get_currency_code(),
-        pesapal_order_id=f'invoice-{uuid.uuid4().hex}',
+        pesapal_order_id=str(uuid.uuid4()),
     )
     try:
-        from users.views import _pesapal_request
-        token = _pesapal_request('post', 'Auth/RequestToken').get('token')
-        response = _pesapal_request('post', 'Transactions/SubmitOrderRequest', json_data={
-            'id': invoice.pesapal_order_id,
-            'currency': invoice.currency,
-            'amount': f'{invoice.amount:.2f}',
-            'description': f'Africana invoice for {product.name}',
-            'callback_url': request.build_absolute_uri(reverse('users:pesapal_callback')),
-            'notification_id': request.build_absolute_uri(reverse('social:invoice_ipn')),
-            'billing_address': {
-                'email_address': partner.email or f'{partner.username}@example.com',
-                'country_code': 'UG',
-                'first_name': partner.first_name or partner.username,
-                'last_name': partner.last_name or 'Buyer',
-            },
-        }, access_token=token)
+        result = collect_payment(
+            amount=invoice.amount,
+            currency=invoice.currency,
+            customer_name=partner.get_full_name() or partner.username,
+            customer_phone=getattr(partner, 'phone', ''),
+            description=f'Africana invoice for {product.name}',
+            reference=invoice.pesapal_order_id,
+        )
     except Exception:
-        logger.exception('Native invoice payment setup failed.')
+        logger.exception('Native Nylon invoice payment setup failed.')
         invoice.status = 'failed'
         invoice.save(update_fields=['status', 'updated_at'])
         return JsonResponse({'error': 'Unable to create the payment link.'}, status=502)
 
-    invoice.tracking_id = response.get('order_tracking_id') or response.get('OrderTrackingId')
-    invoice.checkout_url = response.get('redirect_url') or response.get('RedirectUrl') or ''
+    invoice.tracking_id = result.transaction_id or result.reference
+    invoice.checkout_url = ''
+    invoice.status = 'paid' if result.status == 'paid' else 'failed'
     invoice.save(update_fields=['tracking_id', 'checkout_url', 'updated_at'])
     SecureMessage.objects.create(
         sender=request.user,
@@ -373,25 +367,7 @@ def issue_invoice(request, partner_id):
 
 @csrf_exempt
 def invoice_ipn(request):
-    if request.method not in {'GET', 'POST'}:
-        return JsonResponse({'error': 'GET or POST required.'}, status=405)
-    payload = request.POST if request.method == 'POST' else request.GET
-    tracking_id = payload.get('OrderTrackingId') or payload.get('orderTrackingId')
-    invoice = get_object_or_404(NativeInvoice, tracking_id=tracking_id)
-    try:
-        from users.views import _pesapal_request
-        token = _pesapal_request('post', 'Auth/RequestToken').get('token')
-        result = _pesapal_request('post', 'Transactions/GetTransactionStatus', json_data={'orderTrackingId': tracking_id}, access_token=token)
-        status = str(result.get('status') or result.get('Status') or '').upper()
-        if status in {'COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL'}:
-            invoice.status = 'paid'
-        elif status in {'FAILED', 'CANCELLED', 'CANCELED'}:
-            invoice.status = 'failed'
-        invoice.save(update_fields=['status', 'updated_at'])
-    except Exception:
-        logger.exception('Native invoice IPN verification failed.')
-        return JsonResponse({'error': 'Unable to verify invoice payment.'}, status=502)
-    return JsonResponse({'status': 'accepted'})
+    return JsonResponse({'error': 'Pesapal notifications are no longer supported.'}, status=410)
 
 @login_required
 @require_POST

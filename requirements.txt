@@ -37,6 +37,7 @@ google-auth
 cerebras-cloud-sdk
 phonenumbers
 requests
+nylonpay-py
 python-jobspy
 
 # Required Core (The fix for your Pydantic error)

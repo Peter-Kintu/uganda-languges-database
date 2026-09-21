@@ -349,6 +349,7 @@ except Exception:
     Connection = None
     FeedImpression = None
 from .forms import CustomUserCreationForm, ProfileEditForm
+from payments.services import collect_payment
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -601,48 +602,32 @@ def pesapal_start_checkout(request):
         subscription.is_active = False
         subscription.save(update_fields=['status', 'is_active'])
 
-    amount = Decimal(getattr(settings, 'PESAPAL_PRO_AMOUNT', '30000.00'))
-    order_id = f"pro-{request.user.id}-{int(time.time())}"
-    callback_url = getattr(settings, 'PESAPAL_CALLBACK_URL', request.build_absolute_uri(reverse('users:pesapal_callback')))
-    notification_url = getattr(settings, 'PESAPAL_IPN_URL', request.build_absolute_uri(reverse('users:pesapal_ipn')))
+    amount = Decimal(getattr(settings, 'NYLON_PRO_AMOUNT', '30000'))
+    order_id = str(uuid.uuid4())
+    customer_phone = str(getattr(request.user, 'phone', '') or '').strip()
+    if not customer_phone:
+        messages.error(request, 'Add a phone number to your profile before starting payment.')
+        return redirect('users:profile')
 
     payment = PesapalPayment.objects.create(
         user=request.user,
         subscription=subscription,
         order_id=order_id,
         amount=amount,
-        currency=getattr(settings, 'PESAPAL_CURRENCY', 'UGX'),
+        currency=getattr(settings, 'NYLON_CURRENCY', 'UGX'),
         description='30-Day Pro Business Pass',
-        redirect_url=callback_url,
+        redirect_url='',
         status='PENDING',
     )
 
     try:
-        auth_payload = _pesapal_request('post', 'Auth/RequestToken')
-        token = auth_payload.get('token') if isinstance(auth_payload, dict) else None
-        if not token:
-            raise ValueError('Pesapal authentication did not return a bearer token.')
-
-        submit_payload = {
-            'id': order_id,
-            'currency': payment.currency,
-            'amount': f"{payment.amount:.2f}",
-            'description': payment.description,
-            'callback_url': callback_url,
-            'notification_id': notification_url,
-            'billing_address': {
-                'email_address': request.user.email or f"{request.user.username}@example.com",
-                'phone_number': '',
-                'country_code': 'UG',
-                'first_name': request.user.first_name or request.user.username,
-                'last_name': request.user.last_name or 'User',
-            },
-        }
-        order_payload = _pesapal_request(
-            'post',
-            'Transactions/SubmitOrderRequest',
-            json_data=submit_payload,
-            access_token=token,
+        result = collect_payment(
+            amount=payment.amount,
+            currency=payment.currency,
+            customer_name=request.user.get_full_name() or request.user.username,
+            customer_phone=customer_phone,
+            description=payment.description,
+            reference=payment.order_id,
         )
     except Exception as exc:
         payment.status = 'FAILED'
@@ -650,93 +635,33 @@ def pesapal_start_checkout(request):
         subscription.status = 'failed'
         subscription.is_active = False
         subscription.save(update_fields=['status', 'is_active'])
-        logger.exception('Pesapal checkout creation failed: %s', exc)
-        messages.error(request, 'Unable to start Pesapal checkout right now.')
+        logger.exception('Nylon checkout failed: %s', exc)
+        messages.error(request, 'Unable to start Nylon payment right now.')
         return redirect('users:profile')
 
-    payment.tracking_id = order_payload.get('order_tracking_id') or order_payload.get('OrderTrackingId')
-    payment.redirect_url = order_payload.get('redirect_url') or order_payload.get('RedirectUrl') or callback_url
-    payment.save(update_fields=['tracking_id', 'redirect_url'])
+    payment.tracking_id = result.transaction_id or result.reference
+    payment.status = 'PAID' if result.status == 'paid' else 'FAILED'
+    payment.save(update_fields=['tracking_id', 'status', 'redirect_url'])
+    if payment.status == 'PAID':
+        now = timezone.now()
+        subscription.status = 'active'
+        subscription.is_active = True
+        subscription.start_date = now
+        subscription.end_date = now + timedelta(days=30)
+        subscription.save(update_fields=['status', 'is_active', 'start_date', 'end_date'])
+        messages.success(request, 'Your 30-day Pro Business Pass is now active.')
+    else:
+        subscription.status = 'failed'
+        subscription.is_active = False
+        subscription.save(update_fields=['status', 'is_active'])
+        messages.error(request, 'The Nylon payment was not completed.')
 
-    return redirect(payment.redirect_url or reverse('users:profile'))
+    return redirect('users:profile')
 
 
 @csrf_exempt
 def pesapal_ipn(request):
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'POST required.'}, status=405)
-
-    tracking_id = request.POST.get('OrderTrackingId') or request.POST.get('order_tracking_id')
-    if not tracking_id:
-        return JsonResponse({'status': 'error', 'message': 'Missing tracking id.'}, status=400)
-
-    payment = get_object_or_404(PesapalPayment.objects.select_related('subscription'), tracking_id=tracking_id)
-
-    try:
-        auth_payload = _pesapal_request('post', 'Auth/RequestToken')
-        token = auth_payload.get('token') if isinstance(auth_payload, dict) else None
-        if not token:
-            raise ValueError('Pesapal authentication did not return a bearer token.')
-
-        transaction_payload = _pesapal_request(
-            'post',
-            'Transactions/GetTransactionStatus',
-            json_data={'orderTrackingId': tracking_id},
-            access_token=token,
-        )
-    except Exception as exc:
-        logger.exception('Pesapal IPN verification failed: %s', exc)
-        return JsonResponse({'status': 'error', 'message': 'Unable to verify payment status.'}, status=502)
-
-    provider_tracking_id = transaction_payload.get('orderTrackingId') or transaction_payload.get('OrderTrackingId')
-    if provider_tracking_id and str(provider_tracking_id) != str(payment.tracking_id):
-        return JsonResponse({'status': 'error', 'message': 'Payment tracking mismatch.'}, status=400)
-
-    provider_reference = (
-        transaction_payload.get('merchantReference')
-        or transaction_payload.get('merchant_reference')
-        or transaction_payload.get('id')
-        or transaction_payload.get('order_id')
-    )
-    if provider_reference and str(provider_reference) != str(payment.order_id):
-        return JsonResponse({'status': 'error', 'message': 'Payment order mismatch.'}, status=400)
-
-    try:
-        provider_amount = Decimal(str(transaction_payload.get('amount')))
-    except (TypeError, ValueError, InvalidOperation):
-        return JsonResponse({'status': 'error', 'message': 'Payment amount missing or invalid.'}, status=400)
-    provider_currency = str(transaction_payload.get('currency') or '').upper()
-    if provider_amount != payment.amount or provider_currency != payment.currency.upper():
-        return JsonResponse({'status': 'error', 'message': 'Payment amount or currency mismatch.'}, status=400)
-
-    status = str(transaction_payload.get('status') or transaction_payload.get('Status') or '').upper()
-    with transaction.atomic():
-        locked_payment = PesapalPayment.objects.select_for_update().select_related('subscription').get(pk=payment.pk)
-        if locked_payment.status == 'PAID':
-            return JsonResponse({'status': 'OK', 'message': 'Payment notification already processed.'})
-        if locked_payment.status in {'FAILED', 'CANCELLED'}:
-            return JsonResponse({'status': 'OK', 'message': 'Payment is already in a terminal state.'})
-        if status in {'COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL'}:
-            if not locked_payment.subscription:
-                return JsonResponse({'status': 'error', 'message': 'Payment has no subscription.'}, status=409)
-            now = timezone.now()
-            locked_payment.status = 'PAID'
-            locked_payment.subscription.status = 'active'
-            locked_payment.subscription.is_active = True
-            locked_payment.subscription.start_date = now
-            locked_payment.subscription.end_date = now + timedelta(days=30)
-            locked_payment.subscription.save(update_fields=['status', 'is_active', 'start_date', 'end_date'])
-        elif status in {'FAILED', 'CANCELLED', 'CANCELED'}:
-            locked_payment.status = 'CANCELLED' if status in {'CANCELLED', 'CANCELED'} else 'FAILED'
-            if locked_payment.subscription:
-                locked_payment.subscription.status = 'failed'
-                locked_payment.subscription.is_active = False
-                locked_payment.subscription.save(update_fields=['status', 'is_active'])
-        else:
-            return JsonResponse({'status': 'OK', 'message': 'Payment remains pending.'})
-        locked_payment.save(update_fields=['status', 'updated_at'])
-
-    return JsonResponse({'status': 'OK', 'message': 'Pesapal notification processed.'})
+    return JsonResponse({'status': 'error', 'message': 'Pesapal notifications are no longer supported.'}, status=410)
 
 
 def pesapal_callback(request):
