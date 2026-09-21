@@ -27,6 +27,7 @@ urlpatterns = [
 
     # --- Nylon Payments ---
     path('payments/nylon/start/', views.nylon_start_checkout, name='nylon_start_checkout'),
+    path('payments/nylon/status/<int:payment_id>/', views.nylon_payment_status, name='nylon_payment_status'),
     path('api/payments/nylon/webhook/', views.nylon_webhook, name='nylon_webhook'),
     path('payments/nylon/callback/', views.nylon_callback, name='nylon_callback'),
 

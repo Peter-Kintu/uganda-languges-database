@@ -349,7 +349,7 @@ except Exception:
     Connection = None
     FeedImpression = None
 from .forms import CustomUserCreationForm, ProfileEditForm
-from payments.services import collect_payment
+from payments.services import collect_payment, get_payment_status
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -675,6 +675,31 @@ def nylon_start_checkout(request):
 @csrf_exempt
 def nylon_webhook(request):
     return JsonResponse({'status': 'error', 'message': 'Nylon webhooks are not configured for this endpoint.'}, status=501)
+
+
+@login_required
+def nylon_payment_status(request, payment_id):
+    payment = get_object_or_404(PesapalPayment, id=payment_id, user=request.user)
+    if payment.status == 'PENDING':
+        try:
+            result = get_payment_status(payment.order_id)
+            payment.status = {
+                'paid': 'PAID',
+                'cancelled': 'CANCELLED',
+                'failed': 'FAILED',
+            }.get(result.status, 'PENDING')
+            payment.tracking_id = payment.tracking_id or result.reference
+            payment.save(update_fields=['status', 'tracking_id', 'updated_at'])
+            if payment.status == 'PAID' and payment.subscription:
+                now = timezone.now()
+                payment.subscription.status = 'active'
+                payment.subscription.is_active = True
+                payment.subscription.start_date = now
+                payment.subscription.end_date = now + timedelta(days=30)
+                payment.subscription.save(update_fields=['status', 'is_active', 'start_date', 'end_date'])
+        except Exception as exc:
+            logger.warning('Nylon status refresh failed for payment %s: %s', payment.id, exc)
+    return JsonResponse({'status': payment.status, 'message': 'Payment status refreshed.'})
 
 
 @csrf_exempt

@@ -67,3 +67,24 @@ def collect_payment(*, amount, currency, customer_name, customer_phone, descript
         status="paid",
         raw=transaction,
     )
+
+
+def get_payment_status(reference):
+    """Fetch one current Nylon status for a previously created UUID reference."""
+    result = _nylon_client().get_status(reference=reference)
+    if not result.is_ok:
+        return NylonPaymentResult(reference=reference, status="pending", message=str(result.error or ""))
+
+    status = str(getattr(result.value, "status", "pending") or "pending").lower()
+    return NylonPaymentResult(
+        reference=reference,
+        status={
+            "successful": "paid",
+            "completed": "paid",
+            "paid": "paid",
+            "failed": "failed",
+            "cancelled": "cancelled",
+        }.get(status, "pending"),
+        message=str(getattr(result.value, "failure_reason", "") or ""),
+        raw=result.value,
+    )

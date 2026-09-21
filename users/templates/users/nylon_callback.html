@@ -23,6 +23,23 @@
                 <p><strong>Status:</strong> {{ payment.status }}</p>
                 <p><strong>Amount:</strong> {{ payment.amount }} {{ payment.currency }}</p>
             </div>
+            {% if is_pending %}
+                <p id="nylon-status-message" class="mt-5 text-sm text-slate-500">Waiting for Nylon confirmation...</p>
+                <script>
+                    (function pollNylonStatus() {
+                        fetch("{% url 'users:nylon_payment_status' payment.id %}", {headers: {'Accept': 'application/json'}})
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status === 'PENDING') {
+                                    window.setTimeout(pollNylonStatus, 3000);
+                                    return;
+                                }
+                                window.location.reload();
+                            })
+                            .catch(() => window.setTimeout(pollNylonStatus, 5000));
+                    })();
+                </script>
+            {% endif %}
         {% endif %}
         <a href="{% url 'users:profile' %}" class="mt-8 inline-flex rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white">Return to profile</a>
     </div>
