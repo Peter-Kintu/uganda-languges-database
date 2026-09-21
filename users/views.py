@@ -4,6 +4,7 @@ import logging
 import requests
 import time
 import base64
+import mimetypes
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta, date
 from django.template.loader import render_to_string
@@ -1058,6 +1059,7 @@ def _extract_attachment_text(attachment):
     content_type = attachment.content_type or ''
     filename = attachment.name.lower()
     if content_type == 'application/pdf' or filename.endswith('.pdf'):
+        attachment.seek(0)
         from pypdf import PdfReader
         reader = PdfReader(attachment)
         return '\n\n'.join(page.extract_text() or '' for page in reader.pages)
@@ -1065,6 +1067,7 @@ def _extract_attachment_text(attachment):
         content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         or filename.endswith('.docx')
     ):
+        attachment.seek(0)
         from docx import Document
         document = Document(attachment)
         paragraphs = [paragraph.text for paragraph in document.paragraphs]
@@ -1072,6 +1075,7 @@ def _extract_attachment_text(attachment):
             paragraphs.extend(' | '.join(cell.text for cell in row.cells) for row in table.rows)
         return '\n'.join(paragraphs)
     if content_type.startswith('text/') or filename.endswith(('.txt', '.md', '.csv', '.json')):
+        attachment.seek(0)
         return attachment.read().decode('utf-8', errors='ignore')
     raise ValueError('This file type cannot be read. Upload PDF, DOCX, TXT, CSV, JSON, or an image.')
 
@@ -1084,6 +1088,7 @@ def _gemini_generate_content(instruction, attachment=None, content_type=None):
     models = list(dict.fromkeys([configured_model, 'gemini-2.5-flash', 'gemini-2.5-flash-lite']))
     parts = [{'text': instruction}]
     if attachment is not None:
+        attachment.seek(0)
         parts.append({
             'inline_data': {
                 'mime_type': content_type,
@@ -1315,12 +1320,17 @@ def analyze_ai_attachment(request):
     if attachment.size > 20 * 1024 * 1024:
         return JsonResponse({'error': 'Files must be 20 MB or smaller.'}, status=400)
 
+    extension_type = mimetypes.guess_type(attachment.name)[0] or ''
+    detected_type = attachment.content_type or extension_type
+    if detected_type == 'application/octet-stream' and extension_type:
+        detected_type = extension_type
     allowed_types = {
-        'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/tiff',
+        'application/pdf',
         'text/plain', 'text/csv', 'application/json',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     }
-    if attachment.content_type not in allowed_types:
+    if detected_type not in allowed_types:
         return JsonResponse({'error': 'Upload a JPG, PNG, WEBP, PDF, DOCX, TXT, CSV, or JSON file.'}, status=400)
 
     focus_labels = {
@@ -1351,12 +1361,20 @@ def analyze_ai_attachment(request):
 
     try:
         raw_text = ''
-        if attachment.content_type.startswith('image/'):
-            result = _gemini_generate_content(instruction, attachment, attachment.content_type)
+        if detected_type.startswith('image/'):
+            result = _gemini_generate_content(instruction, attachment, detected_type)
         else:
             raw_text = _extract_attachment_text(attachment)
+            if not raw_text.strip() and detected_type == 'application/pdf':
+                result = _gemini_generate_content(
+                    instruction + ' This is a scanned or image-only PDF. Read the visible pages with vision and transcribe relevant content before analyzing it.',
+                    attachment,
+                    'application/pdf',
+                )
+                if result:
+                    return JsonResponse({'text': result, 'filename': attachment.name, 'degraded': False})
             if not raw_text.strip():
-                return JsonResponse({'error': 'No readable text was found in this document.'}, status=400)
+                return JsonResponse({'error': 'No readable text was found. This may be a scanned document; upload a clearer PDF or image.'}, status=400)
             document_messages = [
                 {'role': 'system', 'content': instruction},
                 {'role': 'user', 'content': raw_text[:60000]},
