@@ -669,7 +669,7 @@ def nylon_start_checkout(request):
         subscription.save(update_fields=['status', 'is_active'])
         messages.error(request, result.message or 'The Nylon payment was not completed.')
 
-    return redirect('users:profile')
+    return redirect(f"{reverse('users:nylon_callback')}?reference={payment.tracking_id}")
 
 
 @csrf_exempt
@@ -682,14 +682,31 @@ def legacy_pesapal_webhook(request):
     return JsonResponse({'status': 'error', 'message': 'Pesapal notifications are no longer supported.'}, status=410)
 
 
+@login_required
 def nylon_callback(request):
-    tracking_id = request.GET.get('OrderTrackingId') or request.GET.get('orderTrackingId')
+    tracking_id = (
+        request.GET.get('reference')
+        or request.GET.get('tracking_id')
+        or request.GET.get('OrderTrackingId')
+        or request.GET.get('orderTrackingId')
+    )
     if tracking_id:
-        payment = PesapalPayment.objects.filter(tracking_id=tracking_id).first()
+        payment = PesapalPayment.objects.filter(
+            tracking_id=tracking_id,
+            user=request.user,
+        ).first()
         if payment:
-            context = {'payment': payment, 'is_success': payment.status == 'PAID'}
+            context = {
+                'payment': payment,
+                'is_success': payment.status == 'PAID',
+                'is_pending': payment.status == 'PENDING',
+            }
             return render(request, 'users/nylon_callback.html', context)
-    return render(request, 'users/nylon_callback.html', {'payment': None, 'is_success': False})
+    return render(request, 'users/nylon_callback.html', {
+        'payment': None,
+        'is_success': False,
+        'is_pending': False,
+    })
 
 # ==============================================================================
 # PROFILE & REFERRAL DASHBOARD

@@ -6,13 +6,15 @@
 <div class="min-h-screen bg-slate-50 py-16 px-4">
     <div class="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-10 shadow-xl">
         <h1 class="text-3xl font-bold text-slate-900">
-            {% if is_success %}Welcome to Pro!{% else %}Payment update{% endif %}
+            {% if is_success %}Welcome to Pro!{% elif is_pending %}Payment processing{% else %}Payment update{% endif %}
         </h1>
         <p class="mt-4 text-lg text-slate-600">
             {% if is_success %}
                 Your 30-day Pro Business Pass is now active.
+            {% elif is_pending %}
+                Nylon is processing your payment. Approve the payment prompt on your phone, then refresh this page when it is complete.
             {% else %}
-                Your payment is still being processed or could not be completed. Please return to your profile and try again.
+                Your payment could not be completed. Return to your profile and try again.
             {% endif %}
         </p>
         {% if payment %}

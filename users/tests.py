@@ -311,7 +311,7 @@ class NylonIntegrationTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('users:profile'))
+        self.assertIn(reverse('users:nylon_callback'), response.url)
         payment = PesapalPayment.objects.get(user=self.user)
         subscription = UserSubscription.objects.get(user=self.user)
         self.assertEqual(payment.status, 'PAID')
