@@ -352,6 +352,39 @@
         margin-bottom: 0;
     }
 
+    .ai-message-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+        max-width: 78%;
+    }
+
+    .ai-message-content .message-bubble {
+        max-width: 100%;
+    }
+
+    .copy-response-btn {
+        align-items: center;
+        background: transparent;
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: inline-flex;
+        font: inherit;
+        font-size: 0.72rem;
+        gap: 0.35rem;
+        padding: 0.3rem 0.5rem;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .copy-response-btn:hover,
+    .copy-response-btn.copied {
+        background: rgba(22, 163, 74, 0.08);
+        color: var(--accent-green-dark);
+    }
+
     .loading-message .message-bubble {
         background-color: rgba(226, 232, 240, 0.95);
         border-color: rgba(15, 23, 42, 0.08);
@@ -586,6 +619,10 @@
         }
 
         .message-bubble {
+            max-width: 85%;
+        }
+
+        .ai-message-content {
             max-width: 85%;
         }
 
@@ -1049,9 +1086,48 @@
             }
         }
         
-        wrapper.appendChild(bubble);
+        if (role === 'ai') {
+            const responseContent = document.createElement('div');
+            responseContent.className = 'ai-message-content';
+            responseContent.appendChild(bubble);
+
+            const copyButton = document.createElement('button');
+            copyButton.type = 'button';
+            copyButton.className = 'copy-response-btn';
+            copyButton.title = 'Copy response';
+            copyButton.setAttribute('aria-label', 'Copy AI response');
+            copyButton.innerHTML = `
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy</span>
+            `;
+            copyButton.addEventListener('click', () => copyResponse(copyButton, text));
+            responseContent.appendChild(copyButton);
+            wrapper.appendChild(responseContent);
+        } else {
+            wrapper.appendChild(bubble);
+        }
         chatLog.appendChild(wrapper);
         scrollToBottom();
+    }
+
+    async function copyResponse(button, text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            button.classList.add('copied');
+            button.querySelector('span').textContent = 'Copied';
+            window.setTimeout(() => {
+                button.classList.remove('copied');
+                button.querySelector('span').textContent = 'Copy';
+            }, 1600);
+        } catch (error) {
+            button.querySelector('span').textContent = 'Copy failed';
+            window.setTimeout(() => {
+                button.querySelector('span').textContent = 'Copy';
+            }, 1600);
+        }
     }
 
     function escapeHtml(value) {
