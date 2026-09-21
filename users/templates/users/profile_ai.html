@@ -298,6 +298,19 @@
         cursor: pointer;
     }
 
+    .mode-select {
+        max-width: 135px;
+        min-height: 36px;
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        background: #fff;
+        color: var(--text-secondary);
+        padding: 0 10px;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
     .message-wrapper {
         display: flex;
         width: 100%;
@@ -585,6 +598,10 @@
             max-width: 112px;
         }
 
+        .mode-select {
+            max-width: 105px;
+        }
+
         .prompt-grid {
             grid-template-columns: 1fr;
         }
@@ -624,6 +641,12 @@
                 <option value="jobs">Find opportunities</option>
                 <option value="business">Build a business</option>
                 <option value="skills">Learn new skills</option>
+            </select>
+            <select id="modeSelect" class="mode-select" aria-label="Choose assistant mode" title="Choose assistant mode">
+                <option value="chat">Smart chat</option>
+                <option value="research">Research</option>
+                <option value="plan">Build a plan</option>
+                <option value="creative">Brainstorm</option>
             </select>
             <label for="chatLanguage" style="margin-left: auto; font-size: 12px; color: var(--text-secondary);">Language</label>
             <select id="chatLanguage" class="language-select" aria-label="Choose chat language" title="Choose chat language">
@@ -696,6 +719,7 @@
     const overlay = document.getElementById('menuOverlay');
     const chatLanguage = document.getElementById('chatLanguage');
     const focusSelect = document.getElementById('focusSelect');
+    const modeSelect = document.getElementById('modeSelect');
     const attachmentInput = document.getElementById('attachmentInput');
     const attachmentButton = document.getElementById('attachmentButton');
     const attachmentPreview = document.getElementById('attachmentPreview');
@@ -715,8 +739,10 @@
     let requestInFlight = false;
     let selectedChatLanguage = localStorage.getItem('africana_chat_language') || 'auto';
     let selectedFocus = localStorage.getItem('africana_ai_focus') || 'career';
+    let selectedMode = localStorage.getItem('africana_ai_mode') || 'chat';
     chatLanguage.value = selectedChatLanguage;
     focusSelect.value = selectedFocus;
+    modeSelect.value = selectedMode;
     chatLanguage.addEventListener('change', function() {
         selectedChatLanguage = chatLanguage.value;
         localStorage.setItem('africana_chat_language', selectedChatLanguage);
@@ -724,6 +750,10 @@
     focusSelect.addEventListener('change', function() {
         selectedFocus = focusSelect.value;
         localStorage.setItem('africana_ai_focus', selectedFocus);
+    });
+    modeSelect.addEventListener('change', function() {
+        selectedMode = modeSelect.value;
+        localStorage.setItem('africana_ai_mode', selectedMode);
     });
     attachmentButton.addEventListener('click', () => attachmentInput.click());
     attachmentInput.addEventListener('change', function() {
@@ -926,6 +956,9 @@
 
     async function runAgentCommand(text) {
         const command = text.trim();
+        if (selectedMode === 'research' && !command.startsWith('/')) {
+            return runAgentCommand(`/research ${command}`);
+        }
         if (command.toLowerCase().startsWith('/research ')) {
             const query = command.slice(10).trim();
             const response = await fetchWithRecovery('/api/v1/agent/', {
@@ -1121,7 +1154,7 @@
         const browserAi = window.LanguageModel || window.ai?.languageModel;
         if (!browserAi) return null;
 
-        const systemPrompt = `You are Africana AI, a practical career and business companion for African professionals. Respond in ${language || 'English'} with concise, useful guidance. Current focus: ${focus}.`;
+        const systemPrompt = `You are Africana AI, a practical career and business companion for African professionals. Respond in ${language || 'English'} with concise, useful guidance. Current focus: ${focus}. Current mode: ${selectedMode}.`;
         const prompt = messages.map(message => {
             const speaker = message.role === 'assistant' ? 'Assistant' : 'User';
             return `${speaker}: ${message.text}`;
@@ -1191,7 +1224,8 @@
                     })),
                     preferred_api: 'cerebras',
                     language: detectedLang,
-                    user_focus: selectedFocus
+                    user_focus: selectedFocus,
+                    assistant_mode: selectedMode
                 })
             });
 

@@ -1341,7 +1341,8 @@ def analyze_ai_attachment(request):
     instruction = (
         f"You are Africana AI, a practical African career and business companion. {profile_note} "
         f"The user's current focus is {focus}. Their specific request is: {user_need or 'Give the most useful feedback for this file.'} "
-        "Analyze only what is present. Give concise, specific feedback, explain why it matters, "
+        "Analyze only what is present. First extract the important facts, names, dates, numbers, requirements, and contradictions. Then give concise, specific feedback, explain why it matters, "
+        "Use clear headings such as Summary, Evidence, Risks, Missing Information, and Next Actions when relevant. "
         "and finish with three prioritized next actions. For clothing images, comment only on outfit "
         "coordination, fit, color, grooming presentation, context, and culturally respectful styling; "
         "do not infer identity, body judgments, health, age, or protected traits. "
@@ -1428,6 +1429,14 @@ def cerebras_proxy(request):
         raw_contents = body.get('contents', []) or []
         user_language = body.get('language', 'en').lower()
         user_focus = body.get('user_focus', 'career').lower()
+        assistant_mode = str(body.get('assistant_mode', 'chat')).lower()
+        mode_labels = {
+            'chat': 'direct coaching and practical conversation',
+            'research': 'evidence-led research and information synthesis',
+            'plan': 'multi-step planning with milestones and checkpoints',
+            'creative': 'brainstorming, alternatives, and creative collaboration',
+        }
+        mode_instruction = mode_labels.get(assistant_mode, mode_labels['chat'])
         focus_labels = {
             'career': 'career growth and professional direction',
             'jobs': 'finding realistic job opportunities and building an application pipeline',
@@ -1512,6 +1521,9 @@ Experience: {', '.join(profile['experiences'][:5]) if profile['experiences'] els
 **CURRENT USER FOCUS:**
 Prioritize {focus_instruction}. Connect every recommendation to the user's profile and end with one clear next action.
 
+**ASSISTANT MODE:**
+Work in {mode_instruction}. In research mode, distinguish sourced facts from assumptions, compare sources, note dates, and cite URLs supplied in context. In planning mode, produce ordered steps, dependencies, owners, milestones, risks, and a checkpoint. In creative mode, generate several distinct options, then recommend one with reasons. In chat mode, be direct and conversational.
+
 **AGENT OPERATING PROTOCOL:**
 - First identify the user's actual objective, constraints, location, experience level, and missing information.
 - For complex requests, silently make a short plan, then execute it in ordered sections. Do not expose private chain-of-thought.
@@ -1521,6 +1533,8 @@ Prioritize {focus_instruction}. Connect every recommendation to the user's profi
 - Turn advice into an executable result: concrete examples, templates, priorities, owners, timeframes, and a measurable success check.
 - When reviewing a CV, business idea, image, or plan, identify strengths, risks, missing evidence, and the highest-impact improvements before giving the final actions.
 - Do not claim to have browsed, verified a live opportunity, read an attachment, or used a tool unless that information is present in the request.
+- For documents and images, inspect all visible and readable content, preserve important numbers and names, identify ambiguity, and say what could not be verified. Never invent missing text.
+- For long conversations, maintain the user's goal and constraints, resolve contradictions explicitly, and carry forward only relevant context.
 
 **YOUR CORE EXPERTISE:**
 
@@ -1569,7 +1583,7 @@ Prioritize {focus_instruction}. Connect every recommendation to the user's profi
         system_instruction = body.get('system_instruction') or default_instruction
 
         messages = [{"role": "system", "content": system_instruction}]
-        for msg in raw_contents[-12:]:
+        for msg in raw_contents[-20:]:
             if not isinstance(msg, dict):
                 continue
             role = "assistant" if str(msg.get("role", "")).lower() in ["ai", "model", "assistant"] else "user"
