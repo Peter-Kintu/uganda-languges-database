@@ -22,13 +22,9 @@ def _nylon_client():
     if not api_key or not api_secret:
         raise RuntimeError("NYLON_API_KEY and NYLON_API_SECRET must be configured.")
 
-    def on_error(error):
-        logger.error("Nylon Pay error (%s): %s", getattr(error, "reason", "unknown"), error)
-
     return create_nylon_pay(
         api_key=api_key,
         api_secret=api_secret,
-        on_error=on_error,
     )
 
 
