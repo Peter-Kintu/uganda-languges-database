@@ -23,6 +23,7 @@ from django.utils.deprecation import MiddlewareMixin
 logger = logging.getLogger(__name__)
 
 THROTTLED_PATHS = {
+    '/hotel/record-impression/': {'limit': 120, 'window': 60},
     '/hotel/': {'limit': 25, 'window': 60},
     '/hotel/social_feed': {'limit': 25, 'window': 60},
     '/social/feed/': {'limit': 30, 'window': 60},
