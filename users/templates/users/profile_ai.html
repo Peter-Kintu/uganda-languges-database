@@ -1024,6 +1024,43 @@
         return 'en';
     }
 
+    async function tryBrowserAi(messages, language, focus) {
+        const browserAi = window.LanguageModel || window.ai?.languageModel;
+        if (!browserAi) return null;
+
+        const systemPrompt = `You are Africana AI, a practical career and business companion for African professionals. Respond in ${language || 'English'} with concise, useful guidance. Current focus: ${focus}.`;
+        const prompt = messages.map(message => {
+            const speaker = message.role === 'assistant' ? 'Assistant' : 'User';
+            return `${speaker}: ${message.text}`;
+        }).join('\n\n');
+
+        try {
+            let session;
+            if (window.LanguageModel) {
+                const availability = await window.LanguageModel.availability();
+                if (availability === 'unavailable') return null;
+                session = await window.LanguageModel.create({ systemPrompt });
+            } else {
+                const capabilities = await browserAi.capabilities();
+                if (capabilities.available === 'no') return null;
+                session = await browserAi.create({ systemPrompt });
+            }
+
+            const reply = await session.prompt(prompt);
+            session.destroy?.();
+            return typeof reply === 'string' && reply.trim() ? reply.trim() : null;
+        } catch (error) {
+            console.info('Browser AI is unavailable; continuing with built-in guidance.', error);
+            return null;
+        }
+    }
+
+    function appendAssistantReply(text) {
+        lastAiReply = text;
+        appendMessage('ai', text);
+        saveMessage(currentSessionId, 'ai', text);
+    }
+
     async function typeQuery() {
         const text = chatInput.value.trim();
         if (!text || !currentSessionId) return;
@@ -1058,18 +1095,29 @@
             });
 
             if (!response.ok) {
+                const browserReply = await tryBrowserAi(
+                    getSessionHistory(currentSessionId),
+                    detectedLang,
+                    selectedFocus
+                );
                 removeLoadingMessage();
-                appendMessage('ai', 'Service is temporarily unavailable. Please try again in a few minutes.');
+                appendAssistantReply(browserReply || 'I cannot reach the AI services right now. Here is a useful next step: define one clear goal for this week and write down the smallest action you can complete today.');
                 return;
             }
 
             const data = await response.json();
-            const reply = data.text || data.reply || data.response || data.choices?.[0]?.message?.content;
+            let reply = data.text || data.reply || data.response || data.choices?.[0]?.message?.content;
+            if (data.model_used?.startsWith('Fallback Response')) {
+                reply = await tryBrowserAi(
+                    getSessionHistory(currentSessionId),
+                    detectedLang,
+                    selectedFocus
+                ) || reply;
+            }
             
             removeLoadingMessage();
             
             if (reply) {
-                lastAiReply = reply;
                 window.lastChatLanguage = detectedLang;
                 // Check if user asked for PDF export
                 if (text.toLowerCase().includes('export as resume') || text.toLowerCase().includes('download resume')) {
@@ -1079,22 +1127,31 @@
                     exportToPDF(reply, 'business_plan');
                     appendMessage('ai', 'Your Business Plan PDF is being generated and will download shortly.');
                 } else if (text.toLowerCase().includes('resume') || text.toLowerCase().includes('cv') || text.toLowerCase().includes('export')) {
-                    appendMessage('ai', reply);
+                    appendAssistantReply(reply);
                     appendMessage('ai', '**Would you like me to export this as a PDF Resume?** Say "export as resume" and I\'ll generate it for you.');
                 } else if (text.toLowerCase().includes('business plan') || text.toLowerCase().includes('plan') || text.toLowerCase().includes('startup')) {
-                    appendMessage('ai', reply);
+                    appendAssistantReply(reply);
                     appendMessage('ai', '**Would you like me to export this as a Business Plan PDF?** Say "export as plan" and I\'ll create it.');
                 } else {
-                    appendMessage('ai', reply);
+                    appendAssistantReply(reply);
                 }
-                saveMessage(currentSessionId, 'ai', reply);
             } else {
-                appendMessage('ai', 'Service is temporarily unavailable. Please try again in a few minutes.');
+                const browserReply = await tryBrowserAi(
+                    getSessionHistory(currentSessionId),
+                    detectedLang,
+                    selectedFocus
+                );
+                appendAssistantReply(browserReply || 'I cannot reach the AI services right now. Here is a useful next step: define one clear goal for this week and write down the smallest action you can complete today.');
             }
         } catch(err) {
             console.error(err);
             removeLoadingMessage();
-            appendMessage('ai', 'Service is temporarily unavailable. Please try again in a few minutes.');
+            const browserReply = await tryBrowserAi(
+                getSessionHistory(currentSessionId),
+                detectedLang,
+                selectedFocus
+            );
+            appendAssistantReply(browserReply || 'I cannot reach the AI services right now. Here is a useful next step: define one clear goal for this week and write down the smallest action you can complete today.');
         }
     }
 
