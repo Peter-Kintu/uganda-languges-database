@@ -294,7 +294,6 @@ class NylonIntegrationTests(TestCase):
             username='pesapal_user',
             email='pesapal@example.com',
             password='secret1234',
-            phone='+256700000000',
         )
 
     @patch('users.views.collect_payment')
@@ -306,7 +305,10 @@ class NylonIntegrationTests(TestCase):
         )
 
         self.client.force_login(self.user)
-        response = self.client.post(reverse('users:pesapal_start_checkout'))
+        response = self.client.post(
+            reverse('users:nylon_start_checkout'),
+            {'phone': '+256700000000'},
+        )
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('users:profile'))
@@ -315,6 +317,8 @@ class NylonIntegrationTests(TestCase):
         self.assertEqual(payment.status, 'PAID')
         self.assertEqual(payment.tracking_id, 'transaction-123')
         self.assertTrue(subscription.is_active)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.phone, '+256700000000')
 
     def test_legacy_pesapal_ipn_is_disabled(self):
         response = self.client.post(

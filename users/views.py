@@ -604,10 +604,13 @@ def nylon_start_checkout(request):
 
     amount = Decimal(getattr(settings, 'NYLON_PRO_AMOUNT', '30000'))
     order_id = str(uuid.uuid4())
-    customer_phone = str(getattr(request.user, 'phone', '') or '').strip()
+    customer_phone = str(request.POST.get('phone') or getattr(request.user, 'phone', '') or '').strip()
     if not customer_phone:
-        messages.error(request, 'Add a phone number to your profile before starting payment.')
+        messages.error(request, 'Enter the phone number that should receive the Nylon payment prompt.')
         return redirect('users:profile')
+    if customer_phone != request.user.phone:
+        request.user.phone = customer_phone
+        request.user.save(update_fields=['phone'])
 
     payment = PesapalPayment.objects.create(
         user=request.user,
