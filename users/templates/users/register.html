@@ -195,6 +195,15 @@
     textarea,
     select {
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+        caret-color: #0f172a !important;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+        background-color: #ffffff !important;
         color: #0f172a !important;
     }
     
@@ -213,6 +222,7 @@
     input:-webkit-autofill {
         -webkit-text-fill-color: #0f172a !important;
         -webkit-box-shadow: 0 0 0px 1000px #f8fafc inset !important;
+        box-shadow: 0 0 0px 1000px #f8fafc inset !important;
     }
 
     .req-item {
