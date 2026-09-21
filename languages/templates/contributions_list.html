@@ -145,6 +145,37 @@
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
         }
 
+        .jobs-grid {
+            align-items: stretch;
+            row-gap: 2rem;
+        }
+
+        .jobs-grid > div:not(.jobs-ad) {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 1.25rem;
+            border-radius: 1rem;
+        }
+
+        .jobs-grid h3 {
+            font-size: 1.05rem;
+            line-height: 1.35;
+        }
+
+        .jobs-grid p {
+            line-height: 1.5;
+        }
+
+        .jobs-grid > div:not(.jobs-ad) > a:last-child {
+            margin-top: auto;
+            min-height: 2.75rem;
+        }
+
+        .jobs-ad {
+            min-height: 250px;
+        }
+
         /* PREMIUM ANIMATED CARD */
         .premium-card {
             background: linear-gradient(165deg, #f8fafc 0%, #ffffff 100%);
@@ -450,7 +481,7 @@
                     </div>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5 xl:gap-6 mb-10">
+            <div class="jobs-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-x-5 gap-y-8 mb-10">
                 {% for job in priority_jobs %}
                 <div class="bg-white border border-gray-200 rounded-2xl p-7 shadow-sm hover:shadow-lg transition-shadow">
                     <div class="flex justify-between items-start gap-3 mb-4">
@@ -475,7 +506,7 @@
             {% endif %}
 
             <!-- Job Cards Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5 xl:gap-6">
+            <div class="jobs-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-x-5 gap-y-8">
 
                 {# 1. MICRO1 PREMIUM CARD #}
                 <div class="bg-white border border-gray-200 rounded-2xl p-7 shadow-sm hover:shadow-md transition-shadow">
@@ -627,7 +658,7 @@
                     {% endif %}
                 </div>
                 {% if forloop.counter|divisibleby:6 %}
-                <div class="my-6 p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col items-center justify-center col-span-1 shadow-inner">
+                <div class="jobs-ad my-6 p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col items-center justify-center col-span-1 shadow-inner">
                     <span class="text-[10px] uppercase font-semibold tracking-wider text-gray-400 block mb-3 text-center w-full">Advertisement</span>
 
                     <div class="w-full overflow-hidden flex justify-center min-h-[250px]">

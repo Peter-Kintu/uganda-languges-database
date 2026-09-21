@@ -115,6 +115,27 @@ class HybridFeedTests(TestCase):
 		self.assertEqual(post.impressions, 1)
 		self.assertEqual(FeedImpression.objects.count(), 1)
 
+	def test_like_post_toggles_like_and_returns_count(self):
+		post = Post.objects.create(author=self.popular_user, content='Likeable update')
+		self.client.force_login(self.user)
+
+		first = self.client.post(f'/hotel/like-post/{post.id}/')
+		second = self.client.post(f'/hotel/like-post/{post.id}/')
+
+		self.assertEqual(first.json()['likes_count'], 1)
+		self.assertEqual(second.json()['likes_count'], 0)
+
+	def test_ajax_feed_uses_reaction_control_markup(self):
+		Post.objects.create(author=self.popular_user, content='Loaded update')
+		self.client.force_login(self.user)
+
+		response = self.client.get('/hotel/?format=json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+		self.assertEqual(response.status_code, 200)
+		html = response.json()['html']
+		self.assertIn('class="post-action reaction-like"', html)
+		self.assertIn('class="post-action reaction-more"', html)
+
 	def test_market_and_job_positions_rotate_with_feed_seed(self):
 		first_products, first_job = _feed_insert_positions(20, 'first-seed')
 		second_products, second_job = _feed_insert_positions(20, 'second-seed')

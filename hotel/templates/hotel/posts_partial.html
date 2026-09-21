@@ -1,5 +1,5 @@
 {% for post in posts %}
-    <div class="post-card" id="post-{{ post.id }}" data-post-id="{{ post.id }}">
+    <div class="post-card" id="post-{{ post.id }}" data-post-id="{{ post.id }}" data-impression-kind="post" data-impression-id="{{ post.id }}">
         <!-- Header -->
         <div class="post-header">
             <div class="post-author">
@@ -57,60 +57,71 @@
             </div>
         {% endif %}
 
-        <!-- Footer -->
-        <div class="post-footer">
-            <button class="post-action" onclick="openReactionPicker({{ post.id }}, this)" data-post-id="{{ post.id }}" title="React to this post">
-                <span id="like-icon-{{ post.id }}">👍</span>
-                <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
-            </button>
-            <button class="post-action" onclick="toggleComments({{ post.id }}, this)" title="View comments">
-                <span>💬</span>
-                <span id="comment-count-{{ post.id }}">{{ post.comments.count }}</span>
-            </button>
-            <button class="post-action" onclick="openTranslateModal({{ post.id }})" title="Translate post">
-                <span>🌐</span>
-                <span>Translate</span>
-            </button>
-            <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')" title="Send a message">
-                <span>✉️</span>
-                <span>Message</span>
-            </button>
-            <button class="post-action" onclick="sharePost({{ post.id }})" title="Share post">
-                <span>🔗</span>
-                <span>Share</span>
-            </button>
-        </div>
+        <!-- Footer Actions -->
+        {% if request.user.is_authenticated and not is_crawler %}
+            <div class="post-footer">
+                <div class="reaction-control" data-reaction-control="{{ post.id }}">
+                    <button class="post-action reaction-like" onclick="likePost({{ post.id }}, this, 'love')" data-post-id="{{ post.id }}" data-reaction="love" aria-label="Like post" title="Like post">
+                        <span id="like-icon-{{ post.id }}" aria-hidden="true">♡</span>
+                        <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span>
+                    </button>
+                    <button class="post-action reaction-more" onclick="openReactionPicker({{ post.id }}, this)" aria-label="More reactions" title="More reactions">
+                        <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m7 10 5 5 5-5"/></svg>
+                    </button>
+                </div>
+                <button class="post-action" onclick="toggleComments({{ post.id }}, this)" title="View comments">
+                    <span>💬</span>
+                    <span id="comment-count-{{ post.id }}">{{ post.comments.count }}</span>
+                </button>
+                <button class="post-action" onclick="openTranslateModal({{ post.id }})" title="Translate post">
+                    <span>🌐</span>
+                    <span>Translate</span>
+                </button>
+                <button class="post-action" onclick="openMessageModal({{ post.author.id }}, '{{ post.author.get_full_name|default:post.author.username|escapejs }}')" title="Send a message">
+                    <span>✉️</span>
+                    <span>Message</span>
+                </button>
+                <button class="post-action" onclick="sharePost({{ post.id }})" title="Share post">
+                    <span>🔗</span>
+                    <span>Share</span>
+                </button>
+            </div>
+        {% else %}
+            <div class="post-footer" style="padding: 14px 16px; color: #64748b; font-size: 13px;">
+                Sign in to react, comment, translate, and message from this feed.
+            </div>
+        {% endif %}
 
         <!-- Comments Section -->
         <div class="comments-section" id="comments-{{ post.id }}" style="display: none;">
             {% for comment in post.comments.all|slice:":3" %}
                 <div class="comment">
                     <div class="comment-avatar-wrapper">
-                        <div class="comment-avatar">{{ comment.author.first_name|slice:':1'|upper }}</div>
+                        <div class="avatar" style="width: 36px; height: 36px; font-size: 14px; min-width: 36px; border: 2px solid var(--primary); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center;">{{ comment.author.first_name|slice:':1'|upper }}</div>
                     </div>
                     <div class="comment-content">
                         <div class="comment-header">
-                            <div class="comment-author">{{ comment.author.get_full_name }}</div>
-                            <div class="comment-handle">@{{ comment.author.username }}</div>
-                            <div class="comment-meta">{{ comment.created_at|date:"M j, g:i a" }}</div>
+                            <span class="comment-author">{{ comment.author.get_full_name }}</span>
+                            <span class="comment-handle">@{{ comment.author.username }}</span>
+                            <span class="comment-meta">{{ comment.created_at|timesince }} ago</span>
                         </div>
                         <div class="comment-text">{{ comment.content }}</div>
-                        <div class="comment-actions">
-                            <button class="comment-action-btn" onclick="likeComment(this)" title="Like comment">👍 {{ comment.likes.count }}</button>
-                            <button class="comment-action-btn" onclick="replyToComment(this)" title="Reply to comment">Reply</button>
-                        </div>
+                        {% if request.user.is_authenticated and not is_crawler %}
+                            <div class="comment-actions">
+                                <button class="comment-action-btn" onclick="likeComment(this)" title="Like comment"><span>♡</span> Like</button>
+                                <button class="comment-action-btn" onclick="replyToComment(this)" title="Reply to comment"><span>↩️</span> Reply</button>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}
-            <div class="comment-input-wrapper">
-                <div class="comment-avatar-wrapper">
-                    <div class="comment-avatar">{{ request.user.first_name|slice:':1'|upper }}</div>
-                </div>
-                <form class="comment-input" onsubmit="addComment({{ post.id }}, this); return false;">
-                    <input type="text" name="content" class="comment-input" placeholder="Write a comment..." required>
-                    <button type="submit">Post</button>
+            {% if request.user.is_authenticated and not is_crawler %}
+                <form onsubmit="addComment({{ post.id }}, this); return false;" class="comment-input-wrapper">
+                    {% csrf_token %}
+                    <input type="text" class="comment-input" name="content" placeholder="Write a comment..." maxlength="500" required>
+                    <button type="submit" class="btn-primary" style="padding: 10px 20px; border-radius: 20px; font-weight: 600;">Reply</button>
                 </form>
-            </div>
+            {% endif %}
         </div>
     </div>
 {% endfor %}
