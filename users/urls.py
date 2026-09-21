@@ -25,10 +25,15 @@ urlpatterns = [
     path('profile/request-payout/', views.profile_payout_request, name='profile_payout_request'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
 
-    # --- Pesapal Payments ---
-    path('payments/pesapal/start/', views.pesapal_start_checkout, name='pesapal_start_checkout'),
-    path('api/payments/pesapal/ipn/', views.pesapal_ipn, name='pesapal_ipn'),
-    path('payments/pesapal/callback/', views.pesapal_callback, name='pesapal_callback'),
+    # --- Nylon Payments ---
+    path('payments/nylon/start/', views.nylon_start_checkout, name='nylon_start_checkout'),
+    path('api/payments/nylon/webhook/', views.nylon_webhook, name='nylon_webhook'),
+    path('payments/nylon/callback/', views.nylon_callback, name='nylon_callback'),
+
+    # Temporary aliases for old links. New pages use the Nylon routes above.
+    path('payments/pesapal/start/', views.nylon_start_checkout, name='pesapal_start_checkout'),
+    path('api/payments/pesapal/ipn/', views.legacy_pesapal_webhook, name='pesapal_ipn'),
+    path('payments/pesapal/callback/', views.nylon_callback, name='pesapal_callback'),
 
     # --- Language Settings ---
     path('update-language/', views.update_language, name='update_language'),

@@ -589,7 +589,7 @@ def user_logout(request):
 
 
 @login_required
-def pesapal_start_checkout(request):
+def nylon_start_checkout(request):
     if request.method not in {'POST', 'GET'}:
         return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
 
@@ -660,18 +660,23 @@ def pesapal_start_checkout(request):
 
 
 @csrf_exempt
-def pesapal_ipn(request):
+def nylon_webhook(request):
+    return JsonResponse({'status': 'error', 'message': 'Nylon webhooks are not configured for this endpoint.'}, status=501)
+
+
+@csrf_exempt
+def legacy_pesapal_webhook(request):
     return JsonResponse({'status': 'error', 'message': 'Pesapal notifications are no longer supported.'}, status=410)
 
 
-def pesapal_callback(request):
+def nylon_callback(request):
     tracking_id = request.GET.get('OrderTrackingId') or request.GET.get('orderTrackingId')
     if tracking_id:
         payment = PesapalPayment.objects.filter(tracking_id=tracking_id).first()
         if payment:
             context = {'payment': payment, 'is_success': payment.status == 'PAID'}
-            return render(request, 'users/pesapal_callback.html', context)
-    return render(request, 'users/pesapal_callback.html', {'payment': None, 'is_success': False})
+            return render(request, 'users/nylon_callback.html', context)
+    return render(request, 'users/nylon_callback.html', {'payment': None, 'is_success': False})
 
 # ==============================================================================
 # PROFILE & REFERRAL DASHBOARD
