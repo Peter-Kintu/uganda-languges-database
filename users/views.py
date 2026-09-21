@@ -1290,8 +1290,53 @@ Prioritize {focus_instruction}. Connect every recommendation to the user's profi
                     return response_text.strip(), None
                 return None, "Cerebras service unavailable"
             except Exception as e:
-                logging.warning("Cerebras request failed: %s", str(e), exc_info=True)
+                status_code = getattr(e, 'status_code', None)
+                if status_code == 402 or 'payment_required' in str(e).lower():
+                    logging.warning("Cerebras quota is exhausted; using a fallback provider.")
+                    return None, "Cerebras quota exhausted"
+                logging.warning("Cerebras request failed: %s", str(e))
                 return None, "Cerebras service unavailable"
+
+        def try_gemini():
+            """Try Gemini when Cerebras quota is unavailable."""
+            api_key = os.environ.get('GEMINI_API_KEY', '').strip().replace('"', '').replace("'", '')
+            if not api_key:
+                return None, "Gemini service unavailable"
+
+            gemini_contents = []
+            for message in messages:
+                if message['role'] == 'system':
+                    continue
+                gemini_contents.append({
+                    'role': 'model' if message['role'] == 'assistant' else 'user',
+                    'parts': [{'text': message['content']}],
+                })
+            payload = {
+                'system_instruction': {'parts': [{'text': system_instruction}]},
+                'contents': gemini_contents,
+                'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 2000},
+            }
+            try:
+                response = requests.post(
+                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                    params={'key': api_key},
+                    json=payload,
+                    timeout=25,
+                )
+                if response.status_code != 200:
+                    logging.warning("Gemini fallback HTTP %s", response.status_code)
+                    return None, "Gemini service unavailable"
+                data = response.json()
+                candidates = data.get('candidates') or []
+                parts = candidates[0].get('content', {}).get('parts', []) if candidates else []
+                text = ''.join(part.get('text', '') for part in parts).strip()
+                return (text, None) if text else (None, "Gemini returned no content")
+            except requests.RequestException as error:
+                logging.warning("Gemini fallback request failed: %s", str(error))
+                return None, "Gemini service unavailable"
+            except (KeyError, IndexError, TypeError, ValueError) as error:
+                logging.warning("Gemini fallback response was invalid: %s", str(error))
+                return None, "Gemini service unavailable"
 
         def try_sunbird():
             """Try Sunbird (fallback) - excellent for African languages"""
@@ -1337,7 +1382,15 @@ Prioritize {focus_instruction}. Connect every recommendation to the user's profi
                 "language": user_language,
             })
 
-        response_text, error2 = try_sunbird()
+        response_text, error2 = try_gemini()
+        if response_text:
+            return JsonResponse({
+                "text": response_text,
+                "model_used": "Gemini 2.0 Flash (Fallback)",
+                "language": user_language,
+            })
+
+        response_text, error3 = try_sunbird()
         if response_text:
             return JsonResponse({
                 "text": response_text,
@@ -1358,7 +1411,7 @@ Based on your profile ({profile['full_name']}, {profile['headline']}):
 
 I'll still provide a structured answer once the service is restored.
 """
-        logging.warning(f"Both AI APIs failed. Cerebras: {error1}, Sunbird: {error2}. Using fallback.")
+        logging.warning(f"AI providers failed. Cerebras: {error1}, Gemini: {error2}, Sunbird: {error3}. Using fallback.")
         return JsonResponse({
             "text": fallback_response,
             "model_used": "Fallback Response (APIs Temporarily Down)",
