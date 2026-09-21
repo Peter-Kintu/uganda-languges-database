@@ -1102,7 +1102,7 @@ def _gemini_generate_content(instruction, attachment=None, content_type=None):
                 params={'key': api_key},
                 json={
                     'contents': [{'parts': parts}],
-                    'generationConfig': {'temperature': 0.45, 'maxOutputTokens': 1200},
+                    'generationConfig': {'temperature': 0.35, 'maxOutputTokens': 2200},
                 },
                 timeout=35,
             )
@@ -1351,8 +1351,9 @@ def analyze_ai_attachment(request):
     instruction = (
         f"You are Africana AI, a practical African career and business companion. {profile_note} "
         f"The user's current focus is {focus}. Their specific request is: {user_need or 'Give the most useful feedback for this file.'} "
-        "Analyze only what is present. First extract the important facts, names, dates, numbers, requirements, and contradictions. Then give concise, specific feedback, explain why it matters, "
-        "Use clear headings such as Summary, Evidence, Risks, Missing Information, and Next Actions when relevant. "
+        "Analyze the entire readable file, not just the beginning. First extract the important facts, names, dates, numbers, requirements, and contradictions. Then give complete, specific feedback and explain why each point matters. "
+        "Use clear headings: Executive Summary, Detailed Findings, Evidence, Strengths, Risks, Missing Information, Recommendations, and Prioritized Next Actions. "
+        "Cover every major section or page represented in the extracted content. Do not stop after a few observations, do not use vague filler, and do not omit important negative findings. "
         "and finish with three prioritized next actions. For clothing images, comment only on outfit "
         "coordination, fit, color, grooming presentation, context, and culturally respectful styling; "
         "do not infer identity, body judgments, health, age, or protected traits. "
@@ -1386,9 +1387,24 @@ def analyze_ai_attachment(request):
                     client = Cerebras(api_key=api_key)
                     completion = client.chat.completions.create(
                         messages=document_messages, model='gpt-oss-120b',
-                        max_completion_tokens=1200, temperature=0.45, stream=False,
+                        max_completion_tokens=2800, temperature=0.35, stream=False,
                     )
-                    result = completion.choices[0].message.content.strip() if completion.choices else ''
+                    if completion.choices:
+                        choice = completion.choices[0]
+                        result = (choice.message.content or '').strip()
+                        if getattr(choice, 'finish_reason', '') in {'length', 'max_tokens'}:
+                            continuation = client.chat.completions.create(
+                                messages=document_messages + [
+                                    {'role': 'assistant', 'content': result},
+                                    {'role': 'user', 'content': 'Continue the review from exactly where you stopped. Do not repeat earlier sections. Finish all missing findings, recommendations, and prioritized next actions.'},
+                                ],
+                                model='gpt-oss-120b',
+                                max_completion_tokens=1600,
+                                temperature=0.35,
+                                stream=False,
+                            )
+                            if continuation.choices:
+                                result = f'{result}\n\n{(continuation.choices[0].message.content or "").strip()}'.strip()
                 except Exception as error:
                     logging.warning('Cerebras document analysis failed: %s', str(error)[:200])
             if not result:
