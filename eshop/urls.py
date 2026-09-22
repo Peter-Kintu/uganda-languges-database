@@ -53,5 +53,5 @@ urlpatterns = [
     path('api/affiliate/click/', views.affiliate_click, name='affiliate_click'),
     path('api/live/sessions/', views.live_sessions, name='live_sessions'),
     # Temporary deletion route - remove after running
-    path('secret-delete-ali-products-9921/', views.temporary_delete_ali_products),
+    # path('secret-delete-ali-products-9921/', views.temporary_delete_ali_products),
 ]
