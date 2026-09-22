@@ -6,6 +6,7 @@ from django.urls import reverse
 from unittest.mock import patch
 
 from .models import AffiliateEvent, AffiliatePayout, Cart, CartItem, CommercePayment, Order, Product
+from .views import get_aliexpress_search_groups
 
 
 class EscrowOrderTests(TestCase):
@@ -38,6 +39,16 @@ class EscrowOrderTests(TestCase):
         response = self.client.get(reverse('pesapal_ipn'), {'OrderTrackingId': 'tracking-1'})
 
         self.assertEqual(response.status_code, 410)
+
+
+class AliExpressSearchConfigTests(TestCase):
+    def test_phone_case_and_screen_queries_are_included(self):
+        groups = get_aliexpress_search_groups()
+        queries = [group['query'].lower() for group in groups]
+
+        self.assertTrue(any('smartphone' in query or 'android phone' in query for query in queries))
+        self.assertTrue(any('phone case' in query or 'case' in query and 'phone' in query for query in queries))
+        self.assertTrue(any('screen protector' in query or 'lcd touch screen' in query or 'digitizer' in query for query in queries))
 
 
 class NegotiationFlowTests(TestCase):

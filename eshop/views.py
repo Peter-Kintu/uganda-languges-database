@@ -404,6 +404,100 @@ def whatsapp_catalog_sync(request):
 # Setup logging to track sync issues without crashing the site
 logger = logging.getLogger(__name__)
 
+
+def get_aliexpress_search_groups():
+    """Return prioritized AliExpress searches for African demand, especially phones, cases, and screens."""
+    return [
+        # Priority: phones, cases, and screens for African mobile markets
+        {'query': 'unlocked android smartphone 4G 64GB dual SIM budget phone', 'count': 15, 'ship_to_country': 'UG', 'min_price': 35, 'max_price': 220},
+        {'query': 'Samsung Galaxy A series unlocked replacement phone budget 4G', 'count': 12, 'ship_to_country': 'UG', 'min_price': 45, 'max_price': 220},
+        {'query': 'Redmi Note phone global version unlocked affordable 4G', 'count': 12, 'ship_to_country': 'UG', 'min_price': 40, 'max_price': 240},
+        {'query': 'Infinix Tecno budget smartphone unlocked 4G 5G mobile phone', 'count': 12, 'ship_to_country': 'UG', 'min_price': 30, 'max_price': 200},
+        {'query': 'shockproof TPU phone case for Samsung Galaxy A Redmi Note Tecno Infinix', 'count': 15, 'ship_to_country': 'UG', 'min_price': 2, 'max_price': 40},
+        {'query': 'transparent silicone phone case universal anti-shock cheap', 'count': 12, 'ship_to_country': 'UG', 'min_price': 2, 'max_price': 25},
+        {'query': 'wallet phone case card holder for Redmi Samsung Galaxy A', 'count': 10, 'ship_to_country': 'UG', 'min_price': 3, 'max_price': 35},
+        {'query': 'tempered glass screen protector for Samsung Redmi Tecno Infinix', 'count': 15, 'ship_to_country': 'UG', 'min_price': 1, 'max_price': 20},
+        {'query': 'LCD touch screen replacement Redmi Note Samsung Galaxy A digitizer', 'count': 12, 'ship_to_country': 'UG', 'min_price': 10, 'max_price': 80},
+        {'query': 'LCD touch screen replacement Tecno Infinix digitizer affordable', 'count': 12, 'ship_to_country': 'UG', 'min_price': 12, 'max_price': 90},
+
+        # Other hot-selling categories
+        {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 14},
+        {'query': 'AI smart glasses video recording live stream audio', 'count': 12},
+        {'query': 'smart glasses bluetooth audio wireless polarized sunglasses', 'count': 10},
+        {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
+        {'query': 'mini spy camera cheap wireless security pocket cam', 'count': 14},
+        {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 12},
+        {'query': 'action camera sports video recorder mini dvr small', 'count': 12},
+        {'query': 'webcam micro camera usb plug play clear audio', 'count': 12},
+        {'query': 'pendant necklace hidden mini spy camera audio video recorder', 'count': 12},
+        {'query': 'women earrings shell pearl fashion cheap top selling', 'count': 16},
+        {'query': 'minimalist gold plated necklace women popular affordable', 'count': 14},
+        {'query': 'korean skincare face roller jade gua sha affordable', 'count': 12},
+        {'query': 'makeup brush set professional soft synthetic cheap', 'count': 14},
+        {'query': 'false eyelashes volume mink look cheap top selling', 'count': 14},
+        {'query': 'hair claw clip large acrylic trendy women cheap', 'count': 16},
+        {'query': 'scrunchies set velvet hair elastic pretty cheap', 'count': 16},
+        {'query': 'women crossbody purse small vintage cute cheap', 'count': 12},
+        {'query': 'fashion sunglasses women polarized stylish cheap', 'count': 12},
+        {'query': 'anklet bracelet women boho gold cheap top selling', 'count': 12},
+        {'query': 'layered necklace set women bohemian cute affordable', 'count': 12},
+        {'query': 'portable facial steamer nano face steamer home use cheap', 'count': 12},
+        {'query': 'led face mask skincare phototherapy anti aging affordable', 'count': 10},
+        {'query': 'nail art kit gel polish set cheap popular', 'count': 12},
+        {'query': 'compact makeup mirror led light portable cheap', 'count': 12},
+        {'query': 'women leggings high waist seamless gym cheap popular', 'count': 12},
+        {'query': 'seamless sports bra crop top women affordable', 'count': 12},
+        {'query': 'boho summer dress women casual cute affordable', 'count': 14},
+        {'query': 'cute phone holder ring stand bling cheap top selling', 'count': 12},
+        {'query': 'reusable makeup remover pads washable eco friendly cheap', 'count': 12},
+        {'query': 'travel jewelry organizer pouch small cheap', 'count': 12},
+        {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 14},
+        {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 14},
+        {'query': 'fusion bags cheap travel tote crossbody fusion style', 'count': 12},
+        {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
+        {'query': 'edge ai npu accelerator usb ai inference device', 'count': 10},
+        {'query': 'ai voice assistant smart speaker compact bluetooth alexa assistant', 'count': 10},
+        {'query': 'digital kitchen scale electronic food weight measuring tool precision lcd', 'count': 10},
+        {'query': 'rechargeable mini neck fan portable bladeless mute wearable outdoor fans usb', 'count': 10},
+    ]
+
+
+def _fetch_aliexpress_group(api, group):
+    """Fetch products for one search group with retry/fallback between product and hot-product APIs."""
+    page_size = min(int(group.get('count', 12)), 50)
+    common_kwargs = {
+        'keywords': group['query'],
+        'page_size': page_size,
+        'ship_to_country': group.get('ship_to_country', 'UG'),
+    }
+    if 'min_price' in group:
+        common_kwargs['min_sale_price'] = int(float(group['min_price']) * 100)
+    if 'max_price' in group:
+        common_kwargs['max_sale_price'] = int(float(group['max_price']) * 100)
+
+    candidates = [
+        dict(common_kwargs),
+        dict(common_kwargs, ship_to_country='US'),
+    ]
+
+    for payload in candidates:
+        try:
+            items = api.get_products(**payload)
+            if getattr(items, 'products', None):
+                return items
+        except Exception as exc:
+            logger.warning("AliExpress product query failed for '%s': %s", group['query'], exc)
+
+        try:
+            items = api.get_hotproducts(**payload)
+            if getattr(items, 'products', None):
+                return items
+        except Exception as exc:
+            logger.warning("AliExpress hotproducts query failed for '%s': %s", group['query'], exc)
+
+    return None
+
+
 @login_required
 def sync_aliexpress_products(request):
     if not request.user.is_staff:
@@ -419,146 +513,7 @@ def sync_aliexpress_products(request):
             settings.ALI_TRACKING_ID
         )
 
-        # Hot-Selling Categories for Africa & Global Markets
-       # AI, Smart Wearables, Robotics & Next-Gen Smart Home
-       # Comprehensive Tech, AI, Smart Home, Smart Beauty & Personal Care Sync
-       # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
-        # Comprehensive Product Sync: AI, Smart Tech, Advanced Beauty, & Fast-Moving Everyday Innovations
-       # Fully Expanded Product Sync: AI Gear, Wearables, Robotics, Smart Home, Dental/Cosmetic Tech & Daily Innovations
-        search_groups = [
-            # TOP PRIORITY: AI Smart Glasses
-            {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 14},
-            {'query': 'AI smart glasses video recording live stream audio', 'count': 12},
-            {'query': 'smart glasses bluetooth audio wireless polarized sunglasses', 'count': 10},
-            {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
-
-            # NEXT: Mini Cameras, Necklaces with Cameras & Budget Action Cams
-            {'query': 'mini spy camera cheap wireless security pocket cam', 'count': 14},
-            {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 12},
-            {'query': 'action camera sports video recorder mini dvr small', 'count': 12},
-            {'query': 'webcam micro camera usb plug play clear audio', 'count': 12},
-            {'query': 'pendant necklace hidden mini spy camera audio video recorder', 'count': 12},
-
-            # NEXT: Affordable unlocked phones and replacement parts for African markets
-            {'query': 'unlocked 4G Android smartphone global version budget 4GB 64GB', 'count': 14},
-            {'query': 'unlocked 4G Android smartphone 6GB 128GB affordable global ROM', 'count': 14},
-            {'query': 'budget Android phone dual SIM 4G long battery unlocked', 'count': 14},
-            {'query': 'Android smartphone 5000mAh battery dual SIM 4G cheap unlocked', 'count': 12},
-            {'query': 'Redmi Note phone global version unlocked affordable 4G', 'count': 12},
-            {'query': 'Samsung Galaxy A series unlocked replacement budget smartphone 4G', 'count': 10},
-            {'query': 'Tecno compatible unlocked Android smartphone budget 4G', 'count': 10},
-            {'query': 'Infinix compatible unlocked Android smartphone budget 4G', 'count': 10},
-            {'query': 'shockproof TPU phone case Redmi Note Samsung Galaxy A Tecno Infinix', 'count': 14},
-            {'query': 'transparent silicone phone case universal affordable anti-shock', 'count': 12},
-            {'query': 'wallet phone case card holder Redmi Samsung Galaxy A budget', 'count': 10},
-            {'query': 'tempered glass screen protector Redmi Samsung Tecno Infinix cheap', 'count': 14},
-            {'query': 'LCD touch screen replacement Redmi Note digitizer affordable', 'count': 12},
-            {'query': 'LCD touch screen replacement Samsung Galaxy A digitizer cheap', 'count': 12},
-            {'query': 'LCD touch screen replacement Tecno Infinix digitizer affordable', 'count': 12},
-
-            # NEXT: Cheap, Top-selling Women-Focused Accessories & Beauty (Dropshipping-friendly)
-            {'query': 'women earrings shell pearl fashion cheap top selling', 'count': 16},
-            {'query': 'minimalist gold plated necklace women popular affordable', 'count': 14},
-            {'query': 'korean skincare face roller jade gua sha affordable', 'count': 12},
-            {'query': 'makeup brush set professional soft synthetic cheap', 'count': 14},
-            {'query': 'false eyelashes volume mink look cheap top selling', 'count': 14},
-            {'query': 'hair claw clip large acrylic trendy women cheap', 'count': 16},
-            {'query': 'scrunchies set velvet hair elastic pretty cheap', 'count': 16},
-            {'query': 'women crossbody purse small vintage cute cheap', 'count': 12},
-            {'query': 'fashion sunglasses women polarized stylish cheap', 'count': 12},
-            {'query': 'anklet bracelet women boho gold cheap top selling', 'count': 12},
-            {'query': 'layered necklace set women bohemian cute affordable', 'count': 12},
-
-            # NEXT: Beauty & Personal Care small appliances
-            {'query': 'portable facial steamer nano face steamer home use cheap', 'count': 12},
-            {'query': 'led face mask skincare phototherapy anti aging affordable', 'count': 10},
-            {'query': 'nail art kit gel polish set cheap popular', 'count': 12},
-            {'query': 'compact makeup mirror led light portable cheap', 'count': 12},
-
-            # NEXT: Fashion & Activewear (Women)
-            {'query': 'women leggings high waist seamless gym cheap popular', 'count': 12},
-            {'query': 'seamless sports bra crop top women affordable', 'count': 12},
-            {'query': 'boho summer dress women casual cute affordable', 'count': 14},
-
-            # NEXT: Home & Lifestyle Accessories popular with women
-            {'query': 'cute phone holder ring stand bling cheap top selling', 'count': 12},
-            {'query': 'reusable makeup remover pads washable eco friendly cheap', 'count': 12},
-            {'query': 'travel jewelry organizer pouch small cheap', 'count': 12},
-
-            # NEXT: Fusion Products for Men & Women (kept some existing queries)
-            {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 14},
-            {'query': 'women fusion street traditional hybrid dress cheap high quality', 'count': 14},
-            {'query': 'fusion bags cheap travel tote crossbody fusion style', 'count': 12},
-
-            # FALLBACK: Other tech & home categories
-            {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
-            {'query': 'edge ai npu accelerator usb ai inference device', 'count': 10},
-            {'query': 'ai voice assistant smart speaker compact bluetooth alexa assistant', 'count': 10},
-            {'query': 'digital kitchen scale electronic food weight measuring tool precision lcd', 'count': 10},
-            {'query': 'rechargeable mini neck fan portable bladeless mute wearable outdoor fans usb', 'count': 10},
-
-             # TOP PRIORITY: AI Smart Glasses
-            {'query': 'fusion ai smart glasses mixed reality smart glasses fusion ai', 'count': 14},
-            {'query': 'AI smart glasses video recording live stream audio', 'count': 12},
-            {'query': 'smart glasses bluetooth audio wireless polarized sunglasses', 'count': 10},
-            {'query': 'bone conduction smart glasses open ear audio headphones', 'count': 10},
-
-            # NEXT: Mini Cameras, Necklaces with Cameras & Budget Action Cams
-            {'query': 'mini spy camera cheap wireless security pocket cam 5 dollars', 'count': 14},
-            {'query': 'sq11 mini camera full hd 1080p sports dv recorder spy clip', 'count': 12},
-            {'query': 'action camera sports video recorder mini dvr small under 10', 'count': 12},
-            {'query': 'webcam micro camera usb plug play cheap clear audio 5', 'count': 12},
-            {'query': 'pendant necklace hidden mini spy camera audio video recorder', 'count': 12},
-
-            # NEXT: Fusion Products for Men & Women (fusion clothing + accessories)
-            {'query': 'women fusion boho modern ethnic fusion dress affordable', 'count': 14},
-            {'query': 'women fusion street traditional hybrid dress cheap high quality', 'count': 14},
-            {'query': 'women fusion casual dress budget everyday stylish', 'count': 14},
-            {'query': 'women fusion cheap quality dress affordable fusion wear', 'count': 14},
-            {'query': 'mens fusion lightweight breathable fusion shirt cheap quality', 'count': 12},
-            {'query': 'fusion bags cheap travel tote crossbody fusion style', 'count': 12},
-
-            # NEXT: Smart Wearables & Accessories (rings, bangles, padlocks)
-            {'query': 'smart ring nfc payment sleep tracker fitness tracker', 'count': 12},
-            {'query': 'smart bangle fitness tracker waterproof health monitor', 'count': 12},
-            {'query': 'smart padlock bluetooth fingerprint wifi outdoor security lock', 'count': 12},
-            {'query': 'fingerprint thumb padlock bluetooth compact security lock', 'count': 12},
-            {'query': 'biometric fingerprint padlock bluetooth rechargeable', 'count': 12},
-            {'query': 'fingerprint padlock keyless smart portable outdoor security', 'count': 12},
-            {'query': 'smart padlock keyless digital lock weatherproof outdoor security', 'count': 10},
-            {'query': 'smart padlock bluetooth fingerprint lock security for bike gate', 'count': 10},
-            {'query': 'usb rechargeable fingerprint padlock bluetooth anti-theft', 'count': 10},
-            {'query': 'portable biometric padlock fingerprint keyless locker lock', 'count': 10},
-            {'query': 'smart necklace pendant wearable nfc gps sos personal tracker', 'count': 10},
-            {'query': 'smart necklace bluetooth fashion wearable pendant smart jewelry', 'count': 12},
-            {'query': 'mini smart camera 1080p wireless ai tracking night vision', 'count': 14},
-            {'query': '4k smart security camera ai detection wired wireless', 'count': 12},
-            {'query': 'emo robot plush emotional robot companion toy smart robot', 'count': 10},
-            {'query': 'programmable robot kit wifi bluetooth coding obstacle avoidance', 'count': 14},
-
-            # NEXT: Programmable Robots & STEAM (education, hobby, AI companions)
-            {'query': 'programmable robot kit wifi bluetooth coding obstacle avoidance', 'count': 14},
-            {'query': 'programmable robotic car kit obstacle avoidance arduino rpi', 'count': 12},
-            {'query': 'educational STEAM robot kit arduino coding STEM robotic arm kit', 'count': 12},
-            {'query': 'DIY robot kit for kids programmable educational STEAM electronics', 'count': 12},
-
-            # NEXT: Clothes (general high-demand categories)
-            {'query': 'women evening party dress sexy slim-fit suspender solid color dress', 'count': 12},
-            {'query': 'vintage summer dress women v-neck flowers printed casual beach dress', 'count': 12},
-            {'query': "mens oversized t shirt summer breathable round neck short sleeve", 'count': 12},
-            {'query': "mens shorts set casual stripe printed elastic waist two piece", 'count': 12},
-
-            # NEXT: Luggage & Bags (cheap travel options)
-            {'query': 'luggage travel backpack carry-on handbag womens tote', 'count': 12},
-            {'query': 'cheap travel backpacks lightweight foldable tote bag', 'count': 12},
-
-            # FALLBACK: Other categories (left intact)
-            {'query': 'smart home automation hub gateway zigbee wifi alexa assistant', 'count': 10},
-            {'query': 'edge ai npu accelerator usb ai inference device', 'count': 10},
-            {'query': 'ai voice assistant smart speaker compact bluetooth alexa assistant', 'count': 10},
-            {'query': 'digital kitchen scale electronic food weight measuring tool precision lcd', 'count': 10},
-            {'query': 'rechargeable mini neck fan portable bladeless mute wearable outdoor fans usb', 'count': 10},
-        ]
+        search_groups = get_aliexpress_search_groups()
         created_count = 0
         updated_count = 0
 
@@ -569,19 +524,9 @@ def sync_aliexpress_products(request):
         ]
 
         for group in search_groups:
-            try:
-                # Avoid passing a risky sort parameter that may trigger API gateway 405
-                items = api.get_products(
-                    keywords=group['query'], 
-                    page_size=group['count']
-                )
-
-                if not items or not hasattr(items, 'products') or not items.products:
-                    logger.warning(f"AliExpress returned no products for query: {group['query']}")
-                    continue
-
-            except Exception as api_err:
-                logger.error(f"AliExpress API error for query '{group['query']}': {api_err}")
+            items = _fetch_aliexpress_group(api, group)
+            if not items or not hasattr(items, 'products') or not items.products:
+                logger.warning(f"AliExpress returned no products for query: {group['query']}")
                 continue
 
             for item in items.products:
@@ -1509,22 +1454,22 @@ def reset_negotiation(request, slug):
 # from django.contrib.auth.decorators import user_passes_test
 
 # @user_passes_test(lambda u: u.is_superuser)  # Only superuser can trigger this
-# def temporary_delete_ali_products(request):
-#     """Temporary view to delete unused AliExpress products while preserving order history. Delete this view after running."""
-#     # Find all AliExpress product IDs that are tied to existing orders
-#     ordered_product_ids = OrderItem.objects.filter(
-#         product__source='aliexpress'
-#     ).values_list('product_id', flat=True).distinct()
+def temporary_delete_ali_products(request):
+    """Temporary view to delete unused AliExpress products while preserving order history. Delete this view after running."""
+    # Find all AliExpress product IDs that are tied to existing orders
+    ordered_product_ids = OrderItem.objects.filter(
+        product__source='aliexpress'
+    ).values_list('product_id', flat=True).distinct()
     
-#     # Delete only AliExpress products that have NEVER been ordered
-#     unordered_products = Product.objects.filter(source='aliexpress').exclude(id__in=ordered_product_ids)
-#     deleted_count, _ = unordered_products.delete()
+    # Delete only AliExpress products that have NEVER been ordered
+    unordered_products = Product.objects.filter(source='aliexpress').exclude(id__in=ordered_product_ids)
+    deleted_count, _ = unordered_products.delete()
     
-#     skipped_count = ordered_product_ids.count() if ordered_product_ids else 0
+    skipped_count = ordered_product_ids.count() if ordered_product_ids else 0
     
-#     return HttpResponse(
-#         f"Cleanup complete! Deleted {deleted_count} unused AliExpress products. "
-#         f"Preserved {skipped_count} products because they are linked to order history. "
-#         f"Remember to delete this route and view from the code."
-#     )
+    return HttpResponse(
+        f"Cleanup complete! Deleted {deleted_count} unused AliExpress products. "
+        f"Preserved {skipped_count} products because they are linked to order history. "
+        f"Remember to delete this route and view from the code."
+    )
   
