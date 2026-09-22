@@ -104,7 +104,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # 5. E‑shop
-    path("secret-delete-ali-products-9921/", eshop_views.temporary_delete_ali_products, name="temp_delete_ali_products_root"),
+    # path("secret-delete-ali-products-9921/", eshop_views.temporary_delete_ali_products, name="temp_delete_ali_products_root"),
     path("eshop/", include("eshop.urls", namespace="eshop")),
     path("logistics/", include("logistics.urls", namespace="logistics")),
 
