@@ -392,6 +392,63 @@
         opacity: 1;
     }
 
+    .loading-progress {
+        display: grid;
+        gap: 0.55rem;
+        min-width: min(100%, 360px);
+    }
+
+    .loading-step {
+        align-items: center;
+        color: var(--text-secondary);
+        display: flex;
+        font-size: 0.82rem;
+        gap: 0.55rem;
+        line-height: 1.3;
+        opacity: 0.58;
+        transition: opacity 0.2s ease, color 0.2s ease;
+    }
+
+    .loading-step-marker {
+        align-items: center;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        display: inline-flex;
+        flex: 0 0 17px;
+        font-size: 0.65rem;
+        height: 17px;
+        justify-content: center;
+        width: 17px;
+    }
+
+    .loading-step.active {
+        color: var(--accent-green-dark);
+        opacity: 1;
+    }
+
+    .loading-step.done {
+        color: var(--accent-green-dark);
+        opacity: 0.85;
+    }
+
+    .loading-step.active .loading-step-marker {
+        animation: pulse 1.1s infinite ease-in-out;
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+        color: #fff;
+    }
+
+    .loading-delay-note {
+        color: var(--text-secondary);
+        display: none;
+        font-size: 0.75rem;
+        margin-top: 0.15rem;
+    }
+
+    .loading-delay-note.visible {
+        display: block;
+    }
+
     .loading-dots {
         display: inline-flex;
         gap: 0.35rem;
@@ -774,6 +831,7 @@
     let lastAiReply = '';
     let speechRecognition = null;
     let requestInFlight = false;
+    let loadingTimers = [];
     let selectedChatLanguage = localStorage.getItem('africana_chat_language') || 'auto';
     let selectedFocus = localStorage.getItem('africana_ai_focus') || 'career';
     let selectedMode = localStorage.getItem('africana_ai_mode') || 'chat';
@@ -1200,8 +1258,24 @@
         return null;
     }
 
-    function appendLoadingMessage(messageText = 'Africana AI is thinking') {
+    function updateLoadingStage(stageIndex) {
+        const steps = document.querySelectorAll('#loadingMessage .loading-step');
+        steps.forEach((step, index) => {
+            step.classList.toggle('active', index === stageIndex);
+            step.classList.toggle('done', index < stageIndex);
+            const marker = step.querySelector('.loading-step-marker');
+            if (marker) marker.textContent = index < stageIndex ? '✓' : index + 1;
+        });
+    }
+
+    function appendLoadingMessage(researchRequested = false) {
         removeLoadingMessage();
+        const stages = [
+            'Planning the best response',
+            'Evaluating your goals and options',
+            researchRequested ? 'Checking relevant sources' : 'Building practical recommendations',
+            'Preparing clear next steps'
+        ];
         const wrapper = document.createElement('div');
         wrapper.id = 'loadingMessage';
         wrapper.className = 'message-wrapper ai loading-message';
@@ -1209,20 +1283,34 @@
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
         bubble.innerHTML = `
-            <span style="font-weight: 600;">${escapeHtml(messageText)}</span>
-            <span class="loading-dots">
-                <span class="loading-dot"></span>
-                <span class="loading-dot"></span>
-                <span class="loading-dot"></span>
-            </span>
+            <div class="loading-progress" role="status" aria-live="polite" aria-label="Africana AI is preparing a response">
+                ${stages.map((stage, index) => `
+                    <div class="loading-step${index === 0 ? ' active' : ''}">
+                        <span class="loading-step-marker">${index + 1}</span>
+                        <span>${escapeHtml(stage)}</span>
+                    </div>
+                `).join('')}
+                <span class="loading-delay-note" id="loadingDelayNote">Just a second, this is taking a little longer than usual. I am still working on it.</span>
+            </div>
         `;
 
         wrapper.appendChild(bubble);
         chatLog.appendChild(wrapper);
         scrollToBottom();
+        loadingTimers = [
+            window.setTimeout(() => updateLoadingStage(1), 900),
+            window.setTimeout(() => updateLoadingStage(2), 2200),
+            window.setTimeout(() => updateLoadingStage(3), 4800),
+            window.setTimeout(() => {
+                const delayNote = document.getElementById('loadingDelayNote');
+                if (delayNote) delayNote.classList.add('visible');
+            }, 9000)
+        ];
     }
 
     function removeLoadingMessage() {
+        loadingTimers.forEach(timer => window.clearTimeout(timer));
+        loadingTimers = [];
         const existing = document.getElementById('loadingMessage');
         if (existing) {
             existing.remove();
@@ -1332,7 +1420,7 @@
         saveMessage(currentSessionId, 'user', text);
         chatInput.value = '';
         chatInput.style.height = 'auto';
-        appendLoadingMessage(webResearchRequested ? 'Searching the web...' : 'Africana AI is thinking');
+        appendLoadingMessage(webResearchRequested);
 
         updateHistorySidebar();
 
