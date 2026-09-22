@@ -79,6 +79,23 @@ class NegotiationFlowTests(TestCase):
         self.assertContains(cart_page, '9,000')
         self.assertContains(delivery_page, '9000')
 
+    def test_seller_storefront_uses_real_profile_data(self):
+        self.creator.headline = 'Fashion Seller'
+        self.creator.location = 'Kampala, Uganda'
+        self.creator.profile_image = 'https://example.com/seller-avatar.jpg'
+        self.creator.save(update_fields=['headline', 'location', 'profile_image'])
+
+        self.product.vendor_name = 'Grace Boutique'
+        self.product.save(update_fields=['vendor_name'])
+
+        response = self.client.get(reverse('eshop:seller_storefront', args=[self.creator.username]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Grace Boutique')
+        self.assertContains(response, 'Fashion Seller')
+        self.assertContains(response, 'Kampala, Uganda')
+        self.assertContains(response, self.product.name)
+
     def test_repeated_low_offer_holds_price_and_suggests_bulk_option(self):
         self.client.post(
             reverse('eshop:ai_negotiation', args=[self.product.slug]),

@@ -12,6 +12,7 @@ urlpatterns = [
     path("robots.txt", robots_txt),
     path('', views.product_list, name='product_list'),
     path('add/', views.add_product, name='add_product'),
+    path('seller/<str:username>/', views.seller_storefront, name='seller_storefront'),
     path('product/<int:product_id>/edit/', views.edit_product, name='edit_product'),
     path('product/<int:product_id>/delete/', views.delete_product, name='delete_product'),
     path('product/<slug:slug>/', views.product_detail, name='product_detail'),

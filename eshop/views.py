@@ -824,6 +824,30 @@ def product_detail(request, slug):
         'cart': cart,
         'cart_total': cart_total,
     })
+
+
+@login_required
+def seller_storefront(request, username):
+    """Displays a seller's public storefront with their real profile details and catalog."""
+    seller = get_object_or_404(User, username=username)
+    products = Product.objects.filter(vendor_user=seller).select_related('vendor_user').order_by('-id')
+
+    primary_vendor_name = None
+    if products.exists():
+        primary_vendor_name = products[0].vendor_name.strip() if products[0].vendor_name else None
+
+    display_name = seller.get_full_name() or seller.username
+    shop_name = primary_vendor_name or display_name or seller.username
+    if not seller.headline:
+        seller.headline = 'Marketplace seller'
+
+    return render(request, 'eshop/seller_storefront.html', {
+        'seller': seller,
+        'seller_name': display_name,
+        'shop_name': shop_name,
+        'products': products,
+        'product_count': products.count(),
+    })
     
 @login_required
 def add_to_cart(request, product_id):
