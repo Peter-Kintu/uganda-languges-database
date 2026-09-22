@@ -439,6 +439,23 @@ def sync_aliexpress_products(request):
             {'query': 'webcam micro camera usb plug play clear audio', 'count': 12},
             {'query': 'pendant necklace hidden mini spy camera audio video recorder', 'count': 12},
 
+            # NEXT: Affordable unlocked phones and replacement parts for African markets
+            {'query': 'unlocked 4G Android smartphone global version budget 4GB 64GB', 'count': 14},
+            {'query': 'unlocked 4G Android smartphone 6GB 128GB affordable global ROM', 'count': 14},
+            {'query': 'budget Android phone dual SIM 4G long battery unlocked', 'count': 14},
+            {'query': 'Android smartphone 5000mAh battery dual SIM 4G cheap unlocked', 'count': 12},
+            {'query': 'Redmi Note phone global version unlocked affordable 4G', 'count': 12},
+            {'query': 'Samsung Galaxy A series unlocked replacement budget smartphone 4G', 'count': 10},
+            {'query': 'Tecno compatible unlocked Android smartphone budget 4G', 'count': 10},
+            {'query': 'Infinix compatible unlocked Android smartphone budget 4G', 'count': 10},
+            {'query': 'shockproof TPU phone case Redmi Note Samsung Galaxy A Tecno Infinix', 'count': 14},
+            {'query': 'transparent silicone phone case universal affordable anti-shock', 'count': 12},
+            {'query': 'wallet phone case card holder Redmi Samsung Galaxy A budget', 'count': 10},
+            {'query': 'tempered glass screen protector Redmi Samsung Tecno Infinix cheap', 'count': 14},
+            {'query': 'LCD touch screen replacement Redmi Note digitizer affordable', 'count': 12},
+            {'query': 'LCD touch screen replacement Samsung Galaxy A digitizer cheap', 'count': 12},
+            {'query': 'LCD touch screen replacement Tecno Infinix digitizer affordable', 'count': 12},
+
             # NEXT: Cheap, Top-selling Women-Focused Accessories & Beauty (Dropshipping-friendly)
             {'query': 'women earrings shell pearl fashion cheap top selling', 'count': 16},
             {'query': 'minimalist gold plated necklace women popular affordable', 'count': 14},
