@@ -73,7 +73,7 @@ def ads_txt(request):
 sitemaps_dict = {
     'static': StaticViewSitemap,
     'products': ProductSitemap,
-    'movies': ProductSitemap,
+    # 'movies': ProductSitemap,  # Movie catalog disabled in favor of Africana Ride.
     'jobs': JobPostSitemap,
     'profiles': UserProfileSitemap,
     'feeds': BusinessReelSitemap,
@@ -111,8 +111,8 @@ urlpatterns = [
     # 6. Hotels
     path("hotel/", include("hotel.urls", namespace="hotel")),
 
-        # 2. Movies
-    path("movie/", include("movie.urls", namespace="movie")), 
+    # Movie catalog disabled in favor of Africana Ride.
+    # path("movie/", include("movie.urls", namespace="movie")),
 
 
     path('social/', include('social.urls', namespace='social')), 
