@@ -37,6 +37,11 @@
                 </div>
                 <span class="data-badge">LOW DATA</span>
             </div>
+            <ol class="booking-steps" aria-label="Booking steps">
+                <li class="step-active"><span>1</span><strong>Plan</strong></li>
+                <li><span>2</span><strong>Match</strong></li>
+                <li><span>3</span><strong>Go</strong></li>
+            </ol>
             {% csrf_token %}
             <form id="ride-form">
                 <label class="location-field">
@@ -49,17 +54,33 @@
                     <span class="field-copy"><small>Drop-off landmark</small><input id="dropoff" name="dropoff" type="text" placeholder="e.g. Clock Tower taxi stage" required></span>
                 </label>
                 <div class="form-row">
-                    <label class="select-field"><span>Ride type</span><select id="ride-type" name="ride_type"><option value="standard">Standard ride</option><option value="comfort">Comfort ride</option><option value="boda">Boda ride</option></select></label>
-                    <label class="select-field"><span>Pay with</span><select id="payment" name="payment"><option>Mobile Money</option><option>Cash</option><option>Card</option></select></label>
+                    <label class="select-field"><span>Who is riding?</span><select id="ride-type" name="ride_type"><option value="standard">Me - Standard car</option><option value="comfort">Me - Comfort car</option><option value="boda">Me - Boda</option></select></label>
+                    <label class="select-field"><span>How will you pay?</span><select id="payment" name="payment"><option value="Mobile Money">MTN MoMo</option><option value="Airtel Money">Airtel Money</option><option value="Cash">Cash to driver</option><option value="Card">Card</option></select></label>
                 </div>
+                <p class="payment-note" id="payment-note">You will receive payment instructions after the driver is assigned.</p>
                 <button class="quote-button" type="submit">Get my upfront price <span>-></span></button>
                 <p class="form-note">No map tiles. Your landmarks are enough.</p>
+                <p class="form-status" id="form-status" role="status" hidden></p>
             </form>
             <div class="quote-result" id="quote-result" hidden aria-live="polite">
-                <p class="panel-kicker">Estimated fare</p>
+                <p class="panel-kicker" id="quote-kicker">Your ride is ready</p>
                 <strong id="fare">UGX 8,000 - 11,000</strong>
-                <span>Final price confirmed before your driver starts.</span>
-                <button id="confirm-ride" type="button">Request this ride</button>
+                <span id="quote-status">Final price confirmed before your driver starts.</span>
+                <div class="ride-summary">
+                    <div><small>From</small><strong id="summary-pickup"></strong></div>
+                    <div><small>To</small><strong id="summary-dropoff"></strong></div>
+                    <div><small>Payment</small><strong id="summary-payment"></strong></div>
+                </div>
+                <div class="driver-card" id="driver-card">
+                    <span class="driver-avatar">DR</span>
+                    <div><small>What your driver sees</small><strong id="driver-name">Finding a nearby driver</strong><span id="driver-details">They will receive your pickup, drop-off, ride type, and payment choice.</span></div>
+                </div>
+                <ol class="trip-status" aria-label="Trip status">
+                    <li class="status-current"><span></span><div><strong id="status-title">Matching</strong><small id="status-detail">Looking for a verified driver nearby.</small></div></li>
+                    <li><span></span><div><strong>Driver arrives</strong><small>We will show the driver and vehicle details here.</small></div></li>
+                    <li><span></span><div><strong>Trip complete</strong><small>Pay using the method you selected.</small></div></li>
+                </ol>
+                <button id="confirm-ride" type="button">Got it</button>
             </div>
             <div class="request-result" id="request-result" hidden aria-live="polite">
                 <span class="success-mark">OK</span>
@@ -71,7 +92,7 @@
 
     <section class="ride-tools" aria-label="Your ride tools">
         <div><p class="eyebrow">After you book</p><h2>Your trip stays in your hands.</h2></div>
-        <div class="tool-actions"><button type="button" id="history-button">View trip history</button><a href="#safety">Safety and support</a></div>
+        <div class="tool-actions"><button type="button" id="history-button">View trip history</button><a href="#drivers">How drivers receive trips</a><a href="#safety">Safety and support</a></div>
         <div id="history-result" class="history-result" hidden></div>
     </section>
 
@@ -92,7 +113,7 @@
 
     <section class="driver-section" id="drivers">
         <div><p class="eyebrow">For the people driving Kampala</p><h2>More time earning. Less time chasing fares.</h2></div>
-        <div class="driver-points"><p><strong>Clear commission.</strong> Keep more of every trip with a transparent 10-12% platform target.</p><p><strong>Lightweight dispatch.</strong> Get trip alerts through the mobile web or WhatsApp, without a battery-heavy app running all day.</p></div>
+        <div class="driver-points"><p><strong>Clear commission.</strong> Keep more of every trip with a transparent 10-12% platform target.</p><p><strong>Lightweight dispatch.</strong> Get trip alerts through the mobile web or WhatsApp, without a battery-heavy app running all day.</p><div class="driver-view"><strong>What a driver receives</strong><span>Ride #, pickup landmark, drop-off landmark, ride type, payment method, and your phone contact after accepting.</span></div></div>
         <a class="driver-button" href="mailto:drivers@africanaai.info?subject=Africana%20Ride%20driver%20interest">Drive with us <span>-></span></a>
     </section>
 
@@ -145,15 +166,41 @@
     .success-mark { display: grid; place-items: center; width: 30px; height: 30px; background: var(--lime); color: var(--green); font: 800 10px Arial, sans-serif; }
     .request-result strong { display: block; font-size: 19px; margin-bottom: 5px; }
     .request-result button { flex-basis: 100%; background: transparent; color: var(--green); border: 1px solid var(--green); padding: 11px; }
+    .booking-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; list-style: none; margin: 0 0 22px; padding: 0; font: 700 10px Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+    .booking-steps li { display: flex; align-items: center; gap: 7px; color: var(--muted); }
+    .booking-steps li:not(:last-child)::after { content: ''; height: 1px; flex: 1; background: var(--line); }
+    .booking-steps span { display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--line); border-radius: 50%; }
+    .booking-steps .step-active { color: var(--green); }
+    .booking-steps .step-active span { background: var(--green); color: white; border-color: var(--green); }
+    .payment-note { color: var(--muted); font: 11px/1.4 Arial, sans-serif; margin: -10px 0 15px; }
+    .form-status { padding: 10px; margin: 12px 0 0; background: #fff4e5; color: #7a4b00; font: 12px/1.4 Arial, sans-serif; }
+    .ride-summary { display: grid; gap: 10px; margin: 20px 0; padding: 15px; background: #f3f5ee; border-left: 3px solid var(--lime); }
+    .ride-summary div { display: grid; grid-template-columns: 76px 1fr; gap: 8px; align-items: baseline; }
+    .ride-summary small, .driver-card small { color: var(--muted); font: 700 10px Arial, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+    .ride-summary strong { color: var(--ink); font-size: 14px; margin: 0; }
+    .driver-card { display: flex; gap: 12px; align-items: flex-start; padding: 15px 0 18px; border-top: 1px solid var(--line); }
+    .driver-avatar { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; background: var(--green); color: var(--lime); font: 800 10px Arial, sans-serif; }
+    .driver-card strong, .driver-card span:not(.driver-avatar) { display: block; }
+    .driver-card strong { font-size: 17px; margin: 4px 0; }
+    .driver-card div > span { color: var(--muted); font: 12px/1.4 Arial, sans-serif; }
+    .trip-status { list-style: none; margin: 0 0 20px; padding: 0 0 0 2px; font: 12px Arial, sans-serif; }
+    .trip-status li { display: flex; gap: 12px; position: relative; padding: 0 0 15px; }
+    .trip-status li:not(:last-child)::before { content: ''; position: absolute; left: 4px; top: 10px; bottom: 0; width: 1px; background: var(--line); }
+    .trip-status li > span { width: 9px; height: 9px; flex: 0 0 9px; margin-top: 3px; border: 2px solid var(--line); border-radius: 50%; background: white; z-index: 1; }
+    .trip-status .status-current > span { border-color: var(--green); background: var(--lime); }
+    .trip-status strong, .trip-status small { display: block; }
+    .trip-status strong { color: var(--ink); font-size: 12px; margin: 0; }
+    .trip-status small { color: var(--muted); margin-top: 3px; }
     .signal-strip { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 30px; padding-top: 22px; padding-bottom: 22px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font: 12px Arial, sans-serif; }
     .signal-strip div { display: flex; flex-direction: column; gap: 4px; } .signal-strip div:first-child { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; } .signal-strip span:not(.live-dot) { color: var(--muted); }
     .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #55a444; }
     .why-section { padding-top: 105px; padding-bottom: 105px; } .section-intro { max-width: 600px; } h2 { font-size: 42px; line-height: 1; letter-spacing: -1.5px; margin: 12px 0 18px; } .section-intro > p:last-child { color: var(--muted); font-size: 17px; line-height: 1.5; }
     .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 52px; } article { min-height: 260px; padding: 26px; background: #e6eadf; display: flex; flex-direction: column; } .feature-number { color: var(--green); font: 700 12px Arial, sans-serif; } article h3 { font-size: 25px; margin: 45px 0 12px; } article p { color: #53605a; line-height: 1.5; font-size: 15px; margin: 0 0 22px; } article a { margin-top: auto; color: var(--green); text-decoration: none; font: 700 12px Arial, sans-serif; }
     .driver-section { display: grid; grid-template-columns: 1fr 1fr auto; gap: 40px; align-items: end; padding-top: 65px; padding-bottom: 65px; background: var(--green); color: white; } .driver-section .eyebrow { color: var(--lime); } .driver-section h2 { margin-bottom: 0; } .driver-points p { margin: 0 0 13px; color: #d8e6dd; font: 14px/1.5 Arial, sans-serif; } .driver-points strong { color: white; } .driver-button { white-space: nowrap; background: var(--lime); color: var(--ink) !important; font: 700 13px Arial, sans-serif; text-decoration: none; }
+    .driver-view { margin-top: 22px; padding: 16px; border: 1px solid rgba(255,255,255,.3); font: 13px/1.5 Arial, sans-serif; } .driver-view strong { display: block; color: var(--lime); margin-bottom: 5px; }
     .ride-footer { display: flex; justify-content: space-between; gap: 18px; padding-top: 25px; padding-bottom: 25px; color: var(--muted); font: 12px Arial, sans-serif; } .ride-footer span:first-child { color: var(--ink); font-weight: 700; } .ride-footer a { color: var(--green); }
     .ride-tools, .safety-section { max-width: 1220px; margin: auto; padding: 65px 5vw; display: grid; grid-template-columns: 1fr 1fr; gap: 35px; border-bottom: 1px solid var(--line); } .ride-tools h2, .safety-section h2 { margin-top: 10px; } .tool-actions { display: flex; align-items: center; gap: 14px; } .tool-actions button, .tool-actions a, .safety-section a { border: 1px solid var(--green); background: transparent; color: var(--green); padding: 12px 15px; text-decoration: none; cursor: pointer; font: 700 12px Arial, sans-serif; } .history-result { grid-column: 1 / -1; padding: 18px; background: white; border: 1px solid var(--line); font: 13px/1.5 Arial, sans-serif; } .history-result p { border-bottom: 1px solid var(--line); padding-bottom: 12px; } .history-result p:last-child { border: 0; } .history-result span, .safety-section p { color: var(--muted); } .safety-section { background: #e6eadf; border: 0; } .safety-section > div:last-child { font: 15px/1.5 Arial, sans-serif; } .safety-section a { display: inline-block; margin-top: 15px; }
-    @media (max-width: 760px) { .ride-nav { min-height: 70px; } .ride-nav-links a:not(.nav-action) { display: none; } .ride-hero { display: block; padding-top: 58px; padding-bottom: 70px; } h1 { font-size: 64px; letter-spacing: -3px; } .hero-lede { font-size: 18px; } .booking-panel { margin-top: 48px; box-shadow: 7px 9px 0 #dce6d8; } .signal-strip { grid-template-columns: 1fr 1fr; } .signal-strip div:first-child { grid-column: 1 / -1; } .why-section { padding-top: 70px; padding-bottom: 70px; } h2 { font-size: 34px; } .feature-grid { grid-template-columns: 1fr; margin-top: 32px; } article { min-height: 210px; } article h3 { margin-top: 25px; } .driver-section, .ride-tools, .safety-section { display: block; } .driver-points { margin: 28px 0; } .tool-actions { margin-top: 25px; flex-wrap: wrap; } .history-result { margin-top: 25px; } .ride-footer { flex-wrap: wrap; } }
+    @media (max-width: 760px) { .ride-nav { min-height: 70px; } .ride-nav-links a:not(.nav-action) { display: none; } .ride-hero { display: block; padding-top: 58px; padding-bottom: 70px; } h1 { font-size: 64px; letter-spacing: -3px; } .hero-lede { font-size: 18px; } .booking-panel { margin-top: 48px; box-shadow: 7px 9px 0 #dce6d8; } .signal-strip { grid-template-columns: 1fr 1fr; } .signal-strip div:first-child { grid-column: 1 / -1; } .why-section { padding-top: 70px; padding-bottom: 70px; } h2 { font-size: 34px; } .feature-grid { grid-template-columns: 1fr; margin-top: 32px; } article { min-height: 210px; } article h3 { margin-top: 25px; } .driver-section, .ride-tools, .safety-section { display: block; } .driver-points { margin: 28px 0; } .tool-actions { margin-top: 25px; flex-wrap: wrap; } .history-result { margin-top: 25px; } .ride-footer { flex-wrap: wrap; } .form-row { grid-template-columns: 1fr; } .booking-steps { gap: 5px; } }
 </style>
 <script>
     const form = document.getElementById('ride-form');
@@ -161,17 +208,38 @@
     const requestResult = document.getElementById('request-result');
     const fare = document.getElementById('fare');
     const type = document.getElementById('ride-type');
+    const payment = document.getElementById('payment');
+    const paymentNote = document.getElementById('payment-note');
+    const formStatus = document.getElementById('form-status');
+    const quoteStatus = document.getElementById('quote-status');
+    const submitButton = form.querySelector('button[type="submit"]');
     let activeRideId = null;
+    let trackingTimer = null;
+
+    const paymentMessages = {
+        'Mobile Money': 'You will receive payment instructions after the driver is assigned.',
+        'Airtel Money': 'Pay through Airtel Money after the driver confirms the trip.',
+        Cash: 'Pay the driver in cash when the trip is complete.',
+        Card: 'Card payment will be confirmed before the trip starts.',
+    };
+
+    payment.addEventListener('change', function () {
+        paymentNote.textContent = paymentMessages[payment.value];
+    });
 
     async function refreshRideTracking() {
         if (!activeRideId) return;
         const response = await fetch(`/logistics/rides/${activeRideId}/tracking/`);
         if (!response.ok) return;
         const tracking = await response.json();
+        document.getElementById('status-title').textContent = tracking.status.replaceAll('_', ' ');
+        document.getElementById('status-detail').textContent = tracking.driver_location
+            ? `Driver location updated ${new Date(tracking.driver_location.recorded_at).toLocaleTimeString()}.`
+            : 'Waiting for the driver\'s first location update.';
         if (tracking.driver_location) {
-            quoteResult.querySelector('span').textContent = `Driver location updated ${new Date(tracking.driver_location.recorded_at).toLocaleTimeString()}. Status: ${tracking.status}.`;
+            quoteStatus.textContent = `Driver location updated ${new Date(tracking.driver_location.recorded_at).toLocaleTimeString()}. Status: ${tracking.status}.`;
         } else {
-            quoteResult.querySelector('span').textContent = `Status: ${tracking.status}. Waiting for the driver's first location ping.`;
+            quoteStatus.textContent = `Status: ${tracking.status}. Waiting for the driver's first location ping.`;
         }
     }
 
@@ -179,6 +247,9 @@
 
     form.addEventListener('submit', async function (event) {
         event.preventDefault();
+        formStatus.hidden = true;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Checking fare...';
         const data = { pickup: document.getElementById('pickup').value, dropoff: document.getElementById('dropoff').value, ride_type: type.value, payment: document.getElementById('payment').value };
         if (navigator.geolocation) {
             try {
@@ -192,15 +263,27 @@
         const response = await fetch('{% url "logistics:request_ride" %}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify(data) });
         if (response.redirected) { window.location.href = '{% url "users:user_login" %}'; return; }
         const result = await response.json();
-        if (!response.ok) { window.alert(result.error || 'We could not request this ride.'); return; }
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Get my upfront price <span>-></span>';
+        if (!response.ok) {
+            formStatus.textContent = result.error || 'We could not request this ride. Please check the landmarks and try again.';
+            formStatus.hidden = false;
+            return;
+        }
         fare.textContent = `UGX ${result.fare_min.toLocaleString()} - ${result.fare_max.toLocaleString()}`;
         activeRideId = result.ride_id;
-        quoteResult.querySelector('span').textContent = `${result.distance_km} km estimate (${result.confidence}). Status: ${result.status}.`;
+        document.getElementById('summary-pickup').textContent = data.pickup;
+        document.getElementById('summary-dropoff').textContent = data.dropoff;
+        document.getElementById('summary-payment').textContent = payment.options[payment.selectedIndex].text;
+        document.getElementById('quote-kicker').textContent = result.driver ? 'Driver assigned' : 'Finding your driver';
+        quoteStatus.textContent = `${result.distance_km} km estimate (${result.confidence}). ${result.driver ? `Pickup in about ${result.eta_minutes} minutes.` : 'Your request is being matched now.'}`;
+        document.getElementById('driver-name').textContent = result.driver ? result.driver.name : 'Matching you with a nearby driver';
+        document.getElementById('driver-details').textContent = result.driver ? `${result.driver.vehicle_plate} · ${result.driver.phone} · Your driver has the trip details.` : 'A verified driver will receive your landmarks, ride type, and payment choice when matched.';
         form.hidden = true;
         quoteResult.hidden = false;
-        if (result.driver) { quoteResult.querySelector('button').textContent = `Request ${result.driver.name}`; }
         refreshRideTracking();
-        window.setInterval(refreshRideTracking, 10000);
+        if (trackingTimer) window.clearInterval(trackingTimer);
+        trackingTimer = window.setInterval(refreshRideTracking, 10000);
     });
 
     document.getElementById('confirm-ride').addEventListener('click', function () {
@@ -212,6 +295,10 @@
         requestResult.hidden = true;
         form.hidden = false;
         form.reset();
+        paymentNote.textContent = paymentMessages[payment.value];
+        formStatus.hidden = true;
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Get my upfront price <span>-></span>';
     });
 
     document.getElementById('history-button').addEventListener('click', async function () {
