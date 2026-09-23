@@ -17,6 +17,7 @@ urlpatterns = [
     path('drivers/register/', views.register_driver, name='register_driver'),
     path('drivers/location/', views.driver_location, name='driver_location'),
     path('support/tickets/', views.create_support_ticket, name='create_support_ticket'),
+    path('support/email/', views.send_support_email, name='send_support_email'),
     path('payments/<slug:provider_code>/webhook/', views.mobile_money_webhook, name='mobile_money_webhook'),
     path('orders/<int:order_id>/quote/', views.create_quote, name='create_quote'),
     path('orders/<int:order_id>/dispatch/', views.dispatch_order, name='dispatch_order'),

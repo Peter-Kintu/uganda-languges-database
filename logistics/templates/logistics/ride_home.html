@@ -119,7 +119,7 @@
 
     <section class="safety-section" id="safety">
         <div><p class="eyebrow">Safety and support</p><h2>Help is part of the trip.</h2></div>
-        <div><p>Every ride keeps a trip record, driver identity, and location trail. Report an emergency, unsafe driving, or a lost item from the ride record.</p><a href="mailto:support@africanaai.info">Contact support <span>-></span></a></div>
+        <div><p>Every ride keeps a trip record, driver identity, and location trail. Report an emergency, unsafe driving, or a lost item from the ride record.</p><button class="support-toggle" id="support-toggle" type="button" aria-expanded="false" aria-controls="support-form">Contact support <span>-></span></button><form class="support-form" id="support-form" hidden><label><span>Your email</span><input id="support-email" name="email" type="email" placeholder="you@example.com" required></label><label><span>Message</span><textarea id="support-message" name="message" rows="5" placeholder="Tell us what happened..." required></textarea></label><button type="submit">Send message <span>-></span></button><p id="support-status" class="support-status" role="status" hidden></p></form></div>
     </section>
 
     <footer class="ride-footer"><span>Africana Ride</span><span>Made for the way we move.</span><a href="mailto:hello@africanaai.info">Talk to the team</a></footer>
@@ -199,7 +199,7 @@
     .driver-section { display: grid; grid-template-columns: 1fr 1fr auto; gap: 40px; align-items: end; padding-top: 65px; padding-bottom: 65px; background: var(--green); color: white; } .driver-section .eyebrow { color: var(--lime); } .driver-section h2 { margin-bottom: 0; } .driver-points p { margin: 0 0 13px; color: #d8e6dd; font: 14px/1.5 Arial, sans-serif; } .driver-points strong { color: white; } .driver-button { white-space: nowrap; background: var(--lime); color: var(--ink) !important; font: 700 13px Arial, sans-serif; text-decoration: none; }
     .driver-view { margin-top: 22px; padding: 16px; border: 1px solid rgba(255,255,255,.3); font: 13px/1.5 Arial, sans-serif; } .driver-view strong { display: block; color: var(--lime); margin-bottom: 5px; }
     .ride-footer { display: flex; justify-content: space-between; gap: 18px; padding-top: 25px; padding-bottom: 25px; color: var(--muted); font: 12px Arial, sans-serif; } .ride-footer span:first-child { color: var(--ink); font-weight: 700; } .ride-footer a { color: var(--green); }
-    .ride-tools, .safety-section { max-width: 1220px; margin: auto; padding: 65px 5vw; display: grid; grid-template-columns: 1fr 1fr; gap: 35px; border-bottom: 1px solid var(--line); } .ride-tools h2, .safety-section h2 { margin-top: 10px; } .tool-actions { display: flex; align-items: center; gap: 14px; } .tool-actions button, .tool-actions a, .safety-section a { border: 1px solid var(--green); background: transparent; color: var(--green); padding: 12px 15px; text-decoration: none; cursor: pointer; font: 700 12px Arial, sans-serif; } .history-result { grid-column: 1 / -1; padding: 18px; background: white; border: 1px solid var(--line); font: 13px/1.5 Arial, sans-serif; } .history-result p { border-bottom: 1px solid var(--line); padding-bottom: 12px; } .history-result p:last-child { border: 0; } .history-result span, .safety-section p { color: var(--muted); } .safety-section { background: #e6eadf; border: 0; } .safety-section > div:last-child { font: 15px/1.5 Arial, sans-serif; } .safety-section a { display: inline-block; margin-top: 15px; }
+    .ride-tools, .safety-section { max-width: 1220px; margin: auto; padding: 65px 5vw; display: grid; grid-template-columns: 1fr 1fr; gap: 35px; border-bottom: 1px solid var(--line); } .ride-tools h2, .safety-section h2 { margin-top: 10px; } .tool-actions { display: flex; align-items: center; gap: 14px; } .tool-actions button, .tool-actions a, .safety-section a, .support-toggle { border: 1px solid var(--green); background: transparent; color: var(--green); padding: 12px 15px; text-decoration: none; cursor: pointer; font: 700 12px Arial, sans-serif; } .history-result { grid-column: 1 / -1; padding: 18px; background: white; border: 1px solid var(--line); font: 13px/1.5 Arial, sans-serif; } .history-result p { border-bottom: 1px solid var(--line); padding-bottom: 12px; } .history-result p:last-child { border: 0; } .history-result span, .safety-section p { color: var(--muted); } .safety-section { background: #e6eadf; border: 0; } .safety-section > div:last-child { font: 15px/1.5 Arial, sans-serif; } .safety-section a, .support-toggle { display: inline-block; margin-top: 15px; } .support-form { display: grid; gap: 12px; margin-top: 18px; max-width: 480px; } .support-form label { display: grid; gap: 6px; } .support-form label span { color: var(--muted); font: 700 10px Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; } .support-form input, .support-form textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--line); padding: 11px; color: var(--ink); background: white; font: 14px Arial, sans-serif; } .support-form > button { border: 0; background: var(--green); color: white; padding: 13px 15px; cursor: pointer; text-align: left; font: 700 12px Arial, sans-serif; } .support-form > button span, .support-toggle span { float: right; } .support-status { padding: 10px; margin: 0; font: 12px/1.4 Arial, sans-serif; } .support-status.success { background: #e5f3d4; color: var(--green); } .support-status.error { background: #fff4e5; color: #7a4b00; }
     @media (max-width: 760px) { .ride-nav { min-height: 70px; } .ride-nav-links a:not(.nav-action) { display: none; } .ride-hero { display: block; padding-top: 58px; padding-bottom: 70px; } h1 { font-size: 64px; letter-spacing: -3px; } .hero-lede { font-size: 18px; } .booking-panel { margin-top: 48px; box-shadow: 7px 9px 0 #dce6d8; } .signal-strip { grid-template-columns: 1fr 1fr; } .signal-strip div:first-child { grid-column: 1 / -1; } .why-section { padding-top: 70px; padding-bottom: 70px; } h2 { font-size: 34px; } .feature-grid { grid-template-columns: 1fr; margin-top: 32px; } article { min-height: 210px; } article h3 { margin-top: 25px; } .driver-section, .ride-tools, .safety-section { display: block; } .driver-points { margin: 28px 0; } .tool-actions { margin-top: 25px; flex-wrap: wrap; } .history-result { margin-top: 25px; } .ride-footer { flex-wrap: wrap; } .form-row { grid-template-columns: 1fr; } .booking-steps { gap: 5px; } }
 </style>
 <script>
@@ -308,6 +308,37 @@
         const data = await response.json();
         result.innerHTML = data.rides.length ? data.rides.map(ride => `<p><strong>Ride #${ride.id}</strong> ${ride.pickup} to ${ride.dropoff}<br><span>${ride.status} · ${ride.fare}</span></p>`).join('') : '<p>No rides yet.</p>';
         result.hidden = false;
+    });
+
+    const supportToggle = document.getElementById('support-toggle');
+    const supportForm = document.getElementById('support-form');
+    const supportStatus = document.getElementById('support-status');
+    supportToggle.addEventListener('click', function () {
+        const isOpen = !supportForm.hidden;
+        supportForm.hidden = isOpen;
+        supportToggle.setAttribute('aria-expanded', String(!isOpen));
+        if (!isOpen) document.getElementById('support-email').focus();
+    });
+
+    supportForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const sendButton = supportForm.querySelector('button[type="submit"]');
+        sendButton.disabled = true;
+        sendButton.textContent = 'Sending...';
+        supportStatus.hidden = true;
+        const response = await fetch('{% url "logistics:send_support_email" %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken},
+            body: new FormData(supportForm),
+        });
+        if (response.redirected) { window.location.href = '{% url "users:user_login" %}'; return; }
+        const result = await response.json();
+        sendButton.disabled = false;
+        sendButton.innerHTML = 'Send message <span>-></span>';
+        supportStatus.textContent = response.ok ? 'Message sent. Our support team will reply to your email.' : (result.error || 'We could not send your message.');
+        supportStatus.className = `support-status ${response.ok ? 'success' : 'error'}`;
+        supportStatus.hidden = false;
+        if (response.ok) supportForm.reset();
     });
 </script>
 {% endblock %}

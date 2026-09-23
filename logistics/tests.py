@@ -1,5 +1,6 @@
 import json
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -99,6 +100,29 @@ class RideWorkflowTests(TestCase):
         profile = DriverProfile.objects.get(user=applicant)
         self.assertEqual(profile.status, 'pending')
         self.assertContains(response, 'Application received')
+
+    @patch('logistics.views.send_mail')
+    def test_support_form_sends_email_and_saves_ticket(self, send_mail):
+        self.client.force_login(self.rider)
+
+        response = self.client.post(reverse('logistics:send_support_email'), {
+            'email': 'rider@example.com', 'message': 'My driver could not find the pickup landmark.',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'sent')
+        send_mail.assert_called_once()
+        self.assertEqual(send_mail.call_args.kwargs['recipient_list'], ['info@africanaai.info'])
+        self.assertEqual(send_mail.call_args.kwargs['reply_to'], ['rider@example.com'])
+        self.assertTrue(SupportTicket.objects.filter(requester=self.rider).exists())
+
+    def test_support_form_rejects_invalid_email(self):
+        response = self.client.post(reverse('logistics:send_support_email'), {
+            'email': 'not-an-email', 'message': 'Please help.',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('valid email', response.json()['error'])
 
     def test_completed_ride_accepts_rating_and_safety_report(self):
         ride = RideRequest.objects.create(

@@ -5,6 +5,9 @@ from uuid import uuid4
 
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.core.mail import send_mail
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
@@ -249,6 +252,37 @@ def create_support_ticket(request):
         return JsonResponse({'error': 'Subject and details are required.'}, status=400)
     ticket = SupportTicket.objects.create(requester=request.user, ride=ride, subject=subject, details=details, priority=payload.get('priority', 'normal'))
     return JsonResponse({'ticket_id': ticket.pk, 'status': ticket.status})
+
+
+@login_required
+@require_http_methods(['POST'])
+def send_support_email(request):
+    email = str(request.POST.get('email', '')).strip()
+    message = str(request.POST.get('message', '')).strip()
+    if not email or not message:
+        return JsonResponse({'error': 'Email and message are required.'}, status=400)
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({'error': 'Enter a valid email address.'}, status=400)
+    ticket = SupportTicket.objects.create(
+        requester=request.user,
+        subject='Africana Ride support request',
+        details=f'From: {email}\n\n{message}',
+    )
+    try:
+        send_mail(
+            subject=f'Africana Ride support request #{ticket.id}',
+            message=f'Customer email: {email}\n\n{message}',
+            from_email=None,
+            recipient_list=['info@africanaai.info'],
+            reply_to=[email],
+        )
+    except Exception:
+        ticket.status = 'open'
+        ticket.save(update_fields=['status', 'updated_at'])
+        return JsonResponse({'error': 'Your message was saved, but email delivery failed. Please try again shortly.'}, status=503)
+    return JsonResponse({'status': 'sent'})
 
 
 @csrf_exempt
