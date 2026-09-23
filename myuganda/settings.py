@@ -130,6 +130,7 @@ if not DEBUG and not TESTING:
         "https://www.youtube.com",  # YouTube embeds
         "https://youtube.com",
         "https://accounts.google.com",  # Google authentication widgets
+        "https://kintu1-africana-ai-video.hf.space",  # Inline video advert maker
     )
     SECURE_CSP_REPORT_URI = '/admin/csp-report/'  # Optional: CSP violation reporting
 

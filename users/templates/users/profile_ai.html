@@ -268,6 +268,17 @@
         margin: 0;
     }
 
+    .video-advert-fallback {
+        color: var(--accent-green-dark);
+        display: none;
+        font-size: 0.78rem;
+        margin: 0.5rem 0 0;
+    }
+
+    .video-advert-fallback.visible {
+        display: block;
+    }
+
     .profile-snapshot {
         display: flex;
         flex-wrap: wrap;
@@ -1278,7 +1289,7 @@
         const workspace = document.createElement('div');
         workspace.className = 'video-advert-workspace';
         const iframe = document.createElement('iframe');
-        iframe.src = 'https://kintu1-africana-ai-video.hf.space/?__theme=light';
+        iframe.src = 'https://kintu1-africana-ai-video.hf.space/?__theme=light&embed=true';
         iframe.title = 'Africana AI video advert maker';
         iframe.loading = 'lazy';
         iframe.allow = 'autoplay; clipboard-write; fullscreen';
@@ -1289,7 +1300,20 @@
         note.className = 'video-advert-note';
         note.textContent = `Opened in this chat for: ${request}`;
 
-        responseContent.append(intro, workspace, note);
+        const fallback = document.createElement('p');
+        fallback.className = 'video-advert-fallback';
+        fallback.innerHTML = 'The video maker refused inline embedding. <a href="https://kintu1-africana-ai-video.hf.space/" target="_blank" rel="noopener">Open it in a new tab</a>.';
+        iframe.addEventListener('load', () => {
+            window.setTimeout(() => {
+                try {
+                    if (!iframe.contentDocument || !iframe.contentDocument.body) fallback.classList.add('visible');
+                } catch (error) {
+                    // Cross-origin documents cannot be inspected; a loaded frame is still usable.
+                }
+            }, 1200);
+        });
+
+        responseContent.append(intro, workspace, note, fallback);
         wrapper.appendChild(responseContent);
         chatLog.appendChild(wrapper);
         saveMessage(currentSessionId, 'ai', 'Video advert maker opened inside the chat.');
