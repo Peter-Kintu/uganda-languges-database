@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Africana Ride | Driver portal{% endblock %}
+{% block meta_description %}See assigned Africana Ride trips, rider contact details, landmarks, payment method, and trip status.{% endblock %}
+
+{% block content %}
+<main class="driver-portal">
+    <header class="driver-header">
+        <a class="driver-brand" href="{% url 'logistics:ride_home' %}"><span class="brand-mark">A</span><span>Africana <b>Ride</b></span></a>
+        <a class="back-link" href="{% url 'logistics:ride_home' %}">Rider booking</a>
+    </header>
+    {% csrf_token %}
+
+    <section class="driver-intro">
+        <div>
+            <p class="portal-label">Driver portal</p>
+            <h1>Your assigned trips.</h1>
+            {% if driver %}
+                <p>Welcome, {{ driver.user.get_full_name|default:driver.user.username }}. This is where Africana Ride sends the pickup, customer, payment, and trip status for every ride assigned to you.</p>
+            {% else %}
+                <p>Register your vehicle to receive nearby Africana Ride requests.</p>
+            {% endif %}
+        </div>
+        {% if driver %}<div class="driver-status"><span class="status-dot"></span><strong>{{ driver.get_status_display }}</strong><small>{% if driver.is_available %}Available for matching{% else %}Not currently available{% endif %}</small></div>{% endif %}
+    </section>
+
+    {% if not driver %}
+        <section class="empty-panel">
+            <p class="portal-label">Not registered yet</p>
+            <h2>Set up your driver profile</h2>
+            <p>Contact the Africana Ride team with your phone number, vehicle type, and plate number. After verification, your profile can receive matched trips.</p>
+            <a class="primary-action" href="{% url 'logistics:driver_register' %}">Register as a driver <span>-></span></a>
+        </section>
+    {% elif driver.status != 'verified' %}
+        <section class="empty-panel">
+            <p class="portal-label">Verification in progress</p>
+            <h2>Your profile is {{ driver.get_status_display|lower }}.</h2>
+            <p>You will see assigned trips here after the team verifies your driver profile.</p>
+        </section>
+    {% elif rides %}
+        <section class="trip-list" aria-label="Assigned trips">
+            {% for ride in rides %}
+                <article class="trip-card" data-ride-id="{{ ride.id }}">
+                    <div class="trip-card-top"><div><p class="portal-label">Ride #{{ ride.id }}</p><h2>{{ ride.get_status_display }}</h2></div><span class="ride-type">{{ ride.get_ride_type_display }}</span></div>
+                    <div class="route-block"><div><span class="route-marker pickup-marker"></span><div><small>Pick up at</small><strong>{{ ride.pickup_landmark }}</strong></div></div><div class="route-connector"></div><div><span class="route-marker drop-marker"></span><div><small>Drop off at</small><strong>{{ ride.dropoff_landmark }}</strong></div></div></div>
+                    <div class="trip-details">
+                        <div><small>Customer</small><strong>{{ ride.rider.get_full_name|default:ride.rider.username }}</strong><a href="tel:{{ ride.rider.phone }}">{{ ride.rider.phone|default:'Phone not provided' }}</a></div>
+                        <div><small>Payment</small><strong>{{ ride.get_payment_method_display }}</strong><span>{% if ride.payment_method == 'cash' %}Collect from rider at the end{% else %}Confirm payment before starting{% endif %}</span></div>
+                        <div><small>Fare estimate</small><strong>UGX {{ ride.estimated_fare_min|floatformat:0 }} - {{ ride.estimated_fare_max|floatformat:0 }}</strong><span>{{ ride.distance_km }} km · about {{ ride.eta_minutes }} min</span></div>
+                    </div>
+                    <div class="trip-actions">
+                        {% if ride.status == 'assigned' %}<button type="button" data-status="arrived">I have arrived</button>{% endif %}
+                        {% if ride.status == 'arrived' %}<button type="button" data-status="in_progress">Start trip</button>{% endif %}
+                        {% if ride.status == 'in_progress' %}<button type="button" data-status="completed">Complete trip</button>{% endif %}
+                        <p class="trip-message" role="status" hidden></p>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <section class="empty-panel">
+            <p class="portal-label">Ready for work</p>
+            <h2>No active trips right now.</h2>
+            <p>Keep your availability and location updated. New matched trips will appear here with the rider's landmarks, contact, ride type, and payment method.</p>
+        </section>
+    {% endif %}
+
+    <section class="driver-guide">
+        <div><p class="portal-label">Every assignment includes</p><h2>No guessing at pickup.</h2></div>
+        <div class="guide-grid"><p><strong>01</strong><span>Customer phone</span>Call the rider when you are close.</p><p><strong>02</strong><span>Two landmarks</span>Follow the pickup and drop-off directions.</p><p><strong>03</strong><span>Payment choice</span>Know whether to collect cash or confirm digital payment.</p></div>
+    </section>
+</main>
+
+<style>
+    .driver-portal { min-height: 100vh; background: #f3f4ec; color: #14231f; font-family: Georgia, 'Times New Roman', serif; }
+    .driver-header, .driver-intro, .trip-list, .empty-panel, .driver-guide { max-width: 1120px; margin: auto; padding-left: 5vw; padding-right: 5vw; }
+    .driver-header { min-height: 82px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #d6ddd4; }
+    .driver-brand { display: flex; align-items: center; gap: 10px; color: #14231f; text-decoration: none; font: 700 19px Arial, sans-serif; }
+    .driver-brand b { color: #0d6b4d; }
+    .brand-mark { display: grid; place-items: center; width: 34px; height: 34px; background: #0d6b4d; color: #d7f36b; border-radius: 50%; font: 800 18px Arial, sans-serif; }
+    .back-link { color: #0d6b4d; font: 700 12px Arial, sans-serif; }
+    .driver-intro { display: flex; justify-content: space-between; gap: 30px; align-items: end; padding-top: 68px; padding-bottom: 45px; }
+    .driver-intro h1 { margin: 12px 0; font-size: clamp(44px, 7vw, 82px); line-height: .92; letter-spacing: -3px; }
+    .driver-intro p:not(.portal-label) { max-width: 600px; color: #66716c; font-size: 17px; line-height: 1.5; }
+    .portal-label { color: #0d6b4d; font: 700 11px Arial, sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+    .driver-status { min-width: 190px; padding: 16px; background: white; border: 1px solid #d6ddd4; font: 13px Arial, sans-serif; }
+    .driver-status strong, .driver-status small { display: block; margin-left: 15px; }.driver-status small { color: #66716c; margin-top: 5px; }.status-dot { float: left; width: 9px; height: 9px; margin-top: 3px; border-radius: 50%; background: #55a444; }
+    .trip-list { display: grid; gap: 18px; padding-bottom: 70px; }
+    .trip-card, .empty-panel { background: white; border: 1px solid #d6ddd4; padding: 28px; }.trip-card-top { display: flex; justify-content: space-between; gap: 15px; border-bottom: 1px solid #d6ddd4; padding-bottom: 18px; }.trip-card h2, .empty-panel h2 { margin: 6px 0 0; font-size: 28px; }.ride-type { align-self: start; padding: 8px; background: #d7f36b; font: 700 10px Arial, sans-serif; text-transform: uppercase; }
+    .route-block { padding: 24px 0; max-width: 680px; }.route-block > div:not(.route-connector) { display: flex; align-items: flex-start; gap: 14px; }.route-block small, .trip-details small { display: block; color: #66716c; font: 700 10px Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }.route-block strong { display: block; margin-top: 5px; font-size: 18px; }.route-marker { width: 13px; height: 13px; flex: 0 0 13px; margin: 2px 0 0 2px; border: 3px solid #0d6b4d; border-radius: 50%; }.drop-marker { border-radius: 3px 3px 50% 50%; background: #d7f36b; }.route-connector { width: 1px; height: 24px; margin: 3px 0 3px 8px; background: #0d6b4d; }
+    .trip-details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 18px 0; border-top: 1px solid #d6ddd4; border-bottom: 1px solid #d6ddd4; font: 13px/1.4 Arial, sans-serif; }.trip-details strong, .trip-details a, .trip-details span { display: block; margin-top: 5px; }.trip-details a { color: #0d6b4d; }.trip-details span { color: #66716c; font-size: 12px; }
+    .trip-actions { display: flex; align-items: center; gap: 15px; padding-top: 20px; }.trip-actions button, .primary-action { border: 0; background: #0d6b4d; color: white; padding: 13px 18px; cursor: pointer; text-decoration: none; font: 700 12px Arial, sans-serif; }.trip-actions button:disabled { opacity: .6; }.trip-message { color: #0d6b4d; font: 12px Arial, sans-serif; }
+    .empty-panel { max-width: 1120px; margin-bottom: 70px; }.empty-panel p:not(.portal-label) { max-width: 650px; color: #66716c; font: 15px/1.5 Arial, sans-serif; }.primary-action { display: inline-block; margin-top: 12px; }.primary-action span { margin-left: 25px; }
+    .driver-guide { display: grid; grid-template-columns: 1fr 2fr; gap: 50px; padding-top: 55px; padding-bottom: 70px; background: #0d6b4d; color: white; }.driver-guide .portal-label { color: #d7f36b; }.driver-guide h2 { margin-top: 10px; font-size: 38px; }.guide-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }.guide-grid p { margin: 0; color: #d8e6dd; font: 13px/1.5 Arial, sans-serif; }.guide-grid strong, .guide-grid span { display: block; }.guide-grid strong { color: #d7f36b; margin-bottom: 22px; }.guide-grid span { color: white; font-weight: 700; margin-bottom: 5px; }
+    @media (max-width: 700px) { .driver-intro { display: block; padding-top: 48px; }.driver-status { margin-top: 25px; }.trip-card, .empty-panel { padding: 20px; }.trip-details, .guide-grid, .driver-guide { grid-template-columns: 1fr; }.driver-guide { display: block; }.guide-grid { margin-top: 28px; }.trip-actions { align-items: flex-start; flex-direction: column; } }
+</style>
+<script>
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    document.querySelectorAll('[data-status]').forEach(function (button) {
+        button.addEventListener('click', async function () {
+            const card = button.closest('[data-ride-id]');
+            const message = card.querySelector('.trip-message');
+            button.disabled = true;
+            const response = await fetch(`/logistics/rides/${card.dataset.rideId}/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                body: JSON.stringify({status: button.dataset.status}),
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                message.textContent = result.error || 'Could not update this trip.';
+                message.hidden = false;
+                button.disabled = false;
+                return;
+            }
+            message.textContent = 'Trip updated. Refreshing your assignments...';
+            message.hidden = false;
+            window.setTimeout(function () { window.location.reload(); }, 500);
+        });
+    });
+</script>
+{% endblock %}

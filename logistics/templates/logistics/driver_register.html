@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Africana Ride | Register as a driver{% endblock %}
+{% block meta_description %}Register to drive with Africana Ride in Kampala and receive landmark-based trip assignments.{% endblock %}
+
+{% block content %}
+<main class="driver-register">
+    <header class="register-header">
+        <a class="register-brand" href="{% url 'logistics:ride_home' %}"><span class="brand-mark">A</span><span>Africana <b>Ride</b></span></a>
+        <a href="{% url 'logistics:driver_home' %}">Driver portal</a>
+    </header>
+
+    <section class="register-layout">
+        <div class="register-copy">
+            <p class="register-label">Drive with Africana Ride</p>
+            <h1>Turn Kampala trips into steady work.</h1>
+            <p>Register once. After verification, nearby rides appear in your driver portal with the customer's landmarks, phone number, ride type, fare estimate, and payment method.</p>
+            <ol class="register-benefits">
+                <li><strong>01</strong><span>Submit your driver and vehicle details.</span></li>
+                <li><strong>02</strong><span>Our team verifies your profile.</span></li>
+                <li><strong>03</strong><span>Go available and receive matched rides.</span></li>
+            </ol>
+        </div>
+
+        <section class="register-panel" aria-labelledby="register-title">
+            {% if submitted %}
+                <div class="success-state">
+                    <span class="success-mark">OK</span>
+                    <p class="register-label">Application received</p>
+                    <h2>You are in the verification queue.</h2>
+                    <p>We saved your details. Once your profile is verified, you can switch on availability from the driver portal.</p>
+                    <a class="primary-action" href="{% url 'logistics:driver_home' %}">Go to driver portal <span>-></span></a>
+                </div>
+            {% else %}
+                <p class="register-label">Driver application</p>
+                <h2 id="register-title">Tell us about yourself.</h2>
+                <p class="panel-intro">Use the phone number customers can reach during a trip.</p>
+                {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <label><span>Phone number *</span><input name="phone" type="tel" value="{{ driver.phone|default:'' }}" placeholder="+256 700 000 000" required></label>
+                    <label><span>WhatsApp number</span><input name="whatsapp_phone" type="tel" value="{{ driver.whatsapp_phone|default:'' }}" placeholder="If different from phone"></label>
+                    <div class="form-row">
+                        <label><span>Vehicle type *</span><select name="vehicle_type" required><option value="standard"{% if driver.vehicle_type == 'standard' %} selected{% endif %}>Standard car</option><option value="comfort"{% if driver.vehicle_type == 'comfort' %} selected{% endif %}>Comfort car</option><option value="boda"{% if driver.vehicle_type == 'boda' %} selected{% endif %}>Boda</option></select></label>
+                        <label><span>Plate number *</span><input name="vehicle_plate" type="text" value="{{ driver.vehicle_plate|default:'' }}" placeholder="UXX 123A" required></label>
+                    </div>
+                    <label><span>Vehicle make and model</span><input name="vehicle_make" type="text" value="{{ driver.vehicle_make|default:'' }}" placeholder="e.g. Toyota Premio"></label>
+                    <button class="primary-action" type="submit">Submit driver application <span>-></span></button>
+                    <p class="form-note">Your account must be verified before you receive trips.</p>
+                </form>
+            {% endif %}
+        </section>
+    </section>
+</main>
+
+<style>
+    .driver-register { min-height: 100vh; background: #f3f4ec; color: #14231f; font-family: Georgia, 'Times New Roman', serif; }
+    .register-header, .register-layout { max-width: 1160px; margin: auto; padding-left: 5vw; padding-right: 5vw; }
+    .register-header { min-height: 82px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d6ddd4; }.register-header > a:last-child { color: #0d6b4d; font: 700 12px Arial, sans-serif; }
+    .register-brand { display: flex; align-items: center; gap: 10px; color: #14231f; text-decoration: none; font: 700 19px Arial, sans-serif; }.register-brand b { color: #0d6b4d; }.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; background: #0d6b4d; color: #d7f36b; border-radius: 50%; font: 800 18px Arial, sans-serif; }
+    .register-layout { display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: 9vw; align-items: center; padding-top: 90px; padding-bottom: 100px; }.register-label { color: #0d6b4d; font: 700 11px Arial, sans-serif; letter-spacing: .16em; text-transform: uppercase; }.register-copy h1 { max-width: 620px; margin: 16px 0 24px; font-size: clamp(48px, 7vw, 88px); line-height: .92; letter-spacing: -4px; }.register-copy > p:not(.register-label) { max-width: 560px; color: #66716c; font-size: 19px; line-height: 1.5; }
+    .register-benefits { display: grid; gap: 18px; list-style: none; margin: 42px 0 0; padding: 0; font: 14px Arial, sans-serif; }.register-benefits li { display: flex; align-items: center; gap: 14px; }.register-benefits strong { color: #0d6b4d; font-size: 11px; }.register-benefits span { color: #52605a; }
+    .register-panel { padding: 30px; background: white; border: 1px solid #dfe5dc; box-shadow: 12px 15px 0 #dce6d8; }.register-panel h2 { margin: 9px 0 10px; font-size: 31px; line-height: 1; }.panel-intro, .success-state > p:not(.register-label) { color: #66716c; font: 13px/1.5 Arial, sans-serif; }.register-panel form { display: grid; gap: 16px; margin-top: 25px; }.register-panel label { display: grid; gap: 7px; }.register-panel label > span { color: #66716c; font: 700 10px Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }.register-panel input, .register-panel select { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #d6ddd4; background: #fff; color: #14231f; font: 15px Georgia, serif; }.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.primary-action { display: inline-block; border: 0; background: #0d6b4d; color: white; padding: 15px 18px; cursor: pointer; text-decoration: none; font: 700 13px Arial, sans-serif; }.primary-action span { float: right; margin-left: 24px; }.register-panel button { width: 100%; text-align: left; }.form-note { margin: -2px 0 0; color: #66716c; text-align: center; font: 11px Arial, sans-serif; }.form-error { padding: 10px; background: #fff4e5; color: #7a4b00; font: 12px/1.4 Arial, sans-serif; }.success-mark { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 22px; background: #d7f36b; color: #0d6b4d; font: 800 10px Arial, sans-serif; }.success-state .primary-action { margin-top: 15px; }
+    @media (max-width: 760px) { .register-layout { display: block; padding-top: 55px; }.register-copy h1 { letter-spacing: -2px; }.register-copy > p:not(.register-label) { font-size: 17px; }.register-panel { margin-top: 45px; box-shadow: 7px 9px 0 #dce6d8; padding: 22px; }.form-row { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

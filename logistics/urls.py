@@ -6,6 +6,8 @@ app_name = 'logistics'
 
 urlpatterns = [
     path('', views.ride_home, name='ride_home'),
+    path('drivers/', views.driver_home, name='driver_home'),
+    path('drivers/register-page/', views.driver_register, name='driver_register'),
     path('rides/request/', views.request_ride, name='request_ride'),
     path('rides/history/', views.ride_history, name='ride_history'),
     path('rides/<int:ride_id>/', views.ride_status, name='ride_status'),

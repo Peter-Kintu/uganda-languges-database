@@ -84,7 +84,7 @@
             </div>
             <div class="request-result" id="request-result" hidden aria-live="polite">
                 <span class="success-mark">OK</span>
-                <div><strong>Request saved.</strong><span>A local driver match will be sent to this device or WhatsApp.</span></div>
+                <div><strong>Request saved.</strong><span>Your assigned driver can see this trip in the protected driver portal.</span></div>
                 <button id="new-ride" type="button">Plan another ride</button>
             </div>
         </div>
@@ -113,8 +113,8 @@
 
     <section class="driver-section" id="drivers">
         <div><p class="eyebrow">For the people driving Kampala</p><h2>More time earning. Less time chasing fares.</h2></div>
-        <div class="driver-points"><p><strong>Clear commission.</strong> Keep more of every trip with a transparent 10-12% platform target.</p><p><strong>Lightweight dispatch.</strong> Get trip alerts through the mobile web or WhatsApp, without a battery-heavy app running all day.</p><div class="driver-view"><strong>What a driver receives</strong><span>Ride #, pickup landmark, drop-off landmark, ride type, payment method, and your phone contact after accepting.</span></div></div>
-        <a class="driver-button" href="mailto:drivers@africanaai.info?subject=Africana%20Ride%20driver%20interest">Drive with us <span>-></span></a>
+        <div class="driver-points"><p><strong>Clear commission.</strong> Keep more of every trip with a transparent 10-12% platform target.</p><p><strong>Lightweight dispatch.</strong> Open the driver portal on mobile to see assignments without a battery-heavy app running all day.</p><div class="driver-view"><strong>What a driver receives</strong><span>Ride #, pickup landmark, drop-off landmark, ride type, payment method, and your phone contact after matching.</span></div></div>
+        <a class="driver-button" href="{% url 'logistics:driver_register' %}">Drive with us <span>-></span></a>
     </section>
 
     <section class="safety-section" id="safety">

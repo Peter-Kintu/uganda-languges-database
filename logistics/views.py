@@ -20,6 +20,42 @@ def ride_home(request):
     return render(request, 'logistics/ride_home.html')
 
 
+@login_required
+def driver_home(request):
+    driver = DriverProfile.objects.filter(user=request.user).first()
+    rides = []
+    if driver:
+        rides = RideRequest.objects.filter(
+            driver=driver,
+            status__in=['assigned', 'arrived', 'in_progress'],
+        ).select_related('rider')
+    return render(request, 'logistics/driver_home.html', {'driver': driver, 'rides': rides})
+
+
+@login_required
+def driver_register(request):
+    driver = DriverProfile.objects.filter(user=request.user).first()
+    if request.method == 'POST':
+        phone = str(request.POST.get('phone', '')).strip()
+        vehicle_plate = str(request.POST.get('vehicle_plate', '')).strip()
+        vehicle_type = request.POST.get('vehicle_type', 'standard')
+        if not phone or not vehicle_plate or vehicle_type not in dict(DriverProfile.VEHICLE_CHOICES):
+            return render(request, 'logistics/driver_register.html', {
+                'driver': driver,
+                'error': 'Phone, vehicle type, and plate number are required.',
+            }, status=400)
+        driver, _ = DriverProfile.objects.update_or_create(user=request.user, defaults={
+            'phone': phone,
+            'whatsapp_phone': str(request.POST.get('whatsapp_phone', '')).strip(),
+            'vehicle_type': vehicle_type,
+            'vehicle_make': str(request.POST.get('vehicle_make', '')).strip(),
+            'vehicle_plate': vehicle_plate,
+            'status': 'pending',
+        })
+        return render(request, 'logistics/driver_register.html', {'driver': driver, 'submitted': True})
+    return render(request, 'logistics/driver_register.html', {'driver': driver})
+
+
 def _json_body(request):
     if request.content_type == 'application/json':
         try:

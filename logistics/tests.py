@@ -52,6 +52,54 @@ class RideWorkflowTests(TestCase):
         self.driver.refresh_from_db()
         self.assertFalse(self.driver.is_available)
 
+    def test_driver_portal_shows_assigned_trip_details(self):
+        ride = RideRequest.objects.create(
+            rider=self.rider, driver=self.driver, pickup_landmark='Acacia Mall main gate',
+            dropoff_landmark='Clock Tower taxi stage', ride_type='standard', payment_method='cash',
+            status='assigned', estimated_fare_min=5000, estimated_fare_max=7000,
+        )
+        self.client.force_login(self.driver_user)
+
+        response = self.client.get(reverse('logistics:driver_home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'Ride #{ride.id}')
+        self.assertContains(response, 'Acacia Mall main gate')
+        self.assertContains(response, 'Clock Tower taxi stage')
+        self.assertContains(response, 'Cash')
+        self.assertContains(response, self.rider.phone or 'Phone not provided')
+
+    def test_driver_can_update_assigned_trip_status(self):
+        ride = RideRequest.objects.create(
+            rider=self.rider, driver=self.driver, pickup_landmark='A', dropoff_landmark='B',
+            ride_type='standard', payment_method='cash', status='assigned',
+            estimated_fare_min=5000, estimated_fare_max=7000,
+        )
+        self.client.force_login(self.driver_user)
+
+        response = self.client.post(
+            reverse('logistics:ride_status', args=[ride.id]),
+            data=json.dumps({'status': 'arrived'}), content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        ride.refresh_from_db()
+        self.assertEqual(ride.status, 'arrived')
+
+    def test_driver_can_register_from_in_app_form(self):
+        applicant = get_user_model().objects.create_user(username='new-driver', password='test-pass')
+        self.client.force_login(applicant)
+
+        response = self.client.post(reverse('logistics:driver_register'), {
+            'phone': '+256700000099', 'whatsapp_phone': '+256700000099',
+            'vehicle_type': 'boda', 'vehicle_plate': 'UBD 999A', 'vehicle_make': 'Bajaj',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        profile = DriverProfile.objects.get(user=applicant)
+        self.assertEqual(profile.status, 'pending')
+        self.assertContains(response, 'Application received')
+
     def test_completed_ride_accepts_rating_and_safety_report(self):
         ride = RideRequest.objects.create(
             rider=self.rider, driver=self.driver, pickup_landmark='A', dropoff_landmark='B', ride_type='standard',
