@@ -188,63 +188,108 @@ def registration_status(request, booking_ref):
     })
 
 
-def download_registration(request, booking_ref):
-    booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
-    download_format = request.GET.get('format', 'html').strip().lower()
+def _registration_download_context(request, booking):
     status_url = request.build_absolute_uri(reverse('registration_status', args=[booking.booking_ref]))
     share_message = (
         f'Africana AI Festival registration for {booking.full_name}: '
         f'booking reference {booking.booking_ref}. Check confirmation: {status_url}'
     )
-    if download_format in {'png', 'pdf'}:
-        card = _registration_card_image(booking)
-        output = BytesIO()
-        if download_format == 'png':
-            card.save(output, format='PNG', optimize=True)
-            content_type = 'image/png'
-            extension = 'png'
-        else:
-            card.save(output, format='PDF', resolution=150.0)
-            content_type = 'application/pdf'
-            extension = 'pdf'
-        response = HttpResponse(output.getvalue(), content_type=content_type)
-        response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.{extension}"'
-        return response
-    if download_format != 'html':
-        return HttpResponse('Unsupported download format.', status=400)
-
-    receipt = render_to_string('registration_download.html', {
+    return {
         'booking': booking,
         'share_message': share_message,
         'status_url': status_url,
-    })
-    response = HttpResponse(receipt, content_type='text/html; charset=utf-8')
-    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.html"'
+    }
+
+
+def _render_registration_download(request, booking, download_format):
+    receipt = render_to_string('registration_download.html', _registration_download_context(request, booking))
+    if download_format == 'html':
+        response = HttpResponse(receipt, content_type='text/html; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.html"'
+        return response
+
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            page = browser.new_page(viewport={'width': 900, 'height': 1200}, device_scale_factor=2)
+            page.set_content(receipt, wait_until='networkidle')
+            if download_format == 'png':
+                content = page.screenshot(type='png', full_page=True)
+                content_type = 'image/png'
+                extension = 'png'
+            else:
+                content = page.pdf(
+                    print_background=True,
+                    prefer_css_page_size=True,
+                    margin={'top': '0', 'right': '0', 'bottom': '0', 'left': '0'},
+                )
+                content_type = 'application/pdf'
+                extension = 'pdf'
+            browser.close()
+    except Exception:
+        logger.exception('Registration %s rendering failed', download_format)
+        return HttpResponse('This download format is temporarily unavailable.', status=503)
+
+    response = HttpResponse(content, content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.{extension}"'
     return response
 
 
+def download_registration(request, booking_ref):
+    booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
+    download_format = request.GET.get('format', 'html').strip().lower()
+    if download_format != 'html':
+        if download_format not in {'png', 'pdf'}:
+            return HttpResponse('Unsupported download format.', status=400)
+    return _render_registration_download(request, booking, download_format)
+
+
 def _registration_card_image(booking):
-    card = Image.new('RGB', (1400, 900), '#fffaf0')
+    card = Image.new('RGB', (1600, 1000), '#f5f1e8')
     draw = ImageDraw.Draw(card)
-    draw.rectangle((0, 0, 1400, 150), fill='#126b68')
-    draw.rectangle((0, 150, 1400, 165), fill='#d99b29')
-    draw.text((70, 52), 'AFRICANA AI FESTIVAL', fill='#fffdf8', font=_card_font(42, bold=True))
-    draw.text((70, 215), 'REGISTRATION CONFIRMATION', fill='#126b68', font=_card_font(34, bold=True))
-    draw.text((70, 300), f'Reference: {booking.booking_ref}', fill='#18201e', font=_card_font(30, bold=True))
-    draw.text((70, 390), f'Attendee: {booking.full_name}', fill='#18201e', font=_card_font(28))
-    draw.text((70, 465), f'Phone: {booking.phone}', fill='#18201e', font=_card_font(28))
-    draw.text((70, 540), f'Email: {booking.email}', fill='#18201e', font=_card_font(28))
-    draw.text((70, 660), f'Payment: {booking.payment_status}', fill='#126b68', font=_card_font(28, bold=True))
-    draw.text((70, 755), '14 November 2026 | ICT Innovation Hub, Nakawa', fill='#64706b', font=_card_font(22))
+    draw.rectangle((0, 0, 1600, 220), fill='#126b68')
+    draw.rectangle((0, 220, 1600, 236), fill='#d99b29')
+    draw.text((80, 55), 'AFRICANA AI', fill='#fffdf8', font=_card_font(54, bold=True))
+    draw.text((80, 130), 'FESTIVAL & LAUNCH', fill='#d9f0e7', font=_card_font(30, bold=True))
+    draw.rounded_rectangle((1180, 62, 1515, 158), radius=20, fill='#fffdf8')
+    draw.text((1347, 83), 'CONFIRMED', fill='#126b68', font=_card_font(24, bold=True), anchor='ma')
+
+    draw.text((80, 300), 'REGISTRATION CONFIRMATION', fill='#126b68', font=_card_font(42, bold=True))
+    draw.text((80, 370), 'Your place at the festival is reserved.', fill='#64706b', font=_card_font(25))
+    draw.rounded_rectangle((80, 440, 1520, 565), radius=18, fill='#fffdf8', outline='#dce1d7', width=3)
+    draw.text((120, 470), 'BOOKING REFERENCE', fill='#64706b', font=_card_font(20, bold=True))
+    draw.text((120, 505), booking.booking_ref, fill='#18201e', font=_card_font(34, bold=True))
+
+    draw.text((80, 630), 'ATTENDEE', fill='#64706b', font=_card_font(20, bold=True))
+    draw.text((80, 670), booking.full_name, fill='#18201e', font=_card_font(34, bold=True))
+    draw.text((850, 630), 'CONTACT', fill='#64706b', font=_card_font(20, bold=True))
+    draw.text((850, 670), booking.phone, fill='#18201e', font=_card_font(28, bold=True))
+    draw.text((850, 715), booking.email, fill='#18201e', font=_card_font(23))
+
+    draw.rounded_rectangle((80, 805, 1520, 920), radius=18, fill='#e7f3ed')
+    draw.text((120, 838), 'PAYMENT', fill='#126b68', font=_card_font(20, bold=True))
+    draw.text((390, 835), booking.payment_status, fill='#18201e', font=_card_font(27, bold=True))
+    draw.text((80, 950), '14 NOVEMBER 2026  |  ICT INNOVATION HUB, NAKAWA', fill='#64706b', font=_card_font(19, bold=True))
     return card
 
 
 def _card_font(size, bold=False):
-    font_name = 'LiberationSans-Bold.ttf' if bold else 'LiberationSans-Regular.ttf'
-    for font_dir in ('/usr/share/fonts/truetype/liberation2', '/usr/share/fonts/truetype/dejavu'):
-        font_path = Path(font_dir) / font_name
-        if font_path.exists():
-            return ImageFont.truetype(str(font_path), size)
+    font_names = (
+        ('arialbd.ttf', 'Arial Bold') if bold else ('arial.ttf', 'Arial'),
+        ('segoeuib.ttf', 'Segoe UI Bold') if bold else ('segoeui.ttf', 'Segoe UI'),
+        ('LiberationSans-Bold.ttf', 'Liberation Sans Bold') if bold else ('LiberationSans-Regular.ttf', 'Liberation Sans'),
+    )
+    font_dirs = (
+        Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Fonts',
+        Path('/usr/share/fonts/truetype/liberation2'),
+        Path('/usr/share/fonts/truetype/dejavu'),
+    )
+    for font_name, _ in font_names:
+        for font_dir in font_dirs:
+            font_path = font_dir / font_name
+            if font_path.exists():
+                return ImageFont.truetype(str(font_path), size)
     return ImageFont.load_default()
 
 
@@ -254,42 +299,12 @@ def download_ceo_card(request, booking_ref):
         return HttpResponse('CEO card is available after payment verification.', status=404)
 
     download_format = request.GET.get('format', 'png').strip().lower()
-    if download_format == 'html':
-        return download_registration(request, booking_ref)
     if download_format not in {'png', 'pdf'}:
+        if download_format == 'html':
+            return _render_registration_download(request, booking, 'html')
         return HttpResponse('Unsupported download format.', status=400)
-
-    image_path = Path(settings.BASE_DIR) / 'static' / 'images' / 'africanaai_card.png'
-    card = Image.open(image_path).convert('RGB')
-    draw = ImageDraw.Draw(card)
-    member_label = f'{booking.founding_member_number:03d}/300'
-    verify_url = request.build_absolute_uri(reverse('verify_delegate', args=[booking.booking_ref]))
-
-    # Cover the sample identity fields on the supplied artwork with this booking's data.
-    draw.rectangle((370, 270, 1530, 335), fill=(18, 18, 18))
-    draw.text((960, 285), f'FOUNDING MEMBER {member_label}  |  {booking.full_name.upper()}',
-              fill=(255, 220, 145), font=_card_font(34, bold=True), anchor='mm')
-    draw.rectangle((600, 1070, 1190, 1135), fill=(18, 18, 18))
-    draw.text((895, 1102), f'{booking.booking_ref}  |  {booking.full_name}',
-              fill=(255, 220, 145), font=_card_font(25, bold=True), anchor='mm')
-
-    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=2)
-    qr.add_data(verify_url)
-    qr.make(fit=True)
-    qr_image = qr.make_image(fill_color='#17130d', back_color='#f8df9a').convert('RGB').resize((260, 260))
-    card.paste(qr_image, (1460, 840))
-
-    output = BytesIO()
-    if download_format == 'pdf':
-        card.save(output, format='PDF', resolution=150.0)
-        content_type = 'application/pdf'
-        extension = 'pdf'
-    else:
-        card.save(output, format='PNG', optimize=True)
-        content_type = 'image/png'
-        extension = 'png'
-    response = HttpResponse(output.getvalue(), content_type=content_type)
-    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-ceo-card.{extension}"'
+    response = _render_registration_download(request, booking, download_format)
+    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-ceo-card.{download_format}"'
     return response
 
 
