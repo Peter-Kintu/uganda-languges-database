@@ -212,7 +212,7 @@ def _render_registration_download(request, booking, download_format):
         from playwright.sync_api import sync_playwright
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
-            page = browser.new_page(viewport={'width': 900, 'height': 1200}, device_scale_factor=2)
+            page = browser.new_page(viewport={'width': 1200, 'height': 1200}, device_scale_factor=3)
             page.set_content(receipt, wait_until='networkidle')
             if download_format == 'png':
                 content = page.screenshot(type='png', full_page=True)

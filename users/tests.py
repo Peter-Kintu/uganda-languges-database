@@ -1,11 +1,13 @@
 from types import SimpleNamespace
 from unittest.mock import patch
+from io import BytesIO
 
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.management import call_command
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from PIL import Image
 
 from myuganda.middleware import WordPressProbeBlockMiddleware
 from users.models import AgentMemory, AgentPlan, EventBooking, PesapalPayment, UserSubscription
@@ -231,6 +233,9 @@ class EventRegistrationTests(TestCase):
             )
             self.assertEqual(formatted_response['Content-Type'], content_type)
             self.assertTrue(formatted_response.content.startswith(signature))
+            if download_format == 'png':
+                with Image.open(BytesIO(formatted_response.content)) as image:
+                    self.assertGreaterEqual(image.width, 2200)
 
     def test_same_name_cannot_register_multiple_times(self):
         registration = {
