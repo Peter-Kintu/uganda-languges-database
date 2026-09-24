@@ -32,6 +32,13 @@ class AgentCommandTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(AgentMemory.objects.get(user=self.user, key='target_role').value, 'Python developer')
 
+    def test_ai_companion_uses_user_scoped_chat_storage(self):
+        response = self.client.get(reverse('users:profile_ai'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'userId: "{self.user.pk}"')
+        self.assertContains(response, 'const userChatSessionKey = `${userChatStorageKey}:sessions`')
+
     def test_plan_checkpoint_advances_and_completes(self):
         response = self.client.post(
             reverse('users:agent_command'),

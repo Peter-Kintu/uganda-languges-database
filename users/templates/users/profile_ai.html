@@ -857,10 +857,14 @@
     const analyzeAttachmentButton = document.getElementById('analyzeAttachmentButton');
     const attachmentStatus = document.getElementById('attachmentStatus');
     const profileContext = {
+        userId: "{{ user.pk|escapejs }}",
         name: "{{ user.get_full_name|default:user.username|escapejs }}",
         headline: "{{ user.headline|default:''|escapejs }}",
         location: "{{ user.location|default:''|escapejs }}"
     };
+    const userChatStorageKey = `africana_chat_${profileContext.userId}`;
+    const userChatSessionKey = `${userChatStorageKey}:sessions`;
+    const userLastSessionKey = `${userChatStorageKey}:last_session`;
 
     let currentSessionId = '';
     let lastAiReply = '';
@@ -1049,7 +1053,7 @@
 
     function getChatSessions() {
         try {
-            return JSON.parse(localStorage.getItem('chat_sessions')) || {};
+            return JSON.parse(localStorage.getItem(userChatSessionKey)) || {};
         } catch(e) {
             return {};
         }
@@ -1060,7 +1064,7 @@
         if (!sessions[sessionId]) sessions[sessionId] = [];
         sessions[sessionId].push({ role, text, timestamp: Date.now() });
         sessions[sessionId] = sessions[sessionId].slice(-40);
-        localStorage.setItem('chat_sessions', JSON.stringify(sessions));
+        localStorage.setItem(userChatSessionKey, JSON.stringify(sessions));
     }
 
     async function fetchWithRecovery(url, options, attempts = 2) {
@@ -1654,7 +1658,7 @@
 
     function switchSession(id) {
         currentSessionId = id;
-        localStorage.setItem('lastSessionId', id);
+        localStorage.setItem(userLastSessionKey, id);
         chatLog.innerHTML = '';
         
         const history = getSessionHistory(id);
@@ -1676,8 +1680,8 @@
 
     function clearChat() {
         if(confirm("Are you sure you want to erase all chat history? This cannot be undone.")) {
-            localStorage.removeItem('chat_sessions');
-            localStorage.removeItem('lastSessionId');
+            localStorage.removeItem(userChatSessionKey);
+            localStorage.removeItem(userLastSessionKey);
             createNewChat();
         }
     }
@@ -1695,7 +1699,10 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        const lastSession = localStorage.getItem('lastSessionId');
+        // Remove legacy global keys so accounts cannot inherit pre-isolation chat history.
+        localStorage.removeItem('chat_sessions');
+        localStorage.removeItem('lastSessionId');
+        const lastSession = localStorage.getItem(userLastSessionKey);
         const sessions = getChatSessions();
         
         if (lastSession && sessions[lastSession]) {

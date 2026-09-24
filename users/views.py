@@ -1773,7 +1773,8 @@ def cerebras_proxy(request):
 You are Africana AI, an elite career advisor and business strategist for African professionals by Mwene Groups.
 
 **USER PROFILE:**
-Name: {profile['full_name']} | Role: {profile['headline']}
+Name: {profile['full_name']} | Role: {profile['headline']} | Location: {profile['location'] or 'Not specified'}
+Bio: {profile['bio'] or 'Not specified'}
 Skills: {', '.join(profile['skills'][:10]) or 'Not specified'}
 Experience: {', '.join(profile['experiences'][:5]) if profile['experiences'] else 'Not specified'}
 
