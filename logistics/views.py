@@ -1,12 +1,14 @@
 import json
 import hashlib
 import hmac
+import logging
 import os
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from uuid import uuid4
 
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.validators import validate_email
@@ -22,6 +24,8 @@ from django.views.decorators.http import require_http_methods
 from eshop.models import Order
 from .models import CourierProvider, DeliveryQuote, DriverProfile, RideLocation, RidePayment, RideRating, RideRequest, SafetyReport, Shipment, SupportTicket, TrackingEvent
 from .services import CourierRegistry, calculate_ride_fare, match_nearest_driver, resolve_landmark_coordinates, whatsapp_notification_link
+
+logger = logging.getLogger(__name__)
 
 
 def ride_home(request):
@@ -334,11 +338,12 @@ def send_support_email(request):
         send_mail(
             subject=f'Africana Ride support request #{ticket.id}',
             message=f'Customer email: {email}\n\n{message}',
-            from_email=None,
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=['info@africanaai.info'],
             reply_to=[email],
         )
     except Exception:
+        logger.exception('Support email delivery failed for ticket %s.', ticket.id)
         ticket.status = 'open'
         ticket.save(update_fields=['status', 'updated_at'])
         return JsonResponse({'error': 'Your message was saved, but email delivery failed. Please try again shortly.'}, status=503)
