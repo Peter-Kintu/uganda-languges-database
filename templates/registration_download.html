@@ -17,8 +17,16 @@
     dl { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 30px; margin: 0; } dt { margin-bottom: 3px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; } dd { margin: 0; font-size: 17px; font-weight: 700; }
     .payment { clear: both; margin-top: 32px; padding: 20px; background: #f1f6ef; border-left: 4px solid var(--gold); } .payment h2 { margin: 0 0 12px; font: 700 20px Georgia, serif; } .payment p { margin: 5px 0; color: var(--muted); } .payment strong { color: var(--ink); }
     footer { padding: 18px 38px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    .share { position: relative; display: flex; justify-content: flex-end; padding: 0 38px 18px; }
+    .share-button { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 0; color: #fff; background: var(--teal); cursor: pointer; font: 700 13px Arial, sans-serif; }
+    .share-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+    .share-menu { display: none; position: absolute; right: 38px; bottom: 62px; z-index: 1; width: min(250px, calc(100vw - 44px)); padding: 10px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 10px 25px #26352a24; }
+    .share-menu.is-open { display: grid; gap: 6px; }
+    .share-menu a, .share-menu button { display: block; padding: 9px 10px; border: 0; color: var(--ink); background: transparent; text-align: left; text-decoration: none; cursor: pointer; font: 700 13px Arial, sans-serif; }
+    .share-menu a:hover, .share-menu button:hover { background: #f1f6ef; }
+    @media print { .share { display: none; } }
     @media print { body { padding: 0; background: #fff; } .sheet { width: 100%; border: 0; box-shadow: none; } }
-    @media (max-width: 560px) { header, .content, footer { padding-left: 22px; padding-right: 22px; } .status { float: none; margin-bottom: 18px; } dl { grid-template-columns: 1fr; gap: 14px; } h1 { font-size: 29px; } }
+    @media (max-width: 560px) { header, .content, footer { padding-left: 22px; padding-right: 22px; } .share { padding-left: 22px; padding-right: 22px; } .share-menu { right: 22px; } .status { float: none; margin-bottom: 18px; } dl { grid-template-columns: 1fr; gap: 14px; } h1 { font-size: 29px; } }
   </style>
 </head>
 <body>
@@ -44,7 +52,42 @@
         {% if booking.payment_method == 'INSTALLMENT' %}<p>Paid so far: <strong>UGX {{ booking.amount_paid|floatformat:0 }}</strong></p><p>Balance remaining: <strong>UGX {{ booking.balance_due|floatformat:0 }}</strong></p>{% else %}<p>Payment status: <strong>CLEARED</strong></p>{% endif %}
       </section>
     </section>
+    <div class="share">
+      <div class="share-menu" id="share-menu" aria-label="Share registration">
+        <a href="{{ status_url }}" target="_blank" rel="noopener">Africana AI</a>
+        <a href="https://wa.me/?text={{ share_message|urlencode }}" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="https://t.me/share/url?url={{ status_url|urlencode }}&text={{ share_message|urlencode }}" target="_blank" rel="noopener">Telegram</a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ status_url|urlencode }}" target="_blank" rel="noopener">Facebook</a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ status_url|urlencode }}" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://twitter.com/intent/tweet?text={{ share_message|urlencode }}" target="_blank" rel="noopener">X</a>
+        <a href="mailto:?subject=Africana%20AI%20Festival%20registration%20{{ booking.booking_ref }}&body={{ share_message|urlencode }}">Email</a>
+        <button type="button" id="copy-share-link">Copy Africana AI link</button>
+      </div>
+      <button class="share-button" type="button" id="share-button" aria-expanded="false" aria-controls="share-menu" title="Share registration">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"></path></svg>
+        Share
+      </button>
+    </div>
     <footer>Keep this confirmation for event check-in. Africana AI Festival, 28 November 2026, ICT Innovation Hub, Nakawa.</footer>
   </article>
+  {{ share_message|json_script:'share-data' }}
+  <script>
+    const shareButton = document.getElementById('share-button');
+    const shareMenu = document.getElementById('share-menu');
+    const shareText = JSON.parse(document.getElementById('share-data').textContent);
+    const shareUrl = '{{ status_url|escapejs }}';
+    shareButton.addEventListener('click', async () => {
+      if (navigator.share) {
+        try { await navigator.share({ title: document.title, text: shareText, url: shareUrl }); } catch (error) { /* User cancelled sharing. */ }
+        return;
+      }
+      const open = shareMenu.classList.toggle('is-open');
+      shareButton.setAttribute('aria-expanded', open);
+    });
+    document.getElementById('copy-share-link').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(shareUrl);
+      document.getElementById('copy-share-link').textContent = 'Link copied';
+    });
+  </script>
 </body>
 </html>

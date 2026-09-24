@@ -192,14 +192,16 @@ class EventRegistrationTests(TestCase):
         self.assertTrue(booking.is_verified)
 
         status_response = self.client.get(response.url)
-        self.assertContains(status_response, 'WhatsApp')
-        self.assertContains(status_response, 'Telegram')
         self.assertContains(status_response, 'Download registration')
+        self.assertNotContains(status_response, 'Register another attendee')
         self.assertContains(status_response, booking.booking_ref)
 
         download_response = self.client.get(reverse('download_registration', args=[booking.booking_ref]))
         self.assertEqual(download_response.status_code, 200)
         self.assertIn(booking.booking_ref.encode(), download_response.content)
+        self.assertContains(download_response, 'Share')
+        self.assertContains(download_response, 'WhatsApp')
+        self.assertContains(download_response, 'Africana AI')
         self.assertIn('attachment;', download_response['Content-Disposition'])
 
     def test_same_name_cannot_register_multiple_times(self):

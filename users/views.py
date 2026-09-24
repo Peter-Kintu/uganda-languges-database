@@ -175,7 +175,16 @@ def registration_status(request, booking_ref):
 
 def download_registration(request, booking_ref):
     booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
-    receipt = render_to_string('registration_download.html', {'booking': booking})
+    status_url = request.build_absolute_uri(reverse('registration_status', args=[booking.booking_ref]))
+    share_message = (
+        f'Africana AI Festival registration for {booking.full_name}: '
+        f'booking reference {booking.booking_ref}. Check confirmation: {status_url}'
+    )
+    receipt = render_to_string('registration_download.html', {
+        'booking': booking,
+        'share_message': share_message,
+        'status_url': status_url,
+    })
     response = HttpResponse(receipt, content_type='text/html; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.html"'
     return response
