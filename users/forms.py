@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
-from .models import CustomUser, Experience, Education, Skill
+from .models import CustomUser, Experience, Education, Skill, EventBooking
 
 # --- Authentication Forms ---
 
@@ -56,3 +56,15 @@ class ProfileEditForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'w-full px-4 py-3 bg-slate-50 text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-400'
+
+
+class EventBookingEditForm(forms.ModelForm):
+    class Meta:
+        model = EventBooking
+        fields = (
+            'full_name', 'phone', 'email', 'payment_method', 'transaction_id',
+            'promo_code', 'amount_paid', 'balance_due', 'is_verified',
+        )
+        widgets = {
+            'is_verified': forms.CheckboxInput(),
+        }

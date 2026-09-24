@@ -178,6 +178,23 @@ class EventRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(EventBooking.objects.filter(booking_ref='BOOK-DELETE1').exists())
 
+    def test_staff_can_edit_registration(self):
+        booking = EventBooking.objects.create(
+            booking_ref='BOOK-EDIT1', full_name='Old Name', phone='0700000000',
+            email='old@example.com', ticket_type='FREE',
+        )
+        self.client.force_login(self.staff_user)
+        response = self.client.post(reverse('edit_registration', args=[booking.booking_ref]), {
+            'full_name': 'New Name', 'phone': '0711111111', 'email': 'new@example.com',
+            'payment_method': 'PROMO', 'transaction_id': 'PROMO-1', 'promo_code': 'WELCOME',
+            'amount_paid': '0', 'balance_due': '50000', 'is_verified': 'on',
+        })
+        self.assertEqual(response.status_code, 302)
+        booking.refresh_from_db()
+        self.assertEqual(booking.full_name, 'New Name')
+        self.assertEqual(booking.payment_method, 'PROMO')
+        self.assertTrue(booking.is_verified)
+
     def test_free_registration_is_confirmed_and_redirects_to_status(self):
         response = self.client.post(reverse('launch_registration'), {
             'full_name': 'Amina Nakato',
@@ -203,6 +220,17 @@ class EventRegistrationTests(TestCase):
         self.assertContains(download_response, 'WhatsApp')
         self.assertContains(download_response, 'Africana AI')
         self.assertIn('attachment;', download_response['Content-Disposition'])
+
+        for download_format, content_type, signature in (
+            ('png', 'image/png', b'\x89PNG'),
+            ('pdf', 'application/pdf', b'%PDF'),
+        ):
+            formatted_response = self.client.get(
+                reverse('download_registration', args=[booking.booking_ref]),
+                {'format': download_format},
+            )
+            self.assertEqual(formatted_response['Content-Type'], content_type)
+            self.assertTrue(formatted_response.content.startswith(signature))
 
     def test_same_name_cannot_register_multiple_times(self):
         registration = {

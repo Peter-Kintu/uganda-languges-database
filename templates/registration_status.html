@@ -9,7 +9,8 @@
     main { width: min(92vw, 560px); padding: 34px; background: #fffaf0; box-shadow: 0 18px 50px #0008; text-align: center; }
     .mark { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #e9a91a; color: #7e2d1c; font: 700 32px Arial, sans-serif; }
     h1 { margin: 18px 0 8px; font-size: 30px; } p { color: #5e5144; } .ref { display: inline-block; margin: 12px 0; padding: 10px 14px; background: #fff1c9; font: 700 16px monospace; color: #7e2d1c; }
-    .download { display: inline-block; margin-top: 20px; padding: 13px 20px; background: #5e5144; color: #fff; text-decoration: none; font: 700 15px Arial, sans-serif; }
+    .downloads { display: grid; gap: 9px; margin-top: 20px; } .download { display: block; padding: 13px 20px; background: #5e5144; color: #fff; text-decoration: none; font: 700 15px Arial, sans-serif; } .download:hover { background: #7e2d1c; }
+    .format-note { margin: 16px 0 8px; font: 13px Arial, sans-serif; color: #6c6256; }
     @media (max-width: 430px) { main { padding: 26px 20px; } .actions { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -25,11 +26,18 @@
       <p>Your payment is recorded as <strong>cleared</strong>. Keep this reference for event check-in.</p>
     {% endif %}
     <p class="payment-pill">{{ booking.payment_method|title }} · {{ booking.payment_status }}</p>
-    {% if booking.ticket_type == 'CEO' and booking.is_verified and booking.founding_member_number %}
-      <a class="download" href="{% url 'download_ceo_card' booking.booking_ref %}">Download CEO card</a>
-    {% else %}
-      <a class="download" href="{% url 'download_registration' booking.booking_ref %}">Download registration</a>
-    {% endif %}
+    <p class="format-note">Choose your preferred download format:</p>
+    <div class="downloads">
+      {% if booking.ticket_type == 'CEO' and booking.is_verified and booking.founding_member_number %}
+        <a class="download" href="{% url 'download_ceo_card' booking.booking_ref %}?format=html">Download CEO card as HTML</a>
+        <a class="download" href="{% url 'download_ceo_card' booking.booking_ref %}?format=png">Download CEO card as PNG</a>
+        <a class="download" href="{% url 'download_ceo_card' booking.booking_ref %}?format=pdf">Download CEO card as PDF</a>
+      {% else %}
+        <a class="download" href="{% url 'download_registration' booking.booking_ref %}?format=html">Download registration as HTML</a>
+        <a class="download" href="{% url 'download_registration' booking.booking_ref %}?format=png">Download registration as PNG</a>
+        <a class="download" href="{% url 'download_registration' booking.booking_ref %}?format=pdf">Download registration as PDF</a>
+      {% endif %}
+    </div>
   </main>
 </body>
 </html>

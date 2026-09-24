@@ -29,6 +29,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.template import TemplateDoesNotExist
 from .models import AgentMemory, AgentPlan, AgentResearchCitation, EventBooking
+from .forms import EventBookingEditForm
 import uuid
 from io import BytesIO
 from pathlib import Path
@@ -87,6 +88,20 @@ def verify_registration(request, booking_ref):
     booking.save(update_fields=['is_verified', 'founding_member_number'])
     messages.success(request, f'{booking.full_name} has been marked as verified.')
     return redirect('registration_admin')
+
+
+@staff_required
+def edit_registration(request, booking_ref):
+    booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
+    if request.method == 'POST':
+        form = EventBookingEditForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'{booking.full_name} has been updated.')
+            return redirect('registration_admin')
+    else:
+        form = EventBookingEditForm(instance=booking)
+    return render(request, 'registration_edit.html', {'booking': booking, 'form': form})
 
 
 @staff_required
@@ -175,11 +190,29 @@ def registration_status(request, booking_ref):
 
 def download_registration(request, booking_ref):
     booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
+    download_format = request.GET.get('format', 'html').strip().lower()
     status_url = request.build_absolute_uri(reverse('registration_status', args=[booking.booking_ref]))
     share_message = (
         f'Africana AI Festival registration for {booking.full_name}: '
         f'booking reference {booking.booking_ref}. Check confirmation: {status_url}'
     )
+    if download_format in {'png', 'pdf'}:
+        card = _registration_card_image(booking)
+        output = BytesIO()
+        if download_format == 'png':
+            card.save(output, format='PNG', optimize=True)
+            content_type = 'image/png'
+            extension = 'png'
+        else:
+            card.save(output, format='PDF', resolution=150.0)
+            content_type = 'application/pdf'
+            extension = 'pdf'
+        response = HttpResponse(output.getvalue(), content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.{extension}"'
+        return response
+    if download_format != 'html':
+        return HttpResponse('Unsupported download format.', status=400)
+
     receipt = render_to_string('registration_download.html', {
         'booking': booking,
         'share_message': share_message,
@@ -188,6 +221,22 @@ def download_registration(request, booking_ref):
     response = HttpResponse(receipt, content_type='text/html; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.html"'
     return response
+
+
+def _registration_card_image(booking):
+    card = Image.new('RGB', (1400, 900), '#fffaf0')
+    draw = ImageDraw.Draw(card)
+    draw.rectangle((0, 0, 1400, 150), fill='#126b68')
+    draw.rectangle((0, 150, 1400, 165), fill='#d99b29')
+    draw.text((70, 52), 'AFRICANA AI FESTIVAL', fill='#fffdf8', font=_card_font(42, bold=True))
+    draw.text((70, 215), 'REGISTRATION CONFIRMATION', fill='#126b68', font=_card_font(34, bold=True))
+    draw.text((70, 300), f'Reference: {booking.booking_ref}', fill='#18201e', font=_card_font(30, bold=True))
+    draw.text((70, 390), f'Attendee: {booking.full_name}', fill='#18201e', font=_card_font(28))
+    draw.text((70, 465), f'Phone: {booking.phone}', fill='#18201e', font=_card_font(28))
+    draw.text((70, 540), f'Email: {booking.email}', fill='#18201e', font=_card_font(28))
+    draw.text((70, 660), f'Payment: {booking.payment_status}', fill='#126b68', font=_card_font(28, bold=True))
+    draw.text((70, 755), '14 November 2026 | ICT Innovation Hub, Nakawa', fill='#64706b', font=_card_font(22))
+    return card
 
 
 def _card_font(size, bold=False):
@@ -203,6 +252,12 @@ def download_ceo_card(request, booking_ref):
     booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
     if booking.ticket_type != 'CEO' or not booking.is_verified or booking.founding_member_number is None:
         return HttpResponse('CEO card is available after payment verification.', status=404)
+
+    download_format = request.GET.get('format', 'png').strip().lower()
+    if download_format == 'html':
+        return download_registration(request, booking_ref)
+    if download_format not in {'png', 'pdf'}:
+        return HttpResponse('Unsupported download format.', status=400)
 
     image_path = Path(settings.BASE_DIR) / 'static' / 'images' / 'africanaai_card.png'
     card = Image.open(image_path).convert('RGB')
@@ -225,9 +280,16 @@ def download_ceo_card(request, booking_ref):
     card.paste(qr_image, (1460, 840))
 
     output = BytesIO()
-    card.save(output, format='PNG', optimize=True)
-    response = HttpResponse(output.getvalue(), content_type='image/png')
-    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-ceo-card.png"'
+    if download_format == 'pdf':
+        card.save(output, format='PDF', resolution=150.0)
+        content_type = 'application/pdf'
+        extension = 'pdf'
+    else:
+        card.save(output, format='PNG', optimize=True)
+        content_type = 'image/png'
+        extension = 'png'
+    response = HttpResponse(output.getvalue(), content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-ceo-card.{extension}"'
     return response
 
 
