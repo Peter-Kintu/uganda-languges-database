@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from decimal import Decimal
+from difflib import SequenceMatcher
 from math import asin, cos, radians, sin, sqrt
 import os
+import re
 from uuid import uuid4
 
 from django.db import transaction
@@ -49,6 +51,45 @@ class RideFare:
     confidence: str
 
 
+LOCAL_LANDMARKS = {
+    'acacia mall': (0.3476, 32.5917),
+    'clock tower': (0.3075, 32.5700),
+    'chez lando': (0.3538, 32.6135),
+    'kampala road': (0.3152, 32.5813),
+    'nakawa market': (0.3417, 32.6350),
+    'cbd': (0.3152, 32.5813),
+    'old taxi park': (0.3115, 32.5721),
+    'new taxi park': (0.3148, 32.5689),
+    'mulago hospital': (0.3470, 32.5790),
+    'makerere university': (0.3350, 32.5680),
+    'uganda museum': (0.3456, 32.5910),
+    'garden city': (0.3227, 32.5847),
+    'kisementi': (0.3472, 32.5925),
+    'kisasi': (0.3790, 32.6080),
+    'entebbe airport': (0.0424, 32.4435),
+}
+
+
+def _normalize_landmark(value):
+    return re.sub(r'\s+', ' ', re.sub(r'[^a-z0-9 ]', ' ', (value or '').lower())).strip()
+
+
+def resolve_landmark_coordinates(raw_text, *, minimum_score=0.72):
+    """Return approximate local coordinates for a familiar landmark description."""
+    normalized = _normalize_landmark(raw_text)
+    if not normalized:
+        return None
+    for landmark, coordinates in LOCAL_LANDMARKS.items():
+        if landmark in normalized:
+            return coordinates
+    best_match = max(
+        LOCAL_LANDMARKS,
+        key=lambda landmark: SequenceMatcher(None, landmark, normalized).ratio(),
+    )
+    score = SequenceMatcher(None, best_match, normalized).ratio()
+    return LOCAL_LANDMARKS[best_match] if score >= minimum_score else None
+
+
 def _haversine_km(latitude_one, longitude_one, latitude_two, longitude_two):
     latitude_one, longitude_one, latitude_two, longitude_two = map(
         radians, [float(latitude_one), float(longitude_one), float(latitude_two), float(longitude_two)]
@@ -85,22 +126,20 @@ def match_nearest_driver(ride):
 
     if ride.pickup_latitude is None or ride.pickup_longitude is None:
         return None
-    candidates = DriverProfile.objects.filter(
-        status='verified', is_available=True, latitude__isnull=False, longitude__isnull=False,
-        vehicle_type=ride.ride_type,
-    )
-    ranked_drivers = []
-    for driver in candidates:
-        distance = _haversine_km(ride.pickup_latitude, ride.pickup_longitude, driver.latitude, driver.longitude)
-        ranked_drivers.append((distance, driver.pk))
-    for _, driver_id in sorted(ranked_drivers):
-        with transaction.atomic():
-            locked_driver = DriverProfile.objects.select_for_update().get(pk=driver_id)
-            if not locked_driver.is_available or locked_driver.status != 'verified':
-                continue
-            locked_driver.is_available = False
-            locked_driver.save(update_fields=['is_available', 'updated_at'])
-            return locked_driver
+    with transaction.atomic():
+        candidates = DriverProfile.objects.select_for_update().filter(
+            status='verified', is_available=True, latitude__isnull=False, longitude__isnull=False,
+            vehicle_type=ride.ride_type,
+        )
+        ranked_drivers = [
+            (_haversine_km(ride.pickup_latitude, ride.pickup_longitude, driver.latitude, driver.longitude), driver)
+            for driver in candidates
+        ]
+        if ranked_drivers:
+            _, selected_driver = min(ranked_drivers, key=lambda candidate: (candidate[0], candidate[1].pk))
+            selected_driver.is_available = False
+            selected_driver.save(update_fields=['is_available', 'updated_at'])
+            return selected_driver
     return None
 
 

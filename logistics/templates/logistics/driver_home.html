@@ -21,7 +21,7 @@
                 <p>Register your vehicle to receive nearby Africana Ride requests.</p>
             {% endif %}
         </div>
-        {% if driver %}<div class="driver-status"><span class="status-dot"></span><strong>{{ driver.get_status_display }}</strong><small>{% if driver.is_available %}Available for matching{% else %}Not currently available{% endif %}</small></div>{% endif %}
+        {% if driver %}<div class="driver-status"><span class="status-dot"></span><strong>{{ driver.get_status_display }}</strong><small id="availability-label">{% if driver.is_available %}Available for matching{% else %}Not currently available{% endif %}</small>{% if driver.status == 'verified' %}<button id="availability-toggle" type="button" data-available="{{ driver.is_available|yesno:'true,false' }}">{% if driver.is_available %}Pause matching{% else %}Go available{% endif %}</button><small id="location-status" role="status">Location sharing is starting...</small>{% endif %}</div>{% endif %}
     </section>
 
     {% if not driver %}
@@ -84,7 +84,7 @@
     .driver-intro p:not(.portal-label) { max-width: 600px; color: #66716c; font-size: 17px; line-height: 1.5; }
     .portal-label { color: #0d6b4d; font: 700 11px Arial, sans-serif; letter-spacing: .16em; text-transform: uppercase; }
     .driver-status { min-width: 190px; padding: 16px; background: white; border: 1px solid #d6ddd4; font: 13px Arial, sans-serif; }
-    .driver-status strong, .driver-status small { display: block; margin-left: 15px; }.driver-status small { color: #66716c; margin-top: 5px; }.status-dot { float: left; width: 9px; height: 9px; margin-top: 3px; border-radius: 50%; background: #55a444; }
+    .driver-status strong, .driver-status small { display: block; margin-left: 15px; }.driver-status small { color: #66716c; margin-top: 5px; }.driver-status button { margin: 13px 0 0 15px; border: 1px solid #0d6b4d; background: transparent; color: #0d6b4d; padding: 8px 10px; cursor: pointer; font: 700 11px Arial, sans-serif; }.driver-status #location-status { font-size: 10px; }.status-dot { float: left; width: 9px; height: 9px; margin-top: 3px; border-radius: 50%; background: #55a444; }
     .trip-list { display: grid; gap: 18px; padding-bottom: 70px; }
     .trip-card, .empty-panel { background: white; border: 1px solid #d6ddd4; padding: 28px; }.trip-card-top { display: flex; justify-content: space-between; gap: 15px; border-bottom: 1px solid #d6ddd4; padding-bottom: 18px; }.trip-card h2, .empty-panel h2 { margin: 6px 0 0; font-size: 28px; }.ride-type { align-self: start; padding: 8px; background: #d7f36b; font: 700 10px Arial, sans-serif; text-transform: uppercase; }
     .route-block { padding: 24px 0; max-width: 680px; }.route-block > div:not(.route-connector) { display: flex; align-items: flex-start; gap: 14px; }.route-block small, .trip-details small { display: block; color: #66716c; font: 700 10px Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }.route-block strong { display: block; margin-top: 5px; font-size: 18px; }.route-marker { width: 13px; height: 13px; flex: 0 0 13px; margin: 2px 0 0 2px; border: 3px solid #0d6b4d; border-radius: 50%; }.drop-marker { border-radius: 3px 3px 50% 50%; background: #d7f36b; }.route-connector { width: 1px; height: 24px; margin: 3px 0 3px 8px; background: #0d6b4d; }
@@ -96,6 +96,66 @@
 </style>
 <script>
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    const availabilityToggle = document.getElementById('availability-toggle');
+    const availabilityLabel = document.getElementById('availability-label');
+    const locationStatus = document.getElementById('location-status');
+    let locationWatchId = null;
+    let locationSendTimer = null;
+
+    async function sendDriverLocation(position) {
+        if (!availabilityToggle) return;
+        const response = await fetch('{% url "logistics:driver_location" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy_meters: position.coords.accuracy,
+                available: availabilityToggle.dataset.available === 'true',
+            }),
+        });
+        if (!response.ok) throw new Error('Location update failed.');
+        locationStatus.textContent = `Location updated ${new Date().toLocaleTimeString()}.`;
+    }
+
+    function startLocationSharing() {
+        if (!navigator.geolocation || locationWatchId !== null) return;
+        locationWatchId = navigator.geolocation.watchPosition(function (position) {
+            if (locationSendTimer) window.clearTimeout(locationSendTimer);
+            locationSendTimer = window.setTimeout(function () {
+                sendDriverLocation(position).catch(function () { locationStatus.textContent = 'Location update failed. Retrying...'; });
+            }, 1000);
+        }, function () {
+            locationStatus.textContent = 'Allow location access to receive nearby trips.';
+        }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 });
+    }
+
+    if (availabilityToggle) {
+        availabilityToggle.addEventListener('click', async function () {
+            const available = availabilityToggle.dataset.available !== 'true';
+            availabilityToggle.disabled = true;
+            try {
+                const response = await fetch('{% url "logistics:driver_availability" %}', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                    body: JSON.stringify({available: available}),
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Could not update availability.');
+                availabilityToggle.dataset.available = String(result.available);
+                availabilityToggle.textContent = result.available ? 'Pause matching' : 'Go available';
+                availabilityLabel.textContent = result.available ? 'Available for matching' : 'Not currently available';
+                locationStatus.textContent = result.available ? 'Location sharing is active.' : 'Matching paused. Location sharing remains on.';
+                startLocationSharing();
+            } catch (error) {
+                locationStatus.textContent = error.message;
+            } finally {
+                availabilityToggle.disabled = false;
+            }
+        });
+        startLocationSharing();
+    }
+
     document.querySelectorAll('[data-status]').forEach(function (button) {
         button.addEventListener('click', async function () {
             const card = button.closest('[data-ride-id]');

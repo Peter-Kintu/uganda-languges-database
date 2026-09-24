@@ -16,6 +16,7 @@ urlpatterns = [
     path('rides/<int:ride_id>/safety/', views.safety_report, name='safety_report'),
     path('drivers/register/', views.register_driver, name='register_driver'),
     path('drivers/location/', views.driver_location, name='driver_location'),
+    path('drivers/availability/', views.driver_availability, name='driver_availability'),
     path('support/tickets/', views.create_support_ticket, name='create_support_ticket'),
     path('support/email/', views.send_support_email, name='send_support_email'),
     path('payments/<slug:provider_code>/webhook/', views.mobile_money_webhook, name='mobile_money_webhook'),

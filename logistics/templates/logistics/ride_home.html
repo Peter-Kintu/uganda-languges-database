@@ -80,7 +80,9 @@
                     <li><span></span><div><strong>Driver arrives</strong><small>We will show the driver and vehicle details here.</small></div></li>
                     <li><span></span><div><strong>Trip complete</strong><small>Pay using the method you selected.</small></div></li>
                 </ol>
+                <button id="cancel-ride" class="cancel-ride" type="button">Cancel ride</button>
                 <button id="confirm-ride" type="button">Got it</button>
+                <p id="ride-action-status" class="ride-action-status" role="status" hidden></p>
             </div>
             <div class="request-result" id="request-result" hidden aria-live="polite">
                 <span class="success-mark">OK</span>
@@ -191,6 +193,8 @@
     .trip-status strong, .trip-status small { display: block; }
     .trip-status strong { color: var(--ink); font-size: 12px; margin: 0; }
     .trip-status small { color: var(--muted); margin-top: 3px; }
+    .cancel-ride { margin: 0 0 10px; background: transparent !important; color: #7a4b00 !important; border: 1px solid #d8b77a !important; }
+    .ride-action-status { margin: 0; padding: 10px; background: #e5f3d4; color: var(--green); font: 12px/1.4 Arial, sans-serif; }
     .signal-strip { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 30px; padding-top: 22px; padding-bottom: 22px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font: 12px Arial, sans-serif; }
     .signal-strip div { display: flex; flex-direction: column; gap: 4px; } .signal-strip div:first-child { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; } .signal-strip span:not(.live-dot) { color: var(--muted); }
     .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #55a444; }
@@ -212,6 +216,8 @@
     const paymentNote = document.getElementById('payment-note');
     const formStatus = document.getElementById('form-status');
     const quoteStatus = document.getElementById('quote-status');
+    const cancelRideButton = document.getElementById('cancel-ride');
+    const rideActionStatus = document.getElementById('ride-action-status');
     const submitButton = form.querySelector('button[type="submit"]');
     let activeRideId = null;
     let trackingTimer = null;
@@ -289,6 +295,30 @@
     document.getElementById('confirm-ride').addEventListener('click', function () {
         quoteResult.hidden = true;
         requestResult.hidden = false;
+    });
+
+    cancelRideButton.addEventListener('click', async function () {
+        if (!activeRideId || !window.confirm('Cancel this ride request?')) return;
+        cancelRideButton.disabled = true;
+        const response = await fetch(`/logistics/rides/${activeRideId}/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({status: 'cancelled', reason: 'Cancelled by rider'}),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            rideActionStatus.textContent = result.error || 'This ride could not be cancelled.';
+            rideActionStatus.hidden = false;
+            cancelRideButton.disabled = false;
+            return;
+        }
+        if (trackingTimer) window.clearInterval(trackingTimer);
+        quoteStatus.textContent = 'Your ride request has been cancelled.';
+        document.getElementById('status-title').textContent = 'Cancelled';
+        document.getElementById('status-detail').textContent = 'You can plan another ride whenever you are ready.';
+        cancelRideButton.hidden = true;
+        rideActionStatus.textContent = 'Ride cancelled. No driver will be sent to your pickup point.';
+        rideActionStatus.hidden = false;
     });
 
     document.getElementById('new-ride').addEventListener('click', function () {

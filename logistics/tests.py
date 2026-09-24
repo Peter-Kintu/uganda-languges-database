@@ -3,11 +3,13 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
 from eshop.models import Order
 from .models import CourierProvider, DriverProfile, RideLocation, RidePayment, RideRating, RideRequest, SafetyReport, Shipment, SupportTicket, TrackingEvent
+from .services import resolve_landmark_coordinates
 
 
 class CourierTrackingTests(TestCase):
@@ -30,6 +32,7 @@ class CourierTrackingTests(TestCase):
 
 class RideWorkflowTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.rider = get_user_model().objects.create_user(username='rider', password='test-pass')
         self.driver_user = get_user_model().objects.create_user(username='driver', first_name='Amina', password='test-pass')
         self.driver = DriverProfile.objects.create(
@@ -53,6 +56,26 @@ class RideWorkflowTests(TestCase):
         self.driver.refresh_from_db()
         self.assertFalse(self.driver.is_available)
 
+    def test_request_accepts_airtel_money(self):
+        response = self.client.post(reverse('logistics:request_ride'), data=json.dumps({
+            'pickup': 'Acacia Mall main gate', 'dropoff': 'Clock Tower taxi stage', 'ride_type': 'standard',
+            'payment': 'Airtel Money', 'pickup_latitude': 0.3150, 'pickup_longitude': 32.5810,
+            'dropoff_latitude': 0.3075, 'dropoff_longitude': 32.5700,
+        }), content_type='application/json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(RidePayment.objects.get().provider, 'airtel')
+        self.assertEqual(RideRequest.objects.get().payment_method, 'airtel')
+
+    def test_local_landmarks_resolve_without_coordinates(self):
+        pickup = resolve_landmark_coordinates('Near the main gate at Acacia Mall')
+        dropoff = resolve_landmark_coordinates('Clock Tower taxi stage')
+
+        self.assertIsNotNone(pickup)
+        self.assertIsNotNone(dropoff)
+        self.assertAlmostEqual(pickup[0], 0.3476)
+        self.assertAlmostEqual(dropoff[1], 32.5700)
+
     def test_driver_portal_shows_assigned_trip_details(self):
         ride = RideRequest.objects.create(
             rider=self.rider, driver=self.driver, pickup_landmark='Acacia Mall main gate',
@@ -70,6 +93,18 @@ class RideWorkflowTests(TestCase):
         self.assertContains(response, 'Cash')
         self.assertContains(response, self.rider.phone or 'Phone not provided')
 
+    def test_verified_driver_can_toggle_availability_without_location(self):
+        self.client.force_login(self.driver_user)
+        response = self.client.post(
+            reverse('logistics:driver_availability'),
+            data=json.dumps({'available': False}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.driver.refresh_from_db()
+        self.assertFalse(self.driver.is_available)
+
     def test_driver_can_update_assigned_trip_status(self):
         ride = RideRequest.objects.create(
             rider=self.rider, driver=self.driver, pickup_landmark='A', dropoff_landmark='B',
@@ -86,6 +121,48 @@ class RideWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         ride.refresh_from_db()
         self.assertEqual(ride.status, 'arrived')
+
+    def test_rider_cancellation_releases_assigned_driver(self):
+        self.driver.is_available = False
+        self.driver.save(update_fields=['is_available'])
+        ride = RideRequest.objects.create(
+            rider=self.rider, driver=self.driver, pickup_landmark='A', dropoff_landmark='B',
+            ride_type='standard', payment_method='cash', status='assigned',
+            estimated_fare_min=5000, estimated_fare_max=7000,
+        )
+
+        response = self.client.post(
+            reverse('logistics:ride_status', args=[ride.id]),
+            data=json.dumps({'status': 'cancelled', 'reason': 'Plans changed'}), content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        ride.refresh_from_db()
+        self.driver.refresh_from_db()
+        self.assertEqual(ride.status, 'cancelled')
+        self.assertEqual(ride.cancellation_reason, 'Plans changed')
+        self.assertTrue(self.driver.is_available)
+
+    def test_duplicate_completion_does_not_increment_driver_twice(self):
+        ride = RideRequest.objects.create(
+            rider=self.rider, driver=self.driver, pickup_landmark='A', dropoff_landmark='B',
+            ride_type='standard', payment_method='cash', status='in_progress',
+            estimated_fare_min=5000, estimated_fare_max=7000,
+        )
+        self.client.force_login(self.driver_user)
+        payload = json.dumps({'status': 'completed'})
+
+        first_response = self.client.post(
+            reverse('logistics:ride_status', args=[ride.id]), data=payload, content_type='application/json',
+        )
+        second_response = self.client.post(
+            reverse('logistics:ride_status', args=[ride.id]), data=payload, content_type='application/json',
+        )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 409)
+        self.driver.refresh_from_db()
+        self.assertEqual(self.driver.completed_trips, 1)
 
     def test_driver_can_register_from_in_app_form(self):
         applicant = get_user_model().objects.create_user(username='new-driver', password='test-pass')

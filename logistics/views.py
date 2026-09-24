@@ -1,4 +1,7 @@
 import json
+import hashlib
+import hmac
+import os
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from uuid import uuid4
@@ -8,6 +11,8 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.db.models import F
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
@@ -16,7 +21,7 @@ from django.views.decorators.http import require_http_methods
 
 from eshop.models import Order
 from .models import CourierProvider, DeliveryQuote, DriverProfile, RideLocation, RidePayment, RideRating, RideRequest, SafetyReport, Shipment, SupportTicket, TrackingEvent
-from .services import CourierRegistry, calculate_ride_fare, match_nearest_driver, whatsapp_notification_link
+from .services import CourierRegistry, calculate_ride_fare, match_nearest_driver, resolve_landmark_coordinates, whatsapp_notification_link
 
 
 def ride_home(request):
@@ -77,6 +82,15 @@ def _decimal(value):
         return None
 
 
+def _webhook_is_authenticated(request, provider_code):
+    secret = os.getenv(f'LOGISTICS_WEBHOOK_SECRET_{provider_code.upper()}')
+    if not secret and provider_code == 'mock':
+        return True
+    if not secret:
+        return False
+    supplied_signature = request.headers.get('X-Webhook-Signature', '').strip().lower()
+    expected_signature = hmac.new(secret.encode('utf-8'), request.body, hashlib.sha256).hexdigest()
+    return bool(supplied_signature) and hmac.compare_digest(supplied_signature, expected_signature)
 @login_required
 @require_http_methods(['POST'])
 def request_ride(request):
@@ -97,6 +111,14 @@ def request_ride(request):
     if ride_type not in dict(RideRequest.RIDE_TYPES) or payment_method not in dict(RideRequest.PAYMENT_METHODS):
         return JsonResponse({'error': 'Unsupported ride or payment type.'}, status=400)
     coordinates = [_decimal(payload.get(key)) for key in ('pickup_latitude', 'pickup_longitude', 'dropoff_latitude', 'dropoff_longitude')]
+    if coordinates[0] is None or coordinates[1] is None:
+        pickup_coordinates = resolve_landmark_coordinates(str(payload['pickup']).strip())
+        if pickup_coordinates:
+            coordinates[0], coordinates[1] = map(Decimal, pickup_coordinates)
+    if coordinates[2] is None or coordinates[3] is None:
+        dropoff_coordinates = resolve_landmark_coordinates(str(payload['dropoff']).strip())
+        if dropoff_coordinates:
+            coordinates[2], coordinates[3] = map(Decimal, dropoff_coordinates)
     fare = calculate_ride_fare(ride_type=ride_type, pickup_latitude=coordinates[0], pickup_longitude=coordinates[1], dropoff_latitude=coordinates[2], dropoff_longitude=coordinates[3])
     ride = RideRequest.objects.create(
         rider=request.user, pickup_landmark=str(payload['pickup']).strip(), dropoff_landmark=str(payload['dropoff']).strip(),
@@ -168,6 +190,19 @@ def driver_location(request):
 
 
 @login_required
+@require_http_methods(['POST'])
+def driver_availability(request):
+    driver = get_object_or_404(DriverProfile, user=request.user, status='verified')
+    payload = _json_body(request) or {}
+    available = payload.get('available')
+    if not isinstance(available, bool):
+        return JsonResponse({'error': 'Availability must be true or false.'}, status=400)
+    driver.is_available = available
+    driver.save(update_fields=['is_available', 'updated_at'])
+    return JsonResponse({'status': 'updated', 'available': driver.is_available})
+
+
+@login_required
 @require_http_methods(['GET', 'POST'])
 def ride_status(request, ride_id):
     ride = get_object_or_404(RideRequest.objects.select_related('driver__user'), pk=ride_id)
@@ -180,15 +215,40 @@ def ride_status(request, ride_id):
         allowed = {'arrived', 'in_progress', 'completed'} if is_driver else {'cancelled'}
         if next_status not in allowed:
             return JsonResponse({'error': 'Invalid status transition.'}, status=400)
-        ride.status = next_status
-        if next_status == 'completed':
-            ride.completed_at = timezone.now()
-            ride.driver.completed_trips += 1
-            ride.driver.is_available = True
-            ride.driver.save(update_fields=['completed_trips', 'is_available', 'updated_at'])
-            ride.save(update_fields=['status', 'completed_at', 'updated_at'])
-        else:
-            ride.save(update_fields=['status', 'updated_at'])
+        with transaction.atomic():
+            ride = RideRequest.objects.select_for_update().select_related('driver__user').get(pk=ride_id)
+            locked_is_driver = ride.driver_id and ride.driver.user_id == request.user.id
+            if ride.rider_id != request.user.id and not locked_is_driver:
+                return JsonResponse({'error': 'Ride access denied.'}, status=403)
+            valid_transitions = {
+                'assigned': {'arrived'},
+                'arrived': {'in_progress'},
+                'in_progress': {'completed'},
+            }
+            if next_status == 'cancelled':
+                cancellable = {'requested', 'matching', 'assigned', 'arrived'}
+                if ride.status not in cancellable:
+                    return JsonResponse({'error': 'This ride can no longer be cancelled.'}, status=409)
+            elif next_status not in valid_transitions.get(ride.status, set()):
+                return JsonResponse({'error': 'This ride has already moved to a different status.'}, status=409)
+
+            ride.status = next_status
+            if next_status == 'cancelled':
+                if ride.driver_id:
+                    driver = DriverProfile.objects.select_for_update().get(pk=ride.driver_id)
+                    driver.is_available = True
+                    driver.save(update_fields=['is_available', 'updated_at'])
+                ride.cancellation_reason = str(payload.get('reason', '')).strip()[:255]
+                ride.save(update_fields=['status', 'cancellation_reason', 'updated_at'])
+            elif next_status == 'completed':
+                ride.completed_at = timezone.now()
+                driver = DriverProfile.objects.select_for_update().get(pk=ride.driver_id)
+                driver.completed_trips = F('completed_trips') + 1
+                driver.is_available = True
+                driver.save(update_fields=['completed_trips', 'is_available', 'updated_at'])
+                ride.save(update_fields=['status', 'completed_at', 'updated_at'])
+            else:
+                ride.save(update_fields=['status', 'updated_at'])
     return JsonResponse({'ride_id': ride.pk, 'status': ride.status, 'driver': {'name': ride.driver.user.get_full_name() or ride.driver.user.username, 'phone': ride.driver.phone} if ride.driver else None})
 
 
@@ -288,8 +348,10 @@ def send_support_email(request):
 @csrf_exempt
 @require_http_methods(['POST'])
 def mobile_money_webhook(request, provider_code):
+    if provider_code not in {'momo', 'airtel'} or not _webhook_is_authenticated(request, provider_code):
+        return JsonResponse({'error': 'Webhook authentication failed.'}, status=401)
     payload = _json_body(request)
-    if payload is None or provider_code not in {'momo', 'airtel'}:
+    if payload is None:
         return JsonResponse({'error': 'Invalid provider or JSON.'}, status=400)
     payment = get_object_or_404(RidePayment, reference=payload.get('reference'), provider=provider_code)
     status = payload.get('status')
@@ -340,6 +402,8 @@ def track_shipment(request, external_id):
 def provider_webhook(request, provider_code):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required.'}, status=405)
+    if not _webhook_is_authenticated(request, provider_code):
+        return JsonResponse({'error': 'Webhook authentication failed.'}, status=401)
     try:
         payload = json.loads(request.body or '{}')
     except json.JSONDecodeError:

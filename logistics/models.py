@@ -84,7 +84,7 @@ class DriverProfile(models.Model):
 
 class RideRequest(models.Model):
     RIDE_TYPES = [('standard', 'Standard ride'), ('comfort', 'Comfort ride'), ('boda', 'Boda ride')]
-    PAYMENT_METHODS = [('momo', 'Mobile Money'), ('cash', 'Cash'), ('card', 'Card')]
+    PAYMENT_METHODS = [('momo', 'Mobile Money'), ('airtel', 'Airtel Money'), ('cash', 'Cash'), ('card', 'Card')]
     STATUS_CHOICES = [
         ('requested', 'Requested'), ('matching', 'Matching'), ('assigned', 'Driver assigned'),
         ('arrived', 'Driver arrived'), ('in_progress', 'In progress'), ('completed', 'Completed'),
