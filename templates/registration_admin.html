@@ -18,7 +18,7 @@
 <body>
   <main>
     <header>
-      <div><h1>Festival registrations</h1><p>Review attendees and confirm CEO Table payments.</p></div>
+      <div><h1>Festival registrations</h1><p>Review attendee details and payment balances.</p></div>
       <a class="back" href="{% url 'launch_registration' %}">Open public registration</a>
     </header>
     {% for message in messages %}<div class="message">{{ message }}</div>{% endfor %}
@@ -29,20 +29,19 @@
     </section>
     <section class="panel">
       <form class="filters" method="get">
-        <select name="ticket_type" aria-label="Filter by ticket type"><option value="">All ticket types</option><option value="FREE" {% if selected_ticket_type == 'FREE' %}selected{% endif %}>Free Public</option><option value="CEO" {% if selected_ticket_type == 'CEO' %}selected{% endif %}>CEO Table</option></select>
+        <select name="payment_method" aria-label="Filter by payment method"><option value="">All payment methods</option><option value="PAID" {% if selected_payment_method == 'PAID' %}selected{% endif %}>Paid</option><option value="PROMO" {% if selected_payment_method == 'PROMO' %}selected{% endif %}>Promo code</option><option value="INSTALLMENT" {% if selected_payment_method == 'INSTALLMENT' %}selected{% endif %}>Installment</option></select>
         <select name="status" aria-label="Filter by verification status"><option value="">All statuses</option><option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option><option value="verified" {% if selected_status == 'verified' %}selected{% endif %}>Verified</option></select>
         <button class="filter-button" type="submit">Filter</button>
       </form>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Attendee</th><th>Ticket</th><th>Payment reference</th><th>Proof</th><th>Registered</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Attendee</th><th>Payment method</th><th>Payment details</th><th>Registered</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
           {% for booking in bookings %}
             <tr>
               <td><div class="name">{{ booking.full_name }}</div><div class="muted">{{ booking.email }}<br>{{ booking.phone }}<br>{{ booking.booking_ref }}</div></td>
-              <td><span class="badge {% if booking.ticket_type == 'CEO' %}ceo{% else %}free{% endif %}">{{ booking.get_ticket_type_display }}</span>{% if booking.founding_member_number %}<div class="muted">Member {{ booking.founding_member_number|stringformat:'03d' }}/300</div>{% endif %}</td>
-              <td>{{ booking.transaction_id|default:'-' }}</td>
-              <td>{% if booking.payment_proof %}<a class="proof" href="{{ booking.payment_proof.url }}" target="_blank" rel="noopener">View proof</a>{% else %}-{% endif %}</td>
+              <td><span class="badge {% if booking.payment_method == 'INSTALLMENT' %}ceo{% else %}free{% endif %}">{{ booking.get_payment_method_display }}</span></td>
+              <td>{% if booking.payment_method == 'PROMO' %}<div>Code: {{ booking.promo_code }}</div><div class="verified">CLEARED</div>{% elif booking.payment_method == 'INSTALLMENT' %}<div>Paid: UGX {{ booking.amount_paid|floatformat:0 }}</div><div class="pending">Balance: UGX {{ booking.balance_due|floatformat:0 }}</div>{% else %}<span class="verified">CLEARED</span>{% endif %}{% if booking.transaction_id %}<div class="muted">Ref: {{ booking.transaction_id }}</div>{% endif %}</td>
               <td class="muted">{{ booking.created_at|date:'d M Y H:i' }}</td>
               <td>{% if booking.is_verified %}<span class="verified">Verified</span>{% else %}<span class="pending">Pending</span>{% endif %}</td>
               <td>
@@ -50,7 +49,7 @@
                 <form method="post" action="{% url 'delete_registration' booking.booking_ref %}" onsubmit="return confirm('Delete {{ booking.full_name|escapejs }} from registrations? This cannot be undone.');">{% csrf_token %}<button class="delete" type="submit">Delete</button></form>
               </td>
             </tr>
-          {% empty %}<tr><td colspan="7">No registrations match this filter.</td></tr>{% endfor %}
+          {% empty %}<tr><td colspan="6">No registrations match this filter.</td></tr>{% endfor %}
           </tbody>
         </table>
       </div>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Africana AI Registration {{ booking.booking_ref }}</title>
+  <style>
+    :root { --ink: #18201e; --muted: #64706b; --paper: #f5f1e8; --card: #fffdf8; --teal: #126b68; --gold: #d99b29; --line: #dce1d7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 38px 18px; background: var(--paper); color: var(--ink); font: 15px/1.5 Arial, sans-serif; }
+    .sheet { width: min(100%, 760px); margin: auto; background: var(--card); border: 1px solid var(--line); box-shadow: 0 18px 45px #26352a18; }
+    header { padding: 34px 38px; color: #fffdf8; background: var(--teal); border-bottom: 7px solid var(--gold); }
+    .eyebrow { margin: 0 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; opacity: .78; }
+    h1 { margin: 0; font: 700 34px/1.05 Georgia, serif; } header p { margin: 10px 0 0; opacity: .86; }
+    .content { padding: 34px 38px; } .ref { display: inline-block; margin: 0 0 26px; padding: 9px 13px; color: var(--teal); border: 1px solid #9cc3b8; font: 700 18px monospace; letter-spacing: .08em; }
+    .status { display: inline-block; float: right; padding: 8px 12px; color: #fff; background: var(--teal); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+    dl { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 30px; margin: 0; } dt { margin-bottom: 3px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; } dd { margin: 0; font-size: 17px; font-weight: 700; }
+    .payment { clear: both; margin-top: 32px; padding: 20px; background: #f1f6ef; border-left: 4px solid var(--gold); } .payment h2 { margin: 0 0 12px; font: 700 20px Georgia, serif; } .payment p { margin: 5px 0; color: var(--muted); } .payment strong { color: var(--ink); }
+    footer { padding: 18px 38px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    @media print { body { padding: 0; background: #fff; } .sheet { width: 100%; border: 0; box-shadow: none; } }
+    @media (max-width: 560px) { header, .content, footer { padding-left: 22px; padding-right: 22px; } .status { float: none; margin-bottom: 18px; } dl { grid-template-columns: 1fr; gap: 14px; } h1 { font-size: 29px; } }
+  </style>
+</head>
+<body>
+  <article class="sheet">
+    <header>
+      <p class="eyebrow">Africana AI Festival &amp; Launch</p>
+      <h1>Registration confirmation</h1>
+      <p>Shop, work and grow in your language.</p>
+    </header>
+    <section class="content">
+      <span class="status">{% if booking.payment_method == 'INSTALLMENT' %}BALANCE DUE{% else %}CLEARED{% endif %}</span>
+      <div class="ref">{{ booking.booking_ref }}</div>
+      <dl>
+        <div><dt>Attendee</dt><dd>{{ booking.full_name }}</dd></div>
+        <div><dt>Registered</dt><dd>{{ booking.created_at|date:'d M Y, H:i' }}</dd></div>
+        <div><dt>WhatsApp / phone</dt><dd>{{ booking.phone }}</dd></div>
+        <div><dt>Email</dt><dd>{{ booking.email }}</dd></div>
+      </dl>
+      <section class="payment">
+        <h2>Payment record</h2>
+        <p>Method: <strong>{{ booking.get_payment_method_display }}</strong></p>
+        {% if booking.payment_method == 'PROMO' %}<p>Promo code: <strong>{{ booking.promo_code }}</strong></p>{% endif %}
+        {% if booking.payment_method == 'INSTALLMENT' %}<p>Paid so far: <strong>UGX {{ booking.amount_paid|floatformat:0 }}</strong></p><p>Balance remaining: <strong>UGX {{ booking.balance_due|floatformat:0 }}</strong></p>{% else %}<p>Payment status: <strong>CLEARED</strong></p>{% endif %}
+      </section>
+    </section>
+    <footer>Keep this confirmation for event check-in. Africana AI Festival, 28 November 2026, ICT Innovation Hub, Nakawa.</footer>
+  </article>
+</body>
+</html>

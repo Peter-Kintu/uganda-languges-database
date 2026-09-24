@@ -15,11 +15,12 @@
     .highlights { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 18px; } .highlight { padding: 13px 10px; border: 1px solid var(--line); background: #fff; text-align: center; font-weight: 700; font-size: 14px; }
     label { display: block; margin: 0 0 6px; font: 700 14px Arial, sans-serif; } input { width: 100%; border: 1px solid #cdbf9e; border-radius: 4px; padding: 12px; font: inherit; background: #fff; } input:focus { outline: 2px solid var(--gold); }
     .field { margin-bottom: 17px; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .ticket-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0 18px; } .ticket { display: block; padding: 16px; border: 2px solid #d8c9aa; border-radius: 6px; cursor: pointer; background: #fff; } .ticket:has(input:checked) { border-color: var(--rust); background: #fff2d1; } .ticket input { width: auto; margin-right: 7px; accent-color: var(--rust); } .ticket strong { display: block; margin-top: 8px; } .ticket small { display: block; margin-top: 5px; color: #5e5144; }
-    #payment-block { padding: 16px; border: 1px solid #d49c39; background: #fff1c9; } #payment-block h3 { margin: 0 0 8px; color: var(--rust); font: 700 15px Arial, sans-serif; text-transform: uppercase; } .payment-details { margin: 0 0 15px; padding-left: 18px; font-family: monospace; font-size: 13px; }
+    .payment-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 18px; } .payment-option { display: block; padding: 16px 12px; border: 2px solid #d8c9aa; border-radius: 6px; cursor: pointer; background: #fff; } .payment-option:has(input:checked) { border-color: var(--rust); background: #fff2d1; } .payment-option input { width: auto; margin-right: 7px; accent-color: var(--rust); } .payment-option strong { display: block; margin-top: 8px; } .payment-option small { display: block; margin-top: 5px; color: #5e5144; }
+    #payment-details { padding: 16px; border: 1px solid #d49c39; background: #fff1c9; } #payment-details h3 { margin: 0 0 8px; color: var(--rust); font: 700 15px Arial, sans-serif; text-transform: uppercase; } .fee-note { margin: 0 0 15px; color: #5e5144; font: 14px Arial, sans-serif; }
     button { width: 100%; border: 0; border-radius: 4px; padding: 15px; background: var(--rust); color: #fff; cursor: pointer; font: 700 17px Arial, sans-serif; } button:hover { background: #7e2d1c; }
     .message { padding: 12px; margin-bottom: 17px; background: #f8d7c9; color: #702b1c; font-family: Arial, sans-serif; font-size: 14px; } .fine-print { color: #6c6256; text-align: center; font: 12px Arial, sans-serif; } .hidden { display: none; }
-    @media (max-width: 560px) { main { margin: 0; } .grid, .ticket-options, .highlights { grid-template-columns: 1fr; } header, .intro, form { padding: 22px 18px; } }
+    @media (max-width: 700px) { .payment-options { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) { main { margin: 0; } .grid, .highlights { grid-template-columns: 1fr; } header, .intro, form { padding: 22px 18px; } }
   </style>
 </head>
 <body>
@@ -47,26 +48,32 @@
         <div class="field"><label for="email">Email address</label><input id="email" type="email" name="email" required maxlength="254" autocomplete="email" placeholder="name@domain.com"></div>
       </div>
       <div class="field">
-        <label>Ticket category</label>
-        <div class="ticket-options">
-          <label class="ticket"><input type="radio" name="ticket_type" value="FREE" checked> General Public<strong>FREE ENTRY</strong><small>All sessions, marketplace and performances.</small></label>
-          <label class="ticket"><input type="radio" name="ticket_type" value="CEO"> CEO Table Pass<strong>UGX 50,000</strong><small>Reserved table for four, premium lunch and VIP pass.</small></label>
+        <label>Payment status</label>
+        <div class="payment-options">
+          <label class="payment-option"><input type="radio" name="payment_method" value="PAID" checked> Paid in full<strong>UGX 50,000</strong><small>Registration is cleared immediately.</small></label>
+          <label class="payment-option"><input type="radio" name="payment_method" value="PROMO"> Promo code<strong>Use a code</strong><small>Registration is cleared after the code is recorded.</small></label>
+          <label class="payment-option"><input type="radio" name="payment_method" value="INSTALLMENT"> Installment<strong>Pay part now</strong><small>Admin will see the balance left.</small></label>
         </div>
       </div>
-      <div id="payment-block" class="hidden">
-        <h3>Manual payment details</h3>
-        <ul class="payment-details"><li>Merchant code: <strong>22852101</strong></li><li>Direct MoMo: <strong>0768950287</strong></li></ul>
-        <div class="field"><label for="transaction_id">MoMo transaction ID / reference</label><input id="transaction_id" name="transaction_id" maxlength="100" placeholder="e.g. 1982736450"></div>
-        <div class="field"><label for="payment_proof">Upload payment proof (optional if reference is provided)</label><input id="payment_proof" type="file" name="payment_proof" accept="image/*,.pdf"></div>
+      <div id="payment-details" class="hidden">
+        <h3>Payment details</h3>
+        <p class="fee-note">Total registration value: <strong>UGX 50,000</strong></p>
+        <div id="promo-field" class="field hidden"><label for="promo_code">Promo code</label><input id="promo_code" name="promo_code" maxlength="80" placeholder="Enter the code used"></div>
+        <div id="installment-field" class="field hidden"><label for="amount_paid">Amount paid now (UGX)</label><input id="amount_paid" type="number" name="amount_paid" min="1" max="49999" step="1" placeholder="e.g. 25000"></div>
       </div>
       <button type="submit">Complete registration</button>
-      <p class="fine-print">Official portal: africanaai.info • CEO Table bookings are confirmed after manual payment review.</p>
+      <p class="fine-print">Official portal: africanaai.info • Your registration details are saved securely for event check-in.</p>
     </form>
   </main>
   <script>
-    const paymentBlock = document.getElementById('payment-block');
-    document.querySelectorAll('input[name="ticket_type"]').forEach((input) => input.addEventListener('change', () => {
-      paymentBlock.classList.toggle('hidden', input.value !== 'CEO' || !input.checked);
+    const paymentDetails = document.getElementById('payment-details');
+    const promoField = document.getElementById('promo-field');
+    const installmentField = document.getElementById('installment-field');
+    document.querySelectorAll('input[name="payment_method"]').forEach((input) => input.addEventListener('change', () => {
+      const showDetails = input.value !== 'PAID' && input.checked;
+      paymentDetails.classList.toggle('hidden', !showDetails);
+      promoField.classList.toggle('hidden', input.value !== 'PROMO' || !input.checked);
+      installmentField.classList.toggle('hidden', input.value !== 'INSTALLMENT' || !input.checked);
     }));
   </script>
 </body>

@@ -285,6 +285,12 @@ class UserSubscription(models.Model):
 
 
 class EventBooking(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ('PAID', 'Paid in full'),
+        ('PROMO', 'Promo code'),
+        ('INSTALLMENT', 'Installment'),
+    ]
+    TOTAL_FEE = 50000
     TICKET_CHOICES = [
         ('FREE', 'General Public'),
         ('CEO', 'CEO Table Pass'),
@@ -297,6 +303,10 @@ class EventBooking(models.Model):
     ticket_type = models.CharField(max_length=4, choices=TICKET_CHOICES)
     transaction_id = models.CharField(max_length=100, blank=True)
     payment_proof = models.FileField(upload_to='event_payment_proofs/', blank=True, null=True)
+    payment_method = models.CharField(max_length=12, choices=PAYMENT_METHOD_CHOICES, default='PAID')
+    promo_code = models.CharField(max_length=80, blank=True)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    balance_due = models.DecimalField(max_digits=10, decimal_places=2, default=TOTAL_FEE)
     is_verified = models.BooleanField(default=False)
     founding_member_number = models.PositiveSmallIntegerField(unique=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -312,6 +322,12 @@ class EventBooking(models.Model):
 
     def __str__(self):
         return f"{self.booking_ref} - {self.full_name}"
+
+    @property
+    def payment_status(self):
+        if self.payment_method in {'PAID', 'PROMO'} or self.balance_due <= 0:
+            return 'CLEARED'
+        return f'BALANCE UGX {self.balance_due:,.0f}'
 
 
 class PesapalPayment(models.Model):

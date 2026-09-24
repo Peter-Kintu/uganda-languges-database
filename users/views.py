@@ -48,17 +48,20 @@ staff_required = user_passes_test(
 @staff_required
 def registration_admin(request):
     bookings = EventBooking.objects.all()
-    ticket_type = request.GET.get('ticket_type', '').strip().upper()
+    payment_method = request.GET.get('payment_method', '').strip().upper()
+    legacy_ticket_type = request.GET.get('ticket_type', '').strip().upper()
     status = request.GET.get('status', '').strip().lower()
-    if ticket_type in {'FREE', 'CEO'}:
-        bookings = bookings.filter(ticket_type=ticket_type)
+    if payment_method in {'PAID', 'PROMO', 'INSTALLMENT'}:
+        bookings = bookings.filter(payment_method=payment_method)
+    elif legacy_ticket_type in {'FREE', 'CEO'}:
+        bookings = bookings.filter(ticket_type=legacy_ticket_type)
     if status == 'pending':
         bookings = bookings.filter(is_verified=False)
     elif status == 'verified':
         bookings = bookings.filter(is_verified=True)
     return render(request, 'registration_admin.html', {
         'bookings': bookings,
-        'selected_ticket_type': ticket_type,
+        'selected_payment_method': payment_method,
         'selected_status': status,
         'total_count': EventBooking.objects.count(),
         'pending_count': EventBooking.objects.filter(is_verified=False).count(),
@@ -101,15 +104,34 @@ def delete_registration(request, booking_ref):
 
 def launch_registration(request):
     if request.method == 'POST':
-        ticket_type = request.POST.get('ticket_type', 'FREE')
-        if ticket_type not in {'FREE', 'CEO'}:
-            messages.error(request, 'Please select a valid ticket category.')
+        payment_method = request.POST.get('payment_method', '').strip().upper()
+        legacy_ticket_type = request.POST.get('ticket_type', '').strip().upper()
+        legacy_transaction_id = request.POST.get('transaction_id', '').strip()
+        legacy_payment_proof = request.FILES.get('payment_proof')
+        if not payment_method and legacy_ticket_type == 'FREE':
+            payment_method = 'PAID'
+        elif not payment_method and legacy_ticket_type == 'CEO':
+            payment_method = 'INSTALLMENT'
+        if payment_method not in {'PAID', 'PROMO', 'INSTALLMENT'}:
+            messages.error(request, 'Please select how the registration will be paid.')
             return render(request, 'launch_registration.html')
 
-        transaction_id = request.POST.get('transaction_id', '').strip()
-        payment_proof = request.FILES.get('payment_proof')
-        if ticket_type == 'CEO' and not transaction_id and not payment_proof:
-            messages.error(request, 'CEO Table bookings need a MoMo reference or payment proof.')
+        promo_code = request.POST.get('promo_code', '').strip()
+        amount_paid_value = request.POST.get('amount_paid', '').strip()
+        if payment_method == 'PROMO' and not promo_code:
+            messages.error(request, 'Enter the promo code used for this registration.')
+            return render(request, 'launch_registration.html')
+        try:
+            amount_paid = Decimal(amount_paid_value) if payment_method == 'INSTALLMENT' else Decimal('0')
+        except InvalidOperation:
+            amount_paid = Decimal('-1')
+        if legacy_ticket_type == 'CEO' and legacy_transaction_id and not amount_paid_value:
+            amount_paid = Decimal('0')
+        if legacy_ticket_type == 'CEO' and not legacy_transaction_id and not legacy_payment_proof:
+            messages.error(request, 'Please select a payment method and provide its details.')
+            return render(request, 'launch_registration.html')
+        if payment_method == 'INSTALLMENT' and not (legacy_ticket_type == 'CEO' and legacy_transaction_id) and not Decimal('0') < amount_paid < Decimal(EventBooking.TOTAL_FEE):
+            messages.error(request, f'Enter an installment between UGX 1 and UGX {EventBooking.TOTAL_FEE:,}.')
             return render(request, 'launch_registration.html')
 
         full_name = request.POST.get('full_name', '').strip()
@@ -122,10 +144,14 @@ def launch_registration(request):
             full_name=full_name,
             phone=request.POST.get('phone', '').strip(),
             email=request.POST.get('email', '').strip(),
-            ticket_type=ticket_type,
-            transaction_id=transaction_id,
-            payment_proof=payment_proof,
-            is_verified=ticket_type == 'FREE',
+            ticket_type='FREE',
+            payment_method=payment_method,
+            transaction_id=legacy_transaction_id,
+            payment_proof=legacy_payment_proof,
+            promo_code=promo_code,
+            amount_paid=amount_paid,
+            balance_due=Decimal(EventBooking.TOTAL_FEE) - amount_paid,
+            is_verified=payment_method in {'PAID', 'PROMO'},
         )
         return redirect('registration_status', booking_ref=booking.booking_ref)
 
@@ -137,7 +163,7 @@ def registration_status(request, booking_ref):
     status_url = request.build_absolute_uri()
     share_message = (
         f"Africana AI Festival registration for {booking.full_name}: "
-        f"{booking.get_ticket_type_display()} - booking reference {booking.booking_ref}. "
+        f"payment status {booking.payment_status} - booking reference {booking.booking_ref}. "
         f"Check confirmation: {status_url}"
     )
     return render(request, 'registration_status.html', {
@@ -149,22 +175,9 @@ def registration_status(request, booking_ref):
 
 def download_registration(request, booking_ref):
     booking = get_object_or_404(EventBooking, booking_ref=booking_ref)
-    status = 'Verified' if booking.is_verified else 'Awaiting manual payment verification'
-    receipt = '\n'.join([
-        'AFRICANA AI FESTIVAL REGISTRATION',
-        '================================',
-        f'Name: {booking.full_name}',
-        f'Phone: {booking.phone}',
-        f'Email: {booking.email}',
-        f'Ticket: {booking.get_ticket_type_display()}',
-        f'Booking reference: {booking.booking_ref}',
-        f'Status: {status}',
-        f'Registered: {booking.created_at:%d %B %Y %H:%M}',
-        '',
-        'Keep this receipt for event check-in.',
-    ])
-    response = HttpResponse(receipt, content_type='text/plain; charset=utf-8')
-    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.txt"'
+    receipt = render_to_string('registration_download.html', {'booking': booking})
+    response = HttpResponse(receipt, content_type='text/html; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{booking.booking_ref}-registration.html"'
     return response
 
 

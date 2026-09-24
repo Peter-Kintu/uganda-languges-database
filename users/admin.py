@@ -53,9 +53,9 @@ class PayoutRequestAdmin(admin.ModelAdmin):
 
 @admin.register(EventBooking)
 class EventBookingAdmin(admin.ModelAdmin):
-    list_display = ['booking_ref', 'full_name', 'ticket_type', 'is_verified', 'created_at']
-    list_filter = ['ticket_type', 'is_verified', 'created_at']
-    search_fields = ['booking_ref', 'full_name', 'phone', 'email', 'transaction_id']
+    list_display = ['booking_ref', 'full_name', 'payment_method', 'balance_due', 'is_verified', 'created_at']
+    list_filter = ['payment_method', 'is_verified', 'created_at']
+    search_fields = ['booking_ref', 'full_name', 'phone', 'email', 'promo_code', 'transaction_id']
     readonly_fields = ['booking_ref', 'created_at']
 
 # --- Register Other Models (Optional, since they are inlines, but good practice) ---

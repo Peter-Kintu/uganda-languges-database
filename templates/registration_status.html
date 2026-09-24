@@ -18,13 +18,14 @@
   <main>
     <div class="mark">✓</div>
     <h1>Registration received</h1>
-    <p>Your {{ booking.get_ticket_type_display }} booking reference is:</p>
+    <p>Your Africana AI Festival registration reference is:</p>
     <div class="ref">{{ booking.booking_ref }}</div>
-    {% if booking.is_verified %}
-      <p>Your free public ticket is confirmed. Keep this reference for event check-in.</p>
+    {% if booking.payment_method == 'INSTALLMENT' %}
+      <p>Your registration is saved. The remaining balance is <strong>UGX {{ booking.balance_due|floatformat:0 }}</strong>. Keep this reference for event check-in.</p>
     {% else %}
-      <p>Your CEO Table request is awaiting manual payment verification. We will contact you on {{ booking.phone }} after review.</p>
+      <p>Your payment is recorded as <strong>cleared</strong>. Keep this reference for event check-in.</p>
     {% endif %}
+    <p class="payment-pill">{{ booking.payment_method|title }} · {{ booking.payment_status }}</p>
     <div class="actions" aria-label="Save or share registration">
       <a class="whatsapp" href="https://wa.me/?text={{ share_message|urlencode }}" target="_blank" rel="noopener">WhatsApp</a>
       <a href="mailto:?subject=Africana%20AI%20Festival%20registration%20{{ booking.booking_ref }}&body={{ share_message|urlencode }}">Email</a>
