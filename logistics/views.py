@@ -338,7 +338,7 @@ def send_support_email(request):
         send_mail(
             subject=f'Africana Ride support request #{ticket.id}',
             message=f'Customer email: {email}\n\n{message}',
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=settings.EMAIL_HOST_USER,
             recipient_list=['info@africanaai.info'],
             reply_to=[email],
         )
