@@ -678,6 +678,7 @@ def fetch_careerjet_data(request, keywords, location=""):
         elif response.status_code in (403, 429):
             if response.status_code == 403:
                 print("[CareerJet] 403 - Access denied (IP/auth issue). Falling back to Jooble.")
+                print(f"[CareerJet] 403 response: {response.text[:200]}")
             else:
                 print("[CareerJet] 429 - Rate limited. Falling back to Jooble.")
             return cache.get(stable_cache_key, [])

@@ -1,4 +1,5 @@
-from unittest.mock import patch
+import base64
+from unittest.mock import Mock, patch
 
 from django.test import RequestFactory, SimpleTestCase
 
@@ -44,6 +45,35 @@ class ClientIpTests(SimpleTestCase):
 
 		self.assertEqual(result, [])
 		get_external_session.assert_not_called()
+
+	def test_sends_required_query_metadata_and_basic_auth(self):
+		request = self.factory.get(
+			'/jobs',
+			HTTP_X_FORWARDED_FOR='8.8.8.8',
+			HTTP_USER_AGENT='test-agent',
+		)
+		session = Mock()
+		session.get.return_value = Mock(status_code=403, text='test response')
+
+		with (
+			patch.object(views, 'CAREERJET_API_ENABLED', True),
+			patch.object(views, 'CAREERJET_API_KEY', 'test-api-key'),
+			patch.object(views, 'get_cached_result', return_value=None),
+			patch.object(views.cache, 'get', side_effect=[None, []]),
+			patch.object(views, 'get_external_session', return_value=session),
+			patch.object(views.time, 'sleep'),
+		):
+			result = views.fetch_careerjet_data(request, 'engineer')
+
+		self.assertEqual(result, [])
+		request_url, request_options = session.get.call_args
+		self.assertEqual(request_url[0], 'https://search.api.careerjet.net/v4/query')
+		self.assertEqual(request_options['params']['user_ip'], '8.8.8.8')
+		self.assertEqual(request_options['params']['user_agent'], 'test-agent')
+		self.assertEqual(
+			session.headers.update.call_args.args[0]['Authorization'],
+			'Basic ' + base64.b64encode(b'test-api-key:').decode(),
+		)
 
 	@patch.object(views, 'get_external_session')
 	@patch.object(views, 'get_cached_result', return_value=None)
