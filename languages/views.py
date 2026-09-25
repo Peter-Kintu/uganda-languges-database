@@ -18,6 +18,7 @@ import json
 import os
 import re
 import base64
+import ipaddress
 import time
 
 from .forms import JobPostForm
@@ -524,8 +525,12 @@ def fetch_careerjet_data(request, keywords, location=""):
 
     url = "https://search.api.careerjet.net/v4/query"
 
-    # Get real user data for CareerJet required request metadata
-    user_ip = get_client_ip(request) or request.META.get('REMOTE_ADDR', '127.0.0.1') or '127.0.0.1'
+    # CareerJet requires the actual public client IP; do not substitute a proxy or local address.
+    user_ip = get_client_ip(request)
+    if not user_ip:
+        print("[CareerJet] Skipping API request: no valid public client IP.")
+        return []
+
     user_agent = request.META.get('HTTP_USER_AGENT', '') or 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     referer = request.build_absolute_uri()
 
@@ -706,13 +711,24 @@ def get_exchange_rate(from_curr, to_curr="UGX"):
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0].strip()
-        if ip:
-            return ip
-    ip = request.META.get('HTTP_X_REAL_IP') or request.META.get('HTTP_CLIENT_IP')
-    if ip:
-        return ip.strip()
-    return request.META.get('REMOTE_ADDR', '').strip()
+        candidates = [x_forwarded_for.split(',', 1)[0].strip()]
+    else:
+        candidates = [
+            request.META.get('HTTP_X_REAL_IP'),
+            request.META.get('HTTP_CLIENT_IP'),
+            request.META.get('REMOTE_ADDR'),
+        ]
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            address = ipaddress.ip_address(candidate.strip())
+        except ValueError:
+            continue
+        if address.is_global:
+            return str(address)
+    return ''
 
 
 AFRICA_PRIORITY_KEYWORDS = [
