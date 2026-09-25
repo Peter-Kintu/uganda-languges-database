@@ -44,3 +44,18 @@ class ClientIpTests(SimpleTestCase):
 
 		self.assertEqual(result, [])
 		get_external_session.assert_not_called()
+
+	@patch.object(views, 'get_external_session')
+	@patch.object(views, 'get_cached_result', return_value=None)
+	@patch.object(views.cache, 'get', return_value=None)
+	@patch.object(views, 'get_client_ip', return_value='8.8.8.8')
+	def test_skips_careerjet_request_without_user_agent(
+		self, _get_client_ip, _cache_get, _get_cached_result, get_external_session
+	):
+		request = self.factory.get('/jobs')
+
+		with patch.object(views, 'CAREERJET_API_ENABLED', True):
+			result = views.fetch_careerjet_data(request, 'engineer')
+
+		self.assertEqual(result, [])
+		get_external_session.assert_not_called()

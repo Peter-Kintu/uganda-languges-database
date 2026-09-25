@@ -531,7 +531,11 @@ def fetch_careerjet_data(request, keywords, location=""):
         print("[CareerJet] Skipping API request: no valid public client IP.")
         return []
 
-    user_agent = request.META.get('HTTP_USER_AGENT', '') or 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    user_agent = (request.META.get('HTTP_USER_AGENT') or '').strip()
+    if not user_agent:
+        print("[CareerJet] Skipping API request: missing client user agent.")
+        return []
+
     referer = request.build_absolute_uri()
 
     normalized_location = normalize_search_location(location)
