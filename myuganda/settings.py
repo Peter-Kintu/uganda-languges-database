@@ -97,6 +97,8 @@ if not DEBUG and not TESTING:
         "https://cdn.tailwindcss.com",  # Tailwind runtime used by the base template
         "https://accounts.google.com",  # Google authentication widgets
         "https://pagead2.googlesyndication.com",  # Google AdSense scripts
+        "https://googleads.g.doubleclick.net",  # Google AdSense scripts
+        "https://www.googletagservices.com",  # Google ad services
         "https://translate.google.com",  # Google Translate widget
     )
     SECURE_CSP_STYLE_SRC = (
@@ -138,6 +140,7 @@ if not DEBUG and not TESTING:
         "https://www.youtube.com",  # YouTube embeds
         "https://youtube.com",
         "https://accounts.google.com",  # Google authentication widgets
+        "https://pagead2.googlesyndication.com",  # Google AdSense frames
         "https://googleads.g.doubleclick.net",  # Google AdSense frames
         "https://tpc.googlesyndication.com",  # Google AdSense frames
         "https://kintu1-africana-ai-video.hf.space",  # Inline video advert maker
