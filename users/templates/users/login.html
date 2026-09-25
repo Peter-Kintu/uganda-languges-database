@@ -407,11 +407,19 @@
 
                     window.addEventListener('load', function() {
                         if (window.google && google.accounts && google.accounts.id) {
-                            google.accounts.id.initialize({
+                            const googleConfig = {
                                 client_id: "{{ google_client_id }}",
-                                callback: handleGoogleCredentialResponse,
-                                ux_mode: "popup"
-                            });
+                            };
+
+                            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                                googleConfig.ux_mode = "redirect";
+                                googleConfig.login_uri = window.location.origin + "{% url 'users:google_auth_receiver' %}";
+                            } else {
+                                googleConfig.callback = handleGoogleCredentialResponse;
+                                googleConfig.ux_mode = "popup";
+                            }
+
+                            google.accounts.id.initialize(googleConfig);
                             google.accounts.id.renderButton(
                                 document.getElementById("g_id_signin"),
                                 {

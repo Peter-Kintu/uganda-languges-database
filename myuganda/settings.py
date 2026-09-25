@@ -102,6 +102,7 @@ if not DEBUG and not TESTING:
         "'unsafe-inline'",  # Required for Tailwind CSS
         "https://fonts.googleapis.com",
         "https://cdnjs.cloudflare.com",  # Bootstrap icons, etc.
+        "https://accounts.google.com",  # Google authentication widget styles
     )
     SECURE_CSP_IMG_SRC = (
         "'self'",
@@ -115,6 +116,7 @@ if not DEBUG and not TESTING:
     )
     SECURE_CSP_CONNECT_SRC = (
         "'self'",
+        "https://accounts.google.com",  # Google authentication widget requests
         "https://api.cloudinary.com",  # Cloudinary uploads
         "https://res.cloudinary.com",   # Cloudinary delivery
         "https://wa.me",  # WhatsApp integration
