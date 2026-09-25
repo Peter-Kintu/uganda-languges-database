@@ -127,6 +127,7 @@ if not DEBUG and not TESTING:
         "https://pagead2.googlesyndication.com",  # Google AdSense requests
         "https://googleads.g.doubleclick.net",  # Google AdSense requests
         "https://fundingchoicesmessages.google.com",  # Google consent messaging
+        "https://ep1.adtrafficquality.google",  # Google AdSense traffic quality checks
     )
     SECURE_CSP_MEDIA_SRC = (
         "'self'",

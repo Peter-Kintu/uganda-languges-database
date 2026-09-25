@@ -1750,6 +1750,17 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
+
+        .google-ad-card {
+            content-visibility: visible !important;
+            contain: none !important;
+        }
+
+        .google-ad-container,
+        .google-ad-container .adsbygoogle {
+            width: 100%;
+            min-width: 1px;
+        }
         .post-header {
             margin-bottom: 10px;
             display: flex;
@@ -2450,7 +2461,7 @@
                     </div>
 
                     {% if forloop.counter|divisibleby:3 and not forloop.last %}
-                        <div class="post-card" style="margin-top: 20px;">
+                        <div class="post-card google-ad-card" style="margin-top: 20px;">
                             <div class="post-content" style="padding: 0;">
                                 <span style="display: block; padding-top: 10px; color: #94a3b8; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-align: center; text-transform: uppercase;">Advertisement</span>
                                 <div id="google-ad-{{ forloop.counter }}" class="google-ad-container" style="width:100%; min-height: 250px; display: flex; align-items: center; justify-content: center;">
