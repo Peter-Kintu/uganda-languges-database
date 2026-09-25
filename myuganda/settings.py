@@ -96,6 +96,8 @@ if not DEBUG and not TESTING:
         "https://cdnjs.cloudflare.com",  # Markdown and browser-side utilities
         "https://cdn.tailwindcss.com",  # Tailwind runtime used by the base template
         "https://accounts.google.com",  # Google authentication widgets
+        "https://pagead2.googlesyndication.com",  # Google AdSense scripts
+        "https://translate.google.com",  # Google Translate widget
     )
     SECURE_CSP_STYLE_SRC = (
         "'self'",
@@ -122,6 +124,9 @@ if not DEBUG and not TESTING:
         "https://wa.me",  # WhatsApp integration
         "https://translate.googleapis.com",  # Translation fallback
         "https://translate.google.com",  # Browser TTS fallback
+        "https://pagead2.googlesyndication.com",  # Google AdSense requests
+        "https://googleads.g.doubleclick.net",  # Google AdSense requests
+        "https://fundingchoicesmessages.google.com",  # Google consent messaging
     )
     SECURE_CSP_MEDIA_SRC = (
         "'self'",
@@ -132,6 +137,8 @@ if not DEBUG and not TESTING:
         "https://www.youtube.com",  # YouTube embeds
         "https://youtube.com",
         "https://accounts.google.com",  # Google authentication widgets
+        "https://googleads.g.doubleclick.net",  # Google AdSense frames
+        "https://tpc.googlesyndication.com",  # Google AdSense frames
         "https://kintu1-africana-ai-video.hf.space",  # Inline video advert maker
     )
     SECURE_CSP_REPORT_URI = '/admin/csp-report/'  # Optional: CSP violation reporting
