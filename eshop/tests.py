@@ -51,6 +51,52 @@ class AliExpressSearchConfigTests(TestCase):
         self.assertTrue(any('screen protector' in query or 'lcd touch screen' in query or 'digitizer' in query for query in queries))
 
 
+class ProductSearchTests(TestCase):
+    def setUp(self):
+        user = get_user_model().objects.create_user(username='market_searcher', password='test-pass')
+        self.client.force_login(user)
+        self.global_product = Product.objects.create(
+            name='Android smartphone',
+            description='Unlocked 4G mobile device',
+            price=Decimal('250000'),
+            country='Global',
+            vendor_name='Global Hot-Sellers',
+            source='aliexpress',
+            external_id='ali-phone-1',
+            affiliate_url='https://example.com/phone',
+        )
+        self.local_product = Product.objects.create(
+            name='Handwoven basket',
+            description='Locally made storage basket',
+            price=Decimal('25000'),
+            country='Uganda',
+            vendor_name='Kampala Crafts',
+            source='local',
+        )
+
+    def test_global_and_aliexpress_terms_find_global_partner_products(self):
+        for query in ('global', 'AliExpress', 'global partner', 'alliexpress'):
+            with self.subTest(query=query):
+                response = self.client.get(reverse('eshop:product_list'), {'search': query})
+                products = list(response.context['products'])
+
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(self.global_product, products)
+                self.assertNotIn(self.local_product, products)
+
+    def test_global_source_query_can_be_combined_with_product_terms(self):
+        response = self.client.get(reverse('eshop:product_list'), {'search': 'AliExpress android'})
+
+        self.assertEqual(list(response.context['products']), [self.global_product])
+
+    def test_product_search_matches_description_and_vendor(self):
+        description_response = self.client.get(reverse('eshop:product_list'), {'search': 'storage basket'})
+        vendor_response = self.client.get(reverse('eshop:product_list'), {'search': 'Kampala Crafts'})
+
+        self.assertIn(self.local_product, description_response.context['products'])
+        self.assertIn(self.local_product, vendor_response.context['products'])
+
+
 class NegotiationFlowTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(username='negotiator', password='test-pass')

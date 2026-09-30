@@ -670,7 +670,26 @@ def product_list(request):
     max_price_query = request.GET.get('max_price', '').strip()
 
     if search_query:
-        products = products.filter(name__icontains=search_query)
+        global_source_terms = re.compile(
+            r'\b(?:global(?:\s+partners?)?|worldwide|international|partner|ali[\s-]*express|alliexpress)\b',
+            re.IGNORECASE,
+        )
+        if global_source_terms.search(search_query):
+            products = products.filter(source='aliexpress')
+            product_text_query = global_source_terms.sub(' ', search_query).strip()
+        else:
+            product_text_query = search_query
+
+        if product_text_query:
+            products = products.filter(
+                Q(name__icontains=product_text_query)
+                | Q(description__icontains=product_text_query)
+                | Q(vendor_name__icontains=product_text_query)
+                | Q(country__icontains=product_text_query)
+                | Q(category__icontains=product_text_query)
+                | Q(source__icontains=product_text_query)
+                | Q(external_id__icontains=product_text_query)
+            )
     if country_query:
         products = products.filter(country__icontains=country_query)
     if vendor_query:
