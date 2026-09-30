@@ -5,81 +5,381 @@
 {% block meta_description %}Public profile for {{ profile_user.get_full_name|default:profile_user.username }} on Africana AI.{% endblock %}
 
 {% block content %}
-<main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-    <a href="{% url 'hotel:social_feed' %}" class="text-sm font-semibold text-[#007c83] hover:text-[#005f63]">Back to feed</a>
+<style>
+    .public-profile-page {
+        min-height: 100vh;
+        padding: 1.5rem 1rem 4rem;
+        background: #f1f5f4;
+        color: #172b3a;
+    }
 
-    <section class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="public-profile-name">
-        <div class="h-32 bg-[#006b70] sm:h-44" aria-hidden="true"></div>
-        <div class="px-5 pb-6 sm:px-8 sm:pb-8">
-            <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-                <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end">
-                    {% if profile_user.profile_image %}
-                    <img src="{{ profile_user.profile_image.url }}" alt="{{ profile_user.get_full_name|default:profile_user.username }}" class="-mt-14 h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white object-cover sm:-mt-16 sm:h-36 sm:w-36" loading="lazy">
-                    {% else %}
-                    <div class="-mt-14 flex h-28 w-28 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[#007c83] text-4xl font-bold text-white sm:-mt-16 sm:h-36 sm:w-36" aria-hidden="true">{{ profile_user.username|slice:':1'|upper }}</div>
-                    {% endif %}
+    .public-profile-page * { box-sizing: border-box; }
+    .public-profile-shell { max-width: 1080px; margin: 0 auto; }
 
-                    <div class="min-w-0 pb-1">
-                        <h1 id="public-profile-name" class="break-words text-2xl font-bold text-slate-900 sm:text-3xl">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
-                        <p class="mt-1 text-sm text-slate-500">@{{ profile_user.username }}</p>
-                        {% if profile_user.headline %}
-                        <p class="mt-3 max-w-2xl text-base font-medium leading-6 text-slate-800">{{ profile_user.headline }}</p>
+    .public-profile-page .profile-panel {
+        overflow: hidden;
+        border: 1px solid #d7e1df;
+        border-radius: 12px;
+        background: #ffffff !important;
+        color: #172b3a;
+        box-shadow: 0 8px 28px rgba(23, 43, 58, 0.07);
+    }
+
+    .public-profile-page .profile-cover {
+        position: relative;
+        height: 178px;
+        overflow: hidden;
+        background-color: #075e63;
+        background-image: repeating-linear-gradient(135deg, transparent 0 34px, rgba(255,255,255,.045) 34px 36px);
+    }
+
+    .public-profile-page .profile-cover::after {
+        position: absolute;
+        top: -42px;
+        right: 9%;
+        width: 130px;
+        height: 270px;
+        background: rgba(229, 154, 34, .9);
+        content: "";
+        transform: skewX(-28deg);
+    }
+
+    .public-profile-page .profile-body { padding: 0 2rem 1.5rem; }
+
+    .public-profile-page .profile-heading {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .public-profile-page .profile-person {
+        display: flex;
+        min-width: 0;
+        align-items: flex-end;
+        gap: 1.25rem;
+    }
+
+    .public-profile-page .profile-avatar {
+        width: 144px;
+        height: 144px;
+        flex: 0 0 auto;
+        margin-top: -70px;
+        border: 5px solid #ffffff;
+        border-radius: 50%;
+        background: #007c83;
+        object-fit: cover;
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(23, 43, 58, .16);
+    }
+
+    .public-profile-page .profile-avatar-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 3rem;
+        font-weight: 800;
+    }
+
+    .public-profile-page .profile-name {
+        margin: 0;
+        color: #172b3a;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+    }
+
+    .public-profile-page .profile-handle,
+    .public-profile-page .profile-muted { color: #52656e; }
+
+    .public-profile-page .profile-headline {
+        max-width: 650px;
+        margin-top: .5rem;
+        color: #263f4b;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    .public-profile-page .profile-actions {
+        display: flex;
+        flex: 0 0 auto;
+        flex-wrap: wrap;
+        gap: .6rem;
+        padding-bottom: .3rem;
+    }
+
+    .public-profile-page .profile-button {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        gap: .5rem;
+        padding: .65rem 1.15rem;
+        border: 1px solid #007c83;
+        border-radius: 8px;
+        background: #007c83;
+        color: #ffffff !important;
+        font-size: .9rem;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .public-profile-page .profile-button:hover { background: #005f63; border-color: #005f63; }
+
+    .public-profile-page .profile-button-secondary {
+        background: #ffffff;
+        color: #075e63 !important;
+    }
+
+    .public-profile-page .profile-button-secondary:hover { background: #eaf4f2; }
+
+    .public-profile-page .profile-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .55rem 1.25rem;
+        margin-top: 1rem;
+        color: #52656e;
+        font-size: .9rem;
+    }
+
+    .public-profile-page .profile-details strong { color: #172b3a; }
+
+    .public-profile-page .profile-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.8fr) minmax(240px, .9fr);
+        gap: 1rem;
+        margin-top: 1rem;
+        align-items: start;
+    }
+
+    .public-profile-page .profile-column { display: grid; gap: 1rem; min-width: 0; }
+    .public-profile-page .profile-section { padding: 1.4rem 1.5rem; }
+
+    .public-profile-page .profile-section h2 {
+        margin: 0;
+        color: #172b3a;
+        font-size: 1.15rem;
+        font-weight: 800;
+    }
+
+    .public-profile-page .profile-section p { color: #344b57; }
+
+    .public-profile-page .profile-entry + .profile-entry {
+        margin-top: 1.2rem;
+        padding-top: 1.2rem;
+        border-top: 1px solid #e1e8e6;
+    }
+
+    .public-profile-page .profile-entry h3 {
+        margin: 0;
+        color: #172b3a;
+        font-size: 1rem;
+        font-weight: 750;
+    }
+
+    .public-profile-page .profile-entry p { margin: .25rem 0 0; line-height: 1.6; }
+    .public-profile-page .profile-date { color: #52656e !important; font-size: .85rem; }
+    .public-profile-page .skill-list { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+
+    .public-profile-page .skill-tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: .35rem .7rem;
+        border: 1px solid #b7d8d2;
+        border-radius: 6px;
+        background: #edf7f4;
+        color: #174c4c;
+        font-size: .85rem;
+        font-weight: 650;
+    }
+
+    .public-profile-page .activity-post { overflow-wrap: anywhere; white-space: pre-line; line-height: 1.65; }
+
+    .public-profile-page .activity-image {
+        display: block;
+        width: 100%;
+        max-height: 360px;
+        margin-top: .8rem;
+        border-radius: 8px;
+        background: #f1f5f4;
+        object-fit: contain;
+    }
+
+    .public-profile-page .profile-empty { margin: .8rem 0 0; color: #52656e; font-size: .92rem; line-height: 1.6; }
+
+    @media (max-width: 720px) {
+        .public-profile-page { padding: 1rem .75rem 3rem; }
+        .public-profile-page .profile-cover { height: 138px; }
+        .public-profile-page .profile-body { padding: 0 1rem 1.25rem; }
+        .public-profile-page .profile-heading,
+        .public-profile-page .profile-person { align-items: flex-start; flex-direction: column; }
+        .public-profile-page .profile-person { gap: .75rem; }
+        .public-profile-page .profile-avatar { width: 112px; height: 112px; margin-top: -56px; }
+        .public-profile-page .profile-name { font-size: 1.65rem; }
+        .public-profile-page .profile-actions { padding: 0; }
+        .public-profile-page .profile-layout { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .public-profile-page .profile-panel,
+        .public-profile-page .profile-section { animation: profile-enter 320ms ease both; }
+        .public-profile-page .profile-section:nth-child(2) { animation-delay: 45ms; }
+        .public-profile-page .profile-section:nth-child(3) { animation-delay: 90ms; }
+        @keyframes profile-enter {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    }
+</style>
+
+<main class="public-profile-page">
+    <div class="public-profile-shell">
+        <a href="{% url 'hotel:social_feed' %}" class="profile-muted text-sm font-semibold hover:text-[#005f63]">Back to feed</a>
+
+        <section class="profile-panel mt-4" aria-labelledby="public-profile-name">
+            <div class="profile-cover" aria-hidden="true"></div>
+            <div class="profile-body">
+                <div class="profile-heading">
+                    <div class="profile-person">
+                        {% if profile_user.profile_image %}
+                        <img src="{{ profile_user.profile_image.url }}" alt="{{ profile_user.get_full_name|default:profile_user.username }}" class="profile-avatar" loading="lazy">
+                        {% else %}
+                        <div class="profile-avatar profile-avatar-fallback" aria-hidden="true">{{ profile_user.username|slice:':1'|upper }}</div>
                         {% endif %}
-                        {% if profile_user.location %}
-                        <p class="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                            {{ profile_user.location }}
-                        </p>
+
+                        <div class="min-w-0 pb-1">
+                            <p class="mb-1 text-xs font-bold uppercase text-[#007c83]">Professional profile</p>
+                            <h1 id="public-profile-name" class="profile-name">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                            <p class="profile-handle mt-1">@{{ profile_user.username }}</p>
+                            {% if profile_user.headline %}<p class="profile-headline">{{ profile_user.headline }}</p>
+                            {% elif experiences %}<p class="profile-headline">{{ experiences.0.title }}</p>
+                            {% else %}<p class="profile-headline">Africana AI community member</p>{% endif %}
+                            {% if profile_user.location %}<p class="profile-muted mt-2 flex items-center gap-2 text-sm"><span aria-hidden="true">Location</span>{{ profile_user.location }}</p>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="profile-actions">
+                        {% if request.user.is_authenticated and not is_own_profile %}
+                        <form method="post" action="{% if is_following %}{% url 'hotel:unfollow_user' profile_user.id %}{% else %}{% url 'hotel:follow_user' profile_user.id %}{% endif %}">
+                            {% csrf_token %}
+                            <button type="submit" class="profile-button {% if is_following %}profile-button-secondary{% endif %}">{% if is_following %}Following{% else %}Follow{% endif %}</button>
+                        </form>
+                        {% if can_message %}
+                        <details class="relative">
+                            <summary class="profile-button profile-button-secondary list-none">Message</summary>
+                            <form method="post" action="{% url 'hotel:send_message' profile_user.id %}" class="absolute right-0 z-10 mt-2 w-[min(88vw,22rem)] rounded-lg border border-slate-200 bg-white p-4 text-slate-900 shadow-xl">
+                                {% csrf_token %}
+                                <label for="public-profile-message" class="mb-2 block text-sm font-bold text-slate-900">Message {{ profile_user.get_full_name|default:profile_user.username }}</label>
+                                <textarea id="public-profile-message" name="content" rows="4" maxlength="2000" required class="w-full resize-y rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#007c83] focus:ring-2 focus:ring-[#007c83]/20" placeholder="Write a professional message..."></textarea>
+                                <button type="submit" class="profile-button mt-3 w-full">Send message</button>
+                            </form>
+                        </details>
+                        {% endif %}
+                        {% elif request.user.is_authenticated and is_own_profile %}
+                        <a href="{% url 'users:profile_edit' %}" class="profile-button profile-button-secondary">Edit profile</a>
+                        {% else %}
+                        <a href="{% url 'users:user_login' %}?next={{ request.get_full_path|urlencode }}" class="profile-button">Sign in to connect</a>
                         {% endif %}
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                    {% if request.user.is_authenticated and not is_own_profile %}
-                    <form method="post" action="{% if is_following %}{% url 'hotel:unfollow_user' profile_user.id %}{% else %}{% url 'hotel:follow_user' profile_user.id %}{% endif %}">
-                        {% csrf_token %}
-                        <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-[#007c83] px-5 text-sm font-semibold {% if is_following %}text-[#007c83] hover:bg-[#e8f4f1]{% else %}bg-[#007c83] text-white hover:bg-[#005f63]{% endif %}">
-                            {% if is_following %}Following{% else %}Follow{% endif %}
-                        </button>
-                    </form>
-                    {% if can_message %}
-                    <details class="relative">
-                        <summary class="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-300 px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Message</summary>
-                        <form method="post" action="{% url 'hotel:send_message' profile_user.id %}" class="absolute right-0 z-10 mt-2 w-[min(88vw,22rem)] rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
-                            {% csrf_token %}
-                            <label for="public-profile-message" class="mb-2 block text-sm font-semibold text-slate-800">Message {{ profile_user.get_full_name|default:profile_user.username }}</label>
-                            <textarea id="public-profile-message" name="content" rows="3" maxlength="2000" required class="w-full resize-y rounded-lg border border-slate-300 p-3 text-sm text-slate-900 outline-none focus:border-[#007c83] focus:ring-2 focus:ring-[#007c83]/20" placeholder="Write a professional message..."></textarea>
-                            <button type="submit" class="mt-2 min-h-10 w-full rounded-lg bg-[#007c83] px-4 text-sm font-semibold text-white hover:bg-[#005f63]">Send message</button>
-                        </form>
-                    </details>
-                    {% endif %}
-                    {% elif request.user.is_authenticated and is_own_profile %}
-                    <a href="{% url 'users:profile_edit' %}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Edit profile</a>
-                    {% else %}
-                    <a href="{% url 'users:user_login' %}?next={{ request.get_full_path|urlencode }}" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#007c83] px-5 text-sm font-semibold text-white hover:bg-[#005f63]">Sign in to connect</a>
+                <div class="profile-details border-t border-slate-200 pt-4">
+                    <p><strong>{{ follower_count }}</strong> followers</p>
+                    <p><strong>{{ post_count }}</strong> posts</p>
+                    {% if request.user.is_authenticated and not is_own_profile and not can_message %}
+                        {% if profile_user.direct_message_privacy == 'connections' %}<p>Follow to message</p>
+                        {% elif profile_user.direct_message_privacy == 'nobody' %}<p>Not accepting messages</p>{% endif %}
                     {% endif %}
                 </div>
             </div>
+        </section>
 
-            <div class="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-200 pt-4 text-sm text-slate-600">
-                <p><span class="font-semibold text-slate-900">{{ follower_count }}</span> followers</p>
-                <p><span class="font-semibold text-slate-900">{{ post_count }}</span> posts</p>
-                {% if request.user.is_authenticated and not is_own_profile and not can_message %}
-                    {% if profile_user.direct_message_privacy == 'connections' %}
-                    <p class="text-slate-500">Follow to message</p>
-                    {% elif profile_user.direct_message_privacy == 'nobody' %}
-                    <p class="text-slate-500">Not accepting messages</p>
-                    {% endif %}
+        {% if is_own_profile and not experiences and not educations and not skills and not profile_user.about %}
+        <section class="profile-panel mt-4 p-5 sm:p-6">
+            <h2 class="font-bold text-[#172b3a]">Build your professional profile</h2>
+            <p class="profile-muted mt-2 text-sm leading-6">Add a summary, work history, education, and skills so people can understand your experience.</p>
+            <a href="{% url 'users:profile_edit' %}" class="profile-button mt-4">Add profile details</a>
+        </section>
+        {% endif %}
+
+        <div class="profile-layout">
+            <div class="profile-column">
+                {% if profile_user.about %}
+                <section class="profile-panel profile-section" aria-labelledby="public-profile-about">
+                    <h2 id="public-profile-about">About</h2>
+                    <p class="mt-3 whitespace-pre-line text-sm leading-7">{{ profile_user.about }}</p>
+                </section>
+                {% endif %}
+
+                {% if experiences %}
+                <section class="profile-panel profile-section" aria-labelledby="public-profile-experience">
+                    <h2 id="public-profile-experience">Experience</h2>
+                    <div class="mt-5">
+                        {% for experience in experiences %}
+                        <article class="profile-entry">
+                            <h3>{{ experience.title }}</h3>
+                            <p class="font-semibold text-[#007c83]">{{ experience.company_name }}</p>
+                            <p class="profile-date">{{ experience.start_date|date:"M Y" }} - {% if experience.end_date %}{{ experience.end_date|date:"M Y" }}{% else %}Present{% endif %}</p>
+                            {% if experience.description %}<p class="mt-2 text-sm">{{ experience.description }}</p>{% endif %}
+                        </article>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                {% if educations %}
+                <section class="profile-panel profile-section" aria-labelledby="public-profile-education">
+                    <h2 id="public-profile-education">Education</h2>
+                    <div class="mt-5">
+                        {% for education in educations %}
+                        <article class="profile-entry">
+                            <h3>{{ education.institution }}</h3>
+                            <p class="font-semibold text-[#007c83]">{{ education.degree }}{% if education.field_of_study %} · {{ education.field_of_study }}{% endif %}</p>
+                            <p class="profile-date">{{ education.start_date|date:"Y" }} - {% if education.end_date %}{{ education.end_date|date:"Y" }}{% else %}Present{% endif %}</p>
+                        </article>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                {% if recent_posts %}
+                <section class="profile-panel profile-section" aria-labelledby="public-profile-activity">
+                    <h2 id="public-profile-activity">Recent activity</h2>
+                    <div class="mt-4">
+                        {% for post in recent_posts %}
+                        <article class="profile-entry">
+                            <p class="profile-muted text-xs">{{ post.created_at|date:"M j, Y" }}</p>
+                            <p class="activity-post mt-2 text-sm">{{ post.content|truncatechars:700 }}</p>
+                            {% if post.image %}<img class="activity-image" src="{{ post.image.url }}" alt="Image shared by {{ profile_user.get_full_name|default:profile_user.username }}" loading="lazy">{% endif %}
+                        </article>
+                        {% endfor %}
+                    </div>
+                </section>
                 {% endif %}
             </div>
-        </div>
-    </section>
 
-    {% if profile_user.about %}
-    <section class="mt-4 rounded-xl border border-slate-200 bg-white p-5 sm:p-7" aria-labelledby="public-profile-about">
-        <h2 id="public-profile-about" class="text-lg font-semibold text-slate-900">About</h2>
-        <p class="mt-3 max-w-3xl whitespace-pre-line text-sm leading-6 text-slate-700">{{ profile_user.about }}</p>
-    </section>
-    {% endif %}
+            <aside class="profile-column">
+                {% if skills %}
+                <section class="profile-panel profile-section" aria-labelledby="public-profile-skills">
+                    <h2 id="public-profile-skills">Skills</h2>
+                    <div class="skill-list">
+                        {% for skill in skills %}<span class="skill-tag">{{ skill.name }}</span>{% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                {% if not profile_user.about and not experiences and not educations and not skills and not recent_posts %}
+                <section class="profile-panel profile-section">
+                    <h2>Profile details</h2>
+                    <p class="profile-empty">{{ profile_user.get_full_name|default:profile_user.username }} has not added professional details yet.</p>
+                </section>
+                {% endif %}
+            </aside>
+        </div>
+    </div>
 </main>
 {% endblock %}

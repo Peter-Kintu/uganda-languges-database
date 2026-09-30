@@ -247,6 +247,41 @@ class PublicMemberProfileTests(TestCase):
 		self.assertNotContains(response, 'Edit Profile')
 		self.assertContains(response, 'Sign in to connect')
 
+	def test_public_profile_shows_professional_history_education_skills_and_activity(self):
+		from datetime import date
+		from users.models import Education, Experience, Skill
+
+		Experience.objects.create(
+			user=self.member,
+			title='Product Designer',
+			company_name='Cedar Studio',
+			start_date=date(2022, 1, 1),
+			description='Led product research and interface design.',
+		)
+		Education.objects.create(
+			user=self.member,
+			institution='Makerere University',
+			degree='Bachelor of Design',
+			field_of_study='Industrial Design',
+			start_date=date(2018, 1, 1),
+			end_date=date(2021, 12, 1),
+		)
+		Skill.objects.create(name='Product Design', user=self.member)
+		Post.objects.create(author=self.member, content='Sharing a recent design project.')
+
+		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'Experience')
+		self.assertContains(response, 'Product Designer')
+		self.assertContains(response, 'Cedar Studio')
+		self.assertContains(response, 'Education')
+		self.assertContains(response, 'Makerere University')
+		self.assertContains(response, 'Skills')
+		self.assertContains(response, 'Product Design')
+		self.assertContains(response, 'Recent activity')
+		self.assertContains(response, 'Sharing a recent design project.')
+
 	def test_signed_in_profile_shows_follow_and_privacy_aware_message_actions(self):
 		viewer = User.objects.create_user(username='profile_viewer', password='secret123')
 		self.client.force_login(viewer)

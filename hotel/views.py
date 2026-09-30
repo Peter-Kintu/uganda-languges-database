@@ -377,6 +377,10 @@ def public_member_profile(request, user_id):
             status='accepted',
         ).count(),
         'post_count': Post.objects.filter(author=profile_user).count(),
+        'experiences': profile_user.experiences.all(),
+        'educations': profile_user.education.all(),
+        'skills': profile_user.skills.all(),
+        'recent_posts': Post.objects.filter(author=profile_user).order_by('-created_at')[:3],
     })
 
 
