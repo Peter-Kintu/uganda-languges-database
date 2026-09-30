@@ -291,26 +291,38 @@ class PublicMemberProfileTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'Follow')
 		self.assertContains(response, 'Message')
-		self.assertContains(response, reverse('hotel:send_message', args=[self.member.pk]))
+		self.assertContains(response, reverse('hotel:conversation', args=[self.member.pk]))
 
 		self.member.direct_message_privacy = 'connections'
 		self.member.save(update_fields=['direct_message_privacy'])
 		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
-		self.assertNotContains(response, 'Message</summary>')
+		self.assertNotContains(response, reverse('hotel:conversation', args=[self.member.pk]))
 		self.assertContains(response, 'Follow to message')
 		self.assertContains(response, reverse('hotel:follow_user', args=[self.member.pk]))
 
 		from .models import Connection
 		Connection.objects.create(sender=viewer, receiver=self.member, status='accepted')
 		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
-		self.assertContains(response, 'Message</summary>')
+		self.assertContains(response, reverse('hotel:conversation', args=[self.member.pk]))
 		self.assertContains(response, reverse('hotel:unfollow_user', args=[self.member.pk]))
+		self.assertEqual(
+			self.client.get(reverse('hotel:conversation', args=[self.member.pk])).status_code,
+			200,
+		)
+		conversation_response = self.client.get(reverse('hotel:conversation', args=[self.member.pk]))
+		self.assertContains(conversation_response, 'View profile')
+		self.assertContains(conversation_response, 'Write a message...')
+		self.assertContains(conversation_response, 'flex-col gap-2 sm:flex-row')
 
 		self.member.direct_message_privacy = 'nobody'
 		self.member.save(update_fields=['direct_message_privacy'])
 		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
-		self.assertNotContains(response, 'Message</summary>')
+		self.assertNotContains(response, reverse('hotel:conversation', args=[self.member.pk]))
 		self.assertContains(response, 'Not accepting messages')
+		self.assertRedirects(
+			self.client.get(reverse('hotel:conversation', args=[self.member.pk])),
+			reverse('hotel:public_profile', args=[self.member.pk]),
+		)
 
 	def test_non_discoverable_member_is_not_public(self):
 		self.member.discoverable_by_handle = False

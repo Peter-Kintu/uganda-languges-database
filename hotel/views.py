@@ -1185,15 +1185,23 @@ def translate_text(request):
             'note': 'Translation service unavailable. Showing original text.',
         })
 
+def _can_receive_direct_message(sender, receiver):
+    if receiver == sender or receiver.direct_message_privacy == 'everyone':
+        return True
+    if receiver.direct_message_privacy == 'connections':
+        return Connection.objects.filter(
+            sender=sender,
+            receiver=receiver,
+            status='accepted',
+        ).exists()
+    return False
+
+
 @login_required
 def send_message(request, user_id):
     receiver = get_object_or_404(CustomUser, id=user_id)
-    if receiver.direct_message_privacy == 'nobody' and receiver != request.user:
+    if not _can_receive_direct_message(request.user, receiver):
         return JsonResponse({'success': False, 'message': 'This user is not accepting direct messages.'}, status=403)
-    if receiver.direct_message_privacy == 'connections' and not Connection.objects.filter(
-        sender=request.user, receiver=receiver, status='accepted'
-    ).exists():
-        return JsonResponse({'success': False, 'message': 'Connect with this user before sending a message.'}, status=403)
     if request.method == 'POST':
         content = ''
         attachment = None
@@ -1440,6 +1448,10 @@ def gemini_translate(request):
 @login_required
 def conversation(request, user_id):
     other_user = get_object_or_404(CustomUser, id=user_id)
+    if not _can_receive_direct_message(request.user, other_user):
+        messages.error(request, 'Follow this member before starting a conversation.')
+        return redirect('hotel:public_profile', user_id=other_user.id)
+
     if request.method == 'POST':
         content = request.POST.get('content', '').strip()
         attachment = request.FILES.get('attachment')
@@ -1455,7 +1467,7 @@ def conversation(request, user_id):
         return redirect('hotel:conversation', user_id=user_id)
     
     # Get messages between the two users
-    messages = Message.objects.select_related('sender', 'receiver').filter(
+    conversation_messages = Message.objects.select_related('sender', 'receiver').filter(
         (Q(sender=request.user) & Q(receiver=other_user)) |
         (Q(sender=other_user) & Q(receiver=request.user))
     ).order_by('created_at')
@@ -1465,7 +1477,7 @@ def conversation(request, user_id):
     
     return render(request, 'hotel/conversation.html', {
         'other_user': other_user,
-        'messages': messages
+        'messages': conversation_messages
     })
 
 @login_required

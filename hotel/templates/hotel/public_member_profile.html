@@ -269,15 +269,7 @@
                             <button type="submit" class="profile-button {% if is_following %}profile-button-secondary{% endif %}">{% if is_following %}Following{% else %}Follow{% endif %}</button>
                         </form>
                         {% if can_message %}
-                        <details class="relative">
-                            <summary class="profile-button profile-button-secondary list-none">Message</summary>
-                            <form method="post" action="{% url 'hotel:send_message' profile_user.id %}" class="absolute right-0 z-10 mt-2 w-[min(88vw,22rem)] rounded-lg border border-slate-200 bg-white p-4 text-slate-900 shadow-xl">
-                                {% csrf_token %}
-                                <label for="public-profile-message" class="mb-2 block text-sm font-bold text-slate-900">Message {{ profile_user.get_full_name|default:profile_user.username }}</label>
-                                <textarea id="public-profile-message" name="content" rows="4" maxlength="2000" required class="w-full resize-y rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#007c83] focus:ring-2 focus:ring-[#007c83]/20" placeholder="Write a professional message..."></textarea>
-                                <button type="submit" class="profile-button mt-3 w-full">Send message</button>
-                            </form>
-                        </details>
+                        <a href="{% url 'hotel:conversation' profile_user.id %}" class="profile-button profile-button-secondary">Message</a>
                         {% endif %}
                         {% elif request.user.is_authenticated and is_own_profile %}
                         <a href="{% url 'users:profile_edit' %}" class="profile-button profile-button-secondary">Edit profile</a>
