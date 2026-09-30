@@ -346,6 +346,18 @@ def record_feed_impression(request):
     return JsonResponse({'success': True, 'counted': created})
 
 
+def public_member_profile(request, user_id):
+    profile_user = get_object_or_404(
+        CustomUser,
+        pk=user_id,
+        is_active=True,
+        discoverable_by_handle=True,
+    )
+    return render(request, 'hotel/public_member_profile.html', {
+        'profile_user': profile_user,
+    })
+
+
 def social_feed(request):
     # 0. Check User Agent for Google AdSense Crawler Bypass
     user_agent = (request.META.get('HTTP_USER_AGENT', '') or '').lower()
@@ -447,7 +459,10 @@ def social_feed(request):
             status='accepted'
         )
         following_count = Connection.objects.filter(sender=request.user, status='accepted').count()
-        all_users = CustomUser.objects.exclude(id=request.user.id)
+        all_users = CustomUser.objects.filter(
+            is_active=True,
+            discoverable_by_handle=True,
+        ).exclude(id=request.user.id)
     
     # Resolve author relationship data in batches instead of querying once per author.
     author_ids = set(post.author.id for post in posts)

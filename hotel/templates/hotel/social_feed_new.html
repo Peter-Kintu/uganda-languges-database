@@ -2518,8 +2518,8 @@
             <div class="sidebar-card">
                 <div class="sidebar-title">👥 Suggested Friends</div>
                 {% for user in all_users|slice:':5' %}
-                <a href="#" class="sidebar-item">
-                    <div style="font-weight: 600;">{{ user.get_full_name }}</div>
+                <a href="{% url 'hotel:public_profile' user.id %}" class="sidebar-item">
+                    <div style="font-weight: 600;">{{ user.get_full_name|default:user.username }}</div>
                     <div style="font-size: 12px; color: var(--gray-600);">@{{ user.username }}</div>
                 </a>
                 {% endfor %}

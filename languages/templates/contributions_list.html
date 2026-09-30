@@ -460,6 +460,22 @@
                             </div>
                         </div>
                     </form>
+                    {% if user.is_authenticated %}
+                    <div class="mt-3 flex flex-wrap items-center gap-3">
+                        {% if search_query or location_query or selected_category != 'all' %}
+                        <form method="post" action="{% url 'languages:save_job_alert' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="role_query" value="{{ search_query }}">
+                            <input type="hidden" name="location" value="{{ location_query }}">
+                            <input type="hidden" name="category" value="{{ selected_category }}">
+                            <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
+                                Save this search as an alert
+                            </button>
+                        </form>
+                        {% endif %}
+                        <a href="{% url 'languages:job_alerts' %}" class="text-sm font-medium text-gray-600 hover:text-blue-700">Manage job alerts</a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 

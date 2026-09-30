@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Job Alerts | Africana AI{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Job alerts</h1>
+            <p class="mt-1 text-sm text-gray-600">Get an email when a new validated local job matches a saved search.</p>
+        </div>
+        <a href="{% url 'languages:browse_job_listings' %}" class="text-sm font-semibold text-blue-700 hover:text-blue-900">Back to jobs</a>
+    </div>
+
+    <form method="post" action="{% url 'languages:save_job_alert' %}" class="mb-8 grid gap-3 border-b border-gray-200 pb-6 sm:grid-cols-3">
+        {% csrf_token %}
+        <label class="text-sm font-medium text-gray-700">
+            Role or keyword
+            <input type="text" name="role_query" maxlength="120" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="e.g. data analyst">
+        </label>
+        <label class="text-sm font-medium text-gray-700">
+            Location
+            <input type="text" name="location" maxlength="120" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="e.g. Kampala">
+        </label>
+        <label class="text-sm font-medium text-gray-700">
+            Category
+            <select name="category" class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2">
+                <option value="">All categories</option>
+                {% for key, label in job_categories %}
+                <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <div class="sm:col-span-3">
+            <button type="submit" class="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">Create job alert</button>
+        </div>
+    </form>
+
+    {% if job_alerts %}
+    <ul class="divide-y divide-gray-200 border-y border-gray-200">
+        {% for alert in job_alerts %}
+        <li class="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="font-semibold text-gray-900">
+                    {% if alert.role_query %}{{ alert.role_query }}{% else %}Any role{% endif %}
+                </p>
+                <p class="mt-1 text-sm text-gray-600">
+                    {% if alert.location %}{{ alert.location }}{% else %}Any location{% endif %}
+                    {% if alert.category %} · {{ alert.get_category_display }}{% endif %}
+                </p>
+                <p class="mt-1 text-xs font-medium {% if alert.is_active %}text-emerald-700{% else %}text-gray-500{% endif %}">
+                    {% if alert.is_active %}Active{% else %}Paused{% endif %}
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <form method="post" action="{% url 'languages:toggle_job_alert' alert.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                        {% if alert.is_active %}Pause{% else %}Resume{% endif %}
+                    </button>
+                </form>
+                <form method="post" action="{% url 'languages:delete_job_alert' alert.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">Delete</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="border-y border-gray-200 py-8 text-sm text-gray-600">No saved searches yet. Create an alert above or save a search from the job listings.</p>
+    {% endif %}
+</section>
+{% endblock %}

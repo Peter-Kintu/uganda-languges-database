@@ -19,6 +19,10 @@ urlpatterns = [
     # Dedicated browse and search paths
     path('jobs/', views.browse_job_listings, name='browse_job_listings'),
     path('jobs/search/', views.browse_job_listings, name='job_search'), # Improved for SEO/Analytics
+    path('jobs/alerts/', views.job_alerts, name='job_alerts'),
+    path('jobs/alerts/save/', views.save_job_alert, name='save_job_alert'),
+    path('jobs/alerts/<int:alert_id>/toggle/', views.toggle_job_alert, name='toggle_job_alert'),
+    path('jobs/alerts/<int:alert_id>/delete/', views.delete_job_alert, name='delete_job_alert'),
     
     # Specific Job Detail View
     path('job/<int:pk>/', views.job_post_detail, name='job_post_detail'),

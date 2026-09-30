@@ -241,3 +241,42 @@ class JobPost(models.Model):
         # Update the total_posts count for the linked recruiter
         if self.applicant:
             self.applicant.calculate_total_posts()
+
+
+class JobAlert(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='job_alerts',
+    )
+    role_query = models.CharField(max_length=120, blank=True)
+    location = models.CharField(max_length=120, blank=True)
+    category = models.CharField(max_length=20, choices=JOB_CATEGORIES, blank=True, default='')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'role_query', 'location', 'category'],
+                name='unique_user_job_alert_search',
+            ),
+        ]
+
+    def __str__(self):
+        return f"Job alert for {self.user}"
+
+
+class JobAlertDelivery(models.Model):
+    alert = models.ForeignKey(JobAlert, on_delete=models.CASCADE, related_name='deliveries')
+    job = models.ForeignKey(JobPost, on_delete=models.CASCADE, related_name='alert_deliveries')
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['alert', 'job'],
+                name='unique_job_alert_delivery',
+            ),
+        ]

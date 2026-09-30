@@ -5,6 +5,7 @@ app_name = 'hotel'
 
 urlpatterns = [
     path('', views.social_feed, name='social_feed'),
+    path('member/<int:user_id>/', views.public_member_profile, name='public_profile'),
     path('create_post/', views.create_post, name='create_post'),
     path('post/', views.public_create_post, name='post'),
     path('like-post/<int:post_id>/', views.like_post, name='like_post'),

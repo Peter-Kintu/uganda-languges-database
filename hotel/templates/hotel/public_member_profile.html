@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }} | Africana AI{% endblock %}
+
+{% block meta_description %}Public profile for {{ profile_user.get_full_name|default:profile_user.username }} on Africana AI.{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <a href="{% url 'hotel:social_feed' %}" class="text-sm font-semibold text-teal-700 hover:text-teal-900">Back to feed</a>
+
+    <section class="mt-5 border-y border-slate-200 py-8" aria-labelledby="public-profile-name">
+        <div class="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+            {% if profile_user.profile_image %}
+            <img src="{{ profile_user.profile_image.url }}" alt="{{ profile_user.get_full_name|default:profile_user.username }}" class="h-24 w-24 rounded-full object-cover" loading="lazy">
+            {% else %}
+            <div class="flex h-24 w-24 items-center justify-center rounded-full bg-teal-700 text-3xl font-bold text-white" aria-hidden="true">{{ profile_user.username|slice:':1'|upper }}</div>
+            {% endif %}
+
+            <div class="min-w-0">
+                <h1 id="public-profile-name" class="break-words text-2xl font-bold text-slate-900">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                <p class="mt-1 text-sm text-slate-500">@{{ profile_user.username }}</p>
+                {% if profile_user.headline %}
+                <p class="mt-3 font-medium text-slate-800">{{ profile_user.headline }}</p>
+                {% endif %}
+                {% if profile_user.location %}
+                <p class="mt-2 text-sm text-slate-600">{{ profile_user.location }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if profile_user.about %}
+        <div class="mt-7 max-w-2xl border-t border-slate-200 pt-5">
+            <h2 class="text-sm font-semibold text-slate-900">About</h2>
+            <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ profile_user.about }}</p>
+        </div>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

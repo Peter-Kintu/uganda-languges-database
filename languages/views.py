@@ -22,7 +22,7 @@ import ipaddress
 import time
 
 from .forms import JobPostForm
-from .models import JobPost, JOB_CATEGORIES, JOB_TYPES, Applicant 
+from .models import JobPost, JobAlert, JOB_CATEGORIES, JOB_TYPES, Applicant
 
 try:
     from eshop.models import Product 
@@ -958,6 +958,66 @@ def browse_job_listings(request):
         'page_title': f"Africana AI Jobs in {display_location}",
     }
     return render(request, 'contributions_list.html', context)
+
+
+@login_required
+def job_alerts(request):
+    alerts = JobAlert.objects.filter(user=request.user)
+    return render(request, 'job_alerts.html', {
+        'job_alerts': alerts,
+        'job_categories': JOB_CATEGORIES,
+    })
+
+
+@login_required
+@require_POST
+def save_job_alert(request):
+    role_query = request.POST.get('role_query', '').strip()[:120]
+    location = request.POST.get('location', '').strip()[:120]
+    category = request.POST.get('category', '').strip()
+    valid_categories = {value for value, _label in JOB_CATEGORIES}
+
+    if category in ('', 'all'):
+        category = ''
+    elif category not in valid_categories:
+        messages.error(request, 'Choose a valid job category.')
+        return redirect('languages:browse_job_listings')
+
+    if not (role_query or location or category):
+        messages.error(request, 'Add a role, location, or category before saving an alert.')
+        return redirect('languages:browse_job_listings')
+
+    alert, created = JobAlert.objects.get_or_create(
+        user=request.user,
+        role_query=role_query,
+        location=location,
+        category=category,
+    )
+    if not created and not alert.is_active:
+        alert.is_active = True
+        alert.save(update_fields=['is_active'])
+
+    messages.success(request, 'Job alert saved. You will receive email when a matching local job is posted.')
+    return redirect('languages:job_alerts')
+
+
+@login_required
+@require_POST
+def toggle_job_alert(request, alert_id):
+    alert = get_object_or_404(JobAlert, pk=alert_id, user=request.user)
+    alert.is_active = not alert.is_active
+    alert.save(update_fields=['is_active'])
+    messages.success(request, 'Job alert updated.')
+    return redirect('languages:job_alerts')
+
+
+@login_required
+@require_POST
+def delete_job_alert(request, alert_id):
+    alert = get_object_or_404(JobAlert, pk=alert_id, user=request.user)
+    alert.delete()
+    messages.success(request, 'Job alert deleted.')
+    return redirect('languages:job_alerts')
 
 @require_POST
 @login_required

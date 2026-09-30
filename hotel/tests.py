@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 from django.utils import timezone
 from unittest.mock import Mock, patch
 
@@ -183,6 +184,64 @@ class HybridFeedTests(TestCase):
 		request = post.call_args.kwargs
 		self.assertEqual(request['json']['target'], 'lg')
 		self.assertEqual(request['headers']['Authorization'], 'Bearer nllb-test-key')
+
+
+class PublicMemberProfileTests(TestCase):
+	def setUp(self):
+		self.member = User.objects.create_user(
+			username='public_member',
+			password='secret123',
+			first_name='Public',
+			last_name='Member',
+			email='private@example.com',
+			phone='+256700000000',
+			headline='Community builder',
+			about='I support local founders.',
+			location='Kampala',
+		)
+
+	def test_public_profile_is_anonymous_and_excludes_private_account_details(self):
+		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'Public Member')
+		self.assertContains(response, '@public_member')
+		self.assertContains(response, 'Community builder')
+		self.assertContains(response, 'I support local founders.')
+		self.assertContains(response, 'Kampala')
+		self.assertNotContains(response, 'private@example.com')
+		self.assertNotContains(response, '+256700000000')
+		self.assertNotContains(response, 'Edit Profile')
+
+	def test_non_discoverable_member_is_not_public(self):
+		self.member.discoverable_by_handle = False
+		self.member.save(update_fields=['discoverable_by_handle'])
+
+		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
+
+		self.assertEqual(response.status_code, 404)
+
+	def test_feed_suggestions_only_include_discoverable_active_users(self):
+		viewer = User.objects.create_user(username='feed_viewer', password='secret123')
+		hidden_member = User.objects.create_user(
+			username='hidden_member',
+			password='secret123',
+			discoverable_by_handle=False,
+		)
+		inactive_member = User.objects.create_user(
+			username='inactive_member',
+			password='secret123',
+			is_active=False,
+		)
+		self.client.force_login(viewer)
+
+		response = self.client.get('/hotel/')
+
+		self.assertEqual(response.status_code, 200)
+		suggested_users = response.context['all_users']
+		self.assertIn(self.member, suggested_users)
+		self.assertNotIn(hidden_member, suggested_users)
+		self.assertNotIn(inactive_member, suggested_users)
 
 
 class CommunityArchitectureTests(TestCase):
