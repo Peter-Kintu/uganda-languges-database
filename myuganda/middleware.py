@@ -16,11 +16,12 @@ import re
 import time
 
 from django.conf import settings
-from django.core.cache import cache
+from django.core.cache import caches
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
+rate_limit_cache = caches['rate_limits']
 
 THROTTLED_PATHS = {
     '/hotel/record-impression/': {'limit': 120, 'window': 60},
@@ -40,6 +41,7 @@ THROTTLED_PATHS = {
     '/api/v1/generate_image/': {'limit': 5, 'window': 300},
     '/upload/': {'limit': 6, 'window': 300},
 }
+THROTTLED_PATHS_BY_LENGTH = sorted(THROTTLED_PATHS.items(), key=lambda item: len(item[0]), reverse=True)
 
 # Allowed HTTP methods for this application
 ALLOWED_METHODS = {'GET', 'HEAD', 'POST', 'OPTIONS'}
@@ -162,9 +164,11 @@ class RateLimitMiddleware(MiddlewareMixin):
         burst = getattr(settings, 'RATE_LIMIT_BURST', 30)
 
         matching_rule = None
-        for known_path, rule in THROTTLED_PATHS.items():
+        matching_path = None
+        for known_path, rule in THROTTLED_PATHS_BY_LENGTH:
             if path == known_path or path.startswith(known_path):
                 matching_rule = rule
+                matching_path = known_path
                 break
 
         if matching_rule:
@@ -188,28 +192,39 @@ class RateLimitMiddleware(MiddlewareMixin):
             ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'unknown')).split(',')[0].strip()
             key_base = f"ratelimit:ip:{ip}"
 
-        bucket_key = f"{key_base}:{path}"
-        window_key = f"{bucket_key}:window"
-
-        current_window = cache.get(window_key)
-        if current_window is None:
-            current_window = now
-            cache.set(window_key, current_window, timeout=window)
-
-        request_count = cache.get(f"{bucket_key}:{current_window}", 0)
+        window = max(1, window)
+        window_bucket = now // window
+        counter_path = matching_path or path
+        counter_key = f"{key_base}:{counter_path}:{window_bucket}"
         effective_limit = max(10, limit - burst)
-        if request_count >= effective_limit:
+        try:
+            if rate_limit_cache.add(counter_key, 1, timeout=window + 1):
+                request_count = 1
+            else:
+                try:
+                    request_count = rate_limit_cache.incr(counter_key)
+                except ValueError:
+                    if rate_limit_cache.add(counter_key, 1, timeout=window + 1):
+                        request_count = 1
+                    else:
+                        request_count = rate_limit_cache.incr(counter_key)
+        except Exception:
+            logger.exception("Rate limit cache operation failed for path=%s", path)
+            return None
+
+        if request_count > effective_limit:
             response = HttpResponse(
                 "Too many requests. Please slow down and try again shortly.",
                 status=429,
                 content_type='text/plain',
             )
-            response['Retry-After'] = str(window)
+            response['Retry-After'] = str(max(1, window - (now % window)))
             response['X-RateLimit-Limit'] = str(effective_limit)
             response['X-RateLimit-Remaining'] = '0'
             return response
 
-        cache.set(f"{bucket_key}:{current_window}", request_count + 1, timeout=window)
+        response_limit_remaining = max(0, effective_limit - request_count)
+        request._rate_limit_remaining = response_limit_remaining
         return None
 
 

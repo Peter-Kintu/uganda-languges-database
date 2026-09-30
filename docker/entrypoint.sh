@@ -68,10 +68,41 @@ PY
 
 python manage.py migrate --noinput
 
+DB_CONNECTION_BUDGET="${WEB_DB_CONNECTION_BUDGET:-8}"
+GUNICORN_WORKERS="${GUNICORN_WORKERS:-2}"
+GUNICORN_THREADS="${GUNICORN_THREADS:-2}"
+DB_ALIAS_COUNT=1
+if [ -n "${READ_REPLICA_URL:-}" ]; then
+    DB_ALIAS_COUNT=2
+fi
+
+if ! [[ "$DB_CONNECTION_BUDGET" =~ ^[1-9][0-9]*$ && "$GUNICORN_WORKERS" =~ ^[1-9][0-9]*$ && "$GUNICORN_THREADS" =~ ^[1-9][0-9]*$ ]]; then
+    echo '[startup] WEB_DB_CONNECTION_BUDGET, GUNICORN_WORKERS, and GUNICORN_THREADS must be positive integers.' >&2
+    exit 1
+fi
+
+PER_ALIAS_BUDGET=$((DB_CONNECTION_BUDGET / DB_ALIAS_COUNT))
+if [ "$PER_ALIAS_BUDGET" -lt 1 ]; then
+    echo '[startup] WEB_DB_CONNECTION_BUDGET must allow at least one connection per configured database.' >&2
+    exit 1
+fi
+
+MAX_GUNICORN_PROCESSES=$((PER_ALIAS_BUDGET / GUNICORN_THREADS))
+if [ "$MAX_GUNICORN_PROCESSES" -lt 1 ]; then
+    echo '[startup] GUNICORN_THREADS exceeds the per-database connection budget.' >&2
+    exit 1
+fi
+if [ "$GUNICORN_WORKERS" -gt "$MAX_GUNICORN_PROCESSES" ]; then
+    echo "[startup] Clamping GUNICORN_WORKERS from $GUNICORN_WORKERS to $MAX_GUNICORN_PROCESSES for the database connection budget."
+    GUNICORN_WORKERS="$MAX_GUNICORN_PROCESSES"
+fi
+
+echo "[startup] Web DB connection ceiling: $((GUNICORN_WORKERS * GUNICORN_THREADS * DB_ALIAS_COUNT)) across $DB_ALIAS_COUNT database(s)."
+
 exec gunicorn myuganda.wsgi:application \
   --bind 0.0.0.0:8000 \
-  --workers "${GUNICORN_WORKERS:-2}" \
-  --threads "${GUNICORN_THREADS:-2}" \
+    --workers "$GUNICORN_WORKERS" \
+    --threads "$GUNICORN_THREADS" \
   --max-requests "${GUNICORN_MAX_REQUESTS:-250}" \
   --max-requests-jitter "${GUNICORN_MAX_REQUESTS_JITTER:-50}" \
   --timeout "${GUNICORN_TIMEOUT:-30}" \

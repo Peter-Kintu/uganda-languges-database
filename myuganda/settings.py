@@ -24,6 +24,13 @@ def env_bool(name, default=False):
     return value.strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
+def env_int(name, default, minimum=0):
+    try:
+        return max(minimum, int(os.environ.get(name, default)))
+    except (TypeError, ValueError):
+        return max(minimum, int(default))
+
+
 DEPLOYMENT_ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development').strip().lower()
 TESTING = 'test' in sys.argv
 
@@ -245,10 +252,17 @@ WSGI_APPLICATION = 'myuganda.wsgi.application'
 
 # --- DATABASE ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
-try:
-    DB_CONN_MAX_AGE = int(os.environ.get("DB_CONN_MAX_AGE", "0"))
-except (TypeError, ValueError):
-    DB_CONN_MAX_AGE = 0
+DB_CONN_MAX_AGE = env_int('DB_CONN_MAX_AGE', 0)
+DB_CONN_HEALTH_CHECKS = env_bool('DB_CONN_HEALTH_CHECKS', True)
+DB_STATEMENT_TIMEOUT_MS = env_int('DB_STATEMENT_TIMEOUT_MS', 15000)
+DB_LOCK_TIMEOUT_MS = env_int('DB_LOCK_TIMEOUT_MS', 2000)
+DB_IDLE_IN_TRANSACTION_TIMEOUT_MS = env_int('DB_IDLE_IN_TRANSACTION_TIMEOUT_MS', 15000)
+READ_REPLICA_URL = os.environ.get('READ_REPLICA_URL', '').strip()
+READ_REPLICA_APPS = {
+    app_label.strip()
+    for app_label in os.environ.get('READ_REPLICA_APPS', '').split(',')
+    if app_label.strip()
+}
 
 if DATABASE_URL:
     DATABASES = {
@@ -269,8 +283,48 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
+            'CONN_MAX_AGE': DB_CONN_MAX_AGE,
+            'CONN_HEALTH_CHECKS': DB_CONN_HEALTH_CHECKS,
         }
     }
+
+
+def configure_database_limits(database):
+    database['CONN_HEALTH_CHECKS'] = DB_CONN_HEALTH_CHECKS
+    if 'postgresql' not in database.get('ENGINE', ''):
+        return
+
+    options = database.setdefault('OPTIONS', {})
+    options.update({
+        'keepalives': 1,
+        'keepalives_idle': 30,
+        'keepalives_interval': 10,
+        'keepalives_count': 5,
+    })
+    postgres_options = [str(options['options']).strip()] if options.get('options') else []
+    if DB_STATEMENT_TIMEOUT_MS:
+        postgres_options.append(f'-c statement_timeout={DB_STATEMENT_TIMEOUT_MS}')
+    if DB_LOCK_TIMEOUT_MS:
+        postgres_options.append(f'-c lock_timeout={DB_LOCK_TIMEOUT_MS}')
+    if DB_IDLE_IN_TRANSACTION_TIMEOUT_MS:
+        postgres_options.append(
+            f'-c idle_in_transaction_session_timeout={DB_IDLE_IN_TRANSACTION_TIMEOUT_MS}'
+        )
+    if postgres_options:
+        options['options'] = ' '.join(postgres_options)
+
+
+configure_database_limits(DATABASES['default'])
+
+if READ_REPLICA_URL:
+    DATABASES['replica'] = dj_database_url.config(
+        default=READ_REPLICA_URL,
+        conn_max_age=DB_CONN_MAX_AGE,
+        ssl_require=True,
+    )
+    configure_database_limits(DATABASES['replica'])
+
+DATABASE_ROUTERS = ['myuganda.dbrouters.ReadReplicaRouter'] if 'replica' in DATABASES else []
 
 # --- AUTHENTICATION ---
 AUTH_USER_MODEL = 'users.CustomUser'
@@ -350,6 +404,7 @@ USE_DATABASE_CACHE = os.getenv('USE_DATABASE_CACHE', 'False').lower() in ('1', '
 DJANGO_CACHE_TABLE = os.getenv('DJANGO_CACHE_TABLE', 'django_cache_table')
 REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1')
 USE_REDIS_CACHE = os.getenv('USE_REDIS_CACHE', 'True').lower() in ('1', 'true', 'yes', 'on')
+CACHE_HERD_TIMEOUT = env_int('CACHE_HERD_TIMEOUT', 60, minimum=1)
 
 
 def redis_is_available(redis_url):
@@ -525,6 +580,33 @@ else:
         }
     }
 
+if USE_REDIS_CACHE:
+    CACHES['pages'] = {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.HerdClient',
+        },
+        'KEY_PREFIX': 'uganda_db_pages',
+    }
+else:
+    CACHES['pages'] = CACHES['default'].copy()
+
+if USE_REDIS_CACHE:
+    CACHES['rate_limits'] = {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'uganda_db_rate_limits',
+    }
+else:
+    CACHES['rate_limits'] = {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'uganda-rate-limit-local-cache',
+    }
+
 # Use Redis for session storage when available so the app remains stateless across workers.
 # If Redis is unavailable, fall back to the default database-backed sessions instead of crashing.
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' if USE_REDIS_CACHE else 'django.contrib.sessions.backends.db'
@@ -537,8 +619,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+CELERY_WORKER_CONCURRENCY = env_int('CELERY_WORKER_CONCURRENCY', 2, minimum=1)
 CELERY_TASK_ALWAYS_EAGER = os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False').lower() in ('1', 'true', 'yes', 'on') and DEBUG
-
-# If Redis is unavailable in a local dev environment, the app still starts without crashing.
-if not USE_REDIS_CACHE and not DEBUG:
+if TESTING or (DEBUG and not USE_REDIS_CACHE):
     CELERY_TASK_ALWAYS_EAGER = True

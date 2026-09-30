@@ -143,7 +143,7 @@ class BusinessReelSitemap(Sitemap):
 
 
 # 6. Custom Sitemap View - Replaces request domain with DEFAULT_DOMAIN setting
-@cache_page(60 * 60)
+@cache_page(60 * 60, cache='pages')
 def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.xml', content_type='application/xml'):
     """
     Custom sitemap view that replaces the request domain with the DEFAULT_DOMAIN setting.

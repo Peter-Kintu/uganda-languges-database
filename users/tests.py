@@ -3,13 +3,17 @@ from unittest.mock import patch
 from io import BytesIO
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.core import mail
 from django.core.management import call_command
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
+from types import SimpleNamespace
 
-from myuganda.middleware import WordPressProbeBlockMiddleware
+from myuganda import settings as project_settings
+from myuganda.dbrouters import ReadReplicaRouter
+from myuganda.middleware import RateLimitMiddleware, WordPressProbeBlockMiddleware, rate_limit_cache
 from users.models import AgentMemory, AgentPlan, EventBooking, PesapalPayment, UserSubscription
 from users.tasks import send_user_notification_task
 from users.views import _get_pesapal_config, _pesapal_request, _send_welcome_email
@@ -122,6 +126,106 @@ class ExploitProbeDefenseTests(TestCase):
         response = middleware.process_request(request)
         self.assertIsNotNone(response)
         self.assertEqual(response.status_code, 404)
+
+
+class RateLimitMiddlewareTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.middleware = RateLimitMiddleware(lambda request: None)
+        rate_limit_cache.clear()
+
+    def tearDown(self):
+        rate_limit_cache.clear()
+
+    def test_rate_limiter_uses_atomic_cache_increment_for_existing_bucket(self):
+        request = self.factory.get('/hotel/')
+        request.user = AnonymousUser()
+        request.META['REMOTE_ADDR'] = '192.0.2.44'
+
+        with patch('myuganda.middleware.rate_limit_cache.add', return_value=False) as add, patch(
+            'myuganda.middleware.rate_limit_cache.incr', return_value=1
+        ) as incr, patch('myuganda.middleware.rate_limit_cache.get') as get, patch(
+            'myuganda.middleware.rate_limit_cache.set'
+        ) as set_value:
+            response = self.middleware.process_request(request)
+
+        self.assertIsNone(response)
+        add.assert_called_once()
+        incr.assert_called_once()
+        get.assert_not_called()
+        set_value.assert_not_called()
+
+    def test_rate_limiter_rejects_requests_over_the_shared_route_limit(self):
+        request = self.factory.get('/hotel/')
+        request.user = AnonymousUser()
+        request.META['REMOTE_ADDR'] = '192.0.2.45'
+
+        with patch('myuganda.middleware.rate_limit_cache.add', return_value=False), patch(
+            'myuganda.middleware.rate_limit_cache.incr', return_value=26
+        ):
+            response = self.middleware.process_request(request)
+
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response['X-RateLimit-Remaining'], '0')
+
+    def test_specific_route_limit_uses_its_own_atomic_bucket(self):
+        request = self.factory.post('/hotel/create_post/')
+        request.user = AnonymousUser()
+        request.META['REMOTE_ADDR'] = '192.0.2.46'
+
+        with patch('myuganda.middleware.rate_limit_cache.add', return_value=True) as add:
+            response = self.middleware.process_request(request)
+
+        self.assertIsNone(response)
+        self.assertIn('/hotel/create_post/', add.call_args.args[0])
+
+
+class DatabaseProtectionTests(TestCase):
+    def test_postgres_connections_get_health_checks_and_bounded_timeouts(self):
+        database = {'ENGINE': 'django.db.backends.postgresql', 'OPTIONS': {}}
+
+        with patch.object(project_settings, 'DB_CONN_HEALTH_CHECKS', True), patch.object(
+            project_settings, 'DB_STATEMENT_TIMEOUT_MS', 15000
+        ), patch.object(project_settings, 'DB_LOCK_TIMEOUT_MS', 2000), patch.object(
+            project_settings, 'DB_IDLE_IN_TRANSACTION_TIMEOUT_MS', 15000
+        ):
+            project_settings.configure_database_limits(database)
+
+        self.assertTrue(database['CONN_HEALTH_CHECKS'])
+        self.assertIn('statement_timeout=15000', database['OPTIONS']['options'])
+        self.assertIn('lock_timeout=2000', database['OPTIONS']['options'])
+        self.assertIn('idle_in_transaction_session_timeout=15000', database['OPTIONS']['options'])
+
+    def test_postgres_limits_preserve_existing_connection_options(self):
+        database = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'OPTIONS': {'options': '-c application_name=africana'},
+        }
+
+        project_settings.configure_database_limits(database)
+
+        self.assertIn('application_name=africana', database['OPTIONS']['options'])
+        self.assertIn('statement_timeout=', database['OPTIONS']['options'])
+
+    def test_read_replica_is_used_only_for_allowlisted_nontransactional_reads(self):
+        router = ReadReplicaRouter()
+        model = SimpleNamespace(_meta=SimpleNamespace(app_label='catalog'))
+        default_connection = SimpleNamespace(in_atomic_block=False)
+
+        with patch('myuganda.dbrouters.connections') as mocked_connections, override_settings(
+            READ_REPLICA_APPS={'catalog'}
+        ):
+            mocked_connections.databases = {'default': {}, 'replica': {}}
+            mocked_connections.__getitem__.return_value = default_connection
+            self.assertEqual(router.db_for_read(model), 'replica')
+            self.assertEqual(router.db_for_write(model), 'default')
+
+            default_connection.in_atomic_block = True
+            self.assertIsNone(router.db_for_read(model))
+
+            default_connection.in_atomic_block = False
+            with override_settings(READ_REPLICA_APPS=set()):
+                self.assertIsNone(router.db_for_read(model))
 
     def test_wordpress_manifest_probe_is_denied_with_404(self):
         request = RequestFactory().get('/wp-includes/wlwmanifest.xml')

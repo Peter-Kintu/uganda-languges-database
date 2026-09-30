@@ -792,7 +792,7 @@ def deduplicate_jobs(jobs_list):
     return unique_jobs
 
 
-@cache_page(60 * 5)
+@cache_page(60 * 5, cache='pages')
 @allow_google_bot_or_login
 def browse_job_listings(request):
     job_id = request.GET.get('job_id')

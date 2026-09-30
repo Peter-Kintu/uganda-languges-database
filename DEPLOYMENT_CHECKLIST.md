@@ -197,6 +197,28 @@ sudo systemctl reload nginx
 
 ---
 
+## Database Load Protection
+
+The Django app now applies a 5-second PostgreSQL statement timeout, a 2-second lock timeout, idle-transaction cleanup, and connection health checks. Configure the per-instance worker/thread ceiling to match the database provider's connection allocation:
+
+```env
+WEB_DB_CONNECTION_BUDGET=8
+DB_CONN_MAX_AGE=0
+DB_CONN_HEALTH_CHECKS=true
+DB_STATEMENT_TIMEOUT_MS=15000
+DB_LOCK_TIMEOUT_MS=2000
+DB_IDLE_IN_TRANSACTION_TIMEOUT_MS=15000
+CELERY_WORKER_CONCURRENCY=2
+```
+
+The container entrypoint clamps `GUNICORN_WORKERS × GUNICORN_THREADS` to that budget. The default is 8 connections per web instance; reduce it if the provider allocates fewer connections. If using PgBouncer, point `DATABASE_URL` at the pooler and follow its transaction-pooling guidance; persistent Django connections should generally remain disabled (`DB_CONN_MAX_AGE=0`). Celery defaults to two concurrent workers; lower `CELERY_WORKER_CONCURRENCY` if needed and include all worker processes and app instances in the provider-wide budget.
+
+Redis-backed page caches use Django Redis `HerdClient` stale-while-revalidate protection. Rate-limit counters stay on the default cache because they require atomic `incr` operations. Configure Redis for multi-worker deployments; local-memory fallback is per process and is not a shared production limiter/cache.
+
+Read replicas are disabled by default. To opt in, provision a replica and set both `READ_REPLICA_URL` and a comma-separated `READ_REPLICA_APPS` allowlist. Only non-transactional reads for those apps route to the replica; writes and reads inside transactions remain on primary. Account for replica lag before allowlisting an app. Do not set the replica URL to the primary and expect additional capacity.
+
+These application safeguards cannot enforce the database provider's account-wide maximum connections or replace edge rate limiting. Set those limits at the provider and CDN/reverse-proxy layer as well.
+
 ## 📋 Before & After Comparison
 
 ### BEFORE (Vulnerable)

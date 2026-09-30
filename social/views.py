@@ -40,7 +40,7 @@ if os.environ.get('CLOUDINARY_CLOUD_NAME'):
     )
 
 
-@method_decorator(cache_page(60 * 5), name='dispatch')
+@method_decorator(cache_page(60 * 5, cache='pages'), name='dispatch')
 class FeedView(ListView):
     """
     Pillar 2: Main social feed displaying Business Reels.
