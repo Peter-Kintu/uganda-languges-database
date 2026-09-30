@@ -127,7 +127,7 @@ class HybridFeedTests(TestCase):
 		self.assertEqual(second.json()['likes_count'], 0)
 
 	def test_ajax_feed_uses_reaction_control_markup(self):
-		Post.objects.create(author=self.popular_user, content='Loaded update')
+		post = Post.objects.create(author=self.popular_user, content='Loaded update')
 		self.client.force_login(self.user)
 
 		response = self.client.get('/hotel/?format=json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
@@ -136,6 +136,39 @@ class HybridFeedTests(TestCase):
 		html = response.json()['html']
 		self.assertIn('class="post-action reaction-like"', html)
 		self.assertIn('class="post-action reaction-more"', html)
+		self.assertIn(
+			f'href="{reverse("hotel:public_profile", args=[post.author_id])}"',
+			html,
+		)
+
+	def test_initial_feed_links_discoverable_author_names_to_public_profiles(self):
+		post = Post.objects.create(author=self.popular_user, content='Public author update')
+		self.client.force_login(self.user)
+
+		response = self.client.get('/hotel/')
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(
+			response,
+			reverse('hotel:public_profile', args=[post.author_id]),
+		)
+
+	def test_initial_feed_does_not_link_hidden_author_profile(self):
+		hidden_author = User.objects.create_user(
+			username='hidden_author',
+			password='secret123',
+			discoverable_by_handle=False,
+		)
+		Post.objects.create(author=hidden_author, content='Hidden author update')
+		self.client.force_login(self.user)
+
+		response = self.client.get('/hotel/')
+
+		self.assertEqual(response.status_code, 200)
+		self.assertNotContains(
+			response,
+			reverse('hotel:public_profile', args=[hidden_author.pk]),
+		)
 
 	def test_market_and_job_positions_rotate_with_feed_seed(self):
 		first_products, first_job = _feed_insert_positions(20, 'first-seed')
@@ -212,6 +245,37 @@ class PublicMemberProfileTests(TestCase):
 		self.assertNotContains(response, 'private@example.com')
 		self.assertNotContains(response, '+256700000000')
 		self.assertNotContains(response, 'Edit Profile')
+		self.assertContains(response, 'Sign in to connect')
+
+	def test_signed_in_profile_shows_follow_and_privacy_aware_message_actions(self):
+		viewer = User.objects.create_user(username='profile_viewer', password='secret123')
+		self.client.force_login(viewer)
+
+		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'Follow')
+		self.assertContains(response, 'Message')
+		self.assertContains(response, reverse('hotel:send_message', args=[self.member.pk]))
+
+		self.member.direct_message_privacy = 'connections'
+		self.member.save(update_fields=['direct_message_privacy'])
+		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
+		self.assertNotContains(response, 'Message</summary>')
+		self.assertContains(response, 'Follow to message')
+		self.assertContains(response, reverse('hotel:follow_user', args=[self.member.pk]))
+
+		from .models import Connection
+		Connection.objects.create(sender=viewer, receiver=self.member, status='accepted')
+		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
+		self.assertContains(response, 'Message</summary>')
+		self.assertContains(response, reverse('hotel:unfollow_user', args=[self.member.pk]))
+
+		self.member.direct_message_privacy = 'nobody'
+		self.member.save(update_fields=['direct_message_privacy'])
+		response = self.client.get(reverse('hotel:public_profile', args=[self.member.pk]))
+		self.assertNotContains(response, 'Message</summary>')
+		self.assertContains(response, 'Not accepting messages')
 
 	def test_non_discoverable_member_is_not_public(self):
 		self.member.discoverable_by_handle = False

@@ -5,35 +5,81 @@
 {% block meta_description %}Public profile for {{ profile_user.get_full_name|default:profile_user.username }} on Africana AI.{% endblock %}
 
 {% block content %}
-<main class="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-    <a href="{% url 'hotel:social_feed' %}" class="text-sm font-semibold text-teal-700 hover:text-teal-900">Back to feed</a>
+<main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+    <a href="{% url 'hotel:social_feed' %}" class="text-sm font-semibold text-[#007c83] hover:text-[#005f63]">Back to feed</a>
 
-    <section class="mt-5 border-y border-slate-200 py-8" aria-labelledby="public-profile-name">
-        <div class="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-            {% if profile_user.profile_image %}
-            <img src="{{ profile_user.profile_image.url }}" alt="{{ profile_user.get_full_name|default:profile_user.username }}" class="h-24 w-24 rounded-full object-cover" loading="lazy">
-            {% else %}
-            <div class="flex h-24 w-24 items-center justify-center rounded-full bg-teal-700 text-3xl font-bold text-white" aria-hidden="true">{{ profile_user.username|slice:':1'|upper }}</div>
-            {% endif %}
+    <section class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white" aria-labelledby="public-profile-name">
+        <div class="h-32 bg-[#006b70] sm:h-44" aria-hidden="true"></div>
+        <div class="px-5 pb-6 sm:px-8 sm:pb-8">
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end">
+                    {% if profile_user.profile_image %}
+                    <img src="{{ profile_user.profile_image.url }}" alt="{{ profile_user.get_full_name|default:profile_user.username }}" class="-mt-14 h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white object-cover sm:-mt-16 sm:h-36 sm:w-36" loading="lazy">
+                    {% else %}
+                    <div class="-mt-14 flex h-28 w-28 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[#007c83] text-4xl font-bold text-white sm:-mt-16 sm:h-36 sm:w-36" aria-hidden="true">{{ profile_user.username|slice:':1'|upper }}</div>
+                    {% endif %}
 
-            <div class="min-w-0">
-                <h1 id="public-profile-name" class="break-words text-2xl font-bold text-slate-900">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
-                <p class="mt-1 text-sm text-slate-500">@{{ profile_user.username }}</p>
-                {% if profile_user.headline %}
-                <p class="mt-3 font-medium text-slate-800">{{ profile_user.headline }}</p>
-                {% endif %}
-                {% if profile_user.location %}
-                <p class="mt-2 text-sm text-slate-600">{{ profile_user.location }}</p>
+                    <div class="min-w-0 pb-1">
+                        <h1 id="public-profile-name" class="break-words text-2xl font-bold text-slate-900 sm:text-3xl">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                        <p class="mt-1 text-sm text-slate-500">@{{ profile_user.username }}</p>
+                        {% if profile_user.headline %}
+                        <p class="mt-3 max-w-2xl text-base font-medium leading-6 text-slate-800">{{ profile_user.headline }}</p>
+                        {% endif %}
+                        {% if profile_user.location %}
+                        <p class="mt-2 flex items-center gap-2 text-sm text-slate-600">
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                            {{ profile_user.location }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                    {% if request.user.is_authenticated and not is_own_profile %}
+                    <form method="post" action="{% if is_following %}{% url 'hotel:unfollow_user' profile_user.id %}{% else %}{% url 'hotel:follow_user' profile_user.id %}{% endif %}">
+                        {% csrf_token %}
+                        <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-[#007c83] px-5 text-sm font-semibold {% if is_following %}text-[#007c83] hover:bg-[#e8f4f1]{% else %}bg-[#007c83] text-white hover:bg-[#005f63]{% endif %}">
+                            {% if is_following %}Following{% else %}Follow{% endif %}
+                        </button>
+                    </form>
+                    {% if can_message %}
+                    <details class="relative">
+                        <summary class="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-300 px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Message</summary>
+                        <form method="post" action="{% url 'hotel:send_message' profile_user.id %}" class="absolute right-0 z-10 mt-2 w-[min(88vw,22rem)] rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
+                            {% csrf_token %}
+                            <label for="public-profile-message" class="mb-2 block text-sm font-semibold text-slate-800">Message {{ profile_user.get_full_name|default:profile_user.username }}</label>
+                            <textarea id="public-profile-message" name="content" rows="3" maxlength="2000" required class="w-full resize-y rounded-lg border border-slate-300 p-3 text-sm text-slate-900 outline-none focus:border-[#007c83] focus:ring-2 focus:ring-[#007c83]/20" placeholder="Write a professional message..."></textarea>
+                            <button type="submit" class="mt-2 min-h-10 w-full rounded-lg bg-[#007c83] px-4 text-sm font-semibold text-white hover:bg-[#005f63]">Send message</button>
+                        </form>
+                    </details>
+                    {% endif %}
+                    {% elif request.user.is_authenticated and is_own_profile %}
+                    <a href="{% url 'users:profile_edit' %}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Edit profile</a>
+                    {% else %}
+                    <a href="{% url 'users:user_login' %}?next={{ request.get_full_path|urlencode }}" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#007c83] px-5 text-sm font-semibold text-white hover:bg-[#005f63]">Sign in to connect</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-200 pt-4 text-sm text-slate-600">
+                <p><span class="font-semibold text-slate-900">{{ follower_count }}</span> followers</p>
+                <p><span class="font-semibold text-slate-900">{{ post_count }}</span> posts</p>
+                {% if request.user.is_authenticated and not is_own_profile and not can_message %}
+                    {% if profile_user.direct_message_privacy == 'connections' %}
+                    <p class="text-slate-500">Follow to message</p>
+                    {% elif profile_user.direct_message_privacy == 'nobody' %}
+                    <p class="text-slate-500">Not accepting messages</p>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
-
-        {% if profile_user.about %}
-        <div class="mt-7 max-w-2xl border-t border-slate-200 pt-5">
-            <h2 class="text-sm font-semibold text-slate-900">About</h2>
-            <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ profile_user.about }}</p>
-        </div>
-        {% endif %}
     </section>
+
+    {% if profile_user.about %}
+    <section class="mt-4 rounded-xl border border-slate-200 bg-white p-5 sm:p-7" aria-labelledby="public-profile-about">
+        <h2 id="public-profile-about" class="text-lg font-semibold text-slate-900">About</h2>
+        <p class="mt-3 max-w-3xl whitespace-pre-line text-sm leading-6 text-slate-700">{{ profile_user.about }}</p>
+    </section>
+    {% endif %}
 </main>
 {% endblock %}

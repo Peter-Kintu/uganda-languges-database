@@ -353,8 +353,30 @@ def public_member_profile(request, user_id):
         is_active=True,
         discoverable_by_handle=True,
     )
+    is_own_profile = request.user.is_authenticated and request.user.pk == profile_user.pk
+    is_following = False
+    can_message = False
+    if request.user.is_authenticated and not is_own_profile:
+        is_following = Connection.objects.filter(
+            sender=request.user,
+            receiver=profile_user,
+            status='accepted',
+        ).exists()
+        can_message = (
+            profile_user.direct_message_privacy == 'everyone'
+            or (profile_user.direct_message_privacy == 'connections' and is_following)
+        )
+
     return render(request, 'hotel/public_member_profile.html', {
         'profile_user': profile_user,
+        'is_own_profile': is_own_profile,
+        'is_following': is_following,
+        'can_message': can_message,
+        'follower_count': Connection.objects.filter(
+            receiver=profile_user,
+            status='accepted',
+        ).count(),
+        'post_count': Post.objects.filter(author=profile_user).count(),
     })
 
 

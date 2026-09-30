@@ -11,7 +11,13 @@
                     {% endif %}
                 </div>
                 <div class="post-author-info">
-                    <div class="author-name">{{ post.author.get_full_name }}</div>
+                    <div class="author-name">
+                        {% if post.author.is_active and post.author.discoverable_by_handle %}
+                        <a href="{% url 'hotel:public_profile' post.author.id %}" class="text-inherit hover:text-[#007c83] hover:underline">{{ post.author.get_full_name|default:post.author.username }}</a>
+                        {% else %}
+                        {{ post.author.get_full_name|default:post.author.username }}
+                        {% endif %}
+                    </div>
                     <div class="author-meta">@{{ post.author.username }} · {{ post.created_at|date:"M j, g:i a" }}</div>
                 </div>
             </div>
