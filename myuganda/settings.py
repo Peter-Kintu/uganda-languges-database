@@ -198,6 +198,7 @@ INSTALLED_APPS = [
 
     # Local Apps
     'users',
+    'editorial',
     'eshop',
     'languages',
     'hotel',

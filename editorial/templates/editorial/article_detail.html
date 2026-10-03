@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} | Africana AI Articles{% endblock %}
+{% block meta_description %}{{ article.excerpt }}{% endblock %}
+{% block canonical_url %}https://www.africanaai.info/articles/{{ article.slug }}/{% endblock %}
+{% block og_title %}{{ article.title }} | Africana AI Articles{% endblock %}
+{% block og_description %}{{ article.excerpt }}{% endblock %}
+{% block og_url %}https://www.africanaai.info/articles/{{ article.slug }}/{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    <nav aria-label="Breadcrumb" class="mb-8 text-sm text-slate-500">
+        <a class="hover:text-teal-700" href="{% url 'editorial:article_index' %}">Articles</a>
+        <span aria-hidden="true"> / </span><span>{{ article.category }}</span>
+    </nav>
+    <article>
+        <header class="mb-8">
+            <p class="mb-3 text-sm font-semibold uppercase tracking-widest text-teal-700">{{ article.category }}</p>
+            <h1 class="text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl">{{ article.title }}</h1>
+            <p class="mt-5 text-lg leading-8 text-slate-600">{{ article.excerpt }}</p>
+            <p class="mt-4 text-sm text-slate-500">Africana AI Editorial</p>
+        </header>
+        <div class="space-y-6 text-lg leading-8 text-slate-700">
+            {% for paragraph in article.paragraphs %}
+            <p>{{ paragraph }}</p>
+            {% endfor %}
+        </div>
+    </article>
+</main>
+{% endblock %}

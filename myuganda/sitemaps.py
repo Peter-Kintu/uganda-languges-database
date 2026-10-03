@@ -1,8 +1,8 @@
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.conf import settings
-from django.http import HttpResponse
 from django.contrib.sites.models import Site
+from django.http import HttpResponse
 from django.contrib.sitemaps.views import sitemap as sitemap_view
 from django.template.response import TemplateResponse
 from django.views.decorators.cache import cache_page
@@ -12,6 +12,7 @@ from eshop.models import Product
 from languages.models import JobPost # Assuming JobPost is the model for the languages app
 from django.contrib.auth import get_user_model
 from social.models import BusinessReel
+from editorial.content import ARTICLES
 
 User = get_user_model()
 
@@ -38,10 +39,25 @@ class StaticViewSitemap(Sitemap):
             'eshop:confirm_order_whatsapp',
             'users:user_login', # Adding the login URL is good practice
             'users:user_register', # Adding the register URL
+            'privacy_policy',
+            'terms_of_use',
+            'editorial:article_index',
         ]
 
     def location(self, item):
         return reverse(item)
+
+
+class ArticlesSitemap(Sitemap):
+    priority = 0.7
+    changefreq = 'monthly'
+
+    def items(self):
+        return ARTICLES
+
+    def location(self, article):
+        return reverse('editorial:article_detail', kwargs={'slug': article['slug']})
+
 
 # 2. Dynamic Sitemap for Product detail pages (Eshop app)
 class ProductSitemap(Sitemap):
@@ -149,16 +165,8 @@ def custom_sitemap_view(request, sitemaps, section=None, template_name='sitemap.
     Custom sitemap view that replaces the request domain with the DEFAULT_DOMAIN setting.
     This ensures sitemaps always show www.africanaai.info instead of the Koyeb deployment URL.
     """
-    # Attach a site object so Django's sitemap view does not try to look up a missing Site row.
-    if not hasattr(request, 'site'):
-        default_site_id = getattr(settings, 'SITE_ID', 1) or 1
-        request.site, _ = Site.objects.get_or_create(
-            pk=default_site_id,
-            defaults={
-                'domain': settings.DEFAULT_DOMAIN,
-                'name': settings.DEFAULT_DOMAIN,
-            }
-        )
+    # Use the configured canonical domain instead of a possibly stale Site row.
+    request.site = Site(domain=settings.DEFAULT_DOMAIN, name=settings.DEFAULT_DOMAIN)
 
     # Get the standard sitemap response
     response = sitemap_view(request, sitemaps, section, template_name, content_type)

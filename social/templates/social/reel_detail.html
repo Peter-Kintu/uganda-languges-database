@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Post by @{{ reel.author.username }} | Africana AI{% endblock %}
+{% block meta_description %}{{ reel.caption|truncatechars:155 }}{% endblock %}
+{% block canonical_url %}https://www.africanaai.info{% url 'social:reel_detail' reel.id %}{% endblock %}
+{% block og_title %}Post by @{{ reel.author.username }} | Africana AI{% endblock %}
+{% block og_description %}{{ reel.caption|truncatechars:200 }}{% endblock %}
+{% block og_url %}https://www.africanaai.info{% url 'social:reel_detail' reel.id %}{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+        <header class="mb-6 border-b border-slate-200 pb-5">
+            <p class="font-semibold text-teal-700">@{{ reel.author.username }}</p>
+            <p class="mt-2 text-sm text-slate-500">
+                <time datetime="{{ reel.created_at|date:'c' }}">{{ reel.created_at|date:"F j, Y" }}</time>
+            </p>
+        </header>
+        {% if reel.source_thumbnail_url %}
+        <img class="mb-6 max-h-[32rem] w-full rounded-xl object-contain" src="{{ reel.source_thumbnail_url }}" alt="Media shared with this post" loading="lazy">
+        {% endif %}
+        <div class="whitespace-pre-line break-words text-lg leading-8 text-slate-800">{{ reel.caption }}</div>
+        {% if reel.tags %}
+        <p class="mt-5 text-sm text-slate-500">Topics: {{ reel.tags }}</p>
+        {% endif %}
+        {% if reel.price %}
+        <p class="mt-5 font-semibold text-slate-900">{{ reel.currency }} {{ reel.price|floatformat:2 }}</p>
+        {% endif %}
+        <footer class="mt-8 border-t border-slate-200 pt-5 text-sm">
+            <a class="font-semibold text-teal-700 hover:underline" href="{% url 'social:social_feed' %}">See more community posts</a>
+        </footer>
+    </article>
+</main>
+{% endblock %}

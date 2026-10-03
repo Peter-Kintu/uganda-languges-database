@@ -57,6 +57,17 @@ class FeedView(ListView):
             'author__social_profile'
         ).order_by('-created_at')
 
+
+class PublicReelDetailView(DetailView):
+    model = BusinessReel
+    template_name = 'social/reel_detail.html'
+    context_object_name = 'reel'
+    pk_url_kwarg = 'reel_id'
+
+    def get_queryset(self):
+        return BusinessReel.objects.filter(is_active=True).select_related('author')
+
+
 class BentoProfileView(DetailView):
     """
     Pillar 4: Modern Bento-style profile view.

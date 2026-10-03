@@ -6,8 +6,9 @@ from django.views.generic.base import RedirectView
 from django.views.generic import TemplateView
 from users import views as user_views
 from eshop import views as eshop_views
+from editorial.views import privacy_policy, terms_of_use
 
-from .sitemaps import JobPostSitemap, ProductSitemap, StaticViewSitemap, UserProfileSitemap, BusinessReelSitemap, custom_sitemap_view
+from .sitemaps import ArticlesSitemap, JobPostSitemap, ProductSitemap, StaticViewSitemap, UserProfileSitemap, BusinessReelSitemap, custom_sitemap_view
 
 import requests
 from django.http import HttpResponse, JsonResponse
@@ -38,6 +39,9 @@ def robots_txt(request):
         "Allow: /jobs/",
         "Allow: /languages/",
         "Allow: /eshop/",
+        "Allow: /articles/",
+        "Allow: /privacy-policy/",
+        "Allow: /terms-of-use/",
         "# Explicit AdSense crawler access",
         "User-agent: Mediapartners-Google",
         "Allow: /ads.txt",
@@ -72,6 +76,7 @@ def ads_txt(request):
 
 sitemaps_dict = {
     'static': StaticViewSitemap,
+    'articles': ArticlesSitemap,
     'products': ProductSitemap,
     # 'movies': ProductSitemap,  # Movie catalog disabled in favor of Africana Ride.
     'jobs': JobPostSitemap,
@@ -80,6 +85,9 @@ sitemaps_dict = {
 }
 
 urlpatterns = [
+    path("privacy-policy/", privacy_policy, name="privacy_policy"),
+    path("terms-of-use/", terms_of_use, name="terms_of_use"),
+    path("articles/", include("editorial.urls", namespace="editorial")),
     path('lauchregistration', RedirectView.as_view(url='/launchregistration/', permanent=False)),
     path('lauchregistration/', RedirectView.as_view(url='/launchregistration/', permanent=False)),
     path('launchregistration/admin/', user_views.registration_admin, name='registration_admin'),

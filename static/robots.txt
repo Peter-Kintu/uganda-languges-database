@@ -8,6 +8,9 @@ Allow: /social/reel/
 Allow: /jobs/
 Allow: /languages/
 Allow: /eshop/
+Allow: /articles/
+Allow: /privacy-policy/
+Allow: /terms-of-use/
 
 # Disallow admin and sensitive areas
 Disallow: /admin/

@@ -20,6 +20,7 @@ urlpatterns = [
     # --- SOCIAL INTERACTION PROTOCOLS ---
     # Endpoint for the Heart/Like button
     path('reel/<int:reel_id>/like/', views.toggle_like_reel, name='toggle_like'),
+    path('reel/<int:reel_id>/', views.PublicReelDetailView.as_view(), name='reel_detail'),
     
     # Analytics for Share & Download (Africana AI Branding)
     path('reel/<int:reel_id>/track-share/', views.track_share, name='track_share'),
