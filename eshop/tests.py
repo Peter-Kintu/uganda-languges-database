@@ -96,6 +96,14 @@ class ProductSearchTests(TestCase):
         self.assertIn(self.local_product, description_response.context['products'])
         self.assertIn(self.local_product, vendor_response.context['products'])
 
+    def test_product_search_input_and_voice_control_are_rendered(self):
+        response = self.client.get(reverse('eshop:product_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="product-search-input"')
+        self.assertContains(response, 'id="voice-search-button"')
+        self.assertContains(response, 'role="search"')
+
 
 class NegotiationFlowTests(TestCase):
     def setUp(self):

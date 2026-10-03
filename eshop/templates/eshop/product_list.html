@@ -9,12 +9,12 @@
 {% block content %}
 <div class="marketplace-shell min-h-screen bg-[#f3f6f5] text-slate-900">
     <div class="bg-white text-[#172b3a]">
-        <div class="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-3 lg:px-6">
-            <a href="{% url 'eshop:product_list' %}" class="shrink-0 rounded border border-transparent px-1 py-1 hover:border-white"><span class="text-2xl font-black tracking-tight">africana<span class="text-[#e59a22]">.</span></span></a>
+        <div class="mx-auto flex max-w-[1500px] flex-wrap items-center gap-2 px-3 py-3 sm:gap-4 sm:px-4 lg:px-6">
+            <a href="{% url 'eshop:product_list' %}" class="shrink-0 rounded border border-transparent px-1 py-1 hover:border-white"><span class="text-xl font-black tracking-tight sm:text-2xl">africana<span class="text-[#e59a22]">.</span></span></a>
             <div class="hidden items-center gap-2 text-xs leading-tight xl:flex"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="1.8" d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg><span class="text-slate-500">Deliver to<br><strong class="text-[#172b3a]">Uganda & worldwide</strong></span></div>
-            <form method="GET" action="{% url 'eshop:product_list' %}" class="flex min-w-0 flex-1 overflow-hidden rounded-md bg-white focus-within:ring-2 focus-within:ring-[#ff9900]"><select name="category" class="hidden bg-slate-100 px-3 text-xs text-slate-700 outline-none sm:block"><option value="">All categories</option>{% for value, label in category_choices %}<option value="{{ value }}" {% if category_query == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><input id="product-search-input" type="search" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, brands and more" class="min-w-0 flex-1 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"><button type="button" id="voice-search-button" aria-label="Search by voice" title="Search by voice" class="px-3 text-[#007c83] hover:bg-[#e8f4f1]">🎙️</button><button type="submit" aria-label="Search" class="bg-[#febd69] px-4 text-slate-900 hover:bg-[#f3a847]"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg></button></form>
+            <form method="GET" action="{% url 'eshop:product_list' %}" role="search" class="order-last flex min-w-0 basis-full overflow-hidden rounded-md bg-white shadow-sm focus-within:ring-2 focus-within:ring-[#ff9900] md:order-none md:basis-0 md:flex-1"><select name="category" class="hidden bg-slate-100 px-3 text-xs text-slate-700 outline-none sm:block"><option value="">All categories</option>{% for value, label in category_choices %}<option value="{{ value }}" {% if category_query == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><input id="product-search-input" type="search" name="search" value="{{ search_query|default:'' }}" placeholder="Search products, brands and more" class="min-h-11 min-w-0 flex-1 px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"><button type="button" id="voice-search-button" aria-label="Search by voice" title="Search by voice" class="flex min-h-11 w-11 shrink-0 items-center justify-center text-[#007c83] hover:bg-[#e8f4f1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#007c83]"><svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M5 10a7 7 0 0 0 14 0M12 17v5m-4 0h8"/></svg><span class="sr-only">Search by voice</span></button><button type="submit" aria-label="Search" class="flex min-h-11 w-12 shrink-0 items-center justify-center bg-[#febd69] text-slate-900 hover:bg-[#f3a847] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#007c83]"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg></button></form>
             <div class="hidden shrink-0 text-xs leading-tight md:block"><span class="text-slate-500">Hello, {% if user.is_authenticated %}{{ user.username }}{% else %}sign in{% endif %}</span><br><strong>Account & Lists</strong></div>
-            <a href="{% url 'eshop:add_product' %}" class="flex shrink-0 whitespace-nowrap rounded border border-transparent px-2 py-1 text-xs hover:border-white">Sell on Africana</a>
+            <a href="{% url 'eshop:add_product' %}" class="hidden shrink-0 whitespace-nowrap rounded border border-transparent px-2 py-1 text-xs hover:border-white md:flex">Sell on Africana</a>
             <label class="market-language-control flex min-w-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-[#172b3a]" title="Change Africana language"><span aria-hidden="true">文</span><span class="sr-only">Preferred language</span><select id="market-language-select" class="max-w-[100px] border-0 bg-transparent p-0 text-[11px] font-bold text-[#172b3a] outline-none sm:max-w-[130px]"><option value="en">English</option><option value="lg">Luganda</option><option value="sw">Kiswahili</option><option value="nyn">Runyankole</option><option value="ach">Acholi</option><option value="xsm">Kisamach</option><option value="teo">Ateso</option><option value="lue">Lusoga</option><option value="alur">Alur</option><option value="rw">Kinyarwanda</option><option value="rn">Kirundi</option><option value="ln">Lingala</option><option value="yo">Yoruba</option><option value="ha">Hausa</option><option value="ig">Igbo</option><option value="ak">Akan</option><option value="zu">isiZulu</option><option value="xh">isiXhosa</option><option value="sn">chiShona</option><option value="ny">Chichewa</option><option value="am">Amharic</option><option value="om">Afaan Oromoo</option><option value="fr">Français</option><option value="pt">Português</option><option value="ar">العربية</option></select></label>
             <a href="{% url 'eshop:view_cart' %}" class="flex shrink-0 items-end gap-1 rounded border border-transparent px-2 py-1 hover:border-white" aria-label="Shopping cart"><svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="1.8" d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 1.9-1.4L21 8H6.1M10 20a1 1 0 1 1-2 0m10 0a1 1 0 1 1-2 0"/></svg><strong class="text-sm">Cart</strong></a>
         </div>
@@ -180,10 +180,8 @@
     }
 
     .marketplace-shell #voice-search-button {
-        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.05rem;
         line-height: 1;
         cursor: pointer;
     }
@@ -206,6 +204,16 @@
 
     .marketplace-shell > div:first-child form button {
         background: var(--market-gold) !important;
+    }
+
+    .marketplace-shell > div:first-child form #voice-search-button {
+        background: #fff !important;
+        color: var(--market-teal-dark) !important;
+    }
+
+    .marketplace-shell > div:first-child form #voice-search-button:hover,
+    .marketplace-shell > div:first-child form #voice-search-button.is-listening {
+        background: var(--market-mint) !important;
     }
 
     .marketplace-shell > nav {
@@ -384,6 +392,16 @@
         .marketplace-shell > div:first-child > div {
             min-height: 60px;
             gap: .5rem;
+        }
+
+        .marketplace-shell > div:first-child form {
+            min-height: 2.75rem;
+            width: 100%;
+        }
+
+        .marketplace-shell #product-search-input {
+            width: 0;
+            font-size: 16px;
         }
 
         .marketplace-shell .marketplace-hero {
