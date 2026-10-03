@@ -211,7 +211,7 @@ DB_IDLE_IN_TRANSACTION_TIMEOUT_MS=15000
 CELERY_WORKER_CONCURRENCY=2
 ```
 
-The container entrypoint clamps `GUNICORN_WORKERS × GUNICORN_THREADS` to that budget. The default is 8 connections per web instance; reduce it if the provider allocates fewer connections. If using PgBouncer, point `DATABASE_URL` at the pooler and follow its transaction-pooling guidance; persistent Django connections should generally remain disabled (`DB_CONN_MAX_AGE=0`). Celery defaults to two concurrent workers; lower `CELERY_WORKER_CONCURRENCY` if needed and include all worker processes and app instances in the provider-wide budget.
+The container entrypoint clamps `GUNICORN_WORKERS × GUNICORN_THREADS` to that budget. The default is 8 connections per web instance; reduce it if the provider allocates fewer connections. If using PgBouncer or a Neon pooler, point `DATABASE_URL` at the pooler and follow its transaction-pooling guidance; persistent Django connections should generally remain disabled (`DB_CONN_MAX_AGE=0`). Pooled connections retain the configured TLS requirement but do not receive PostgreSQL session `options` at startup; configure statement and lock timeouts through provider/database role defaults if required. Celery defaults to two concurrent workers; lower `CELERY_WORKER_CONCURRENCY` if needed and include all worker processes and app instances in the provider-wide budget.
 
 Redis-backed page caches use Django Redis `HerdClient` stale-while-revalidate protection. Rate-limit counters stay on the default cache because they require atomic `incr` operations. Configure Redis for multi-worker deployments; local-memory fallback is per process and is not a shared production limiter/cache.
 

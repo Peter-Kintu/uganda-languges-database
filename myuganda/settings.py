@@ -273,12 +273,12 @@ if DATABASE_URL:
             ssl_require=True,
         )
     }
-    DATABASES['default']['OPTIONS'] = {
+    DATABASES['default'].setdefault('OPTIONS', {}).update({
         'keepalives': 1,
         'keepalives_idle': 30,
         'keepalives_interval': 10,
         'keepalives_count': 5,
-    }
+    })
 else:
     DATABASES = {
         'default': {
@@ -302,6 +302,10 @@ def configure_database_limits(database):
         'keepalives_interval': 10,
         'keepalives_count': 5,
     })
+    if 'pooler' in str(database.get('HOST', '')).lower():
+        options.pop('options', None)
+        return
+
     postgres_options = [str(options['options']).strip()] if options.get('options') else []
     if DB_STATEMENT_TIMEOUT_MS:
         postgres_options.append(f'-c statement_timeout={DB_STATEMENT_TIMEOUT_MS}')

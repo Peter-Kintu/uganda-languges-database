@@ -207,6 +207,21 @@ class DatabaseProtectionTests(TestCase):
         self.assertIn('application_name=africana', database['OPTIONS']['options'])
         self.assertIn('statement_timeout=', database['OPTIONS']['options'])
 
+    def test_pooler_connections_skip_unsupported_startup_options(self):
+        database = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'HOST': 'ep-example-pooler.us-east-1.aws.neon.tech',
+            'OPTIONS': {
+                'sslmode': 'require',
+                'options': '-c statement_timeout=15000',
+            },
+        }
+
+        project_settings.configure_database_limits(database)
+
+        self.assertEqual(database['OPTIONS']['sslmode'], 'require')
+        self.assertNotIn('options', database['OPTIONS'])
+
     def test_read_replica_is_used_only_for_allowlisted_nontransactional_reads(self):
         router = ReadReplicaRouter()
         model = SimpleNamespace(_meta=SimpleNamespace(app_label='catalog'))
