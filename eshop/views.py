@@ -4,6 +4,7 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
+from django.core.paginator import Paginator
 from django.db.models import F, Sum, Max, Q, Count
 from django.db.models.functions import TruncMonth
 from django.db.models.deletion import ProtectedError
@@ -709,11 +710,14 @@ def product_list(request):
         except (InvalidOperation, ValueError):
             pass
 
+    page_obj = Paginator(products, 20).get_page(request.GET.get('page'))
     cart = get_user_cart(request)
     cart_total = prepare_cart_pricing(request, cart) if cart and cart.items.exists() else 0
 
     return render(request, 'eshop/product_list.html', {
-        'products': products,
+        'products': page_obj.object_list,
+        'page_obj': page_obj,
+        'product_count': page_obj.paginator.count,
         'category_choices': Product.CATEGORY_CHOICES,
         'cart': cart,
         'cart_total': cart_total,

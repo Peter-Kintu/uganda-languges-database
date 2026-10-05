@@ -554,13 +554,18 @@ LOGGING = {
 # --- CACHING CONFIGURATION ---
 # Production-ready cache setup: prefer Redis, then DB cache, then local memory fallback.
 if USE_REDIS_CACHE:
+    redis_cache_options = {
+        'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        'CONNECTION_POOL_KWARGS': {
+            'socket_connect_timeout': 0.5,
+            'socket_timeout': 0.5,
+        },
+    }
     CACHES = {
         'default': {
             'BACKEND': 'django_redis.cache.RedisCache',
             'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
+            'OPTIONS': redis_cache_options,
             'KEY_PREFIX': 'uganda_db',
         }
     }
@@ -591,6 +596,10 @@ if USE_REDIS_CACHE:
         'LOCATION': REDIS_URL,
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.HerdClient',
+            'CONNECTION_POOL_KWARGS': {
+                'socket_connect_timeout': 0.5,
+                'socket_timeout': 0.5,
+            },
         },
         'KEY_PREFIX': 'uganda_db_pages',
     }
@@ -601,9 +610,7 @@ if USE_REDIS_CACHE:
     CACHES['rate_limits'] = {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
+        'OPTIONS': redis_cache_options.copy(),
         'KEY_PREFIX': 'uganda_db_rate_limits',
     }
 else:

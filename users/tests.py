@@ -13,7 +13,12 @@ from types import SimpleNamespace
 
 from myuganda import settings as project_settings
 from myuganda.dbrouters import ReadReplicaRouter
-from myuganda.middleware import RateLimitMiddleware, WordPressProbeBlockMiddleware, rate_limit_cache
+from myuganda.middleware import (
+    RateLimitMiddleware,
+    WordPressProbeBlockMiddleware,
+    rate_limit_cache,
+    rate_limit_fallback_cache,
+)
 from users.models import AgentMemory, AgentPlan, EventBooking, PesapalPayment, UserSubscription
 from users.tasks import send_user_notification_task
 from users.views import _get_pesapal_config, _pesapal_request, _send_welcome_email
@@ -133,9 +138,11 @@ class RateLimitMiddlewareTests(TestCase):
         self.factory = RequestFactory()
         self.middleware = RateLimitMiddleware(lambda request: None)
         rate_limit_cache.clear()
+        rate_limit_fallback_cache.clear()
 
     def tearDown(self):
         rate_limit_cache.clear()
+        rate_limit_fallback_cache.clear()
 
     def test_rate_limiter_uses_atomic_cache_increment_for_existing_bucket(self):
         request = self.factory.get('/hotel/')
@@ -178,6 +185,23 @@ class RateLimitMiddlewareTests(TestCase):
 
         self.assertIsNone(response)
         self.assertIn('/hotel/create_post/', add.call_args.args[0])
+
+    def test_rate_limiter_uses_local_fallback_when_primary_cache_fails(self):
+        request = self.factory.get('/hotel/')
+        request.user = AnonymousUser()
+        request.META['REMOTE_ADDR'] = '192.0.2.47'
+
+        with patch(
+            'myuganda.middleware.rate_limit_cache.add',
+            side_effect=ConnectionError('Redis unavailable'),
+        ), patch(
+            'myuganda.middleware.rate_limit_fallback_cache.add',
+            return_value=True,
+        ) as fallback_add, self.assertLogs('myuganda.middleware', level='ERROR'):
+            response = self.middleware.process_request(request)
+
+        self.assertIsNone(response)
+        fallback_add.assert_called_once()
 
 
 class DatabaseProtectionTests(TestCase):

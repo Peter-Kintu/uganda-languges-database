@@ -104,6 +104,30 @@ class ProductSearchTests(TestCase):
         self.assertContains(response, 'id="voice-search-button"')
         self.assertContains(response, 'role="search"')
 
+    def test_product_list_paginates_and_preserves_search_filters(self):
+        for index in range(25):
+            Product.objects.create(
+                name=f'Local item {index}',
+                description='Marketplace item',
+                price=Decimal('1000'),
+                country='Uganda',
+                source='local',
+            )
+
+        first_page = self.client.get(reverse('eshop:product_list'), {'source': 'local'})
+        second_page = self.client.get(
+            reverse('eshop:product_list'),
+            {'source': 'local', 'page': 2},
+        )
+
+        self.assertEqual(first_page.status_code, 200)
+        self.assertEqual(len(first_page.context['products']), 20)
+        self.assertEqual(first_page.context['product_count'], 26)
+        self.assertContains(first_page, 'name="page" value="2"')
+        self.assertContains(first_page, 'name="source" value="local"')
+        self.assertEqual(len(second_page.context['products']), 6)
+        self.assertEqual(second_page.context['page_obj'].number, 2)
+
 
 class NegotiationFlowTests(TestCase):
     def setUp(self):

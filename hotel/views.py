@@ -1,4 +1,5 @@
-from django.db.models import Count, Q
+from django.db.models import Count, IntegerField, OuterRef, Prefetch, Q, Subquery, Value
+from django.db.models.functions import Coalesce
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -18,7 +19,7 @@ from .services import (
     moderate_community_content, visible_community_messages,
 )
 from .forms import PostForm
-from .tasks import warm_hotel_feed_cache, rebuild_hotel_feed_cache
+from .tasks import rebuild_hotel_feed_cache
 from users.models import CustomUser
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -95,8 +96,17 @@ def invalidate_hotel_feed_cache():
         'hotel:feed:public:all',
         'social:feed:public:all',
     ]
-    cache.delete_many(cache_keys)
-    rebuild_hotel_feed_cache.delay('hotel:feed:public:all', 20)
+    try:
+        cache.delete_many(cache_keys)
+    except Exception:
+        logger.exception('Could not invalidate the hotel feed cache')
+    try:
+        rebuild_hotel_feed_cache.apply_async(
+            args=('hotel:feed:public:all', 20),
+            retry=False,
+        )
+    except Exception:
+        logger.exception('Could not enqueue the hotel feed cache rebuild')
 
 
 def _is_suspicious_text(t, original_len):
@@ -177,9 +187,39 @@ def _build_hybrid_feed(
     now = timezone.now()
 
     posts_query = Post.objects.all().select_related('author').annotate(
-        like_count=Count('likes', distinct=True),
-        comment_count=Count('comments', distinct=True),
-        share_count=Count('shares', distinct=True),
+        like_count=Coalesce(
+            Subquery(
+                Like.objects.filter(post_id=OuterRef('pk'))
+                .order_by()
+                .values('post_id')
+                .annotate(total=Count('pk'))
+                .values('total')[:1],
+                output_field=IntegerField(),
+            ),
+            Value(0),
+        ),
+        comment_count=Coalesce(
+            Subquery(
+                Comment.objects.filter(post_id=OuterRef('pk'))
+                .order_by()
+                .values('post_id')
+                .annotate(total=Count('pk'))
+                .values('total')[:1],
+                output_field=IntegerField(),
+            ),
+            Value(0),
+        ),
+        share_count=Coalesce(
+            Subquery(
+                Share.objects.filter(original_post_id=OuterRef('pk'))
+                .order_by()
+                .values('original_post_id')
+                .annotate(total=Count('pk'))
+                .values('total')[:1],
+                output_field=IntegerField(),
+            ),
+            Value(0),
+        ),
     )
 
     if feed_type == 'text':
@@ -443,7 +483,11 @@ def social_feed(request):
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.page(1)
     posts = list(page_obj.object_list)
-    prefetch_related_objects(posts, 'comments', 'likes')
+    prefetch_related_objects(
+        posts,
+        Prefetch('comments', queryset=Comment.objects.select_related('author')),
+        'likes',
+    )
     market_positions, job_position = _feed_insert_positions(len(posts), feed_seed)
 
     # Translate posts if requested
@@ -575,7 +619,6 @@ def create_post(request):
             post.author = request.user
             post.save()
             invalidate_hotel_feed_cache()
-            warm_hotel_feed_cache.delay()
             messages.success(request, 'Post created successfully!')
             return redirect(f"{redirect('hotel:social_feed').url}?new_post={post.id}")
 
@@ -594,7 +637,6 @@ def public_create_post(request):
         post.author = request.user
         post.save()
         invalidate_hotel_feed_cache()
-        warm_hotel_feed_cache.delay()
         messages.success(request, 'Post created successfully!')
         return redirect(f"{redirect('hotel:social_feed').url}?new_post={post.id}")
 
@@ -609,7 +651,6 @@ def like_post(request, post_id):
     like, created = Like.objects.get_or_create(post=post, user=request.user)
     if not created:
         like.delete()
-    invalidate_hotel_feed_cache()
     return JsonResponse({'likes_count': post.likes.count()})
 
 @login_required
@@ -625,7 +666,6 @@ def add_comment(request, post_id):
                 content = ''
         if content:
             comment = Comment.objects.create(post=post, author=request.user, content=content)
-            invalidate_hotel_feed_cache()
             return JsonResponse({
                 'success': True,
                 'comment': {

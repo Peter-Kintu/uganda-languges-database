@@ -120,11 +120,27 @@ class HybridFeedTests(TestCase):
 		post = Post.objects.create(author=self.popular_user, content='Likeable update')
 		self.client.force_login(self.user)
 
-		first = self.client.post(f'/hotel/like-post/{post.id}/')
-		second = self.client.post(f'/hotel/like-post/{post.id}/')
+		with patch('hotel.views.invalidate_hotel_feed_cache') as invalidate:
+			first = self.client.post(f'/hotel/like-post/{post.id}/')
+			second = self.client.post(f'/hotel/like-post/{post.id}/')
 
 		self.assertEqual(first.json()['likes_count'], 1)
 		self.assertEqual(second.json()['likes_count'], 0)
+		invalidate.assert_not_called()
+
+	@patch('hotel.views.rebuild_hotel_feed_cache.apply_async', side_effect=RuntimeError('broker unavailable'))
+	@patch('hotel.views.cache.delete_many', side_effect=ConnectionError('cache unavailable'))
+	def test_feed_cache_invalidation_is_non_blocking_when_redis_is_unavailable(
+		self, _delete_many, _enqueue
+	):
+		with self.assertLogs('hotel.views', level='ERROR'):
+			from .views import invalidate_hotel_feed_cache
+
+			invalidate_hotel_feed_cache()
+		_enqueue.assert_called_once_with(
+			args=('hotel:feed:public:all', 20),
+			retry=False,
+		)
 
 	def test_ajax_feed_uses_reaction_control_markup(self):
 		post = Post.objects.create(author=self.popular_user, content='Loaded update')

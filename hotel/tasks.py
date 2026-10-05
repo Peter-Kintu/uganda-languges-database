@@ -3,7 +3,7 @@ from django.core.cache import cache
 from .models import Post
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, ignore_result=True)
 def rebuild_hotel_feed_cache(self, cache_key='hotel:feed:public:all', limit=20):
     """Rebuild the cached public hotel feed from the database."""
     recent_posts = list(Post.objects.select_related('author').order_by('-created_at')[:limit])
@@ -22,7 +22,7 @@ def rebuild_hotel_feed_cache(self, cache_key='hotel:feed:public:all', limit=20):
     return {'status': 'ok', 'count': len(payload), 'cache_key': cache_key}
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, ignore_result=True)
 def warm_hotel_feed_cache(self):
     """Pre-warm cached public feed responses after heavy writes."""
     return rebuild_hotel_feed_cache.delay('hotel:feed:public:all', 20)

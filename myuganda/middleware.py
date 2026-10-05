@@ -17,11 +17,24 @@ import time
 
 from django.conf import settings
 from django.core.cache import caches
+from django.core.cache.backends.locmem import LocMemCache
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
 rate_limit_cache = caches['rate_limits']
+rate_limit_fallback_cache = LocMemCache('rate-limit-fallback', {})
+
+
+def _increment_rate_limit_counter(cache_backend, counter_key, timeout):
+    if cache_backend.add(counter_key, 1, timeout=timeout):
+        return 1
+    try:
+        return cache_backend.incr(counter_key)
+    except ValueError:
+        if cache_backend.add(counter_key, 1, timeout=timeout):
+            return 1
+        return cache_backend.incr(counter_key)
 
 THROTTLED_PATHS = {
     '/hotel/record-impression/': {'limit': 120, 'window': 60},
@@ -198,19 +211,21 @@ class RateLimitMiddleware(MiddlewareMixin):
         counter_key = f"{key_base}:{counter_path}:{window_bucket}"
         effective_limit = max(10, limit - burst)
         try:
-            if rate_limit_cache.add(counter_key, 1, timeout=window + 1):
-                request_count = 1
-            else:
-                try:
-                    request_count = rate_limit_cache.incr(counter_key)
-                except ValueError:
-                    if rate_limit_cache.add(counter_key, 1, timeout=window + 1):
-                        request_count = 1
-                    else:
-                        request_count = rate_limit_cache.incr(counter_key)
+            request_count = _increment_rate_limit_counter(
+                rate_limit_cache,
+                counter_key,
+                window + 1,
+            )
         except Exception:
-            logger.exception("Rate limit cache operation failed for path=%s", path)
-            return None
+            logger.exception(
+                "Rate limit cache operation failed for path=%s; using process-local fallback",
+                path,
+            )
+            request_count = _increment_rate_limit_counter(
+                rate_limit_fallback_cache,
+                counter_key,
+                window + 1,
+            )
 
         if request_count > effective_limit:
             response = HttpResponse(
