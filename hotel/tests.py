@@ -329,6 +329,7 @@ class PublicMemberProfileTests(TestCase):
 		self.assertContains(conversation_response, 'View profile')
 		self.assertContains(conversation_response, 'Write a message...')
 		self.assertContains(conversation_response, 'flex-col gap-2 sm:flex-row')
+		self.assertContains(conversation_response, '.direct-chat .sent-message-bubble')
 
 		self.member.direct_message_privacy = 'nobody'
 		self.member.save(update_fields=['direct_message_privacy'])

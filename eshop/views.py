@@ -710,7 +710,7 @@ def product_list(request):
         except (InvalidOperation, ValueError):
             pass
 
-    page_obj = Paginator(products, 20).get_page(request.GET.get('page'))
+    page_obj = Paginator(products, 50).get_page(request.GET.get('page'))
     cart = get_user_cart(request)
     cart_total = prepare_cart_pricing(request, cart) if cart and cart.items.exists() else 0
 

@@ -105,7 +105,7 @@ class ProductSearchTests(TestCase):
         self.assertContains(response, 'role="search"')
 
     def test_product_list_paginates_and_preserves_search_filters(self):
-        for index in range(25):
+        for index in range(55):
             Product.objects.create(
                 name=f'Local item {index}',
                 description='Marketplace item',
@@ -121,9 +121,10 @@ class ProductSearchTests(TestCase):
         )
 
         self.assertEqual(first_page.status_code, 200)
-        self.assertEqual(len(first_page.context['products']), 20)
-        self.assertEqual(first_page.context['product_count'], 26)
+        self.assertEqual(len(first_page.context['products']), 50)
+        self.assertEqual(first_page.context['product_count'], 56)
         self.assertContains(first_page, 'name="page" value="2"')
+        self.assertContains(first_page, 'id="product-pagination-next"')
         self.assertContains(first_page, 'name="source" value="local"')
         self.assertEqual(len(second_page.context['products']), 6)
         self.assertEqual(second_page.context['page_obj'].number, 2)
