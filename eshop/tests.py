@@ -100,6 +100,17 @@ class CommercePaymentFlowTests(TestCase):
         self.cart = Cart.objects.create(session_key=session.session_key)
         CartItem.objects.create(cart=self.cart, product=self.product, quantity=1)
 
+    def test_merchant_dashboard_order_shortcut_has_visible_contrast(self):
+        seller_client = self.client_class()
+        seller_client.force_login(self.seller)
+
+        response = seller_client.get(reverse('eshop:merchant_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Manage orders &amp; delivery')
+        self.assertContains(response, 'background-color: #047857 !important')
+        self.assertContains(response, 'color: #ffffff !important')
+
     def test_payment_page_renders_and_payment_start_returns_result_url(self):
         payment_result = NylonPaymentResult(
             reference='provider-reference-123',
