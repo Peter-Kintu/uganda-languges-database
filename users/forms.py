@@ -17,9 +17,22 @@ class CustomUserCreationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['headline'].label = 'Title'
         self.fields['headline'].widget.attrs['placeholder'] = 'e.g. Farmer'
+        self.fields['email'].widget.attrs.update({
+            'autocapitalize': 'none',
+            'autocomplete': 'email',
+            'spellcheck': 'false',
+            'style': 'text-transform: lowercase;',
+            'oninput': 'this.value = this.value.toLowerCase();',
+        })
         # Apply Tailwind classes to all form fields for consistent styling
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500'
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if email and CustomUser.objects.filter(email__iexact=email).exists():
+            raise ValidationError("An account with this email address already exists.")
+        return email
 
     def clean_username(self):
         username = self.cleaned_data.get('username')

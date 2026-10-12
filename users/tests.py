@@ -22,7 +22,12 @@ from myuganda.middleware import (
 )
 from users.models import AgentMemory, AgentPlan, EventBooking, PesapalPayment, UserSubscription
 from users.tasks import send_user_notification_task
-from users.views import _get_pesapal_config, _pesapal_request, _send_welcome_email
+from users.views import (
+    REGISTRATION_DATA_SESSION_KEY,
+    _get_pesapal_config,
+    _pesapal_request,
+    _send_welcome_email,
+)
 
 
 User = get_user_model()
@@ -520,6 +525,14 @@ class EventRegistrationTests(TestCase):
 
 
 class UserRegistrationEmailTests(TestCase):
+    def setUp(self):
+        rate_limit_cache.clear()
+        rate_limit_fallback_cache.clear()
+
+    def tearDown(self):
+        rate_limit_cache.clear()
+        rate_limit_fallback_cache.clear()
+
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     def test_registration_sends_otp_without_creating_user_until_verified(self):
         response = self.client.post(reverse('users:user_register'), {
@@ -549,6 +562,45 @@ class UserRegistrationEmailTests(TestCase):
         self.assertEqual(user.email, 'amina@example.com')
         self.assertTrue(user.check_password('Violet!River7Stone#'))
         self.assertGreater(self.client.session.get_expiry_age(), 600)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_registration_normalizes_email_to_lowercase_before_sending_otp(self):
+        response = self.client.post(reverse('users:user_register'), {
+            'username': 'amina',
+            'email': 'Amina.N@EXAMPLE.COM',
+            'first_name': 'Amina',
+            'last_name': 'N',
+            'phone': '+256700000000',
+            'headline': 'Developer',
+            'location': 'Kampala',
+            'language': 'en',
+            'password1': 'Violet!River7Stone#',
+            'password2': 'Violet!River7Stone#',
+        })
+
+        self.assertRedirects(response, reverse('users:verify_registration_email'))
+        self.assertEqual(mail.outbox[0].to, ['amina.n@example.com'])
+        self.assertEqual(
+            self.client.session[REGISTRATION_DATA_SESSION_KEY]['email'],
+            'amina.n@example.com',
+        )
+        otp = re.search(r'\b(\d{6})\b', mail.outbox[0].body).group(1)
+        self.client.post(reverse('users:verify_registration_email'), {'otp': otp})
+        self.assertEqual(User.objects.get(username='amina').email, 'amina.n@example.com')
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_registration_rejects_malformed_email_address(self):
+        response = self.client.post(reverse('users:user_register'), {
+            'username': 'invalid-email',
+            'email': 'not an email address',
+            'password1': 'Violet!River7Stone#',
+            'password2': 'Violet!River7Stone#',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Enter a valid email address')
+        self.assertEqual(mail.outbox, [])
+        self.assertFalse(User.objects.filter(username='invalid-email').exists())
 
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     def test_registration_requires_email_and_otp(self):
