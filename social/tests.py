@@ -96,6 +96,8 @@ class MerchantIdentityVerificationTests(TestCase):
 		self.assertContains(profile_response, 'name="national_id_number"')
 		self.assertContains(profile_response, 'name="id_front_image"')
 		self.assertContains(profile_response, 'name="id_back_image"')
+		self.assertContains(profile_response, 'Submit verification')
+		self.assertContains(profile_response, 'background-color: #007c83 !important')
 
 		response = self.client.post(reverse('eshop:submit_verification'), {
 			'national_id_number': 'cf 12345678 abcd',
