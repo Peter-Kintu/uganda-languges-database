@@ -27,11 +27,16 @@
       {% else %}
         <p class="mt-6 rounded-2xl bg-slate-50 px-5 py-4 text-sm text-slate-600">The seller is preparing your order. This page will allow confirmation once delivery is ready.</p>
       {% endif %}
+    {% elif payment.status == 'failed' or payment.status == 'cancelled' %}
+      <p class="text-sm font-semibold uppercase tracking-[0.2em] text-rose-600">Payment not completed</p>
+      <h1 class="mt-3 text-3xl font-bold text-slate-900">We could not confirm your payment</h1>
+      <p class="mt-3 text-slate-600">Your order has not been paid. You can return to payment and try again.</p>
+      <a href="{% url 'eshop:payment' %}" class="mt-6 block rounded-2xl bg-slate-900 px-5 py-4 text-center font-bold text-white hover:bg-slate-800">Try payment again</a>
     {% else %}
       <p class="text-sm font-semibold uppercase tracking-[0.2em] text-amber-600">Payment pending</p>
       <h1 class="mt-3 text-3xl font-bold text-slate-900">We are waiting for payment confirmation</h1>
       <p class="mt-3 text-slate-600">Your order remains protected while the payment provider confirms the transaction.</p>
-      <a href="{% url 'eshop:payment' %}" class="mt-6 block rounded-2xl bg-slate-900 px-5 py-4 text-center font-bold text-white hover:bg-slate-800">Check payment status</a>
+      <a href="{% url 'eshop:payment_callback' %}?tracking_id={{ payment.tracking_id|urlencode }}" class="mt-6 block rounded-2xl bg-slate-900 px-5 py-4 text-center font-bold text-white hover:bg-slate-800">Check payment status</a>
     {% endif %}
   </section>
 </main>

@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.core.serializers import serialize
@@ -35,7 +35,7 @@ from aliexpress_api import AliexpressApi, models
 from django.conf import settings
 import logging
 from django.utils.text import slugify
-from payments.services import collect_payment
+from payments.services import collect_payment, get_payment_status
 
 User = get_user_model()
 
@@ -150,16 +150,27 @@ def start_commerce_payment(request):
         payment.save(update_fields=['status', 'updated_at'])
         logger.exception('Commerce Nylon checkout failed: %s', exc)
         return JsonResponse({'error': 'Unable to start payment.'}, status=502)
-    payment.tracking_id = result.transaction_id or result.reference
-    payment.provider_reference = result.reference
-    payment.status = 'paid' if result.status == 'paid' else 'failed'
+    payment.tracking_id = result.transaction_id or result.reference or payment.pesapal_order_id
+    payment.provider_reference = result.reference or payment.pesapal_order_id
+    payment.status = result.status if result.status in {'paid', 'pending', 'failed', 'cancelled'} else 'pending'
     payment.raw_status = result.status.upper()
     if payment.status == 'paid':
         order.status = 'escrowed'
         order.escrow_status = 'funded'
         order.save(update_fields=['status', 'escrow_status'])
     payment.save(update_fields=['tracking_id', 'provider_reference', 'status', 'raw_status', 'updated_at'])
-    return JsonResponse({'order_id': order.id, 'tracking_id': payment.tracking_id, 'status': payment.status, 'delivery_pin': delivery_pin, 'delivery_qr_token': str(order.delivery_qr_token)})
+    payment_result_url = '{}?{}'.format(
+        reverse('eshop:payment_callback'),
+        urlencode({'tracking_id': payment.tracking_id}),
+    )
+    return JsonResponse({
+        'order_id': order.id,
+        'tracking_id': payment.tracking_id,
+        'status': payment.status,
+        'redirect_url': payment_result_url,
+        'delivery_pin': delivery_pin,
+        'delivery_qr_token': str(order.delivery_qr_token),
+    })
 
 
 @csrf_exempt
@@ -179,6 +190,20 @@ def payment_callback(request):
             'payment': None,
             'error': 'Payment reference was not found.',
         })
+    if payment.status == 'pending' and payment.provider_reference:
+        try:
+            result = get_payment_status(payment.provider_reference)
+        except Exception:
+            logger.exception('Could not refresh payment status for %s.', payment.provider_reference)
+        else:
+            if result.status in {'paid', 'failed', 'cancelled'}:
+                payment.status = result.status
+                payment.raw_status = result.status.upper()
+                payment.save(update_fields=['status', 'raw_status', 'updated_at'])
+                if result.status == 'paid' and payment.order.status == 'payment_pending':
+                    payment.order.status = 'escrowed'
+                    payment.order.escrow_status = 'funded'
+                    payment.order.save(update_fields=['status', 'escrow_status'])
     return render(request, 'eshop/payment_result.html', {'payment': payment, 'error': None})
 
 

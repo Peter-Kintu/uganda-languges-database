@@ -4,9 +4,11 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from unittest.mock import patch
+from urllib.parse import urlparse, parse_qs
 
 from .models import AffiliateEvent, AffiliatePayout, Cart, CartItem, CommercePayment, Order, Product
 from .views import get_aliexpress_search_groups
+from payments.services import NylonPaymentResult
 
 
 class EscrowOrderTests(TestCase):
@@ -39,6 +41,100 @@ class EscrowOrderTests(TestCase):
         response = self.client.get(reverse('pesapal_ipn'), {'OrderTrackingId': 'tracking-1'})
 
         self.assertEqual(response.status_code, 410)
+
+
+class CommercePaymentFlowTests(TestCase):
+    def setUp(self):
+        self.buyer = get_user_model().objects.create_user(
+            username='payment-buyer',
+            password='test-pass',
+        )
+        self.seller = get_user_model().objects.create_user(
+            username='payment-seller',
+            password='test-pass',
+        )
+        self.product = Product.objects.create(
+            name='Payment basket',
+            description='Handmade basket',
+            price=Decimal('10000'),
+            country='Uganda',
+            vendor_user=self.seller,
+        )
+        self.client.force_login(self.buyer)
+        session = self.client.session
+        session['delivery_details'] = {
+            'address': '1 Main Street',
+            'city': 'Kampala',
+            'phone': '+256700000000',
+        }
+        session.save()
+        self.cart = Cart.objects.create(session_key=session.session_key)
+        CartItem.objects.create(cart=self.cart, product=self.product, quantity=1)
+
+    def test_payment_page_renders_and_payment_start_returns_result_url(self):
+        payment_result = NylonPaymentResult(
+            reference='provider-reference-123',
+            status='pending',
+        )
+        with (
+            patch('eshop.views.collect_payment', return_value=payment_result),
+            patch('eshop.views.get_payment_status', return_value=payment_result),
+        ):
+            page = self.client.get(reverse('eshop:payment'))
+            response = self.client.post(reverse('eshop:start_commerce_payment'))
+            payload = response.json()
+            result_page = self.client.get(payload['redirect_url'])
+
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Continue to payment')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload['status'], 'pending')
+        self.assertIn('redirect_url', payload)
+        result_url = urlparse(payload['redirect_url'])
+        self.assertEqual(result_url.path, reverse('eshop:payment_callback'))
+        tracking_id = parse_qs(result_url.query)['tracking_id'][0]
+        self.assertEqual(tracking_id, 'provider-reference-123')
+
+        payment = CommercePayment.objects.get(order_id=payload['order_id'])
+        self.assertEqual(payment.status, 'pending')
+        self.assertContains(result_page, 'Payment pending')
+
+    def test_payment_result_refresh_updates_pending_payment(self):
+        order = Order.objects.create(
+            buyer=self.buyer,
+            total_amount=Decimal('10000'),
+            currency='UGX',
+            status='payment_pending',
+        )
+        payment = CommercePayment.objects.create(
+            order=order,
+            pesapal_order_id='payment-status-test',
+            provider_reference='provider-status-test',
+            tracking_id='provider-status-test',
+            amount=Decimal('10000'),
+            currency='UGX',
+            status='pending',
+        )
+
+        with patch(
+            'eshop.views.get_payment_status',
+            return_value=NylonPaymentResult(
+                reference='provider-status-test',
+                status='paid',
+            ),
+        ) as get_status:
+            response = self.client.get(
+                reverse('eshop:payment_callback'),
+                {'tracking_id': payment.tracking_id},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Payment successful')
+        get_status.assert_called_once_with('provider-status-test')
+        payment.refresh_from_db()
+        order.refresh_from_db()
+        self.assertEqual(payment.status, 'paid')
+        self.assertEqual(order.status, 'escrowed')
 
 
 class AliExpressSearchConfigTests(TestCase):
