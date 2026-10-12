@@ -524,6 +524,60 @@ class EventRegistrationTests(TestCase):
         )
 
 
+class GoogleAuthReceiverTests(TestCase):
+    @override_settings(GOOGLE_CLIENT_ID='google-client-id')
+    @patch('users.views.id_token.verify_oauth2_token', return_value={
+        'iss': 'accounts.google.com',
+        'email': 'google@example.com',
+        'given_name': 'Google',
+        'family_name': 'User',
+    })
+    def test_duplicate_email_sign_in_uses_oldest_matching_account(self, mock_verify):
+        first_user = User.objects.create_user(
+            username='google-first',
+            email='google@example.com',
+        )
+        User.objects.create_user(
+            username='google-second',
+            email='google@example.com',
+        )
+
+        response = self.client.post(
+            reverse('users:google_auth_receiver'),
+            {'credential': 'valid-token'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            self.client.session['_auth_user_id'],
+            str(first_user.pk),
+        )
+        self.assertEqual(User.objects.filter(email__iexact='google@example.com').count(), 2)
+        mock_verify.assert_called_once()
+
+    @override_settings(GOOGLE_CLIENT_ID='google-client-id')
+    @patch('users.views._send_welcome_email')
+    @patch('users.views.id_token.verify_oauth2_token', return_value={
+        'iss': 'accounts.google.com',
+        'email': 'new-google@example.com',
+        'given_name': 'New',
+        'family_name': 'User',
+    })
+    def test_new_google_user_is_created_and_welcomed(self, mock_verify, mock_welcome):
+        response = self.client.post(
+            reverse('users:google_auth_receiver'),
+            {'credential': 'valid-token'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(email='new-google@example.com')
+        self.assertEqual(user.username, 'new-google@example.com')
+        self.assertEqual(user.first_name, 'New')
+        self.assertFalse(user.has_usable_password())
+        mock_verify.assert_called_once()
+        mock_welcome.assert_called_once_with(user)
+
+
 class UserRegistrationEmailTests(TestCase):
     def setUp(self):
         rate_limit_cache.clear()

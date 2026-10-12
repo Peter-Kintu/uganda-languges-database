@@ -624,30 +624,35 @@ def google_auth_receiver(request):
         first_name = idinfo.get('given_name', '')
         last_name = idinfo.get('family_name', '')
 
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={
-                'username': email,
-                'first_name': first_name,
-                'last_name': last_name,
-            }
+        matching_users = list(
+            User.objects.filter(email__iexact=email).order_by('pk')[:2]
         )
+        created = not matching_users
+        if matching_users:
+            user = matching_users[0]
+            if len(matching_users) > 1:
+                logger.warning(
+                    "Multiple user accounts matched a Google sign-in email; "
+                    "using the oldest matching account (user_id=%s)",
+                    user.pk,
+                )
+        else:
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+            )
         if created:
-            user.save()
             _send_welcome_email(user)
 
         login(request, user)
         return redirect(next_url or reverse('hotel:social_feed'))
 
     except ValueError as e:
-        # Log the error for debugging
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Google auth ValueError: {str(e)}, client_id: {client_id[:10]}...")
         return HttpResponse('Invalid token', status=403)
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Google auth error: {str(e)}")
         return HttpResponse(str(e), status=400)
 
