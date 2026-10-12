@@ -18,6 +18,7 @@ urlpatterns = [
     path('callback/', views.user_login, name='google_callback_legacy'),
 
     path('register/', views.user_register, name='user_register'),
+    path('register/verify-email/', views.verify_registration_email, name='verify_registration_email'),
     path('logout/', views.user_logout, name='user_logout'),
     
     # --- Profile Management ---

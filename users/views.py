@@ -2,6 +2,9 @@ import os
 import json
 import logging
 import re
+import secrets
+import hmac
+import smtplib
 import requests
 import time
 import base64
@@ -38,6 +41,13 @@ from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+REGISTRATION_OTP_SESSION_KEY = 'pending_registration_otp'
+REGISTRATION_DATA_SESSION_KEY = 'pending_registration_data'
+REGISTRATION_OTP_EXPIRES_SESSION_KEY = 'pending_registration_otp_expires'
+REGISTRATION_OTP_ATTEMPTS_SESSION_KEY = 'pending_registration_otp_attempts'
+REGISTRATION_OTP_TTL_SECONDS = 600
+REGISTRATION_OTP_MAX_ATTEMPTS = 5
 
 
 staff_required = user_passes_test(
@@ -474,6 +484,17 @@ def _send_welcome_email(user):
     except Exception:
         logger.exception('Welcome email could not be sent to %s.', user.email)
 
+
+def _clear_registration_verification(request):
+    for key in (
+        REGISTRATION_DATA_SESSION_KEY,
+        REGISTRATION_OTP_SESSION_KEY,
+        REGISTRATION_OTP_EXPIRES_SESSION_KEY,
+        REGISTRATION_OTP_ATTEMPTS_SESSION_KEY,
+    ):
+        request.session.pop(key, None)
+    request.session.set_expiry(None)
+
 # Safely import eshop models
 try:
     from eshop.models import Product, CartItem, Order 
@@ -640,36 +661,55 @@ def user_register(request):
         return redirect('hotel:social_feed')
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
+        form.fields['email'].required = True
         if form.is_valid():
             user = form.save(commit=False)
-            referrer_username = request.session.get('referrer')
-            if referrer_username:
-                try:
-                    referrer_user = User.objects.get(username=referrer_username)
-                    if hasattr(user, 'referrer'):
-                        user.referrer = referrer_user
-                except User.DoesNotExist:
-                    pass 
+            request.session[REGISTRATION_DATA_SESSION_KEY] = {
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'phone': user.phone,
+                'headline': user.headline,
+                'location': user.location,
+                'language': user.language,
+                # UserCreationForm has already hashed the raw password.
+                'password': user.password,
+                'referrer_username': request.session.get('referrer', ''),
+            }
+            otp = f'{secrets.randbelow(1_000_000):06d}'
+            request.session[REGISTRATION_OTP_SESSION_KEY] = otp
+            request.session[REGISTRATION_OTP_EXPIRES_SESSION_KEY] = (
+                timezone.now().timestamp() + REGISTRATION_OTP_TTL_SECONDS
+            )
+            request.session[REGISTRATION_OTP_ATTEMPTS_SESSION_KEY] = REGISTRATION_OTP_MAX_ATTEMPTS
+            request.session.set_expiry(REGISTRATION_OTP_TTL_SECONDS)
             try:
-                user.save()
-            except IntegrityError as e:
-                if 'username' in str(e).lower():
-                    form.add_error('username', 'A user with that username already exists.')
-                else:
-                    form.add_error(None, 'Unable to complete registration. Please try again.')
+                send_mail(
+                    subject='Your Africana AI verification code',
+                    message=(
+                        f'Your email verification code is {otp}.\n\n'
+                        'Enter this code on the verification page to complete your registration. '
+                        'The code expires in 10 minutes.'
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+            except (smtplib.SMTPException, OSError, ValueError):
+                logger.exception('Registration verification email could not be sent to %s.', user.email)
+                _clear_registration_verification(request)
+                messages.error(request, 'We could not send a verification email. Please try again.')
             else:
-                _send_welcome_email(user)
-                login(request, user)
-                if 'referrer' in request.session:
-                    del request.session['referrer']
-                messages.success(request, "Registration successful. Welcome!")
-                return redirect('hotel:social_feed')
+                messages.info(request, f'A verification code has been sent to {user.email}.')
+                return redirect('users:verify_registration_email')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = CustomUserCreationForm()
+        form.fields['email'].required = True
     google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
     context = {
         'form': form,
@@ -680,6 +720,73 @@ def user_register(request):
         return render(request, 'users/register.html', context)
     except TemplateDoesNotExist:
         return render(request, 'register.html', context)
+
+
+def verify_registration_email(request):
+    pending_data = request.session.get(REGISTRATION_DATA_SESSION_KEY)
+    otp = request.session.get(REGISTRATION_OTP_SESSION_KEY)
+    expires_at = request.session.get(REGISTRATION_OTP_EXPIRES_SESSION_KEY)
+
+    if not pending_data or not otp or not expires_at:
+        _clear_registration_verification(request)
+        messages.warning(request, 'Your registration verification has expired. Please register again.')
+        return redirect('users:user_register')
+
+    if timezone.now().timestamp() >= expires_at:
+        _clear_registration_verification(request)
+        messages.warning(request, 'Your verification code has expired. Please register again.')
+        return redirect('users:user_register')
+
+    if request.method == 'POST':
+        submitted_otp = request.POST.get('otp', '').strip()
+        attempts_left = request.session.get(
+            REGISTRATION_OTP_ATTEMPTS_SESSION_KEY,
+            REGISTRATION_OTP_MAX_ATTEMPTS,
+        )
+        if not re.fullmatch(r'\d{6}', submitted_otp) or not hmac.compare_digest(submitted_otp, otp):
+            attempts_left -= 1
+            if attempts_left <= 0:
+                _clear_registration_verification(request)
+                messages.error(request, 'Too many incorrect codes. Please register again.')
+                return redirect('users:user_register')
+            request.session[REGISTRATION_OTP_ATTEMPTS_SESSION_KEY] = attempts_left
+            return render(request, 'users/verify_otp.html', {
+                'email': pending_data['email'],
+                'error': 'That verification code is incorrect. Please try again.',
+                'attempts_left': attempts_left,
+            })
+
+        user_data = {key: value for key, value in pending_data.items() if key != 'referrer_username'}
+        user = User(**user_data)
+        referrer_username = pending_data.get('referrer_username')
+        if referrer_username and hasattr(user, 'referrer'):
+            try:
+                user.referrer = User.objects.get(username=referrer_username)
+            except User.DoesNotExist:
+                pass
+        try:
+            user.save()
+        except IntegrityError as exc:
+            logger.info('Verified registration could not be saved: %s', exc)
+            _clear_registration_verification(request)
+            messages.error(request, 'Unable to complete registration. Please try again.')
+            return redirect('users:user_register')
+
+        _clear_registration_verification(request)
+        if 'referrer' in request.session:
+            del request.session['referrer']
+        _send_welcome_email(user)
+        login(request, user)
+        messages.success(request, 'Registration successful. Welcome!')
+        return redirect('hotel:social_feed')
+
+    return render(request, 'users/verify_otp.html', {
+        'email': pending_data['email'],
+        'attempts_left': request.session.get(
+            REGISTRATION_OTP_ATTEMPTS_SESSION_KEY,
+            REGISTRATION_OTP_MAX_ATTEMPTS,
+        ),
+    })
 
 @login_required
 def user_logout(request):

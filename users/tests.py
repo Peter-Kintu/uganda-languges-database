@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 from io import BytesIO
+import re
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -512,6 +513,72 @@ class EventRegistrationTests(TestCase):
 
 
 class UserRegistrationEmailTests(TestCase):
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_registration_sends_otp_without_creating_user_until_verified(self):
+        response = self.client.post(reverse('users:user_register'), {
+            'username': 'amina',
+            'email': 'amina@example.com',
+            'first_name': 'Amina',
+            'last_name': 'N',
+            'phone': '+256700000000',
+            'headline': 'Developer',
+            'location': 'Kampala',
+            'language': 'en',
+            'password1': 'Violet!River7Stone#',
+            'password2': 'Violet!River7Stone#',
+        })
+
+        self.assertRedirects(response, reverse('users:verify_registration_email'))
+        self.assertFalse(User.objects.filter(username='amina').exists())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['amina@example.com'])
+        self.assertIn('verification code', mail.outbox[0].body.lower())
+
+        otp = re.search(r'\b(\d{6})\b', mail.outbox[0].body).group(1)
+        response = self.client.post(reverse('users:verify_registration_email'), {'otp': otp})
+
+        self.assertRedirects(response, reverse('hotel:social_feed'))
+        user = User.objects.get(username='amina')
+        self.assertEqual(user.email, 'amina@example.com')
+        self.assertTrue(user.check_password('Violet!River7Stone#'))
+        self.assertGreater(self.client.session.get_expiry_age(), 600)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_registration_requires_email_and_otp(self):
+        response = self.client.post(reverse('users:user_register'), {
+            'username': 'noemail',
+            'password1': 'Violet!River7Stone#',
+            'password2': 'Violet!River7Stone#',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username='noemail').exists())
+        self.assertEqual(mail.outbox, [])
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_incorrect_otp_does_not_create_user(self):
+        self.client.post(reverse('users:user_register'), {
+            'username': 'amina',
+            'email': 'amina@example.com',
+            'first_name': 'Amina',
+            'last_name': 'N',
+            'phone': '+256700000000',
+            'headline': 'Developer',
+            'location': 'Kampala',
+            'language': 'en',
+            'password1': 'Violet!River7Stone#',
+            'password2': 'Violet!River7Stone#',
+        })
+        self.assertEqual(len(mail.outbox), 1)
+        otp = re.search(r'\b(\d{6})\b', mail.outbox[0].body).group(1)
+        wrong_otp = f'{(int(otp) + 1) % 1_000_000:06d}'
+
+        response = self.client.post(reverse('users:verify_registration_email'), {'otp': wrong_otp})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'incorrect')
+        self.assertFalse(User.objects.filter(username='amina').exists())
+
     def test_registration_sends_welcome_email(self):
         user = User.objects.create_user(
             username='amina',
