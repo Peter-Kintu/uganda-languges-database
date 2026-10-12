@@ -208,6 +208,17 @@ def payment_callback(request):
 
 
 @login_required
+def buyer_orders(request):
+    orders = (
+        Order.objects.filter(buyer=request.user)
+        .select_related('commerce_payment')
+        .prefetch_related('order_items__product')
+        .order_by('-created_at')
+    )
+    return render(request, 'eshop/buyer_orders.html', {'orders': orders})
+
+
+@login_required
 def merchant_dashboard(request):
     products = Product.objects.filter(vendor_user=request.user).select_related('inventory')
     all_orders = Order.objects.filter(order_items__product__vendor_user=request.user).distinct()
@@ -339,7 +350,12 @@ def confirm_delivery(request, order_id):
         is_vendor = order.order_items.filter(product__vendor_user=request.user).exists()
         if not (is_buyer or is_vendor):
             return JsonResponse({'error': 'You are not authorized to confirm this order.'}, status=403)
-        if order.status not in {'delivered', 'escrowed'}:
+        payment = CommercePayment.objects.filter(order=order, status='paid').first()
+        if not payment or order.escrow_status != 'funded':
+            return JsonResponse({'error': 'This order has no confirmed payment held in escrow.'}, status=409)
+        if is_buyer and order.status != 'delivered':
+            return JsonResponse({'error': 'You can confirm receipt after the seller marks the order delivered.'}, status=409)
+        if is_vendor and order.status != 'escrowed':
             return JsonResponse({'error': 'Order is not ready for delivery confirmation.'}, status=409)
         supplied_pin = str(request.POST.get('pin') or request.headers.get('X-Delivery-PIN') or '').strip()
         supplied_qr = str(request.POST.get('qr_token') or request.headers.get('X-Delivery-QR') or '').strip()
@@ -352,6 +368,9 @@ def confirm_delivery(request, order_id):
         if is_vendor and not is_buyer:
             order.status = 'delivered'
             order.save(update_fields=['status'])
+            if 'text/html' in request.headers.get('Accept', ''):
+                messages.success(request, f'Order #{order.id} is marked delivered. The buyer must confirm receipt before escrow is released.')
+                return redirect('eshop:merchant_dashboard')
             return JsonResponse({'order_id': order.id, 'status': order.status, 'escrow_status': order.escrow_status})
 
         order.status = 'released'
@@ -361,6 +380,9 @@ def confirm_delivery(request, order_id):
         order.save(update_fields=['status', 'escrow_status', 'buyer_confirmed_at', 'funds_released_at'])
         for event in order.affiliate_events.filter(event_type='conversion'):
             AffiliatePayout.objects.filter(order=order, creator=event.creator).update(status='payable')
+    if 'text/html' in request.headers.get('Accept', ''):
+        messages.success(request, f'Order #{order.id} is confirmed received. The escrowed payment has been released.')
+        return redirect('eshop:buyer_orders')
     return JsonResponse({'order_id': order.id, 'status': order.status, 'funds_released_at': order.funds_released_at.isoformat()})
 
 

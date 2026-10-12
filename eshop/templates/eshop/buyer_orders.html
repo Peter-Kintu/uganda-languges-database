@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}My Orders | Africana AI{% endblock %}
+
+{% block content %}
+<main class="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
+  <div class="mx-auto max-w-4xl space-y-6">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-wider text-teal-700">Your purchases</p>
+        <h1 class="mt-2 text-3xl font-bold text-slate-900">My orders</h1>
+        <p class="mt-2 text-slate-600">Track payment and delivery. Payments stay in escrow until you confirm you received the order.</p>
+      </div>
+      <a href="{% url 'eshop:product_list' %}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-teal-600">
+        Continue shopping
+      </a>
+    </header>
+
+    {% for order in orders %}
+      <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Order #{{ order.id }}</h2>
+            <p class="mt-1 text-sm text-slate-500">Placed {{ order.created_at|date:"M j, Y" }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-lg font-bold text-slate-900">{{ order.currency }} {{ order.total_amount|floatformat:0|intcomma }}</p>
+            <p class="mt-1 text-sm font-semibold text-slate-600">{{ order.get_status_display }}</p>
+          </div>
+        </div>
+
+        <ul class="space-y-2 py-4 text-sm text-slate-700">
+          {% for item in order.order_items.all %}
+            <li class="flex justify-between gap-4">
+              <span>{{ item.product.name }} × {{ item.quantity }}</span>
+              <span>{{ order.currency }} {{ item.price_at_purchase|floatformat:0|intcomma }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+
+        {% if order.commerce_payment.status == 'paid' and order.escrow_status == 'released' %}
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4" role="status">
+            <p class="font-bold text-slate-800">Receipt confirmed — payment released</p>
+            <p class="mt-1 text-sm text-slate-600">You confirmed receiving this order. The escrowed payment has been released to the seller.</p>
+            {% if order.buyer_confirmed_at %}<p class="mt-2 text-xs text-slate-500">Confirmed {{ order.buyer_confirmed_at|date:"M j, Y, P" }}</p>{% endif %}
+          </div>
+        {% elif order.commerce_payment.status == 'paid' and order.status == 'delivered' and order.escrow_status == 'funded' %}
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <p class="font-bold text-emerald-900">Delivered — payment is still protected</p>
+            <p class="mt-1 text-sm text-emerald-800">Only confirm after you have received and checked the order. This releases the escrowed payment to the seller and cannot be undone here.</p>
+            <form method="post" action="{% url 'eshop:confirm_delivery' order.id %}" class="mt-4" onsubmit="return confirm('Confirm that you received and checked this order? This releases the escrowed payment to the seller.');">
+              {% csrf_token %}
+              <button type="submit" class="w-full rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white hover:bg-emerald-800 sm:w-auto">
+                I received this order — release escrow
+              </button>
+            </form>
+          </div>
+        {% elif order.commerce_payment.status == 'paid' and order.escrow_status == 'funded' %}
+          <div class="rounded-xl border border-blue-200 bg-blue-50 p-4" role="status">
+            <p class="font-bold text-blue-900">Payment received and held securely</p>
+            <p class="mt-1 text-sm text-blue-800">Your payment is protected in escrow. The seller is preparing the order. You can confirm receipt here after delivery is marked complete.</p>
+          </div>
+        {% elif order.commerce_payment.status == 'pending' %}
+          <div class="rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
+            <p class="font-bold text-amber-900">Payment is being confirmed</p>
+            <p class="mt-1 text-sm text-amber-800">No funds will be released until the payment provider confirms payment and you confirm receipt.</p>
+            {% if order.commerce_payment.tracking_id %}
+              <a href="{% url 'eshop:payment_callback' %}?tracking_id={{ order.commerce_payment.tracking_id|urlencode }}" class="mt-2 inline-block text-sm font-bold text-amber-900 underline">Check payment status</a>
+            {% endif %}
+          </div>
+        {% elif order.commerce_payment.status == 'failed' or order.commerce_payment.status == 'cancelled' %}
+          <div class="rounded-xl border border-rose-200 bg-rose-50 p-4" role="status">
+            <p class="font-bold text-rose-900">Payment not completed</p>
+            <p class="mt-1 text-sm text-rose-800">This order has not been paid. No escrow was released.</p>
+          </div>
+        {% else %}
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4" role="status">
+            <p class="font-bold text-slate-800">Order status: {{ order.get_status_display }}</p>
+            <p class="mt-1 text-sm text-slate-600">Payment and delivery updates will appear here.</p>
+          </div>
+        {% endif %}
+      </article>
+    {% empty %}
+      <section class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <h2 class="text-lg font-bold text-slate-900">No orders yet</h2>
+        <p class="mt-2 text-sm text-slate-600">Your purchases and payment updates will stay here.</p>
+        <a href="{% url 'eshop:product_list' %}" class="mt-5 inline-flex rounded-lg bg-teal-700 px-4 py-2 font-bold text-white hover:bg-teal-800">Browse products</a>
+      </section>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}

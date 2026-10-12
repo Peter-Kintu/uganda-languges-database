@@ -6,7 +6,7 @@ from django.urls import reverse
 from unittest.mock import patch
 from urllib.parse import urlparse, parse_qs
 
-from .models import AffiliateEvent, AffiliatePayout, Cart, CartItem, CommercePayment, Order, Product
+from .models import AffiliateEvent, AffiliatePayout, Cart, CartItem, CommercePayment, Order, OrderItem, Product
 from .views import get_aliexpress_search_groups
 from payments.services import NylonPaymentResult
 
@@ -16,7 +16,13 @@ class EscrowOrderTests(TestCase):
         self.user = get_user_model().objects.create_user(username='buyer', password='test-pass')
         self.creator = get_user_model().objects.create_user(username='creator', password='test-pass')
         self.product = Product.objects.create(name='Basket', description='Handmade basket', price=Decimal('10000'), country='Uganda', vendor_user=self.creator)
-        self.order = Order.objects.create(buyer=self.user, total_amount=Decimal('10000'), currency='UGX', status='delivered')
+        self.order = Order.objects.create(
+            buyer=self.user,
+            total_amount=Decimal('10000'),
+            currency='UGX',
+            status='delivered',
+            escrow_status='funded',
+        )
         CommercePayment.objects.create(order=self.order, pesapal_order_id='eshop-test-1', amount=self.order.total_amount, currency='UGX', status='paid')
         AffiliateEvent.objects.create(creator=self.creator, product=self.product, order=self.order, event_type='conversion', commission_amount=Decimal('500'))
         AffiliatePayout.objects.create(creator=self.creator, order=self.order, amount=Decimal('500'))
@@ -33,9 +39,23 @@ class EscrowOrderTests(TestCase):
     def test_unpaid_order_cannot_be_confirmed(self):
         self.order.status = 'payment_pending'
         self.order.save(update_fields=['status'])
+        self.order.commerce_payment.status = 'pending'
+        self.order.commerce_payment.save(update_fields=['status'])
         self.client.force_login(self.user)
         response = self.client.post(reverse('eshop:confirm_delivery', args=[self.order.id]))
         self.assertEqual(response.status_code, 409)
+
+    def test_buyer_cannot_release_escrow_before_seller_marks_order_delivered(self):
+        self.order.status = 'escrowed'
+        self.order.save(update_fields=['status'])
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse('eshop:confirm_delivery', args=[self.order.id]))
+
+        self.assertEqual(response.status_code, 409)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.escrow_status, 'funded')
+        self.assertIsNone(self.order.buyer_confirmed_at)
 
     def test_legacy_pesapal_ipn_is_disabled(self):
         response = self.client.get(reverse('pesapal_ipn'), {'OrderTrackingId': 'tracking-1'})
@@ -135,6 +155,67 @@ class CommercePaymentFlowTests(TestCase):
         order.refresh_from_db()
         self.assertEqual(payment.status, 'paid')
         self.assertEqual(order.status, 'escrowed')
+        self.assertContains(self.client.get(reverse('eshop:buyer_orders')), 'Payment received and held securely')
+
+    def test_order_and_buyer_confirmation_persist_across_refresh(self):
+        order = Order.objects.create(
+            buyer=self.buyer,
+            total_amount=Decimal('10000'),
+            currency='UGX',
+            status='escrowed',
+            escrow_status='funded',
+        )
+        CommercePayment.objects.create(
+            order=order,
+            pesapal_order_id='persistent-order-test',
+            tracking_id='persistent-order-test',
+            provider_reference='persistent-order-test',
+            amount=order.total_amount,
+            currency=order.currency,
+            status='paid',
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=self.product,
+            quantity=1,
+            price_at_purchase=order.total_amount,
+            commission_at_purchase=Decimal('0'),
+        )
+        buyer_orders_url = reverse('eshop:buyer_orders')
+
+        page_before_delivery = self.client.get(buyer_orders_url)
+        self.assertEqual(page_before_delivery.status_code, 200)
+        self.assertContains(page_before_delivery, 'Payment received and held securely')
+        self.assertNotContains(page_before_delivery, 'I received this order')
+
+        seller_client = self.client_class()
+        seller_client.force_login(self.seller)
+        delivery_response = seller_client.post(
+            reverse('eshop:confirm_delivery', args=[order.id]),
+            {'qr_token': str(order.delivery_qr_token)},
+            HTTP_ACCEPT='text/html',
+        )
+        self.assertRedirects(delivery_response, reverse('eshop:merchant_dashboard'))
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'delivered')
+        self.assertEqual(order.escrow_status, 'funded')
+
+        delivered_page = self.client.get(buyer_orders_url)
+        self.assertContains(delivered_page, 'I received this order')
+        self.assertContains(delivered_page, 'payment is still protected')
+
+        confirmation_response = self.client.post(
+            reverse('eshop:confirm_delivery', args=[order.id]),
+            HTTP_ACCEPT='text/html',
+        )
+        self.assertRedirects(confirmation_response, buyer_orders_url)
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'released')
+        self.assertEqual(order.escrow_status, 'released')
+
+        refreshed_page = self.client.get(buyer_orders_url)
+        self.assertContains(refreshed_page, 'Receipt confirmed — payment released')
+        self.assertNotContains(refreshed_page, 'I received this order')
 
 
 class AliExpressSearchConfigTests(TestCase):
