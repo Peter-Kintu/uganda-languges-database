@@ -1077,10 +1077,21 @@ def user_profile(request):
         month['y'] = round(y, 2)
         graph_points.append(f"{month['x']},{month['y']}")
     try:
-        from social.models import SocialProfile
+        from social.models import MerchantIdentityVerification, SocialProfile
         social_profile = SocialProfile.objects.filter(user=user).first()
+        can_submit_verification = (
+            social_profile is None
+            or social_profile.verification_status in {'unsubmitted', 'rejected'}
+            or (
+                social_profile.verification_status == 'pending'
+                and not MerchantIdentityVerification.objects.filter(
+                    social_profile=social_profile
+                ).exists()
+            )
+        )
     except Exception:
         social_profile = None
+        can_submit_verification = False
     context = {
         'user': user, 'experiences': experiences, 'educations': educations,
         'skills': skills, 'social_connections': social_connections,
@@ -1106,6 +1117,7 @@ def user_profile(request):
         'graph_max': graph_max,
         'monthly_impressions': months,
         'social_profile': social_profile,
+        'can_submit_verification': can_submit_verification,
     }
     try:
         return render(request, 'users/profile.html', context)

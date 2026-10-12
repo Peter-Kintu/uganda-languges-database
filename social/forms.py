@@ -1,6 +1,45 @@
 from django import forms
-from .models import BusinessReel, SecureMessage
+import re
+
+from .models import BusinessReel, MerchantIdentityVerification, SecureMessage
 from eshop.models import Product
+
+
+class MerchantIdentityVerificationForm(forms.ModelForm):
+    business_registration_ref = forms.CharField(
+        max_length=100,
+        required=False,
+    )
+
+    class Meta:
+        model = MerchantIdentityVerification
+        fields = ('national_id_number', 'id_front_image', 'id_back_image')
+
+    def clean_national_id_number(self):
+        national_id_number = re.sub(
+            r'[\s-]+',
+            '',
+            self.cleaned_data['national_id_number'],
+        ).upper()
+        if not re.fullmatch(r'[A-Z0-9]{8,20}', national_id_number):
+            raise forms.ValidationError(
+                'Enter a valid NIN using 8 to 20 letters and numbers.'
+            )
+        return national_id_number
+
+    def _clean_id_image(self, field_name):
+        image = self.cleaned_data.get(field_name)
+        if image and image.name.rsplit('.', 1)[-1].lower() not in {'jpg', 'jpeg', 'png'}:
+            raise forms.ValidationError('Upload a JPG or PNG image.')
+        if image and image.size > 5 * 1024 * 1024:
+            raise forms.ValidationError('Each ID photo must be 5 MB or smaller.')
+        return image
+
+    def clean_id_front_image(self):
+        return self._clean_id_image('id_front_image')
+
+    def clean_id_back_image(self):
+        return self._clean_id_image('id_back_image')
 
 
 class BusinessReelUploadForm(forms.ModelForm):

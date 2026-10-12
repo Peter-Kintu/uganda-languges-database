@@ -545,6 +545,10 @@ class UserRegistrationEmailTests(TestCase):
 
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     def test_registration_requires_email_and_otp(self):
+        response = self.client.get(reverse('users:user_register'))
+        self.assertContains(response, 'Title')
+        self.assertContains(response, 'placeholder="e.g. Farmer"')
+
         response = self.client.post(reverse('users:user_register'), {
             'username': 'noemail',
             'password1': 'Violet!River7Stone#',

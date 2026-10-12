@@ -220,13 +220,41 @@ def merchant_dashboard(request):
 def submit_verification(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required.'}, status=405)
-    from social.models import SocialProfile
+    from social.forms import MerchantIdentityVerificationForm
+    from social.models import MerchantIdentityVerification, SocialProfile
+
     profile, _ = SocialProfile.objects.get_or_create(user=request.user)
-    profile.national_id_last4 = str(request.POST.get('national_id_last4', '')).strip()[-4:]
-    profile.business_registration_ref = str(request.POST.get('business_registration_ref', '')).strip()[:100]
+    existing = MerchantIdentityVerification.objects.filter(social_profile=profile).first()
+    can_resubmit_legacy_pending = (
+        profile.verification_status == 'pending' and existing is None
+    )
+    if profile.verification_status not in {'unsubmitted', 'rejected'} and not can_resubmit_legacy_pending:
+        messages.error(request, 'Your verification is already being reviewed or is complete.')
+        return redirect('users:profile')
+
+    form = MerchantIdentityVerificationForm(request.POST, request.FILES, instance=existing)
+    if not form.is_valid():
+        for errors in form.errors.values():
+            for error in errors:
+                messages.error(request, error)
+        return redirect('users:profile')
+
+    old_documents = (
+        (existing.id_front_image, form.cleaned_data.get('id_front_image')),
+        (existing.id_back_image, form.cleaned_data.get('id_back_image')),
+    ) if existing else ()
+    verification = form.save(commit=False)
+    verification.social_profile = profile
+    verification.save()
+    for old_document, new_document in old_documents:
+        if old_document and old_document.name and old_document.name != new_document.name:
+            old_document.storage.delete(old_document.name)
+
     profile.verification_status = 'pending'
-    profile.save(update_fields=['national_id_last4', 'business_registration_ref', 'verification_status'])
-    return JsonResponse({'status': profile.verification_status})
+    profile.business_registration_ref = form.cleaned_data['business_registration_ref']
+    profile.save(update_fields=['verification_status', 'business_registration_ref'])
+    messages.success(request, 'Your ID documents were submitted for admin review.')
+    return redirect('users:profile')
 
 
 @login_required

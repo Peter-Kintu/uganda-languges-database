@@ -1,6 +1,16 @@
 from django.contrib import admin
 from django import forms
-from .models import SocialProfile, BusinessReel, VideoEndorsement, SecureMessage
+from django.core.exceptions import PermissionDenied
+from django.http import FileResponse, Http404
+from django.urls import path, reverse
+from django.utils.html import format_html
+from .models import (
+    SocialProfile,
+    MerchantIdentityVerification,
+    BusinessReel,
+    VideoEndorsement,
+    SecureMessage,
+)
 
 # --- CUSTOM WIDGETS/FORMS ---
 
@@ -44,7 +54,7 @@ class SocialProfileAdmin(admin.ModelAdmin):
             'fields': ('user',)
         }),
         ('Pillar 1: Trust Ledger', {
-            'fields': ('trust_score', 'verified_deals_count', 'is_verified_merchant', 'verification_tier', 'verification_status', 'national_id_last4', 'business_registration_ref'),
+            'fields': ('trust_score', 'verified_deals_count', 'is_verified_merchant', 'verification_tier', 'verification_status', 'business_registration_ref'),
             'description': "Verified metrics that power the 'Proof of Work' profile layer."
         }),
         ('Pillar 3: Agentic Commerce', {
@@ -67,6 +77,77 @@ class SocialProfileAdmin(admin.ModelAdmin):
         for profile in queryset:
             profile.update_trust_score()
         self.message_user(request, "Trust scores have been updated based on verified endorsements.")
+
+
+@admin.register(MerchantIdentityVerification)
+class MerchantIdentityVerificationAdmin(admin.ModelAdmin):
+    list_display = ('social_profile', 'submitted_at')
+    search_fields = ('social_profile__user__username', 'social_profile__user__email')
+    fields = (
+        'social_profile',
+        'national_id_number',
+        'front_document_link',
+        'back_document_link',
+        'submitted_at',
+    )
+    readonly_fields = fields
+
+    def has_add_permission(self, _request):
+        return False
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                '<int:object_id>/document/<str:side>/',
+                self.admin_site.admin_view(self.download_document),
+                name='social_merchantidentityverification_document',
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def _document_link(self, obj, side):
+        return format_html(
+            '<a href="{}">Download {} ID image</a>',
+            reverse(
+                'admin:social_merchantidentityverification_document',
+                args=(obj.pk, side),
+            ),
+            side,
+        )
+
+    def front_document_link(self, obj):
+        return self._document_link(obj, 'front')
+    front_document_link.short_description = 'Front of ID'
+
+    def back_document_link(self, obj):
+        return self._document_link(obj, 'back')
+    back_document_link.short_description = 'Back of ID'
+
+    def download_document(self, request, object_id, side):
+        verification = self.get_object(request, str(object_id))
+        if verification is None:
+            raise Http404
+        if not self.has_view_permission(request, verification):
+            raise PermissionDenied
+        if side == 'front':
+            document = verification.id_front_image
+        elif side == 'back':
+            document = verification.id_back_image
+        else:
+            raise Http404
+        if not document or not document.name:
+            raise Http404
+
+        extension = document.name.rsplit('.', 1)[-1].lower()
+        response = FileResponse(
+            document.open('rb'),
+            as_attachment=True,
+            filename=f'identity-{side}-{verification.pk}.{extension}',
+            content_type='application/octet-stream',
+        )
+        response['Cache-Control'] = 'private, no-store'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
 
 @admin.register(BusinessReel)
@@ -179,5 +260,3 @@ class VideoEndorsementAdmin(admin.ModelAdmin):
             'fields': ('created_at',)
         }),
     )
-
-

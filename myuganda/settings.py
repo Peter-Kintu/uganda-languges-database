@@ -3,6 +3,7 @@ import socket
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse_lazy
 import dj_database_url
 import cloudinary
@@ -469,8 +470,20 @@ else:
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Configure a persistent, private filesystem volume here in production.
+PRIVATE_IDENTITY_ROOT = os.environ.get(
+    'PRIVATE_IDENTITY_ROOT',
+    os.path.join(BASE_DIR, 'private_identity_uploads'),
+)
+private_identity_path = Path(PRIVATE_IDENTITY_ROOT).resolve()
+media_path = Path(MEDIA_ROOT).resolve()
+if private_identity_path == media_path or media_path in private_identity_path.parents:
+    raise ImproperlyConfigured('PRIVATE_IDENTITY_ROOT must be outside MEDIA_ROOT.')
 FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get('FILE_UPLOAD_MAX_MEMORY_SIZE', str(10 * 1024 * 1024)))
-DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get(
+    'DATA_UPLOAD_MAX_MEMORY_SIZE',
+    str(max(FILE_UPLOAD_MAX_MEMORY_SIZE, 12 * 1024 * 1024)),
+))
 
 # --- SITEMAP SETTINGS ---
 SITEMAP_MAX_ITEMS = int(os.environ.get('SITEMAP_MAX_ITEMS', '1000'))

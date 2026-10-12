@@ -1,10 +1,11 @@
 from django.db import models
 from django.conf import settings
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.db.models import Count
 from django.core.files.storage import storages
 from cloudinary.models import CloudinaryField
+from .storage import PrivateIdentityStorage
 import cloudinary
 import uuid
 import hashlib
@@ -13,6 +14,16 @@ from decimal import Decimal
 
 # Link to your existing CustomUser
 User = settings.AUTH_USER_MODEL
+
+identity_document_storage = PrivateIdentityStorage()
+
+
+def identity_document_upload_path(instance, filename):
+    extension = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'img'
+    if extension not in {'jpg', 'jpeg', 'png'}:
+        extension = 'img'
+    return f'identity/{instance.social_profile.user_id}/{uuid.uuid4().hex}.{extension}'
+
 
 # --- PILLAR 1 & 4: IDENTITY ---
 
@@ -104,6 +115,35 @@ class SocialProfile(models.Model):
 
     def __str__(self):
         return f"Social Layer: {self.user.username} ({self.trust_score}%)"
+
+
+class MerchantIdentityVerification(models.Model):
+    social_profile = models.OneToOneField(
+        SocialProfile,
+        on_delete=models.CASCADE,
+        related_name='identity_verification',
+    )
+    national_id_number = models.CharField(max_length=20)
+    id_front_image = models.ImageField(
+        storage=identity_document_storage,
+        upload_to=identity_document_upload_path,
+    )
+    id_back_image = models.ImageField(
+        storage=identity_document_storage,
+        upload_to=identity_document_upload_path,
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Identity documents for {self.social_profile.user.username}"
+
+
+@receiver(post_delete, sender=MerchantIdentityVerification)
+def delete_private_identity_documents(sender, instance, **kwargs):
+    for field_name in ('id_front_image', 'id_back_image'):
+        document = getattr(instance, field_name)
+        if document and document.name:
+            document.storage.delete(document.name)
 
 
 # --- PILLAR 2 & 3: COMMERCE ---

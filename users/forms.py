@@ -15,6 +15,8 @@ class CustomUserCreationForm(UserCreationForm):
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['headline'].label = 'Title'
+        self.fields['headline'].widget.attrs['placeholder'] = 'e.g. Farmer'
         # Apply Tailwind classes to all form fields for consistent styling
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500'

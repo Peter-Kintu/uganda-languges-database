@@ -49,6 +49,7 @@ staticfiles/
 
 # Media files
 media/
+private_identity_uploads/
 
 # Node modules (if any)
 node_modules/.venv/
