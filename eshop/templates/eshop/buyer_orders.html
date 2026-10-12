@@ -42,14 +42,14 @@
         {% if order.commerce_payment.status == 'paid' and order.escrow_status == 'released' %}
           <div class="rounded-xl border border-slate-200 bg-slate-50 p-4" role="status">
             <p class="font-bold text-slate-800">Receipt confirmed — payment released</p>
-            <p class="mt-1 text-sm text-slate-600">You confirmed receiving this order. The escrowed payment has been released to the seller.</p>
+            <p class="mt-1 text-sm text-slate-600">You confirmed receiving this order. The protected funds have been released and the seller’s wallet credited.</p>
             {% if order.buyer_confirmed_at %}<p class="mt-2 text-xs text-slate-500">Confirmed {{ order.buyer_confirmed_at|date:"M j, Y, P" }}</p>{% endif %}
           </div>
         {% elif order.commerce_payment.status == 'paid' and order.status == 'delivered' and order.escrow_status == 'funded' %}
           <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <p class="font-bold text-emerald-900">Delivered — payment is still protected</p>
-            <p class="mt-1 text-sm text-emerald-800">Only confirm after you have received and checked the order. This releases the escrowed payment to the seller and cannot be undone here.</p>
-            <form method="post" action="{% url 'eshop:confirm_delivery' order.id %}" class="mt-4" onsubmit="return confirm('Confirm that you received and checked this order? This releases the escrowed payment to the seller.');">
+            <p class="mt-1 text-sm text-emerald-800">Only confirm after you have received and checked the order. This releases escrow and automatically credits the seller’s wallet; it cannot be undone here.</p>
+            <form method="post" action="{% url 'eshop:confirm_delivery' order.id %}" class="mt-4" onsubmit="return confirm('Confirm that you received and checked this order? This releases escrow and credits the seller’s wallet.');">
               {% csrf_token %}
               <button type="submit" class="w-full rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white hover:bg-emerald-800 sm:w-auto">
                 I received this order — release escrow

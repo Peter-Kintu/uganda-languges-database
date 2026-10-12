@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .forms import ProductForm, NegotiationForm 
 from .models import (
     Product, Cart, CartItem, CommercePayment, InventoryItem, StockMovement, PromotionCampaign,
-    AffiliateEvent, AffiliatePayout, LiveShoppingSession, LivePinnedProduct,
+    AffiliateEvent, AffiliatePayout, LiveShoppingSession, LivePinnedProduct, SellerWalletCredit,
 )
 from django.utils import timezone
 from datetime import date, timedelta
@@ -242,6 +242,13 @@ def merchant_dashboard(request):
         month['x'] = 10 + (index * 180 / max(len(monthly_sales) - 1, 1))
         month['y'] = 88 - ((month['sales'] / max(max_sales, 1)) * 68)
     sales_graph_points = ' '.join(f"{month['x']:.1f},{month['y']:.1f}" for month in monthly_sales)
+    wallet_balances = (
+        SellerWalletCredit.objects.filter(seller=request.user)
+        .values('currency')
+        .annotate(balance=Sum('amount'))
+        .order_by('currency')
+    )
+    wallet_credits = SellerWalletCredit.objects.filter(seller=request.user).select_related('order')[:10]
     metrics = {
         'product_views': analytics.filter(event_type='product_view').count(),
         'reel_views': analytics.filter(event_type='reel_view').count(),
@@ -249,7 +256,16 @@ def merchant_dashboard(request):
         'sales': completed_orders.count(),
         'revenue': completed_orders.aggregate(total=Sum('total_amount'))['total'] or 0,
     }
-    return render(request, 'eshop/merchant_dashboard.html', {'products': products, 'orders': orders, 'metrics': metrics, 'social_profile': profile, 'monthly_sales': monthly_sales, 'sales_graph_points': sales_graph_points})
+    return render(request, 'eshop/merchant_dashboard.html', {
+        'products': products,
+        'orders': orders,
+        'metrics': metrics,
+        'social_profile': profile,
+        'monthly_sales': monthly_sales,
+        'sales_graph_points': sales_graph_points,
+        'wallet_balances': wallet_balances,
+        'wallet_credits': wallet_credits,
+    })
 
 
 @login_required
@@ -378,6 +394,24 @@ def confirm_delivery(request, order_id):
         order.buyer_confirmed_at = timezone.now()
         order.funds_released_at = order.buyer_confirmed_at
         order.save(update_fields=['status', 'escrow_status', 'buyer_confirmed_at', 'funds_released_at'])
+        seller_totals = {}
+        for item in order.order_items.select_related('product').all():
+            seller_id = item.product.vendor_user_id
+            if seller_id:
+                seller_totals[seller_id] = seller_totals.get(seller_id, Decimal('0')) + (
+                    item.price_at_purchase * item.quantity
+                )
+        for event in order.affiliate_events.filter(event_type='conversion').select_related('product'):
+            seller_id = event.product.vendor_user_id
+            if seller_id:
+                seller_totals[seller_id] = seller_totals.get(seller_id, Decimal('0')) - event.commission_amount
+        for seller_id, amount in seller_totals.items():
+            if amount > 0:
+                SellerWalletCredit.objects.get_or_create(
+                    seller_id=seller_id,
+                    order=order,
+                    defaults={'amount': amount, 'currency': order.currency},
+                )
         for event in order.affiliate_events.filter(event_type='conversion'):
             AffiliatePayout.objects.filter(order=order, creator=event.creator).update(status='payable')
     if 'text/html' in request.headers.get('Accept', ''):

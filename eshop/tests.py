@@ -6,7 +6,7 @@ from django.urls import reverse
 from unittest.mock import patch
 from urllib.parse import urlparse, parse_qs
 
-from .models import AffiliateEvent, AffiliatePayout, Cart, CartItem, CommercePayment, Order, OrderItem, Product
+from .models import AffiliateEvent, AffiliatePayout, Cart, CartItem, CommercePayment, Order, OrderItem, Product, SellerWalletCredit
 from .views import get_aliexpress_search_groups
 from payments.services import NylonPaymentResult
 
@@ -24,6 +24,13 @@ class EscrowOrderTests(TestCase):
             escrow_status='funded',
         )
         CommercePayment.objects.create(order=self.order, pesapal_order_id='eshop-test-1', amount=self.order.total_amount, currency='UGX', status='paid')
+        OrderItem.objects.create(
+            order=self.order,
+            product=self.product,
+            quantity=1,
+            price_at_purchase=self.order.total_amount,
+            commission_at_purchase=Decimal('0'),
+        )
         AffiliateEvent.objects.create(creator=self.creator, product=self.product, order=self.order, event_type='conversion', commission_amount=Decimal('500'))
         AffiliatePayout.objects.create(creator=self.creator, order=self.order, amount=Decimal('500'))
 
@@ -34,6 +41,8 @@ class EscrowOrderTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, 'released')
         self.assertEqual(self.order.escrow_status, 'released')
+        wallet_credit = SellerWalletCredit.objects.get(seller=self.creator, order=self.order)
+        self.assertEqual(wallet_credit.amount, Decimal('9500'))
         self.assertEqual(AffiliatePayout.objects.get(order=self.order).status, 'payable')
 
     def test_unpaid_order_cannot_be_confirmed(self):
@@ -107,6 +116,7 @@ class CommercePaymentFlowTests(TestCase):
 
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, 'Continue to payment')
+        self.assertContains(page, 'My orders')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload['status'], 'pending')
         self.assertIn('redirect_url', payload)
@@ -199,6 +209,7 @@ class CommercePaymentFlowTests(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.status, 'delivered')
         self.assertEqual(order.escrow_status, 'funded')
+        self.assertFalse(SellerWalletCredit.objects.filter(order=order).exists())
 
         delivered_page = self.client.get(buyer_orders_url)
         self.assertContains(delivered_page, 'I received this order')
@@ -215,7 +226,17 @@ class CommercePaymentFlowTests(TestCase):
 
         refreshed_page = self.client.get(buyer_orders_url)
         self.assertContains(refreshed_page, 'Receipt confirmed — payment released')
+        self.assertContains(refreshed_page, 'My orders')
         self.assertNotContains(refreshed_page, 'I received this order')
+        self.assertEqual(
+            SellerWalletCredit.objects.get(seller=self.seller, order=order).amount,
+            Decimal('10000'),
+        )
+        seller_dashboard = seller_client.get(reverse('eshop:merchant_dashboard'))
+        self.assertContains(seller_dashboard, 'Manage orders')
+        self.assertContains(seller_dashboard, 'Wallet balance')
+        self.assertContains(seller_dashboard, 'UGX 10,000')
+        self.assertContains(seller_dashboard, 'Cash-out is not enabled yet')
 
 
 class AliExpressSearchConfigTests(TestCase):

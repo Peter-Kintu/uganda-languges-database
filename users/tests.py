@@ -49,6 +49,13 @@ class AgentCommandTests(TestCase):
         self.assertContains(response, f'userId: "{self.user.pk}"')
         self.assertContains(response, 'const userChatSessionKey = `${userChatStorageKey}:sessions`')
 
+    def test_profile_has_persistent_buyer_orders_link(self):
+        response = self.client.get(reverse('users:profile'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'My orders')
+        self.assertContains(response, reverse('eshop:buyer_orders'))
+
     def test_plan_checkpoint_advances_and_completes(self):
         response = self.client.post(
             reverse('users:agent_command'),

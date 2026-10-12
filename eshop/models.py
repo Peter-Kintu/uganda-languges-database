@@ -339,6 +339,31 @@ class CommercePayment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
+class SellerWalletCredit(models.Model):
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='seller_wallet_credits',
+    )
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.PROTECT,
+        related_name='seller_wallet_credits',
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='UGX')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['seller', 'order'],
+                name='unique_seller_wallet_credit_per_order',
+            )
+        ]
+        ordering = ['-created_at']
+
+
 class InventoryItem(models.Model):
     product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name='inventory')
     sku = models.CharField(max_length=80, unique=True, blank=True)
