@@ -321,8 +321,17 @@
                                     <p class="mt-2 text-xl font-semibold text-slate-900">{{ likes_count|default:0 }}</p>
                                 </div>
                                 <div class="rounded-2xl bg-white border border-slate-200 p-4">
-                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Post Earnings</p>
-                                    <p class="mt-2 text-2xl font-bold text-slate-900">UGX {{ post_earnings_amount|default:0|floatformat:0 }}</p>
+                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Estimated Post Earnings</p>
+                                    <p class="mt-2 text-2xl font-bold text-slate-900">UGX {{ post_earnings_amount|default:0|floatformat:2 }}</p>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        {{ earning_impressions }} verified impression{{ earning_impressions|pluralize }} · {{ earning_likes }} unique like{{ earning_likes|pluralize }} · {{ earning_comments }} unique commenter{{ earning_comments|pluralize }}
+                                    </p>
+                                    <p class="mt-2 text-xs text-slate-600">Rates: UGX 0.01 per impression, UGX 1 per unique like, and UGX 2 per unique commenter.</p>
+                                </div>
+                                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                                    <p class="text-xs uppercase tracking-[0.18em] text-emerald-700">Available Post Earnings</p>
+                                    <p class="mt-2 text-2xl font-bold text-emerald-800">UGX {{ available_post_earnings|default:0|floatformat:2 }}</p>
+                                    <p class="mt-1 text-xs text-emerald-700">Your balance starts growing with your first verified engagement.</p>
                                 </div>
                                 <div class="rounded-2xl bg-white border border-slate-200 p-4">
                                     <div class="flex items-center justify-between mb-3">
@@ -376,8 +385,6 @@
                                 {% if can_request_payout and not pending_payout_request %}
                                     <form method="POST" action="{% url 'users:profile_payout_request' %}" class="mt-4 space-y-3">
                                         {% csrf_token %}
-                                        <input type="hidden" name="impressions" value="{{ impressions|default:0 }}" />
-                                        <input type="hidden" name="likes_count" value="{{ likes_count|default:0 }}" />
                                         <div class="grid gap-3 sm:grid-cols-2">
                                             <label class="block text-sm font-semibold text-slate-700">
                                                 <span class="text-xs text-slate-500">Card Type</span>
@@ -396,11 +403,12 @@
                                             <span class="text-xs text-slate-500">Bank / Issuer</span>
                                             <input name="bank_name" placeholder="Bank name (optional)" class="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
                                         </label>
-                                        <button type="submit" class="w-full rounded-3xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-700">Request payout</button>
+                                        <p class="text-xs text-slate-500">You can request a payout for any positive available balance. Payouts are reviewed and processed by our team.</p>
+                                        <button type="submit" class="w-full rounded-3xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-700">Request payout of UGX {{ available_post_earnings|floatformat:2 }}</button>
                                     </form>
                                 {% elif pending_payout_request %}
                                     <div class="rounded-3xl bg-slate-100 border border-slate-200 p-4 text-sm text-slate-700">
-                                        A payout request of UGX {{ pending_payout_request.amount|floatformat:0 }} is currently <strong>{{ pending_payout_request.status|capfirst }}</strong>.
+                                        A payout request of UGX {{ pending_payout_request.amount|floatformat:2 }} is currently <strong>{{ pending_payout_request.status|capfirst }}</strong>.
                                     </div>
                                 {% endif %}
                             </div>

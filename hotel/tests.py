@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase
@@ -60,6 +62,64 @@ class HybridFeedTests(TestCase):
 		self.assertTrue(feed)
 		self.assertEqual(feed[0], popular_post)
 		self.assertIn(useful_post, feed)
+
+	def test_recent_viewer_interactions_increase_creator_relevance(self):
+		preferred_posts = [
+			Post.objects.create(author=self.popular_user, content=f'Preferred post {index}')
+			for index in range(10)
+		]
+		for post in preferred_posts:
+			Like.objects.create(post=post, user=self.user)
+		other_post = Post.objects.create(author=self.investor, content='Another creator post')
+
+		feed = _build_hybrid_feed(self.user, feed_seed='affinity-seed')
+
+		self.assertEqual(feed[0].author_id, self.popular_user.id)
+		self.assertIn(other_post, feed)
+
+	def test_recent_posts_can_outrank_older_posts_with_more_lifetime_engagement(self):
+		old_post = Post.objects.create(author=self.popular_user, content='Older viral post')
+		recent_post = Post.objects.create(author=self.investor, content='Recent update')
+		Like.objects.bulk_create([
+			Like(post=old_post, user=User.objects.create_user(
+				username=f'old_post_liker_{index}', password='secret123'
+			))
+			for index in range(100)
+		])
+		old_time = timezone.now() - timedelta(days=14)
+		Post.objects.filter(pk=old_post.pk).update(created_at=old_time)
+
+		feed = _build_hybrid_feed(self.user, feed_seed='freshness-seed')
+
+		self.assertEqual(feed[0], recent_post)
+
+	def test_profile_topics_improve_post_relevance(self):
+		self.user.headline = 'Luganda'
+		self.user.save(update_fields=['headline'])
+		relevant_post = Post.objects.create(author=self.popular_user, content='Learning Luganda')
+		Post.objects.create(author=self.investor, content='A general community update')
+
+		feed = _build_hybrid_feed(self.user, feed_seed='topic-seed')
+
+		self.assertEqual(feed[0], relevant_post)
+
+	def test_feed_avoids_repeating_authors_when_other_authors_are_available(self):
+		posts = [
+			Post.objects.create(author=self.popular_user, content=f'Popular creator post {index}')
+			for index in range(3)
+		]
+		other_posts = [
+			Post.objects.create(author=self.investor, content=f'Investor post {index}')
+			for index in range(2)
+		]
+
+		feed = _build_hybrid_feed(self.user, feed_seed='diversity-seed')
+
+		self.assertEqual(set(feed), set(posts + other_posts))
+		self.assertTrue(all(
+			feed[index].author_id != feed[index + 1].author_id
+			for index in range(len(feed) - 1)
+		), [post.author_id for post in feed])
 
 	def test_feed_seed_changes_order_without_changing_membership(self):
 		posts = [

@@ -26,10 +26,13 @@ from django.template.loader import render_to_string
 import requests
 import json
 import os
+import re
 import hashlib
 import uuid
 import random
 import logging
+import math
+from collections import Counter
 from datetime import timedelta
 
 try:
@@ -183,7 +186,7 @@ def _build_hybrid_feed(
     session_key='',
     priority_post_id=None,
 ):
-    """Rank posts using relevance, freshness, novelty, and light exploration."""
+    """Personalize the feed, then diversify adjacent authors."""
     now = timezone.now()
 
     posts_query = Post.objects.all().select_related('author').annotate(
@@ -235,10 +238,84 @@ def _build_hybrid_feed(
         return []
 
     followed_ids = set()
+    author_activity = {}
+    interest_terms = set()
+    viewer_location = ''
     if user.is_authenticated and not is_crawler:
         followed_ids = set(Connection.objects.filter(
             sender=user, status='accepted'
         ).values_list('receiver_id', flat=True))
+        profile_text = ' '.join((
+            getattr(user, 'headline', '') or '',
+            getattr(user, 'about', '') or '',
+            ' '.join(user.skills.values_list('name', flat=True)),
+        ))
+        stop_words = {
+            'about', 'after', 'also', 'and', 'are', 'but', 'for', 'from', 'have',
+            'into', 'its', 'our', 'that', 'the', 'their', 'this', 'through', 'with',
+            'you', 'your',
+        }
+        interest_terms = {
+            term for term in re.findall(r'[^\W\d_]{3,}', profile_text.casefold())
+            if term not in stop_words
+        }
+        viewer_location = (getattr(user, 'location', '') or '').strip().casefold()
+        candidate_author_ids = {
+            post.author_id for post in posts if post.author_id != user.id
+        }
+        if candidate_author_ids:
+            interaction_cutoff = now - timedelta(days=90)
+            activity_queries = (
+                (
+                    Like.objects.filter(
+                        user=user,
+                        created_at__gte=interaction_cutoff,
+                        post__author_id__in=candidate_author_ids,
+                    ),
+                    'post__author_id',
+                    1,
+                ),
+                (
+                    Comment.objects.filter(
+                        author=user,
+                        created_at__gte=interaction_cutoff,
+                        post__author_id__in=candidate_author_ids,
+                    ),
+                    'post__author_id',
+                    1.5,
+                ),
+                (
+                    Share.objects.filter(
+                        sharer=user,
+                        created_at__gte=interaction_cutoff,
+                        original_post__author_id__in=candidate_author_ids,
+                    ),
+                    'original_post__author_id',
+                    2,
+                ),
+            )
+            for queryset, author_field, weight in activity_queries:
+                for author_id, count in queryset.values(author_field).annotate(
+                    total=Count('pk')
+                ).values_list(author_field, 'total'):
+                    author_activity[author_id] = (
+                        author_activity.get(author_id, 0) + count * weight
+                    )
+
+    content_terms = {
+        post.id: Counter(re.findall(r'[^\W\d_]{3,}', post.content.casefold()))
+        for post in posts
+    } if interest_terms else {}
+    document_frequency = Counter(
+        term
+        for terms in content_terms.values()
+        for term in terms
+    )
+    interest_weights = {
+        term: math.log1p((len(posts) + 1) / (document_frequency.get(term, 0) + 1))
+        for term in interest_terms
+    }
+    total_interest_weight = sum(interest_weights.values())
 
     # The seed keeps pagination stable for one visit, while a new refresh seed
     # changes exploration order instead of repeatedly pinning one post at top.
@@ -254,33 +331,91 @@ def _build_hybrid_feed(
 
     def score(post):
         age_hours = max(0, (now - post.created_at).total_seconds() / 3600)
-        freshness = max(0, 8 - (age_hours / 24))
+        freshness = 8 * math.exp(-age_hours / 48)
         engagement = (
             post.like_count * 1.5 +
             post.comment_count * 2.5 +
             post.share_count * 3
         )
+        engagement_score = (
+            4 * math.log1p(engagement) * math.exp(-age_hours / (24 * 7))
+        )
+        if post.impressions:
+            observed_rate = (engagement + 2) / (post.impressions + 40)
+            engagement_quality = max(0.5, min(2, observed_rate / 0.05))
+        else:
+            engagement_quality = 1
+        engagement_score *= engagement_quality
         relevance = 14 if post.author_id in followed_ids else 0
+        creator_affinity = min(
+            10,
+            3.5 * math.log1p(author_activity.get(post.author_id, 0)),
+        )
+        matching_interest_weight = sum(
+            weight for term, weight in interest_weights.items()
+            if content_terms[post.id].get(term, 0)
+        )
+        topic_relevance = (
+            8 * matching_interest_weight / total_interest_weight
+            if total_interest_weight else 0
+        )
+        local_relevance = (
+            2 if viewer_location and (post.location or '').strip().casefold() == viewer_location
+            else 0
+        )
         useful = 2 if post.author.user_type == 'investor' and post.author.is_approved else 0
         popular = 3 if engagement >= 8 and age_hours <= 48 else 0
         novelty = 7 if post.id not in seen_ids else 0
         just_created = 1000 if post.id == priority_post_id else 0
         return (
-            just_created + freshness + engagement + relevance + useful + popular + novelty +
+            just_created + freshness + engagement_score + relevance + creator_affinity +
+            topic_relevance + local_relevance + useful + popular + novelty +
             bucket_order[post.id] * 6
         )
 
-    ranked_posts = sorted(posts, key=score, reverse=True)
+    post_scores = {post.id: score(post) for post in posts}
+    ranked_posts = sorted(posts, key=lambda post: post_scores[post.id], reverse=True)
     selected = []
-    for post in ranked_posts:
-        if selected and post.author_id == selected[-1].author_id and any(
-            candidate.author_id != post.author_id for candidate in ranked_posts[len(selected):]
-        ):
-            continue
-        selected.append(post)
+    remaining = list(ranked_posts)
+    author_counts = Counter(post.author_id for post in remaining)
+    while remaining:
+        previous_author_id = selected[-1].author_id if selected else None
+        candidates = [
+            post for post in remaining
+            if post.author_id != previous_author_id
+        ] if previous_author_id is not None else list(remaining)
+        feasible_candidates = []
+        remaining_slots = len(remaining) - 1
+        for candidate in candidates:
+            author_counts[candidate.author_id] -= 1
+            is_feasible = all(
+                count <= (
+                    remaining_slots // 2
+                    if author_id == candidate.author_id
+                    else (remaining_slots + 1) // 2
+                )
+                for author_id, count in author_counts.items()
+                if count
+            )
+            author_counts[candidate.author_id] += 1
+            if is_feasible:
+                feasible_candidates.append(candidate)
 
-    selected_ids = {post.id for post in selected}
-    selected.extend(post for post in ranked_posts if post.id not in selected_ids)
+        if feasible_candidates:
+            candidates = feasible_candidates
+        elif not candidates:
+            candidates = list(remaining)
+        elif previous_author_id is None:
+            candidates = list(remaining)
+
+        priority_post = next(
+            (post for post in candidates if post.id == priority_post_id),
+            None,
+        )
+        next_post = priority_post or candidates[0]
+        selected.append(next_post)
+        remaining.remove(next_post)
+        author_counts[next_post.author_id] -= 1
     return selected
 
 

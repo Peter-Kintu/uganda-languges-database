@@ -5,6 +5,37 @@ The social feed has been completely redesigned to provide a world-class user exp
 
 ---
 
+## Feed ranking
+
+The server ranks a bounded set of recent posts using a lightweight, explainable
+heuristic. It combines freshness, time-decayed engagement, engagement relative
+to impressions, followed creators, recent likes/comments/shares, profile-topic
+and location matches, and whether a post has already been seen in the current
+session. A seeded exploration factor varies discovery between feed refreshes.
+The final ordering interleaves creators when possible without dropping posts;
+an explicitly new post remains prioritized.
+
+This is personalized ranking, not a trained recommendation model or a claim of
+parity with larger platforms. The app does not currently collect watch time or
+explicit "not interested" feedback, so those signals cannot inform ranking.
+
+## Creator post earnings
+
+The profile shows estimated post earnings from verified feed activity at
+UGX 0.01 per unique non-author impression, UGX 1 per non-author like, and
+UGX 2 per unique non-author commenter per post. Repeat impressions by the same
+viewer across sessions and additional comments by the same person on one post
+do not earn again. A creator's own impressions, likes, and comments are excluded.
+
+Creators can request any positive available balance. The server recalculates
+the balance when a request is submitted; client-provided totals are not trusted.
+Pending and approved requests are reserved against the available balance to
+prevent duplicate requests. Requests still require payout details and are
+reviewed and processed by the team; a displayed estimate is not an automatic
+transfer.
+
+---
+
 ## ✨ Key Features & Improvements
 
 ### 1. **Premium Visual Design**

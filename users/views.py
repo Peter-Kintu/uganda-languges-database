@@ -464,6 +464,53 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+POST_EARNING_RATES = {
+    'impression': Decimal('0.01'),
+    'like': Decimal('1.00'),
+    'comment': Decimal('2.00'),
+}
+
+
+def _post_earnings_summary(user, post_ids):
+    """Calculate estimated post earnings from unique, non-self engagement."""
+    if not Post:
+        earned = Decimal('0.00')
+        impressions = likes = comments = 0
+    else:
+        impressions = 0
+        if FeedImpression:
+            impressions = FeedImpression.objects.filter(
+                content_type='post',
+                object_id__in=post_ids,
+            ).exclude(viewer=user).values('object_id', 'viewer_id').distinct().count()
+        likes = Like.objects.filter(post__author=user).exclude(user=user).count() if Like else 0
+        comments = (
+            Comment.objects.filter(post__author=user)
+            .exclude(author=user)
+            .values('post_id', 'author_id')
+            .distinct()
+            .count()
+            if Comment else 0
+        )
+        earned = (
+            impressions * POST_EARNING_RATES['impression']
+            + likes * POST_EARNING_RATES['like']
+            + comments * POST_EARNING_RATES['comment']
+        ).quantize(Decimal('0.01'))
+
+    paid_or_reserved = PayoutRequest.objects.filter(
+        user=user,
+        status__in=('pending', 'approved'),
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    available = max(Decimal('0.00'), earned - paid_or_reserved)
+    return {
+        'impressions': impressions,
+        'likes': likes,
+        'comments': comments,
+        'earned': earned,
+        'available': available,
+    }
+
 
 def _send_welcome_email(user):
     if not user.email:
@@ -983,6 +1030,7 @@ def user_profile(request):
             user_posts = Post.objects.filter(author=user).order_by('-created_at')
             posts_count = user_posts.count()
 
+            earnings = _post_earnings_summary(user, user_posts.values('id'))
             if FeedImpression:
                 impressions = FeedImpression.objects.filter(
                     content_type='post', object_id__in=user_posts.values('id')
@@ -992,12 +1040,12 @@ def user_profile(request):
 
             likes_count = Like.objects.filter(post__author=user).count() if Like else 0
             job_ad_watch_count = getattr(user, 'post_ad_watch_count', 0)
-            can_request_payout = (
-                (impressions or 0) >= 10000 and
-                likes_count >= 100 and
-                job_ad_watch_count >= 100
-            )
-            post_earnings_amount = 10 if can_request_payout else 0
+            can_request_payout = earnings['available'] > 0
+            post_earnings_amount = earnings['earned']
+            available_post_earnings = earnings['available']
+            earning_impressions = earnings['impressions']
+            earning_likes = earnings['likes']
+            earning_comments = earnings['comments']
             pending_payout_request = PayoutRequest.objects.filter(user=user, status='pending').order_by('-created_at').first()
 
             # Watch time aggregation if available on Post model
@@ -1113,6 +1161,10 @@ def user_profile(request):
         'likes_count': likes_count if 'likes_count' in locals() else 0,
         'job_ad_watch_count': job_ad_watch_count if 'job_ad_watch_count' in locals() else getattr(user, 'post_ad_watch_count', 0),
         'post_earnings_amount': post_earnings_amount if 'post_earnings_amount' in locals() else 0,
+        'available_post_earnings': available_post_earnings if 'available_post_earnings' in locals() else Decimal('0.00'),
+        'earning_impressions': earning_impressions if 'earning_impressions' in locals() else 0,
+        'earning_likes': earning_likes if 'earning_likes' in locals() else 0,
+        'earning_comments': earning_comments if 'earning_comments' in locals() else 0,
         'can_request_payout': can_request_payout if 'can_request_payout' in locals() else False,
         'pending_payout_request': pending_payout_request if 'pending_payout_request' in locals() else None,
         'user_products': user_products,
@@ -1135,35 +1187,37 @@ def profile_payout_request(request):
         return redirect('users:profile')
 
     user = request.user
-    impressions = request.POST.get('impressions')
-    likes_count = request.POST.get('likes_count')
-    job_ad_watch_count = getattr(user, 'post_ad_watch_count', 0)
-    qualifies_for_request = (
-        (int(impressions or 0) >= 10000) and
-        (int(likes_count or 0) >= 100) and
-        job_ad_watch_count >= 100
-    )
-    if not qualifies_for_request:
-        messages.error(request, 'You are not yet eligible to request a payout. Continue growing your posts.')
-        return redirect('users:profile')
-
     card_type = request.POST.get('card_type', '').strip()
     card_number = request.POST.get('card_number', '').strip()
     bank_name = request.POST.get('bank_name', '').strip()
 
-    if not card_type or not card_number:
+    if card_type not in {'Visa', 'Mastercard', 'Debit Card'} or not re.fullmatch(r'\d{4}', card_number):
         messages.error(request, 'Please select a card type and enter the last 4 digits of your card.')
         return redirect('users:profile')
 
-    card_last4 = card_number[-4:] if len(card_number) >= 4 else card_number
-    PayoutRequest.objects.create(
-        user=user,
-        amount=10.00,
-        card_type=card_type,
-        card_last4=card_last4,
-        bank_name=bank_name if bank_name else None,
-        status='pending',
-    )
+    with transaction.atomic():
+        locked_user = User.objects.select_for_update().get(pk=user.pk)
+        pending_request = PayoutRequest.objects.filter(
+            user=locked_user,
+            status='pending',
+        ).exists()
+        post_ids = Post.objects.filter(author=locked_user).values('id') if Post else []
+        earnings = _post_earnings_summary(locked_user, post_ids)
+        if pending_request:
+            messages.error(request, 'You already have a payout request being processed.')
+            return redirect('users:profile')
+        if earnings['available'] <= 0:
+            messages.error(request, 'You need a positive post earnings balance to request a payout.')
+            return redirect('users:profile')
+
+        PayoutRequest.objects.create(
+            user=locked_user,
+            amount=earnings['available'],
+            card_type=card_type,
+            card_last4=card_number,
+            bank_name=bank_name if bank_name else None,
+            status='pending',
+        )
     messages.success(request, 'Your payout request has been submitted. We will process it shortly.')
     return redirect('users:profile')
 

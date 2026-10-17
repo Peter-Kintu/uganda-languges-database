@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from io import BytesIO
 import re
+from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -12,6 +13,7 @@ from django.urls import reverse
 from PIL import Image
 from types import SimpleNamespace
 
+from hotel.models import Comment, FeedImpression, Like, Post
 from myuganda import settings as project_settings
 from myuganda.dbrouters import ReadReplicaRouter
 from myuganda.middleware import (
@@ -20,7 +22,7 @@ from myuganda.middleware import (
     rate_limit_cache,
     rate_limit_fallback_cache,
 )
-from users.models import AgentMemory, AgentPlan, EventBooking, PesapalPayment, UserSubscription
+from users.models import AgentMemory, AgentPlan, EventBooking, PayoutRequest, PesapalPayment, UserSubscription
 from users.tasks import send_user_notification_task
 from users.views import (
     REGISTRATION_DATA_SESSION_KEY,
@@ -31,6 +33,78 @@ from users.views import (
 
 
 User = get_user_model()
+
+
+class PostEarningsTests(TestCase):
+    def setUp(self):
+        self.creator = User.objects.create_user(username='post_earner', password='secret1234')
+        self.viewer = User.objects.create_user(username='post_viewer', password='secret1234')
+        self.post = Post.objects.create(author=self.creator, content='Creator post')
+
+    def test_profile_shows_earnings_from_one_verified_impression_like_and_comment(self):
+        FeedImpression.objects.create(
+            viewer=self.viewer, session_key='first-session',
+            content_type='post', object_id=self.post.pk,
+        )
+        FeedImpression.objects.create(
+            viewer=self.viewer, session_key='second-session',
+            content_type='post', object_id=self.post.pk,
+        )
+        FeedImpression.objects.create(
+            viewer=self.creator, session_key='creator-session',
+            content_type='post', object_id=self.post.pk,
+        )
+        Like.objects.create(post=self.post, user=self.viewer)
+        Like.objects.create(post=self.post, user=self.creator)
+        Comment.objects.create(post=self.post, author=self.viewer, content='First comment')
+        Comment.objects.create(post=self.post, author=self.viewer, content='Another comment')
+        Comment.objects.create(post=self.post, author=self.creator, content='Self comment')
+        self.client.force_login(self.creator)
+
+        response = self.client.get(reverse('users:profile'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'UGX 3.01')
+        self.assertContains(response, '1 verified impression')
+        self.assertContains(response, '1 unique like')
+        self.assertContains(response, '1 unique commenter')
+
+    def test_any_positive_verified_balance_can_be_requested_once(self):
+        FeedImpression.objects.create(
+            viewer=self.viewer, session_key='verified-session',
+            content_type='post', object_id=self.post.pk,
+        )
+        self.client.force_login(self.creator)
+        payout_url = reverse('users:profile_payout_request')
+
+        response = self.client.post(payout_url, {
+            'card_type': 'Visa',
+            'card_number': '1234',
+            'impressions': '1000000',
+            'likes_count': '1000000',
+        })
+
+        self.assertRedirects(response, reverse('users:profile'))
+        payout = PayoutRequest.objects.get(user=self.creator)
+        self.assertEqual(payout.amount, Decimal('0.01'))
+        self.assertEqual(payout.status, 'pending')
+
+        self.client.post(payout_url, {'card_type': 'Visa', 'card_number': '1234'})
+
+        self.assertEqual(PayoutRequest.objects.filter(user=self.creator).count(), 1)
+
+    def test_self_impressions_do_not_generate_earnings(self):
+        FeedImpression.objects.create(
+            viewer=self.creator, session_key='self-session',
+            content_type='post', object_id=self.post.pk,
+        )
+        self.client.force_login(self.creator)
+
+        response = self.client.get(reverse('users:profile'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'UGX 0.00')
+        self.assertNotContains(response, 'Request payout of UGX')
 
 
 class AgentCommandTests(TestCase):
