@@ -140,6 +140,7 @@ if not DEBUG and not TESTING:
         "https://fundingchoicesmessages.google.com",  # Google consent messaging
         "https://ep1.adtrafficquality.google",  # Google AdSense traffic quality checks
         "https://beavercolourfuldelinquent.com",  # Adestra anti-adblock requests
+        "https://cdn.cloudvideosa.com",  # Native banner creative requests
     )
     SECURE_CSP_MEDIA_SRC = (
         "'self'",
@@ -155,6 +156,7 @@ if not DEBUG and not TESTING:
         "https://tpc.googlesyndication.com",  # Google AdSense frames
         "https://kintu1-africana-ai-video.hf.space",  # Inline video advert maker
         "https://beavercolourfuldelinquent.com",  # Adestra anti-adblock frames
+        "https://cdn.cloudvideosa.com",  # Native banner creative frames
     )
     SECURE_CSP_REPORT_URI = '/admin/csp-report/'  # Optional: CSP violation reporting
 
