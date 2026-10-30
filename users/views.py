@@ -469,6 +469,8 @@ POST_EARNING_RATES = {
     'like': Decimal('1.00'),
     'comment': Decimal('2.00'),
 }
+def _post_earnings_min_payout():
+    return Decimal(str(getattr(settings, 'POST_EARNINGS_MIN_PAYOUT', '1000.00')))
 
 
 def _post_earnings_summary(user, post_ids):
@@ -483,9 +485,14 @@ def _post_earnings_summary(user, post_ids):
                 content_type='post',
                 object_id__in=post_ids,
             ).exclude(viewer=user).values('object_id', 'viewer_id').distinct().count()
-        likes = Like.objects.filter(post__author=user).exclude(user=user).count() if Like else 0
+        likes = (
+            Like.objects.filter(post__author=user, user__is_active=True)
+            .exclude(user=user)
+            .count()
+            if Like else 0
+        )
         comments = (
-            Comment.objects.filter(post__author=user)
+            Comment.objects.filter(post__author=user, author__is_active=True)
             .exclude(author=user)
             .values('post_id', 'author_id')
             .distinct()
@@ -1040,7 +1047,7 @@ def user_profile(request):
 
             likes_count = Like.objects.filter(post__author=user).count() if Like else 0
             job_ad_watch_count = getattr(user, 'post_ad_watch_count', 0)
-            can_request_payout = earnings['available'] > 0
+            can_request_payout = earnings['available'] >= _post_earnings_min_payout()
             post_earnings_amount = earnings['earned']
             available_post_earnings = earnings['available']
             earning_impressions = earnings['impressions']
@@ -1162,6 +1169,7 @@ def user_profile(request):
         'job_ad_watch_count': job_ad_watch_count if 'job_ad_watch_count' in locals() else getattr(user, 'post_ad_watch_count', 0),
         'post_earnings_amount': post_earnings_amount if 'post_earnings_amount' in locals() else 0,
         'available_post_earnings': available_post_earnings if 'available_post_earnings' in locals() else Decimal('0.00'),
+        'post_earnings_min_payout': _post_earnings_min_payout(),
         'earning_impressions': earning_impressions if 'earning_impressions' in locals() else 0,
         'earning_likes': earning_likes if 'earning_likes' in locals() else 0,
         'earning_comments': earning_comments if 'earning_comments' in locals() else 0,
@@ -1206,8 +1214,12 @@ def profile_payout_request(request):
         if pending_request:
             messages.error(request, 'You already have a payout request being processed.')
             return redirect('users:profile')
-        if earnings['available'] <= 0:
-            messages.error(request, 'You need a positive post earnings balance to request a payout.')
+        minimum_payout = _post_earnings_min_payout()
+        if earnings['available'] < minimum_payout:
+            messages.error(
+                request,
+                f'You need at least UGX {minimum_payout:,.2f} in verified post earnings to request a payout.',
+            )
             return redirect('users:profile')
 
         PayoutRequest.objects.create(

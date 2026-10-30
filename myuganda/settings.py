@@ -108,6 +108,7 @@ if not DEBUG and not TESTING:
         "https://googleads.g.doubleclick.net",  # Google AdSense scripts
         "https://www.googletagservices.com",  # Google ad services
         "https://translate.google.com",  # Google Translate widget
+        "https://pl29733509.profitableratecpmnetwork.com",  # Adestra popunder
     )
     SECURE_CSP_STYLE_SRC = (
         "'self'",
@@ -138,6 +139,7 @@ if not DEBUG and not TESTING:
         "https://googleads.g.doubleclick.net",  # Google AdSense requests
         "https://fundingchoicesmessages.google.com",  # Google consent messaging
         "https://ep1.adtrafficquality.google",  # Google AdSense traffic quality checks
+        "https://pl29733509.profitableratecpmnetwork.com",  # Adestra popunder requests
     )
     SECURE_CSP_MEDIA_SRC = (
         "'self'",
@@ -152,6 +154,7 @@ if not DEBUG and not TESTING:
         "https://googleads.g.doubleclick.net",  # Google AdSense frames
         "https://tpc.googlesyndication.com",  # Google AdSense frames
         "https://kintu1-africana-ai-video.hf.space",  # Inline video advert maker
+        "https://pl29733509.profitableratecpmnetwork.com",  # Adestra popunder frames
     )
     SECURE_CSP_REPORT_URI = '/admin/csp-report/'  # Optional: CSP violation reporting
 

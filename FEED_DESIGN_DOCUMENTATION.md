@@ -27,8 +27,10 @@ UGX 2 per unique non-author commenter per post. Repeat impressions by the same
 viewer across sessions and additional comments by the same person on one post
 do not earn again. A creator's own impressions, likes, and comments are excluded.
 
-Creators can request any positive available balance. The server recalculates
-the balance when a request is submitted; client-provided totals are not trusted.
+Creators can request an available balance once it reaches the configurable
+minimum payout of UGX 1,000.00 (`POST_EARNINGS_MIN_PAYOUT`). The server
+recalculates the balance when a request is submitted; client-provided totals
+are not trusted. Only active, non-self likes and comments are included.
 Pending and approved requests are reserved against the available balance to
 prevent duplicate requests. Requests still require payout details and are
 reviewed and processed by the team; a displayed estimate is not an automatic

@@ -69,7 +69,8 @@ class PostEarningsTests(TestCase):
         self.assertContains(response, '1 unique like')
         self.assertContains(response, '1 unique commenter')
 
-    def test_any_positive_verified_balance_can_be_requested_once(self):
+    @override_settings(POST_EARNINGS_MIN_PAYOUT=Decimal('0.01'))
+    def test_verified_balance_can_be_requested_once(self):
         FeedImpression.objects.create(
             viewer=self.viewer, session_key='verified-session',
             content_type='post', object_id=self.post.pk,
@@ -92,6 +93,21 @@ class PostEarningsTests(TestCase):
         self.client.post(payout_url, {'card_type': 'Visa', 'card_number': '1234'})
 
         self.assertEqual(PayoutRequest.objects.filter(user=self.creator).count(), 1)
+
+    def test_small_verified_balance_cannot_be_requested(self):
+        FeedImpression.objects.create(
+            viewer=self.viewer, session_key='small-balance-session',
+            content_type='post', object_id=self.post.pk,
+        )
+        self.client.force_login(self.creator)
+
+        response = self.client.post(reverse('users:profile_payout_request'), {
+            'card_type': 'Visa',
+            'card_number': '1234',
+        })
+
+        self.assertRedirects(response, reverse('users:profile'))
+        self.assertFalse(PayoutRequest.objects.filter(user=self.creator).exists())
 
     def test_self_impressions_do_not_generate_earnings(self):
         FeedImpression.objects.create(

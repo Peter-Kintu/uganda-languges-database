@@ -331,7 +331,7 @@
                                 <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                                     <p class="text-xs uppercase tracking-[0.18em] text-emerald-700">Available Post Earnings</p>
                                     <p class="mt-2 text-2xl font-bold text-emerald-800">UGX {{ available_post_earnings|default:0|floatformat:2 }}</p>
-                                    <p class="mt-1 text-xs text-emerald-700">Your balance starts growing with your first verified engagement.</p>
+                                    <p class="mt-1 text-xs text-emerald-700">Only verified, non-self activity is included. Minimum payout: UGX {{ post_earnings_min_payout|floatformat:2 }}.</p>
                                 </div>
                                 <div class="rounded-2xl bg-white border border-slate-200 p-4">
                                     <div class="flex items-center justify-between mb-3">
@@ -403,7 +403,7 @@
                                             <span class="text-xs text-slate-500">Bank / Issuer</span>
                                             <input name="bank_name" placeholder="Bank name (optional)" class="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
                                         </label>
-                                        <p class="text-xs text-slate-500">You can request a payout for any positive available balance. Payouts are reviewed and processed by our team.</p>
+                                        <p class="text-xs text-slate-500">Payouts require at least UGX {{ post_earnings_min_payout|floatformat:2 }} in available verified earnings. Requests are reviewed and processed by our team.</p>
                                         <button type="submit" class="w-full rounded-3xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-700">Request payout of UGX {{ available_post_earnings|floatformat:2 }}</button>
                                     </form>
                                 {% elif pending_payout_request %}
