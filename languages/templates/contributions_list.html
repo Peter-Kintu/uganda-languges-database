@@ -535,15 +535,16 @@
                         <a href="?job_id={{ job.pk }}" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full transition-colors hover:bg-blue-700">Explore</a>
                     </div>
                 </div>
+                {% if forloop.counter == 3 %}
+                <div class="jobs-ad-banner rounded-2xl p-7 shadow-sm col-span-1" aria-label="Advertisement">
+                    <span class="jobs-ad-banner-label">Sponsored Advertisement</span>
+                    <script async="async" data-cfasync="false" src="https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js"></script>
+                    <div id="container-027cef63835745dca43e3496ef638b7a"></div>
+                </div>
+                {% endif %}
                 {% endfor %}
             </div>
             {% endif %}
-
-            <div class="jobs-ad-banner rounded-2xl p-7 shadow-sm mb-10" aria-label="Advertisement">
-                <span class="jobs-ad-banner-label">Sponsored Advertisement</span>
-                <script async="async" data-cfasync="false" src="https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js"></script>
-                <div id="container-027cef63835745dca43e3496ef638b7a"></div>
-            </div>
 
             <!-- Job Cards Grid -->
             <div class="jobs-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-10">
@@ -697,6 +698,13 @@
                     </a>
                     {% endif %}
                 </div>
+                {% if not priority_jobs and forloop.counter == 1 %}
+                <div class="jobs-ad-banner rounded-2xl p-7 shadow-sm col-span-1" aria-label="Advertisement">
+                    <span class="jobs-ad-banner-label">Sponsored Advertisement</span>
+                    <script async="async" data-cfasync="false" src="https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js"></script>
+                    <div id="container-027cef63835745dca43e3496ef638b7a"></div>
+                </div>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 
@@ -736,6 +744,13 @@
                         </a>
                     </div>
                 </div>
+                {% if not priority_jobs and not external_jobs and forloop.counter == 1 %}
+                <div class="jobs-ad-banner rounded-2xl p-7 shadow-sm col-span-1" aria-label="Advertisement">
+                    <span class="jobs-ad-banner-label">Sponsored Advertisement</span>
+                    <script async="async" data-cfasync="false" src="https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js"></script>
+                    <div id="container-027cef63835745dca43e3496ef638b7a"></div>
+                </div>
+                {% endif %}
                 {% endfor %}
             </div>
 
