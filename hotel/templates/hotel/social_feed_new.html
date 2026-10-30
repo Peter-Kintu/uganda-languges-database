@@ -417,6 +417,24 @@
         margin-top: 20px;
     }
 
+    .feed-ad-card {
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .feed-ad-card-label {
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
     .load-more-button {
         display: inline-flex;
         align-items: center;
@@ -2475,6 +2493,15 @@
 
                     {% if recommended_jobs and forloop.counter == job_position %}
                         {% include "hotel/recommended_jobs.html" %}
+                    {% endif %}
+
+                    {% if forloop.counter|divisibleby:3 and not forloop.last %}
+                        <div class="post-card feed-ad-card" aria-label="Advertisement">
+                            <div>
+                                <span class="feed-ad-card-label">Advertisement</span>
+                                <p style="margin-top: 10px; color: #94a3b8; font-size: 13px;">Sponsored content</p>
+                            </div>
+                        </div>
                     {% endif %}
 
             {% endfor %}

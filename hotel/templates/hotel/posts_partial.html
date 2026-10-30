@@ -98,6 +98,15 @@
             </div>
         {% endif %}
 
+        {% if forloop.counter|divisibleby:3 and not forloop.last %}
+            <div class="post-card feed-ad-card" aria-label="Advertisement">
+                <div>
+                    <span class="feed-ad-card-label">Advertisement</span>
+                    <p style="margin-top: 10px; color: #94a3b8; font-size: 13px;">Sponsored content</p>
+                </div>
+            </div>
+        {% endif %}
+
         <!-- Comments Section -->
         <div class="comments-section" id="comments-{{ post.id }}" style="display: none;">
             {% for comment in post.comments.all|slice:":3" %}

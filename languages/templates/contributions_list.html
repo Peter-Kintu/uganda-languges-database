@@ -156,7 +156,7 @@
             row-gap: 2.5rem;
         }
 
-        .jobs-grid > div:not(.jobs-ad) {
+        .jobs-grid > div:not(.jobs-ad):not(.jobs-ad-banner) {
             min-width: 0;
             display: flex;
             flex-direction: column;
@@ -173,13 +173,31 @@
             line-height: 1.5;
         }
 
-        .jobs-grid > div:not(.jobs-ad) > a:last-child {
+        .jobs-grid > div:not(.jobs-ad):not(.jobs-ad-banner) > a:last-child {
             margin-top: auto;
             min-height: 2.75rem;
         }
 
         .jobs-ad {
             min-height: 250px;
+        }
+
+        .jobs-ad-banner {
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .jobs-ad-banner-label {
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
         }
 
         /* PREMIUM ANIMATED CARD */
@@ -523,6 +541,14 @@
                         <a href="?job_id={{ job.pk }}" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full transition-colors hover:bg-blue-700">Explore</a>
                     </div>
                 </div>
+                {% if forloop.counter|divisibleby:3 and not forloop.last %}
+                <div class="jobs-ad-banner rounded-2xl p-7 shadow-sm col-span-1" aria-label="Advertisement">
+                    <div>
+                        <span class="jobs-ad-banner-label">Advertisement</span>
+                        <p class="mt-2 text-sm text-slate-400">Sponsored content</p>
+                    </div>
+                </div>
+                {% endif %}
                 {% endfor %}
             </div>
             {% endif %}
@@ -679,6 +705,14 @@
                     </a>
                     {% endif %}
                 </div>
+                {% if forloop.counter|divisibleby:3 and not forloop.last %}
+                <div class="jobs-ad-banner rounded-2xl p-7 shadow-sm col-span-1" aria-label="Advertisement">
+                    <div>
+                        <span class="jobs-ad-banner-label">Advertisement</span>
+                        <p class="mt-2 text-sm text-slate-400">Sponsored content</p>
+                    </div>
+                </div>
+                {% endif %}
                 {% endfor %}
                 {% endif %}
 
@@ -718,6 +752,14 @@
                         </a>
                     </div>
                 </div>
+                {% if forloop.counter|divisibleby:3 and not forloop.last %}
+                <div class="jobs-ad-banner rounded-2xl p-7 shadow-sm col-span-1" aria-label="Advertisement">
+                    <div>
+                        <span class="jobs-ad-banner-label">Advertisement</span>
+                        <p class="mt-2 text-sm text-slate-400">Sponsored content</p>
+                    </div>
+                </div>
+                {% endif %}
                 {% endfor %}
             </div>
 
