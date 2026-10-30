@@ -98,15 +98,6 @@
             </div>
         {% endif %}
 
-        {% if forloop.counter|divisibleby:3 and not forloop.last %}
-            <div class="post-card feed-ad-card" aria-label="Advertisement">
-                <div>
-                    <span class="feed-ad-card-label">Advertisement</span>
-                    <p style="margin-top: 10px; color: #94a3b8; font-size: 13px;">Sponsored content</p>
-                </div>
-            </div>
-        {% endif %}
-
         <!-- Comments Section -->
         <div class="comments-section" id="comments-{{ post.id }}" style="display: none;">
             {% for comment in post.comments.all|slice:":3" %}
@@ -129,6 +120,12 @@
                         {% endif %}
                     </div>
                 </div>
+                {% if feed_start_index|add:forloop.counter in feed_ad_positions and not forloop.last %}
+                    <div class="post-card feed-ad-card" aria-label="Advertisement">
+                        <span class="feed-ad-card-label">Sponsored Advertisement</span>
+                        <div id="container-027cef63835745dca43e3496ef638b7a-{{ feed_start_index|add:forloop.counter }}" class="native-banner-container"></div>
+                    </div>
+                {% endif %}
             {% endfor %}
             {% if request.user.is_authenticated and not is_crawler %}
                 <form onsubmit="addComment({{ post.id }}, this); return false;" class="comment-input-wrapper">

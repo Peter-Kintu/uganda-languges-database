@@ -435,6 +435,12 @@
         text-transform: uppercase;
     }
 
+    .native-banner-container {
+        width: 100%;
+        min-height: 90px;
+        margin-top: 10px;
+    }
+
     .load-more-button {
         display: inline-flex;
         align-items: center;
@@ -2255,16 +2261,6 @@
 
 <div id="job-access-toast" class="toast" role="status" aria-live="polite"></div>
 
-{% if not is_crawler %}
-    <!-- Load the anti-adblock popunder provider once, outside the post loop. -->
-    <script
-        id="adestra-popunder-script"
-        src="https://beavercolourfuldelinquent.com/47/ed/9a/47ed9a731ab3501ff453d32628b13ee6.js"
-        referrerpolicy="no-referrer-when-downgrade"
-        onerror="this.dataset.loadError = 'true';">
-    </script>
-{% endif %}
-
 <!-- Main Container -->
 <div class="container">
     <!-- Feed -->
@@ -2495,12 +2491,10 @@
                         {% include "hotel/recommended_jobs.html" %}
                     {% endif %}
 
-                    {% if forloop.counter|divisibleby:3 and not forloop.last %}
+                    {% if feed_start_index|add:forloop.counter in feed_ad_positions and not forloop.last %}
                         <div class="post-card feed-ad-card" aria-label="Advertisement">
-                            <div>
-                                <span class="feed-ad-card-label">Advertisement</span>
-                                <p style="margin-top: 10px; color: #94a3b8; font-size: 13px;">Sponsored content</p>
-                            </div>
+                            <span class="feed-ad-card-label">Sponsored Advertisement</span>
+                            <div id="container-027cef63835745dca43e3496ef638b7a-{{ feed_start_index|add:forloop.counter }}" class="native-banner-container"></div>
                         </div>
                     {% endif %}
 
@@ -3506,7 +3500,8 @@
                 // Reinitialize functionality for newly inserted posts, including Show More.
                     initShowMoreButtons();
                 initPostVisibilityObserver();
-                hasLoadedMorePosts = true;
+                    initializeNativeBannerAds();
+                    hasLoadedMorePosts = true;
                 currentPage = nextPage;
                 if (!data.has_next) {
                     hasNextPage = false;
@@ -3524,6 +3519,25 @@
                 updateLoadMoreIndicator(true);
             }
         }
+    }
+</script>
+
+<script>
+    function initializeNativeBannerAds() {
+        document.querySelectorAll('.native-banner-container:not([data-native-banner-ready])').forEach(function(container) {
+            container.dataset.nativeBannerReady = 'true';
+            const script = document.createElement('script');
+            script.async = true;
+            script.setAttribute('data-cfasync', 'false');
+            script.src = 'https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js';
+            container.parentNode.insertBefore(script, container);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeNativeBannerAds);
+    } else {
+        initializeNativeBannerAds();
     }
 </script>
 
