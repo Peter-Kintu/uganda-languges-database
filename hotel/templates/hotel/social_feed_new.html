@@ -2485,6 +2485,14 @@
                         {% include "hotel/recommended_jobs.html" %}
                     {% endif %}
 
+                    {% if forloop.counter == 3 %}
+                        <div class="post-card feed-ad-card" aria-label="Advertisement">
+                            <span class="feed-ad-card-label">Sponsored Advertisement</span>
+                            <script async="async" data-cfasync="false" src="https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js"></script>
+                            <div id="container-027cef63835745dca43e3496ef638b7a"></div>
+                        </div>
+                    {% endif %}
+
             {% endfor %}
             {% if page_obj.has_next %}
             <div class="load-more-container">
