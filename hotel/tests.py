@@ -133,6 +133,36 @@ class HybridFeedTests(TestCase):
 		self.assertEqual({post.id for post in first_feed}, {post.id for post in second_feed})
 		self.assertNotEqual([post.id for post in first_feed], [post.id for post in second_feed])
 
+	def test_unseen_posts_are_preferred_over_seen_posts_when_other_signals_match(self):
+		seen_post = Post.objects.create(author=self.popular_user, content='Seen update')
+		unseen_post = Post.objects.create(author=self.investor, content='Unseen update')
+		FeedImpression.objects.create(
+			viewer=self.user,
+			session_key='ranking-session',
+			content_type='post',
+			object_id=seen_post.id,
+		)
+
+		feed = _build_hybrid_feed(
+			self.user,
+			feed_seed='novelty-seed',
+			session_key='ranking-session',
+		)
+
+		self.assertEqual(feed[0], unseen_post)
+
+	def test_author_saturation_is_limited_without_dropping_posts(self):
+		repeated_posts = [
+			Post.objects.create(author=self.popular_user, content=f'Repeated post {index}')
+			for index in range(5)
+		]
+		other_post = Post.objects.create(author=self.investor, content='Independent update')
+
+		feed = _build_hybrid_feed(self.user, feed_seed='saturation-seed')
+
+		self.assertEqual(set(feed), set(repeated_posts + [other_post]))
+		self.assertEqual(feed[0], other_post)
+
 	def test_market_feed_handles_missing_profile_fields(self):
 		request = RequestFactory().get('/hotel/')
 		request.user = self.user

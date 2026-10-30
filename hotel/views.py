@@ -306,6 +306,7 @@ def _build_hybrid_feed(
         post.id: Counter(re.findall(r'[^\W\d_]{3,}', post.content.casefold()))
         for post in posts
     } if interest_terms else {}
+    author_post_counts = Counter(post.author_id for post in posts)
     document_frequency = Counter(
         term
         for terms in content_terms.values()
@@ -341,6 +342,9 @@ def _build_hybrid_feed(
             4 * math.log1p(engagement) * math.exp(-age_hours / (24 * 7))
         )
         if post.impressions:
+            # Smooth the rate so a post with very few impressions cannot win
+            # from one accidental interaction, while strong posts still get
+            # a meaningful boost.
             observed_rate = (engagement + 2) / (post.impressions + 40)
             engagement_quality = max(0.5, min(2, observed_rate / 0.05))
         else:
@@ -365,12 +369,16 @@ def _build_hybrid_feed(
         )
         useful = 2 if post.author.user_type == 'investor' and post.author.is_approved else 0
         popular = 3 if engagement >= 8 and age_hours <= 48 else 0
-        novelty = 7 if post.id not in seen_ids else 0
+        novelty = 7 if post.id not in seen_ids else -4
+        author_saturation = min(
+            6,
+            max(0, author_post_counts[post.author_id] - 1) * 1.5,
+        )
         just_created = 1000 if post.id == priority_post_id else 0
         return (
             just_created + freshness + engagement_score + relevance + creator_affinity +
             topic_relevance + local_relevance + useful + popular + novelty +
-            bucket_order[post.id] * 6
+            bucket_order[post.id] * 6 - author_saturation
         )
 
     post_scores = {post.id: score(post) for post in posts}
