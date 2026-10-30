@@ -3530,9 +3530,14 @@
             script.async = true;
             script.setAttribute('data-cfasync', 'false');
             script.src = 'https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js';
-            container.parentNode.insertBefore(script, container);
+            container.appendChild(script);
         });
     }
+
+    const nativeBannerObserver = new MutationObserver(function() {
+        initializeNativeBannerAds();
+    });
+    nativeBannerObserver.observe(document.body, { childList: true, subtree: true });
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initializeNativeBannerAds);
