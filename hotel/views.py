@@ -651,7 +651,6 @@ def social_feed(request):
         html = render_to_string('hotel/posts_partial.html', {
             'posts': posts,
             'feed_start_index': (page_obj.number - 1) * paginator.per_page,
-            'feed_ad_positions': range(3, paginator.count + 1, 3),
             'request': request,
             'current_lang': target_lang,
             'market_products': market_products,
@@ -703,7 +702,6 @@ def social_feed(request):
         'posts': posts,
         'page_obj': page_obj,
         'feed_start_index': (page_obj.number - 1) * paginator.per_page,
-        'feed_ad_positions': range(3, paginator.count + 1, 3),
         'connections': connections,
         'following_count': following_count,
         'all_users': all_users,

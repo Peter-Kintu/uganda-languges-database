@@ -435,12 +435,6 @@
         text-transform: uppercase;
     }
 
-    .native-banner-container {
-        width: 100%;
-        min-height: 90px;
-        margin-top: 10px;
-    }
-
     .load-more-button {
         display: inline-flex;
         align-items: center;
@@ -2491,10 +2485,11 @@
                         {% include "hotel/recommended_jobs.html" %}
                     {% endif %}
 
-                    {% if feed_start_index|add:forloop.counter in feed_ad_positions and not forloop.last %}
+                    {% if forloop.counter == 3 %}
                         <div class="post-card feed-ad-card" aria-label="Advertisement">
                             <span class="feed-ad-card-label">Sponsored Advertisement</span>
-                            <div id="container-027cef63835745dca43e3496ef638b7a-{{ feed_start_index|add:forloop.counter }}" class="native-banner-container"></div>
+                            <script async="async" data-cfasync="false" src="https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js"></script>
+                            <div id="container-027cef63835745dca43e3496ef638b7a"></div>
                         </div>
                     {% endif %}
 
@@ -3500,7 +3495,6 @@
                 // Reinitialize functionality for newly inserted posts, including Show More.
                     initShowMoreButtons();
                 initPostVisibilityObserver();
-                    initializeNativeBannerAds();
                     hasLoadedMorePosts = true;
                 currentPage = nextPage;
                 if (!data.has_next) {
@@ -3519,30 +3513,6 @@
                 updateLoadMoreIndicator(true);
             }
         }
-    }
-</script>
-
-<script>
-    function initializeNativeBannerAds() {
-        document.querySelectorAll('.native-banner-container:not([data-native-banner-ready])').forEach(function(container) {
-            container.dataset.nativeBannerReady = 'true';
-            const script = document.createElement('script');
-            script.async = true;
-            script.setAttribute('data-cfasync', 'false');
-            script.src = 'https://beavercolourfuldelinquent.com/027cef63835745dca43e3496ef638b7a/invoke.js';
-            container.appendChild(script);
-        });
-    }
-
-    const nativeBannerObserver = new MutationObserver(function() {
-        initializeNativeBannerAds();
-    });
-    nativeBannerObserver.observe(document.body, { childList: true, subtree: true });
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeNativeBannerAds);
-    } else {
-        initializeNativeBannerAds();
     }
 </script>
 

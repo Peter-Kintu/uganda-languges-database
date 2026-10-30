@@ -120,12 +120,6 @@
                         {% endif %}
                     </div>
                 </div>
-                {% if feed_start_index|add:forloop.counter in feed_ad_positions and not forloop.last %}
-                    <div class="post-card feed-ad-card" aria-label="Advertisement">
-                        <span class="feed-ad-card-label">Sponsored Advertisement</span>
-                        <div id="container-027cef63835745dca43e3496ef638b7a-{{ feed_start_index|add:forloop.counter }}" class="native-banner-container"></div>
-                    </div>
-                {% endif %}
             {% endfor %}
             {% if request.user.is_authenticated and not is_crawler %}
                 <form onsubmit="addComment({{ post.id }}, this); return false;" class="comment-input-wrapper">
