@@ -117,9 +117,14 @@
     const MAX_UPLOAD_MB = 80;
     const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
     const MAX_UPLOAD_ATTEMPTS = 3;
+    const canUseBrowserCompression = typeof SharedArrayBuffer !== 'undefined' && window.crossOriginIsolated;
 
     // Test FFmpeg availability on page load
     document.addEventListener('DOMContentLoaded', async () => {
+        if (!canUseBrowserCompression) {
+            console.info('ℹ️ Browser compression unavailable; the original video will be uploaded.');
+            return;
+        }
         console.log('🔍 Checking FFmpeg availability...');
         try {
             // Pre-load FFmpeg to catch errors early
@@ -273,6 +278,10 @@
     }
 
     async function compressVideo(file) {
+        if (!canUseBrowserCompression) {
+            return null;
+        }
+
         const startTime = Date.now();
         try {
             console.log('📹 Starting FFmpeg compression...');
@@ -373,7 +382,9 @@
         const caption = document.querySelector('textarea[name="caption"]').value;
         const uploadId = await stageToIndexedDB(file, caption);
         
-        btnText.innerText = "COMPRESSING VIDEO (0$ STORAGE OPTIMIZATION)...";
+        btnText.innerText = canUseBrowserCompression
+            ? "COMPRESSING VIDEO (0$ STORAGE OPTIMIZATION)..."
+            : "PREPARING VIDEO FOR UPLOAD...";
 
         // --- STEP 2: RUN FFMPEG COMPRESSION (Browser-side optimization) ---
         let uploadBlob = file;  // Fallback to original file
