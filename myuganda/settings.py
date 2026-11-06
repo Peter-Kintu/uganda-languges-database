@@ -99,6 +99,7 @@ if not DEBUG and not TESTING:
     SECURE_CSP_SCRIPT_SRC = (
         "'self'",
         "'unsafe-inline'",  # Existing templates use inline initialization scripts
+        "blob:",  # FFmpeg.wasm worker script
         "https://unpkg.com",  # FFmpeg.wasm
         "https://cdn.jsdelivr.net",  # Optional: alternative CDN
         "https://cdnjs.cloudflare.com",  # Markdown and browser-side utilities
