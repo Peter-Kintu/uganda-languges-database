@@ -151,6 +151,7 @@ if not DEBUG and not TESTING:
         "https://fizzyacerbitymellow.com",  # Adsterra impression pixel
         "https://sleepoverlimitprofound.com",  # Adsterra impression pixel
         "https://furiousexpansion.com",  # Adsterra impression pixel
+        "https://workdeadlinededicate.com",  # Adsterra social-bar runtime and impression pixel
     )
     SECURE_CSP_MEDIA_SRC = (
         "'self'",
