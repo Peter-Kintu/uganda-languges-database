@@ -148,6 +148,7 @@ if not DEBUG and not TESTING:
         "https://pl29182723.profitablecpmratenetwork.com",  # Adsterra native ad requests
         "https://portalfluently.com",  # Adsterra social-bar requests
         "https://fizzyacerbitymellow.com",  # Adsterra impression pixel
+        "https://sleepoverlimitprofound.com",  # Adsterra impression pixel
     )
     SECURE_CSP_MEDIA_SRC = (
         "'self'",
