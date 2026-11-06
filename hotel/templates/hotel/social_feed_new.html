@@ -2489,8 +2489,7 @@
                         <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
                             <div>
                                 <div class="feed-ad-card-label">Sponsored</div>
-                                <script async="async" data-cfasync="false" src="https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js"></script>
-                                <div id="container-2c34356cc6efc4c07773cf2861e26899" style="min-height: 180px;"></div>
+                                <div data-adsterra-container="container-2c34356cc6efc4c07773cf2861e26899" style="min-height: 180px;"></div>
                             </div>
                         </section>
                     {% endif %}
@@ -3431,6 +3430,27 @@
     let hasNextPage = {{ page_obj.has_next|lower }};
     let hasLoadedMorePosts = false;
     const sentinel = document.getElementById('load-more-sentinel');
+    const adsterraScriptUrl = 'https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js';
+
+    function loadAdsterraNativeBanners(root = document) {
+        root.querySelectorAll('.feed-ad-card').forEach((card) => {
+            if (card.dataset.adsterraLoaded === 'true') return;
+
+            const container = card.querySelector('[data-adsterra-container]');
+            if (!container) return;
+
+            card.dataset.adsterraLoaded = 'true';
+            container.id = container.dataset.adsterraContainer;
+
+            const script = document.createElement('script');
+            script.async = true;
+            script.setAttribute('data-cfasync', 'false');
+            script.src = adsterraScriptUrl;
+            container.appendChild(script);
+        });
+    }
+
+    loadAdsterraNativeBanners();
 
     const cleanFeedUrl = new URL(window.location.href);
     if (cleanFeedUrl.searchParams.has('feed_seed')) {
@@ -3489,19 +3509,12 @@
             if (data.html) {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = data.html.trim();
-                const adScripts = Array.from(tempDiv.querySelectorAll('.feed-ad-card script'));
                 const feed = document.querySelector('.feed');
                 const sentinelContainer = sentinel.parentElement;
                 while (tempDiv.firstChild) {
                     feed.insertBefore(tempDiv.firstChild, sentinelContainer);
                 }
-                adScripts.forEach((script) => {
-                    const executableScript = document.createElement('script');
-                    Array.from(script.attributes).forEach((attribute) => {
-                        executableScript.setAttribute(attribute.name, attribute.value);
-                    });
-                    script.replaceWith(executableScript);
-                });
+                loadAdsterraNativeBanners(feed);
                 // Reinitialize functionality for newly inserted posts, including Show More.
                     initShowMoreButtons();
                 initPostVisibilityObserver();
