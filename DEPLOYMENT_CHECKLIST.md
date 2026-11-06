@@ -15,6 +15,11 @@
   - SecurityHeadersMiddleware (adds Permissions-Policy, X-XSS-Protection)
 - [x] Added middleware to MIDDLEWARE list in settings.py
 
+### Monthly User Emails
+- [x] Django-only idempotent command: `python manage.py send_monthly_emails`
+- [ ] Configure the hosting provider's scheduled job to run that command on the first day of every month
+- [ ] Configure Django's `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, and `DEFAULT_FROM_EMAIL`
+
 ---
 
 ## 🔄 To Deploy on Production Server

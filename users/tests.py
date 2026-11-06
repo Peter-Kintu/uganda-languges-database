@@ -31,7 +31,8 @@ from users.models import (
     PesapalPayment,
     UserSubscription,
 )
-from users.tasks import send_monthly_emails, send_user_notification_task
+from users.monthly_email import send_monthly_emails
+from users.tasks import send_user_notification_task
 from users.views import (
     REGISTRATION_DATA_SESSION_KEY,
     _get_pesapal_config,

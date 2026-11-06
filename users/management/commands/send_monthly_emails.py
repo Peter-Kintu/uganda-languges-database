@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from users.tasks import send_monthly_emails
+from users.monthly_email import send_monthly_emails
 
 
 class Command(BaseCommand):
