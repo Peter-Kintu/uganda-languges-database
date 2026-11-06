@@ -99,6 +99,12 @@ fi
 
 echo "[startup] Web DB connection ceiling: $((GUNICORN_WORKERS * GUNICORN_THREADS * DB_ALIAS_COUNT)) across $DB_ALIAS_COUNT database(s)."
 
+CELERY_BROKER="${CELERY_BROKER_URL:-${REDIS_URL:-}}"
+if [ -n "$CELERY_BROKER" ] && [ "${START_CELERY:-true}" != "false" ]; then
+    echo '[startup] Starting Celery worker and monthly scheduler.'
+    celery -A myuganda worker --beat --loglevel=info --pool=solo &
+fi
+
 exec gunicorn myuganda.wsgi:application \
   --bind 0.0.0.0:8000 \
     --workers "$GUNICORN_WORKERS" \

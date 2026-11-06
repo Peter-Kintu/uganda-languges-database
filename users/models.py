@@ -89,6 +89,25 @@ class CustomUser(AbstractUser):
         return self.username
 
 
+class MonthlyEmailDelivery(models.Model):
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='monthly_email_deliveries',
+    )
+    month = models.DateField(help_text='First day of the month this email covers.')
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'month'),
+                name='unique_monthly_email_per_user',
+            ),
+        ]
+        ordering = ('-month', 'user_id')
+
+
 # --- Profile Component Models ---
 
 class Experience(models.Model):

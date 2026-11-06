@@ -22,8 +22,16 @@ from myuganda.middleware import (
     rate_limit_cache,
     rate_limit_fallback_cache,
 )
-from users.models import AgentMemory, AgentPlan, EventBooking, PayoutRequest, PesapalPayment, UserSubscription
-from users.tasks import send_user_notification_task
+from users.models import (
+    AgentMemory,
+    AgentPlan,
+    EventBooking,
+    MonthlyEmailDelivery,
+    PayoutRequest,
+    PesapalPayment,
+    UserSubscription,
+)
+from users.tasks import send_monthly_emails, send_user_notification_task
 from users.views import (
     REGISTRATION_DATA_SESSION_KEY,
     _get_pesapal_config,
@@ -33,6 +41,38 @@ from users.views import (
 
 
 User = get_user_model()
+
+
+class MonthlyEmailTests(TestCase):
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_monthly_email_is_sent_once_per_active_user(self):
+        user = User.objects.create_user(
+            username='monthly-recipient',
+            email='monthly@example.com',
+            password='secret1234',
+            is_active=True,
+        )
+        User.objects.create_user(
+            username='no-email',
+            email='',
+            password='secret1234',
+            is_active=True,
+        )
+        User.objects.create_user(
+            username='inactive-recipient',
+            email='inactive@example.com',
+            password='secret1234',
+            is_active=False,
+        )
+
+        first_result = send_monthly_emails()
+        second_result = send_monthly_emails()
+
+        self.assertEqual(first_result['sent'], 1)
+        self.assertEqual(second_result['skipped'], 1)
+        self.assertEqual(MonthlyEmailDelivery.objects.filter(user=user).count(), 1)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('monthly@example.com', mail.outbox[0].to)
 
 
 class PostEarningsTests(TestCase):

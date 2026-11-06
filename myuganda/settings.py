@@ -8,6 +8,7 @@ from django.urls import reverse_lazy
 import dj_database_url
 import cloudinary
 import cloudinary_storage
+from celery.schedules import crontab
 from dotenv import load_dotenv
 import platform
 import shutil
@@ -662,5 +663,11 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_WORKER_CONCURRENCY = env_int('CELERY_WORKER_CONCURRENCY', 2, minimum=1)
 CELERY_TASK_ALWAYS_EAGER = os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False').lower() in ('1', 'true', 'yes', 'on') and DEBUG
+CELERY_BEAT_SCHEDULE = {
+    'send-monthly-user-emails': {
+        'task': 'users.tasks.send_monthly_emails_task',
+        'schedule': crontab(minute=0, hour=8, day_of_month=1),
+    },
+}
 if TESTING or (DEBUG and not USE_REDIS_CACHE):
     CELERY_TASK_ALWAYS_EAGER = True
