@@ -17,7 +17,8 @@
 
 ### Monthly User Emails
 - [x] Django-only idempotent command: `python manage.py send_monthly_emails`
-- [ ] Configure the hosting provider's scheduled job to run that command on the first day of every month
+- [ ] Configure the hosting provider's scheduled job to run that command daily
+- [ ] Set `MONTHLY_EMAIL_BATCH_SIZE` to a small daily batch (default: 25) so all users are reached during the month
 - [ ] Configure Django's `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, and `DEFAULT_FROM_EMAIL`
 
 ---

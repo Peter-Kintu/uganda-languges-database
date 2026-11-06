@@ -46,8 +46,8 @@ User = get_user_model()
 
 class MonthlyEmailTests(TestCase):
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-    def test_monthly_email_is_sent_once_per_active_user(self):
-        user = User.objects.create_user(
+    def test_monthly_email_batches_all_users_with_email_once(self):
+        first_user = User.objects.create_user(
             username='monthly-recipient',
             email='monthly@example.com',
             password='secret1234',
@@ -59,21 +59,28 @@ class MonthlyEmailTests(TestCase):
             password='secret1234',
             is_active=True,
         )
-        User.objects.create_user(
+        second_user = User.objects.create_user(
             username='inactive-recipient',
             email='inactive@example.com',
             password='secret1234',
             is_active=False,
         )
 
-        first_result = send_monthly_emails()
-        second_result = send_monthly_emails()
+        first_result = send_monthly_emails(batch_size=1)
+        second_result = send_monthly_emails(batch_size=1)
+        third_result = send_monthly_emails(batch_size=1)
+        fourth_result = send_monthly_emails(batch_size=1)
 
         self.assertEqual(first_result['sent'], 1)
-        self.assertEqual(second_result['skipped'], 1)
-        self.assertEqual(MonthlyEmailDelivery.objects.filter(user=user).count(), 1)
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(second_result['sent'], 1)
+        self.assertEqual(third_result['sent'], 0)
+        self.assertEqual(fourth_result['sent'], 0)
+        self.assertEqual(MonthlyEmailDelivery.objects.filter(
+            user__in=[first_user, second_user]
+        ).count(), 2)
+        self.assertEqual(len(mail.outbox), 2)
         self.assertIn('monthly@example.com', mail.outbox[0].to)
+        self.assertIn('inactive@example.com', mail.outbox[1].to)
 
 
 class PostEarningsTests(TestCase):

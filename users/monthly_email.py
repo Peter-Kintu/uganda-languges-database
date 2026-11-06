@@ -1,28 +1,43 @@
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
+from django.db.models import Exists, OuterRef
 from django.utils import timezone
 
 from users.models import CustomUser, MonthlyEmailDelivery
 
 
-def send_monthly_emails():
-    """Send one idempotent Africana AI update to every active user with an email."""
+def send_monthly_emails(batch_size=None):
+    """Send a small idempotent batch to all users with email addresses."""
     month = timezone.localdate().replace(day=1)
+    if batch_size is None:
+        batch_size = settings.MONTHLY_EMAIL_BATCH_SIZE
+    if batch_size < 1:
+        raise ValueError('Monthly email batch size must be at least 1.')
+
     sent_count = 0
-    skipped_count = 0
     failed_count = 0
 
     users = CustomUser.objects.filter(
-        is_active=True,
-    ).exclude(email='').only('id', 'username', 'email')
+        email__isnull=False,
+    ).exclude(
+        email='',
+    ).annotate(
+        already_sent=Exists(
+            MonthlyEmailDelivery.objects.filter(
+                user_id=OuterRef('pk'),
+                month=month,
+            )
+        )
+    ).filter(
+        already_sent=False,
+    ).only('id', 'username', 'email').order_by('id')[:batch_size]
 
-    for user in users.iterator():
+    for user in users:
         try:
             with transaction.atomic():
                 MonthlyEmailDelivery.objects.create(user=user, month=month)
         except IntegrityError:
-            skipped_count += 1
             continue
 
         try:
@@ -49,6 +64,6 @@ def send_monthly_emails():
     return {
         'month': month.isoformat(),
         'sent': sent_count,
-        'skipped': skipped_count,
         'failed': failed_count,
+        'batch_size': batch_size,
     }
