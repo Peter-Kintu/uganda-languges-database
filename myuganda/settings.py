@@ -133,6 +133,7 @@ if not DEBUG and not TESTING:
         "https://accounts.google.com",  # Google authentication widget requests
         "https://api.cloudinary.com",  # Cloudinary uploads
         "https://res.cloudinary.com",   # Cloudinary delivery
+        "https://unpkg.com",  # FFmpeg.wasm core download
         "https://wa.me",  # WhatsApp integration
         "https://translate.googleapis.com",  # Translation fallback
         "https://translate.google.com",  # Browser TTS fallback

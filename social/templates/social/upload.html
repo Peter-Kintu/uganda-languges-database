@@ -466,6 +466,17 @@
                     'This means your web server/proxy needs a larger request body limit, e.g. Nginx client_max_body_size or Apache LimitRequestBody.');
             } else if (response.status >= 500) {
                 alert('Upload failed due to a server error. Video is safe in IndexedDB. Try again in a few minutes.');
+            } else if (response.status === 200) {
+                const errorDocument = new DOMParser().parseFromString(data, 'text/html');
+                const errorText = Array.from(errorDocument.querySelectorAll(
+                    '.text-red-200, .errorlist, [class*="error"]'
+                ))
+                    .map((element) => element.textContent.trim())
+                    .filter(Boolean)
+                    .join('\n');
+                alert(errorText
+                    ? `The server rejected the upload:\n${errorText}`
+                    : 'The server returned the upload form instead of publishing the video. Check that the caption and video details are valid.');
             } else {
                 alert(`Upload failed (${response.status}). Video is safely backed up in IndexedDB.`);
             }
