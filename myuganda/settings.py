@@ -487,7 +487,7 @@ if private_identity_path == media_path or media_path in private_identity_path.pa
 FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get('FILE_UPLOAD_MAX_MEMORY_SIZE', str(10 * 1024 * 1024)))
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get(
     'DATA_UPLOAD_MAX_MEMORY_SIZE',
-    str(max(FILE_UPLOAD_MAX_MEMORY_SIZE, 12 * 1024 * 1024)),
+    str(90 * 1024 * 1024),
 ))
 
 # --- SITEMAP SETTINGS ---

@@ -2485,6 +2485,16 @@
                         {% include "hotel/recommended_jobs.html" %}
                     {% endif %}
 
+                    {% if feed_start_index|add:forloop.counter|divisibleby:3 %}
+                        <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
+                            <div>
+                                <div class="feed-ad-card-label">Sponsored</div>
+                                <script async="async" data-cfasync="false" src="https://pl29182723.profitablecpmratenetwork.com/2c34356cc6efc4c07773cf2861e26899/invoke.js"></script>
+                                <div id="container-2c34356cc6efc4c07773cf2861e26899" style="min-height: 180px;"></div>
+                            </div>
+                        </section>
+                    {% endif %}
+
             {% endfor %}
             {% if page_obj.has_next %}
             <div class="load-more-container">
@@ -3479,11 +3489,19 @@
             if (data.html) {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = data.html.trim();
+                const adScripts = Array.from(tempDiv.querySelectorAll('.feed-ad-card script'));
                 const feed = document.querySelector('.feed');
                 const sentinelContainer = sentinel.parentElement;
                 while (tempDiv.firstChild) {
                     feed.insertBefore(tempDiv.firstChild, sentinelContainer);
                 }
+                adScripts.forEach((script) => {
+                    const executableScript = document.createElement('script');
+                    Array.from(script.attributes).forEach((attribute) => {
+                        executableScript.setAttribute(attribute.name, attribute.value);
+                    });
+                    script.replaceWith(executableScript);
+                });
                 // Reinitialize functionality for newly inserted posts, including Show More.
                     initShowMoreButtons();
                 initPostVisibilityObserver();
