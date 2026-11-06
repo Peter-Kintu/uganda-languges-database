@@ -110,6 +110,7 @@ if not DEBUG and not TESTING:
         "https://translate.google.com",  # Google Translate widget
         "https://beavercolourfuldelinquent.com",  # Adestra anti-adblock popunder
         "https://pl29182723.profitablecpmratenetwork.com",  # Adsterra native ad script
+        "https://portalfluently.com",  # Adsterra social-bar runtime
     )
     SECURE_CSP_STYLE_SRC = (
         "'self'",
@@ -145,9 +146,12 @@ if not DEBUG and not TESTING:
         "https://cdn.cloudvideosa.com",  # Native banner creative requests
         "https://protrafficinspector.com",  # Adsterra traffic measurement
         "https://pl29182723.profitablecpmratenetwork.com",  # Adsterra native ad requests
+        "https://portalfluently.com",  # Adsterra social-bar requests
+        "https://fizzyacerbitymellow.com",  # Adsterra impression pixel
     )
     SECURE_CSP_MEDIA_SRC = (
         "'self'",
+        "blob:",
         "https:",  # Allow all HTTPS videos (local storage, Cloudinary)
     )
     SECURE_CSP_FRAME_SRC = (
