@@ -139,6 +139,7 @@ if not DEBUG and not TESTING:
         "https://wa.me",  # WhatsApp integration
         "https://translate.googleapis.com",  # Translation fallback
         "https://translate.google.com",  # Browser TTS fallback
+        "https://spendsdetachment.com",  # Adsterra Social Bar telemetry observed in browser
         "https://pagead2.googlesyndication.com",  # Google AdSense requests
         "https://googleads.g.doubleclick.net",  # Google AdSense requests
         "https://fundingchoicesmessages.google.com",  # Google consent messaging
