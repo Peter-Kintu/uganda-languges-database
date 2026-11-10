@@ -16,6 +16,19 @@ class ClientIpTests(SimpleTestCase):
 	def setUp(self):
 		self.factory = RequestFactory()
 
+	def test_ads_txt_is_served_directly_on_apex_host(self):
+		response = self.client.get(
+			'/ads.txt',
+			secure=True,
+			HTTP_HOST='africanaai.info',
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(
+			response.content.decode(),
+			'google.com, pub-9564790727166506, DIRECT, f08c47fec0942fa0\n',
+		)
+
 	def test_uses_first_public_address_in_forwarded_header(self):
 		request = self.factory.get(
 			'/', HTTP_X_FORWARDED_FOR='8.8.8.8, 10.0.0.4'
