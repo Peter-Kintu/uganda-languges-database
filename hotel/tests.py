@@ -256,6 +256,7 @@ class HybridFeedTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.content.decode().count('data-adsterra-container='), 1)
 		self.assertContains(response, 'container-027cef63835745dca43e3496ef638b7a')
+		self.assertNotContains(response, 'ec49828f50d250f701e66363320f7d5e.js')
 
 		ajax_response = self.client.get('/hotel/?format=json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 		self.assertEqual(ajax_response.status_code, 200)

@@ -164,6 +164,21 @@ class JobAlertTests(TestCase):
 		self.assertContains(response, 'Create job alert')
 		self.assertContains(response, 'Data analyst')
 
+	def test_social_bar_script_is_only_loaded_on_jobs_page(self):
+		with (
+			patch.object(views, 'fetch_careerjet_data', return_value=[]),
+			patch.object(views, 'fetch_jooble_data', return_value=[]),
+		):
+			response = self.client.get(reverse('languages:browse_job_listings'))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(
+			response.content.decode().count(
+				'https://beavercolourfuldelinquent.com/ec/49/82/ec49828f50d250f701e66363320f7d5e.js'
+			),
+			1,
+		)
+
 	def test_alert_controls_only_change_the_owner_alerts(self):
 		other_user = get_user_model().objects.create_user(
 			username='another-user',
