@@ -107,6 +107,7 @@ if not DEBUG and not TESTING:
         "https://accounts.google.com",  # Google authentication widgets
         "https://pagead2.googlesyndication.com",  # Google AdSense scripts
         "https://googleads.g.doubleclick.net",  # Google AdSense scripts
+        "https://ep2.adtrafficquality.google",  # Google AdSense SODAR script
         "https://www.googletagservices.com",  # Google ad services
         "https://translate.google.com",  # Google Translate widget
         "https://beavercolourfuldelinquent.com",  # Adestra anti-adblock popunder
@@ -140,6 +141,7 @@ if not DEBUG and not TESTING:
         "https://translate.googleapis.com",  # Translation fallback
         "https://translate.google.com",  # Browser TTS fallback
         "https://spendsdetachment.com",  # Adsterra Social Bar telemetry observed in browser
+        "https://consumeririssalary.com",  # Adsterra request host observed in browser
         "https://pagead2.googlesyndication.com",  # Google AdSense requests
         "https://googleads.g.doubleclick.net",  # Google AdSense requests
         "https://fundingchoicesmessages.google.com",  # Google consent messaging
