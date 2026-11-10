@@ -2485,7 +2485,7 @@
                         {% include "hotel/recommended_jobs.html" %}
                     {% endif %}
 
-                    {% if feed_start_index|add:forloop.counter|divisibleby:3 %}
+                    {% if feed_start_index == 0 and forloop.counter == 3 %}
                         <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
                             <div>
                                 <div class="feed-ad-card-label">Sponsored</div>

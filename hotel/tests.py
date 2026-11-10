@@ -247,6 +247,19 @@ class HybridFeedTests(TestCase):
 			html,
 		)
 
+	def test_feed_has_one_native_ad_slot_and_ajax_pages_add_none(self):
+		for index in range(3):
+			Post.objects.create(author=self.popular_user, content=f'Feed update {index}')
+		self.client.force_login(self.user)
+
+		response = self.client.get('/hotel/')
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.content.decode().count('data-adsterra-container='), 1)
+
+		ajax_response = self.client.get('/hotel/?format=json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+		self.assertEqual(ajax_response.status_code, 200)
+		self.assertNotIn('data-adsterra-container=', ajax_response.json()['html'])
+
 	def test_initial_feed_links_discoverable_author_names_to_public_profiles(self):
 		post = Post.objects.create(author=self.popular_user, content='Public author update')
 		self.client.force_login(self.user)
