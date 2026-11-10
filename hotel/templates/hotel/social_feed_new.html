@@ -3446,7 +3446,7 @@
             script.async = true;
             script.setAttribute('data-cfasync', 'false');
             script.src = adsterraScriptUrl;
-            container.appendChild(script);
+            container.parentNode.insertBefore(script, container);
         });
     }
 
