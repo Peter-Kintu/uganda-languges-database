@@ -113,6 +113,7 @@ if not DEBUG and not TESTING:
         "https://beavercolourfuldelinquent.com",  # Adestra anti-adblock popunder
         "https://pl29182723.profitablecpmratenetwork.com",  # Adsterra native ad script
         "https://portalfluently.com",  # Adsterra social-bar runtime
+        "https://nap5k.com",  # Monetag in-page push script
     )
     SECURE_CSP_STYLE_SRC = (
         "'self'",
@@ -471,6 +472,9 @@ if CLOUDINARY_CONFIGURED and not DEBUG:
         "reels_video": {
             "BACKEND": "social.storage.CloudinaryVideoStorage",
         },
+        "message_attachments": {
+            "BACKEND": "hotel.storage.MessageAttachmentCloudinaryStorage",
+        },
         "staticfiles": {
             "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
@@ -482,6 +486,9 @@ else:
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "reels_video": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "message_attachments": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {

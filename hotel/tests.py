@@ -14,6 +14,7 @@ from .models import (
 	CommunityRole, Connection, FeedImpression, Like, Post,
 	Message,
 )
+from .storage import MessageAttachmentCloudinaryStorage, message_attachment_upload_path
 from .views import _build_hybrid_feed, _build_market_feed_items, _feed_insert_positions, translate_smart
 
 
@@ -542,9 +543,27 @@ class CommunityArchitectureTests(TestCase):
 		self.assertTrue(response.json()['success'])
 		self.assertTrue(response.json()['attachment_url'])
 		self.assertEqual(Message.objects.count(), 1)
+		message = Message.objects.get()
+		self.addCleanup(message.attachment.delete, save=False)
 		conversation_response = self.client.get(reverse('hotel:conversation', args=[self.member.pk]))
 		self.assertContains(conversation_response, 'data-picker-mode="file"')
-		self.assertContains(conversation_response, 'brief.pdf')
+		self.assertContains(conversation_response, message.attachment.name.rsplit('/', 1)[-1])
+
+	def test_message_attachment_storage_uses_raw_delivery_for_documents(self):
+		storage = MessageAttachmentCloudinaryStorage()
+
+		for filename in ('brief.pdf', 'report.docx', 'budget.xlsx', 'archive.zip'):
+			with self.subTest(filename=filename):
+				path = message_attachment_upload_path(None, filename)
+				self.assertEqual(storage._get_resource_type(path), 'raw')
+
+		for filename, resource_type in (('photo.jpg', 'image'), ('clip.mp4', 'video')):
+			with self.subTest(filename=filename):
+				path = message_attachment_upload_path(None, filename)
+				self.assertEqual(storage._get_resource_type(path), resource_type)
+				self.assertEqual(storage._get_resource_type(f'/media/{path}'), resource_type)
+
+		self.assertEqual(storage._get_resource_type('message_attachments/legacy-report'), 'image')
 
 	def test_community_ajax_attachment_returns_saved_message_metadata(self):
 		self.client.force_login(self.member)

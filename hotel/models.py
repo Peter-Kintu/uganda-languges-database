@@ -1,6 +1,8 @@
 import uuid
 from django.db import models
+from django.core.files.storage import storages
 from django.conf import settings
+from .storage import message_attachment_upload_path
 
 class Post(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='posts')
@@ -68,7 +70,12 @@ class Message(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hotel_sent_messages')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hotel_received_messages')
     content = models.TextField(blank=True)
-    attachment = models.FileField(upload_to='message_attachments/', blank=True, null=True)
+    attachment = models.FileField(
+        upload_to=message_attachment_upload_path,
+        storage=storages['message_attachments'],
+        blank=True,
+        null=True,
+    )
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -180,7 +187,12 @@ class CommunityMessage(models.Model):
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='replies')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField(blank=True)
-    attachment = models.FileField(upload_to='message_attachments/', blank=True, null=True)
+    attachment = models.FileField(
+        upload_to=message_attachment_upload_path,
+        storage=storages['message_attachments'],
+        blank=True,
+        null=True,
+    )
     moderation_status = models.CharField(max_length=10, choices=[('visible', 'Visible'), ('held', 'Held'), ('rejected', 'Rejected')], default='visible')
     moderation_reason = models.CharField(max_length=255, blank=True)
     is_pinned = models.BooleanField(default=False)
