@@ -529,11 +529,11 @@ class CommunityArchitectureTests(TestCase):
 
 		self.assertEqual(response.status_code, 403)
 
-	def test_direct_ajax_attachment_returns_saved_message_metadata(self):
-		attachment = SimpleUploadedFile('photo.png', b'not-a-real-image', content_type='image/png')
+	def test_direct_ajax_file_attachment_returns_saved_message_metadata(self):
+		attachment = SimpleUploadedFile('brief.pdf', b'%PDF-1.4 test document', content_type='application/pdf')
 		response = self.client.post(
 			f'/hotel/send_message/{self.member.id}/',
-			{'content': 'See this', 'attachment': attachment},
+			{'content': 'See this document', 'attachment': attachment},
 			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
 			HTTP_ACCEPT='application/json',
 		)
@@ -542,6 +542,9 @@ class CommunityArchitectureTests(TestCase):
 		self.assertTrue(response.json()['success'])
 		self.assertTrue(response.json()['attachment_url'])
 		self.assertEqual(Message.objects.count(), 1)
+		conversation_response = self.client.get(reverse('hotel:conversation', args=[self.member.pk]))
+		self.assertContains(conversation_response, 'data-picker-mode="file"')
+		self.assertContains(conversation_response, 'brief.pdf')
 
 	def test_community_ajax_attachment_returns_saved_message_metadata(self):
 		self.client.force_login(self.member)
