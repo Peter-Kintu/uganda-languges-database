@@ -148,6 +148,7 @@ if not DEBUG and not TESTING:
         "https://fundingchoicesmessages.google.com",  # Google consent messaging
         "https://ep1.adtrafficquality.google",  # Google AdSense traffic quality checks
         "https://ep2.adtrafficquality.google",  # Google AdSense traffic quality checks
+        "https://*.adtrafficquality.google",  # Google ad traffic quality endpoints
         "https://nap5k.com",  # Monetag in-page push requests
         "https://*.monetag.com",  # Monetag requests
         "https://*.nap5k.com",  # Monetag requests

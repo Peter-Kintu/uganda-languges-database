@@ -256,6 +256,7 @@ class HybridFeedTests(TestCase):
 			"https://*.nap5k.com",
 			"https://*.n6wxm.com",
 			"https://ep2.adtrafficquality.google",
+			"https://*.adtrafficquality.google",
 		),
 		SECURE_CSP_FRAME_SRC=(
 			"'self'",
@@ -278,6 +279,7 @@ class HybridFeedTests(TestCase):
 		self.assertIn('https://*.nap5k.com', csp)
 		self.assertIn('https://*.n6wxm.com', csp)
 		self.assertIn('https://ep2.adtrafficquality.google', csp)
+		self.assertIn('https://*.adtrafficquality.google', csp)
 		self.assertIn('https://www.google.com', csp)
 		self.assertEqual(html.count('data-adsterra-container='), 1)
 		self.assertContains(response, 'container-027cef63835745dca43e3496ef638b7a')
