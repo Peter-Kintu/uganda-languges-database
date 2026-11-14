@@ -2494,6 +2494,15 @@
                         </section>
                     {% endif %}
 
+                    {% if feed_start_index == 0 and forloop.counter == 6 %}
+                        <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
+                            <div>
+                                <div class="feed-ad-card-label">Sponsored</div>
+                                <script>(function(s){s.dataset.zone='12262095',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+                            </div>
+                        </section>
+                    {% endif %}
+
                     {% if feed_start_index == 0 and forloop.counter == 15 %}
                         <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
                             <div style="width: 100%; overflow: hidden;">
