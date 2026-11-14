@@ -11,7 +11,7 @@ from editorial.views import privacy_policy, terms_of_use
 from .sitemaps import ArticlesSitemap, JobPostSitemap, ProductSitemap, StaticViewSitemap, UserProfileSitemap, BusinessReelSitemap, custom_sitemap_view
 
 import requests
-from django.http import HttpResponse, JsonResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 from django.core.cache import cache
 
 
@@ -73,6 +73,14 @@ def ads_txt(request):
     response = HttpResponse(content, content_type="text/plain; charset=utf-8")
     response["Cache-Control"] = "public, max-age=3600"
     return response
+
+
+def service_worker(request):
+    return FileResponse(
+        open(settings.BASE_DIR / "sw.js", "rb"),
+        content_type="application/javascript",
+    )
+
 
 sitemaps_dict = {
     'static': StaticViewSitemap,
@@ -154,6 +162,7 @@ urlpatterns = [
 
     path("show-ip/", show_ip),
     path("ads.txt", ads_txt),
+    path("sw.js", service_worker),
 ]
 
 # Static & media serving in development
