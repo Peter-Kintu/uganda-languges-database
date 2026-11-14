@@ -249,17 +249,24 @@ class HybridFeedTests(TestCase):
 		)
 
 	def test_feed_has_one_native_and_adsense_slot_and_ajax_pages_add_none(self):
-		for index in range(6):
+		for index in range(15):
 			Post.objects.create(author=self.popular_user, content=f'Feed update {index}')
 		self.client.force_login(self.user)
 
 		response = self.client.get('/hotel/')
 		self.assertEqual(response.status_code, 200)
-		self.assertEqual(response.content.decode().count('data-adsterra-container='), 1)
+		html = response.content.decode()
+		self.assertEqual(html.count('data-adsterra-container='), 1)
 		self.assertContains(response, 'container-027cef63835745dca43e3496ef638b7a')
-		self.assertEqual(response.content.decode().count('data-ad-slot="1572527880"'), 1)
-		self.assertEqual(response.content.decode().count('data-ad-client="ca-pub-9564790727166506"'), 1)
+		self.assertEqual(html.count("dataset.zone='12261872'"), 1)
+		self.assertEqual(html.count('data-ad-slot="1572527880"'), 1)
+		self.assertEqual(html.count('data-ad-client="ca-pub-9564790727166506"'), 1)
 		self.assertNotContains(response, 'ec49828f50d250f701e66363320f7d5e.js')
+		monetag_index = html.index("dataset.zone='12261872'")
+		adsense_index = html.index('data-ad-slot="1572527880"')
+		self.assertLess(html.index(f'id="post-{response.context["posts"][5].id}"'), monetag_index)
+		self.assertLess(monetag_index, html.index(f'id="post-{response.context["posts"][6].id}"'))
+		self.assertLess(html.index(f'id="post-{response.context["posts"][14].id}"'), adsense_index)
 
 		ajax_response = self.client.get('/hotel/?format=json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 		self.assertEqual(ajax_response.status_code, 200)
