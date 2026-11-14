@@ -147,6 +147,11 @@ if not DEBUG and not TESTING:
         "https://googleads.g.doubleclick.net",  # Google AdSense requests
         "https://fundingchoicesmessages.google.com",  # Google consent messaging
         "https://ep1.adtrafficquality.google",  # Google AdSense traffic quality checks
+        "https://ep2.adtrafficquality.google",  # Google AdSense traffic quality checks
+        "https://nap5k.com",  # Monetag in-page push requests
+        "https://*.monetag.com",  # Monetag requests
+        "https://*.nap5k.com",  # Monetag requests
+        "https://*.n6wxm.com",  # Monetag requests
         "https://beavercolourfuldelinquent.com",  # Adestra anti-adblock requests
         "https://cdn.cloudvideosa.com",  # Native banner creative requests
         "https://protrafficinspector.com",  # Adsterra traffic measurement
@@ -170,6 +175,8 @@ if not DEBUG and not TESTING:
         "https://pagead2.googlesyndication.com",  # Google AdSense frames
         "https://googleads.g.doubleclick.net",  # Google AdSense frames
         "https://tpc.googlesyndication.com",  # Google AdSense frames
+        "https://ep2.adtrafficquality.google",  # Google AdSense traffic quality frame
+        "https://www.google.com",  # Google AdSense verification frame
         "https://kintu1-africana-ai-video.hf.space",  # Inline video advert maker
         "https://beavercolourfuldelinquent.com",  # Adestra anti-adblock frames
         "https://cdn.cloudvideosa.com",  # Native banner creative frames

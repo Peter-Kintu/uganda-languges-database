@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from unittest.mock import Mock, patch
@@ -248,6 +248,21 @@ class HybridFeedTests(TestCase):
 			html,
 		)
 
+	@override_settings(
+		SECURE_CSP_CONNECT_SRC=(
+			"'self'",
+			"https://nap5k.com",
+			"https://*.monetag.com",
+			"https://*.nap5k.com",
+			"https://*.n6wxm.com",
+			"https://ep2.adtrafficquality.google",
+		),
+		SECURE_CSP_FRAME_SRC=(
+			"'self'",
+			"https://ep2.adtrafficquality.google",
+			"https://www.google.com",
+		),
+	)
 	def test_feed_has_one_native_and_adsense_slot_and_ajax_pages_add_none(self):
 		for index in range(15):
 			Post.objects.create(author=self.popular_user, content=f'Feed update {index}')
@@ -256,6 +271,14 @@ class HybridFeedTests(TestCase):
 		response = self.client.get('/hotel/')
 		self.assertEqual(response.status_code, 200)
 		html = response.content.decode()
+		csp = response['Content-Security-Policy']
+		self.assertIn('connect-src', csp)
+		self.assertIn('https://nap5k.com', csp)
+		self.assertIn('https://*.monetag.com', csp)
+		self.assertIn('https://*.nap5k.com', csp)
+		self.assertIn('https://*.n6wxm.com', csp)
+		self.assertIn('https://ep2.adtrafficquality.google', csp)
+		self.assertIn('https://www.google.com', csp)
 		self.assertEqual(html.count('data-adsterra-container='), 1)
 		self.assertContains(response, 'container-027cef63835745dca43e3496ef638b7a')
 		self.assertEqual(html.count("dataset.zone='12262095'"), 1)
