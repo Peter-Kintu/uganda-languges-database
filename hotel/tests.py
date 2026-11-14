@@ -255,6 +255,8 @@ class HybridFeedTests(TestCase):
 			"https://*.monetag.com",
 			"https://*.nap5k.com",
 			"https://*.n6wxm.com",
+			"https://my.rtmark.net",
+			"https://jhnwr.com",
 			"https://ep2.adtrafficquality.google",
 			"https://*.adtrafficquality.google",
 		),
@@ -278,6 +280,8 @@ class HybridFeedTests(TestCase):
 		self.assertIn('https://*.monetag.com', csp)
 		self.assertIn('https://*.nap5k.com', csp)
 		self.assertIn('https://*.n6wxm.com', csp)
+		self.assertIn('https://my.rtmark.net', csp)
+		self.assertIn('https://jhnwr.com', csp)
 		self.assertIn('https://ep2.adtrafficquality.google', csp)
 		self.assertIn('https://*.adtrafficquality.google', csp)
 		self.assertIn('https://www.google.com', csp)

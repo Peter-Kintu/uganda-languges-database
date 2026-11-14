@@ -153,6 +153,8 @@ if not DEBUG and not TESTING:
         "https://*.monetag.com",  # Monetag requests
         "https://*.nap5k.com",  # Monetag requests
         "https://*.n6wxm.com",  # Monetag requests
+        "https://my.rtmark.net",  # Monetag user ID lookup
+        "https://jhnwr.com",  # Monetag zone requests
         "https://beavercolourfuldelinquent.com",  # Adestra anti-adblock requests
         "https://cdn.cloudvideosa.com",  # Native banner creative requests
         "https://protrafficinspector.com",  # Adsterra traffic measurement
