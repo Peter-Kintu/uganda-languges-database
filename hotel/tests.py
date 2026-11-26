@@ -249,6 +249,11 @@ class HybridFeedTests(TestCase):
 		)
 
 	@override_settings(
+		SECURE_CSP_SCRIPT_SRC=(
+			"'self'",
+			"'unsafe-inline'",
+			"https://n6wxm.com",
+		),
 		SECURE_CSP_CONNECT_SRC=(
 			"'self'",
 			"https://nap5k.com",
@@ -287,20 +292,21 @@ class HybridFeedTests(TestCase):
 		self.assertIn('https://www.google.com', csp)
 		self.assertEqual(html.count('data-adsterra-container='), 1)
 		self.assertContains(response, 'container-027cef63835745dca43e3496ef638b7a')
-		self.assertEqual(html.count("dataset.zone='12262095'"), 1)
-		self.assertIn('https://nap5k.com/tag.min.js', html)
+		self.assertEqual(html.count("dataset.zone='12358662'"), 1)
+		self.assertIn('https://n6wxm.com/vignette.min.js', html)
+		self.assertIn('script-src', csp)
+		self.assertIn('https://n6wxm.com', csp)
+		self.assertNotIn("dataset.zone='12262095'", html)
 		self.assertNotIn("dataset.zone='12262116'", html)
-		self.assertNotIn('https://n6wxm.com/vignette.min.js', html)
+		self.assertNotIn('https://nap5k.com/tag.min.js', html)
 		self.assertEqual(html.count('data-ad-slot="1572527880"'), 1)
 		self.assertEqual(html.count('data-ad-client="ca-pub-9564790727166506"'), 1)
 		self.assertIn('data-ad-format="fluid"', html)
 		self.assertIn('data-ad-layout-key="-6t+ed+2i-1n-4w"', html)
 		self.assertNotContains(response, 'ec49828f50d250f701e66363320f7d5e.js')
-		monetag_index = html.index("dataset.zone='12262095'")
-		monetag_card_index = html.index('aria-label="Sponsored advertisement"', html.index(f'id="post-{response.context["posts"][5].id}"'))
+		monetag_index = html.index("dataset.zone='12358662'")
 		adsense_index = html.index('data-ad-slot="1572527880"')
-		self.assertLess(html.index(f'id="post-{response.context["posts"][5].id}"'), monetag_card_index)
-		self.assertLess(monetag_card_index, monetag_index)
+		self.assertLess(html.index(f'id="post-{response.context["posts"][5].id}"'), monetag_index)
 		self.assertLess(monetag_index, html.index(f'id="post-{response.context["posts"][6].id}"'))
 		self.assertLess(html.index(f'id="post-{response.context["posts"][14].id}"'), adsense_index)
 
