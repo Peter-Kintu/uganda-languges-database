@@ -2495,28 +2495,37 @@
                     {% endif %}
 
                     {% if feed_start_index == 0 and forloop.counter == 6 %}
-                        <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
-                            <div>
+                        <section class="post-card feed-ad-card" aria-label="Sponsored advertisement" id="monetag-feed-ad-post-6">
+                            <div style="width: 100%; overflow: hidden;">
                                 <div class="feed-ad-card-label">Sponsored</div>
-                                <script>(function(s){s.dataset.zone='12262095',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+                                <div id="monetag-ad-container-12262095" style="min-height: 280px;"></div>
+                                <script>
+                                    (function () {
+                                        var container = document.getElementById('monetag-ad-container-12262095');
+                                        if (!container || container.dataset.monetagLoaded === 'true') return;
+                                        container.dataset.monetagLoaded = 'true';
+                                        var script = document.createElement('script');
+                                        script.async = true;
+                                        script.setAttribute('data-cfasync', 'false');
+                                        script.dataset.zone='12262095';
+                                        script.src = 'https://nap5k.com/tag.min.js';
+                                        container.appendChild(script);
+                                    })();
+                                </script>
                             </div>
                         </section>
                     {% endif %}
 
                     {% if feed_start_index == 0 and forloop.counter == 15 %}
                         <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
-                            <div style="width: 100%; overflow: hidden;">
+                            <div id="adsense-feed-ad-post-15" style="width: 100%; min-height: 280px; overflow: hidden;">
                                 <div class="feed-ad-card-label">Sponsored</div>
-                                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9564790727166506" crossorigin="anonymous"></script>
                                 <ins class="adsbygoogle"
                                      style="display:block"
-                                     data-ad-format="fluid"
-                                     data-ad-layout-key="-6t+ed+2i-1n-4w"
+                                     data-ad-format="auto"
+                                     data-full-width-responsive="true"
                                      data-ad-client="ca-pub-9564790727166506"
                                      data-ad-slot="1572527880"></ins>
-                                <script>
-                                    (adsbygoogle = window.adsbygoogle || []).push({});
-                                </script>
                             </div>
                         </section>
                     {% endif %}
@@ -3458,6 +3467,37 @@
     let hasLoadedMorePosts = false;
     const sentinel = document.getElementById('load-more-sentinel');
     const adsterraScriptUrl = 'https://pl29182723.profitablecpmratenetwork.com/027cef63835745dca43e3496ef638b7a/invoke.js';
+    const adsenseScriptUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9564790727166506';
+
+    function initializeAdsenseAd() {
+        const container = document.getElementById('adsense-feed-ad-post-15');
+        if (!container || container.dataset.adsenseLoaded === 'true') return;
+
+        container.dataset.adsenseLoaded = 'true';
+        window.adsbygoogle = window.adsbygoogle || [];
+
+        const initialize = () => {
+            window.adsbygoogle.push({});
+        };
+
+        let script = document.querySelector('script[data-africanaadsense="true"]');
+        if (!script) {
+            script = document.createElement('script');
+            script.async = true;
+            script.crossOrigin = 'anonymous';
+            script.dataset.africanaadsense = 'true';
+            script.src = adsenseScriptUrl;
+            script.onload = function () {
+                script.dataset.loaded = 'true';
+                initialize();
+            };
+            document.head.appendChild(script);
+        } else if (script.dataset.loaded === 'true') {
+            initialize();
+        } else {
+            script.addEventListener('load', initialize, { once: true });
+        }
+    }
 
     function loadAdsterraNativeBanners(root = document) {
         root.querySelectorAll('.feed-ad-card').forEach((card) => {
@@ -3478,6 +3518,7 @@
     }
 
     loadAdsterraNativeBanners();
+    initializeAdsenseAd();
 
     const cleanFeedUrl = new URL(window.location.href);
     if (cleanFeedUrl.searchParams.has('feed_seed')) {
