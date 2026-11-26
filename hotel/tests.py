@@ -293,6 +293,8 @@ class HybridFeedTests(TestCase):
 		self.assertNotIn('https://n6wxm.com/vignette.min.js', html)
 		self.assertEqual(html.count('data-ad-slot="1572527880"'), 1)
 		self.assertEqual(html.count('data-ad-client="ca-pub-9564790727166506"'), 1)
+		self.assertIn('data-ad-format="fluid"', html)
+		self.assertIn('data-ad-layout-key="-6t+ed+2i-1n-4w"', html)
 		self.assertNotContains(response, 'ec49828f50d250f701e66363320f7d5e.js')
 		monetag_index = html.index("dataset.zone='12262095'")
 		monetag_card_index = html.index('aria-label="Sponsored advertisement"', html.index(f'id="post-{response.context["posts"][5].id}"'))

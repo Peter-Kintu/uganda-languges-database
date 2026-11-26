@@ -2518,15 +2518,18 @@
 
                     {% if feed_start_index == 0 and forloop.counter == 15 %}
                         <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
-                            <div id="adsense-feed-ad-post-15" style="width: 100%; min-height: 280px; overflow: hidden;">
+                            <div style="width: 100%; min-height: 280px; overflow: hidden;">
                                 <div class="feed-ad-card-label">Sponsored</div>
                                 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9564790727166506" crossorigin="anonymous"></script>
                                 <ins class="adsbygoogle"
                                      style="display:block"
-                                     data-ad-format="auto"
-                                     data-full-width-responsive="true"
+                                     data-ad-format="fluid"
+                                     data-ad-layout-key="-6t+ed+2i-1n-4w"
                                      data-ad-client="ca-pub-9564790727166506"
                                      data-ad-slot="1572527880"></ins>
+                                <script>
+                                    (adsbygoogle = window.adsbygoogle || []).push({});
+                                </script>
                             </div>
                         </section>
                     {% endif %}
@@ -3469,15 +3472,6 @@
     const sentinel = document.getElementById('load-more-sentinel');
     const adsterraScriptUrl = 'https://pl29182723.profitablecpmratenetwork.com/027cef63835745dca43e3496ef638b7a/invoke.js';
 
-    function initializeAdsenseAd() {
-        const container = document.getElementById('adsense-feed-ad-post-15');
-        if (!container || container.dataset.adsenseLoaded === 'true') return;
-
-        container.dataset.adsenseLoaded = 'true';
-        window.adsbygoogle = window.adsbygoogle || [];
-        window.adsbygoogle.push({});
-    }
-
     function loadAdsterraNativeBanners(root = document) {
         root.querySelectorAll('.feed-ad-card').forEach((card) => {
             if (card.dataset.adsterraLoaded === 'true') return;
@@ -3497,7 +3491,6 @@
     }
 
     loadAdsterraNativeBanners();
-    initializeAdsenseAd();
 
     const cleanFeedUrl = new URL(window.location.href);
     if (cleanFeedUrl.searchParams.has('feed_seed')) {
