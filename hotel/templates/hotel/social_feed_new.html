@@ -2520,6 +2520,7 @@
                         <section class="post-card feed-ad-card" aria-label="Sponsored advertisement">
                             <div id="adsense-feed-ad-post-15" style="width: 100%; min-height: 280px; overflow: hidden;">
                                 <div class="feed-ad-card-label">Sponsored</div>
+                                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9564790727166506" crossorigin="anonymous"></script>
                                 <ins class="adsbygoogle"
                                      style="display:block"
                                      data-ad-format="auto"
@@ -3467,7 +3468,6 @@
     let hasLoadedMorePosts = false;
     const sentinel = document.getElementById('load-more-sentinel');
     const adsterraScriptUrl = 'https://pl29182723.profitablecpmratenetwork.com/027cef63835745dca43e3496ef638b7a/invoke.js';
-    const adsenseScriptUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9564790727166506';
 
     function initializeAdsenseAd() {
         const container = document.getElementById('adsense-feed-ad-post-15');
@@ -3475,28 +3475,7 @@
 
         container.dataset.adsenseLoaded = 'true';
         window.adsbygoogle = window.adsbygoogle || [];
-
-        const initialize = () => {
-            window.adsbygoogle.push({});
-        };
-
-        let script = document.querySelector('script[data-africanaadsense="true"]');
-        if (!script) {
-            script = document.createElement('script');
-            script.async = true;
-            script.crossOrigin = 'anonymous';
-            script.dataset.africanaadsense = 'true';
-            script.src = adsenseScriptUrl;
-            script.onload = function () {
-                script.dataset.loaded = 'true';
-                initialize();
-            };
-            document.head.appendChild(script);
-        } else if (script.dataset.loaded === 'true') {
-            initialize();
-        } else {
-            script.addEventListener('load', initialize, { once: true });
-        }
+        window.adsbygoogle.push({});
     }
 
     function loadAdsterraNativeBanners(root = document) {
