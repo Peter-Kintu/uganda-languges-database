@@ -114,7 +114,6 @@ if not DEBUG and not TESTING:
         "https://pl29182723.profitablecpmratenetwork.com",  # Adsterra native ad script
         "https://portalfluently.com",  # Adsterra social-bar runtime
         "https://nap5k.com",  # Monetag in-page push script
-        "https://n6wxm.com",  # Monetag vignette script
     )
     SECURE_CSP_STYLE_SRC = (
         "'self'",
